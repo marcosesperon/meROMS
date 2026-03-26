@@ -1,0 +1,12 @@
+pub mod backup;
+pub mod cleanup;
+pub mod collections;
+pub mod duplicates;
+pub mod export;
+pub mod gamelist;
+pub mod rename;
+pub mod images;
+pub mod scraper;
+pub mod scraper_tgdb;
+pub mod settings;
+pub mod systems;

@@ -1,0 +1,271 @@
+import type { TranslationKeys } from "./en";
+
+const es: Record<TranslationKeys, string> = {
+  // App
+  "app.scrapeAll": "Scrapear Todo",
+  "app.addGame": "+ Agregar Juego",
+
+  // Sidebar
+  "sidebar.title": "meROMS",
+  "sidebar.subtitle": "Gestor de ROMs",
+  "sidebar.noSystems": "No se encontraron sistemas",
+  "sidebar.settings": "Ajustes",
+  "sidebar.roms": "ROMs",
+  "sidebar.scanning": "Analizando sistemas...",
+
+  // Header
+  "header.games": "juegos",
+
+  // GameListView
+  "gameList.selectSystem": "Selecciona un sistema",
+  "gameList.selectSystemDesc": "Elige un sistema de la barra lateral para explorar sus juegos.",
+  "gameList.generating": "Generando gamelist...",
+  "gameList.loading": "Cargando...",
+  "gameList.noGamelist": "No se encontró gamelist.xml",
+  "gameList.noGamelistDesc": "Se encontraron {count} archivos ROM en esta carpeta. ¿Generar un gamelist.xml a partir de los archivos existentes?",
+  "gameList.generateBtn": "Generar gamelist.xml",
+  "gameList.noGames": "No se encontraron juegos",
+  "gameList.noGamesDesc": "Este sistema no tiene juegos y no se detectaron archivos ROM.",
+
+  // GameTable columns
+  "table.name": "Nombre",
+  "table.genre": "Género",
+  "table.developer": "Desarrollador",
+  "table.publisher": "Distribuidor",
+  "table.players": "Jugadores",
+  "table.rating": "Puntuación",
+  "table.release": "Lanzamiento",
+
+  // GameDetailPanel
+  "detail.addGame": "Agregar Juego",
+  "detail.editGame": "Editar Juego",
+  "detail.scraping": "Scrapeando...",
+  "detail.scrape": "Scrapear",
+  "detail.delete": "Eliminar",
+  "detail.cancel": "Cancelar",
+  "detail.saving": "Guardando...",
+  "detail.save": "Guardar",
+  "detail.deleteTitle": "Eliminar Juego",
+  "detail.deleteConfirm": "¿Estás seguro de que quieres eliminar \"{name}\" de la gamelist?",
+  "detail.scrapeNotFound": "Juego no encontrado en el scraper.",
+  "detail.scrapeFailed": "Error al scrapear: {error}",
+  "detail.saveFailed": "Error al guardar: {error}",
+  "detail.deleteFailed": "Error al eliminar: {error}",
+  "detail.unsavedTitle": "Cambios sin guardar",
+  "detail.unsavedMessage": "Tienes cambios sin guardar. ¿Quieres guardarlos antes de cerrar?",
+  "detail.discard": "Descartar",
+
+  // GameForm
+  "form.romPath": "Ruta ROM",
+  "form.romPathPlaceholder": "./archivo-rom.zip",
+  "form.name": "Nombre",
+  "form.namePlaceholder": "Nombre del Juego",
+  "form.description": "Descripción",
+  "form.genre": "Género",
+  "form.genrePlaceholder": "Acción",
+  "form.developer": "Desarrollador",
+  "form.publisher": "Distribuidor",
+  "form.players": "Jugadores",
+  "form.playersPlaceholder": "1",
+  "form.rating": "Puntuación (0-1)",
+  "form.ratingPlaceholder": "0.8",
+  "form.releaseDate": "Fecha de Lanzamiento",
+  "form.releaseDatePlaceholder": "AAAA-MM-DD",
+  "form.hash": "Hash",
+  "form.sortname": "Nombre para ordenar",
+  "form.favorite": "Favorito",
+  "form.hidden": "Oculto",
+  "form.kidgame": "Apto para niños",
+  "form.region": "Región",
+  "form.lang": "Idioma",
+  "form.family": "Familia / Franquicia",
+  "form.arcadesystemname": "Sistema Arcade",
+  "form.emulator": "Emulador personalizado",
+  "form.core": "Core personalizado",
+  "form.gametime": "Tiempo de juego (segundos)",
+
+  // ImageManager
+  "images.title": "Imágenes",
+  "images.scanMedia": "Buscar en carpetas",
+  "images.scanMediaFound": "Encontrados {count} archivo(s) de media",
+  "images.scanMediaNone": "No se encontraron archivos de media",
+  "images.boxArt": "Carátula / Captura",
+  "images.thumbnail": "Miniatura",
+  "images.marquee": "Marquesina",
+  "images.noImage": "Sin imagen",
+  "images.change": "Cambiar",
+  "images.fullscreen": "Ver",
+  "images.deleteMedia": "Eliminar",
+  "images.deleteMediaConfirm": "¿Estás seguro de que quieres eliminar este archivo de media?",
+  "images.video": "Video",
+  "images.noVideo": "Sin video",
+
+  // Settings
+  "settings.title": "Ajustes",
+  "settings.romFolder": "Carpeta Raíz de ROMs",
+  "settings.noFolder": "Ninguna carpeta seleccionada",
+  "settings.browse": "Examinar",
+  "settings.romFolderHelp": "Selecciona la carpeta raíz que contiene las subcarpetas de sistemas de ROMs.",
+  "settings.ssCredentials": "Credenciales de ScreenScraper",
+  "settings.devId": "ID de Desarrollador",
+  "settings.devPassword": "Contraseña de Desarrollador",
+  "settings.username": "Usuario (opcional)",
+  "settings.password": "Contraseña (opcional)",
+  "settings.ssHelp": "Solicita credenciales de desarrollador en screenscraper.fr. Las credenciales de usuario aumentan tu cuota de API.",
+  "settings.tgdbTitle": "TheGamesDB (alternativa)",
+  "settings.tgdbApiKey": "Clave API",
+  "settings.tgdbHelp": "Clave API gratuita de thegamesdb.net (1500 peticiones/mes). Se usa cuando ScreenScraper no está configurado.",
+  "settings.mediaTitle": "Media a Descargar",
+  "settings.gridMedia": "Media en Vista Cuadrícula",
+  "settings.gridMediaHelp": "Elige qué tipo de media mostrar como imagen principal en la vista de cuadrícula. Si no está disponible, se usará image/thumbnail.",
+  "settings.aspectRatios": "Proporción de Cuadrícula",
+  "settings.arSystem": "Sistema",
+  "settings.arDefault": "Predeterminado",
+  "settings.arCustom": "Personalizado",
+  "settings.save": "Guardar Ajustes",
+  "settings.language": "Idioma",
+  "settings.exportSettings": "Exportar Ajustes",
+  "settings.importSettings": "Importar Ajustes",
+  "settings.exportSuccess": "Ajustes exportados correctamente",
+  "settings.importSuccess": "Ajustes importados correctamente. Revísalos y guarda.",
+  "settings.importError": "Error al importar ajustes. Archivo no válido.",
+
+  // View Toggle
+  "view.table": "Tabla",
+  "view.grid": "Cuadrícula",
+
+  // Search
+  "search.placeholder": "Buscar juegos...",
+
+  // Confirm Dialog
+  "confirm.cancel": "Cancelar",
+  "confirm.delete": "Eliminar",
+
+  // Scrape Progress
+  "scrapeProgress.complete": "Scraping Completado",
+  "scrapeProgress.inProgress": "Scrapeando Juegos...",
+  "scrapeProgress.found": "encontrados",
+  "scrapeProgress.notFound": "no encontrados",
+  "scrapeProgress.errors": "errores",
+  "scrapeProgress.close": "Cerrar",
+  "scrapeProgress.running": "En progreso...",
+
+  // Generate gamelist
+  "generate.failed": "Error al generar gamelist: {error}",
+
+  // Settings tabs
+  "settings.tabGeneral": "General",
+  "settings.tabMedia": "Rutas de Media",
+  "settings.tabSystems": "Sistemas",
+  "settings.systemsHelp": "Configura los ajustes de visualización para cada sistema detectado.",
+
+  // Media config
+  "media.title": "Rutas de Descarga de Media",
+  "media.description": "Configura dónde se guardan los archivos multimedia scrapeados y cómo se nombran.",
+  "media.preset": "Preajuste",
+  "media.presetEsde": "ES-DE (recomendado)",
+  "media.presetLegacy": "EmulationStation clásico",
+  "media.presetCustom": "Personalizado",
+  "media.mediaType": "Tipo de Media",
+  "media.subfolder": "Subcarpeta",
+  "media.suffix": "Sufijo del Nombre",
+  "media.gameField": "Campo Gamelist",
+  "media.suffixHelp": "Se añade al nombre de la ROM (vacío = sin sufijo). Ej. sufijo \"-image\" para \"Mario-image.png\"",
+
+  // Cleanup
+  "cleanup.button": "Limpiar Media",
+  "cleanup.title": "Archivos de Media No Utilizados",
+  "cleanup.scanning": "Analizando...",
+  "cleanup.noUnused": "No se encontraron archivos de media sin utilizar. Todo el media está referenciado en la gamelist.",
+  "cleanup.found": "{count} archivos no utilizados ({size})",
+  "cleanup.file": "Archivo",
+  "cleanup.size": "Tamaño",
+  "cleanup.selectAll": "Seleccionar todo",
+  "cleanup.deselectAll": "Deseleccionar todo",
+  "cleanup.delete": "Eliminar Seleccionados ({count})",
+  "cleanup.close": "Cerrar",
+  "cleanup.deleted": "{count} archivos eliminados",
+  "cleanup.deleteFailed": "Error al eliminar: {error}",
+
+  // Rename
+  "rename.button": "Renombrar",
+  "rename.title": "Renombrar ROMs",
+  "rename.scanning": "Analizando...",
+  "rename.noRenames": "Todos los archivos ROM ya coinciden con el título del juego.",
+  "rename.found": "{count} ROMs pueden ser renombradas",
+  "rename.currentName": "Nombre Actual",
+  "rename.newName": "Nuevo Nombre",
+  "rename.selectAll": "Seleccionar todo",
+  "rename.deselectAll": "Deseleccionar todo",
+  "rename.apply": "Renombrar Seleccionados ({count})",
+  "rename.close": "Cerrar",
+  "rename.done": "{count} ROMs renombradas",
+  "rename.failed": "Error al renombrar: {error}",
+
+  // Backups
+  "backup.button": "Backups",
+  "backup.title": "Backups de Gamelist",
+  "backup.noBackups": "No hay backups disponibles. Los backups se crean automáticamente antes de cada modificación de la gamelist.",
+  "backup.timestamp": "Fecha",
+  "backup.size": "Tamaño",
+  "backup.restore": "Restaurar",
+  "backup.delete": "Eliminar",
+  "backup.close": "Cerrar",
+  "backup.restored": "Backup restaurado correctamente. Recarga la lista de juegos para ver los cambios.",
+  "backup.restoreFailed": "Error al restaurar: {error}",
+  "backup.confirmRestore": "¿Restaurar este backup? Se creará un backup del gamelist actual primero.",
+
+  // Filters
+  "filter.genre": "Género",
+  "filter.developer": "Desarrollador",
+  "filter.favorites": "Favoritos",
+  "filter.hidden": "Ocultos",
+  "filter.kidgames": "Para niños",
+  "filter.clearAll": "Limpiar filtros",
+  "filter.all": "Todos",
+  "filter.folders": "Carpetas",
+
+  // Export
+  "export.button": "Exportar",
+  "export.title": "Exportar Gamelist",
+  "export.format": "Formato",
+  "export.outputDir": "Directorio de Salida",
+  "export.selectDir": "Seleccionar...",
+  "export.export": "Exportar",
+  "export.noDir": "Selecciona un directorio de salida",
+  "export.success": "Exportado: {file}",
+
+  // Extended media types
+  "images.fanart": "Fan Art",
+  "images.titleshot": "Pantalla de Título",
+  "images.boxback": "Reverso Caja",
+  "images.boxart": "Carátula",
+  "images.wheel": "Logo Wheel",
+  "images.mix": "Imagen Mix",
+  "images.cartridge": "Cartucho",
+  "images.manual": "Manual",
+  "images.extendedMedia": "Media Extendido",
+
+  // Duplicates
+  "duplicates.button": "Duplicados",
+  "duplicates.title": "Juegos Duplicados",
+  "duplicates.scanning": "Buscando duplicados...",
+  "duplicates.noDuplicates": "No se encontraron duplicados",
+  "duplicates.reason": "Razón",
+  "duplicates.removeSelected": "Eliminar Seleccionados ({count})",
+  "duplicates.group": "{count} juegos duplicados",
+
+  // Collections
+  "collections.button": "Colecciones",
+  "collections.title": "Colecciones y Playlists",
+  "collections.m3uTab": "Playlists M3U",
+  "collections.collectionTab": "Colección Personalizada",
+  "collections.detecting": "Detectando juegos multi-disco...",
+  "collections.noMultidisc": "No se encontraron juegos multi-disco",
+  "collections.generate": "Generar",
+  "collections.generated": "Generados: {files}",
+  "collections.collectionName": "Nombre de la Colección",
+  "collections.selectGames": "Selecciona juegos para la colección",
+};
+
+export default es;
