@@ -15,7 +15,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
 - **Cleanup** — find unused media files and duplicate games, then delete them
 - **Media normalizer** (Classic) — move legacy-named media (suffixes, `images/`…) to the unified naming
-- **Migration** — Classic ↔ ES-DE, copy or move; gamelists, media and collections (ROMs never touched)
+- **Migration** — Classic ↔ ES-DE, copy or move; gamelists, media and collections (ROMs never touched); systems found in the other structure are offered for migration when entering a profile and per system
 - **Per-game tools** — Rename, Normalize media and Clean up leftover media from the game detail panel
 - **Rename** — batch-rename ROM files from the gamelist title or with regex cleanup rules (ES-DE-Roms-Renamer style); updates media, gamelist, collections and `.m3u`
 - **Backups** — automatic gamelist.xml backup before every save; list/restore/delete
@@ -64,7 +64,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `parser/mod.rs` — XML parsing via `quick-xml`: `parse_gamelist()` and `serialize_gamelist()`
 - `commands/` — Tauri command handlers (most take `app: AppHandle`, injected by Tauri):
   - `settings.rs` — `get_settings` (migrates legacy settings), `save_settings`, `export_settings`, `import_settings`
-  - `profiles.rs` — `detect_esde_paths`
+  - `profiles.rs` — `detect_esde_paths`, `detect_pending_structure` (systems of the active profile whose data is only in the other structure + the source profile to migrate from: same-folder Classic, saved ES-DE profiles or `~/ES-DE`)
   - `systems.rs` — `scan_systems` (reads ROM root subdirs, checks for the gamelist where the layout keeps it)
   - `gamelist.rs` — `load_gamelist`, `save_gamelist`, `add_game`, `remove_game`, `generate_gamelist`, `add_folder`, `remove_folder`; `read_gamelist`/`write_gamelist`/`write_gamelist_with_original` helpers
   - `images.rs` — `set_game_media` (copies a picked file with unified naming), `scan_game_media`, `switch_image_type` (Classic only)
@@ -73,7 +73,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `find_game_leftover_media` (one game: files named after its ROM it doesn't use), `delete_files`
   - `duplicates.rs` — `find_duplicates`
   - `normalize.rs` — `plan_media_normalization` (optional `game_path`), `apply_media_normalization` (Classic only)
-  - `migrate.rs` — `plan_migration`, `run_migration` (same code path with `dry_run`; async + `spawn_blocking`; emits `migration-progress`)
+  - `migrate.rs` — `plan_migration`, `run_migration` (take the source `Profile` itself — it may be a detected, unsaved one — and an optional `systems` subset; same code path with `dry_run`; async + `spawn_blocking`; emits `migration-progress`)
   - `rename.rs` — `list_rename_candidates` (source `title` | `rules`, optional `game_path`, flags `duplicate`/`exists` conflicts), `check_rename_target` (a hand-typed name: `invalid`/`exists`), `rename_roms` (returns renamed/skipped; updates collections and `.m3u`)
   - `rules.rs` — `get_default_rename_rules`, `test_rename_rules`, `import_rename_rules`, `export_rename_rules`
   - `backup.rs` — `list_backups`, `restore_backup`, `delete_backup`
@@ -82,17 +82,18 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 
 ### React Frontend (`src/`)
 
-- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; switching profile resets selection and rescans
+- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; switching profile resets selection and rescans; every scan runs `checkPendingStructure` (`pendingStructure`, prompt once per profile activation unless `skip_structure_prompt`, `migrationPreset` for the pre-filled migration window)
 - `commands/index.ts` — Typed wrappers around `invoke()` for all Rust commands
 - `types/index.ts` — TypeScript interfaces mirroring Rust structs; `MEDIA_TYPE_FOLDERS` mirrors `media::kind_for_scraper_type`
 - `i18n/` — `en.ts` (keep it ASCII-only), `es.ts` translation dictionaries; `index.ts` exposes `useI18nStore` (locale) and `useTranslation()`
 - `App.tsx` — Root: renders the per-system tool toolbar and owns the open/close state of every tool modal and the settings view
-- `components/layout/` — `MainLayout`, `Sidebar` (profile selector, "Migrate structure…", system list), `Header` (search + filters toggle + view toggle)
+- `components/layout/` — `MainLayout`, `Sidebar` (profile selector, "Migrate structure…", system list with an amber dot on systems pending migration), `Header` (search + filters toggle + view toggle)
 - `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard`
 - `components/detail/` — `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab`, General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
-  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal`, `BackupsModal`, `CollectionsModal`, `ExportModal`; `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
+  - `StructurePromptModal` — "systems in the other structure, migrate?" prompt shown when entering a profile
+  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`; `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs
