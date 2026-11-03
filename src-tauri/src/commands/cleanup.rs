@@ -211,6 +211,137 @@ fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str) -
     Ok(unused)
 }
 
+/// Leftover media of ONE game (game detail panel): files named after its ROM that it
+/// doesn't use.
+/// - ES-DE: in each media folder, the files with the ROM name that lose against the one
+///   ES-DE shows (same extension preference as `MediaIndex`, e.g. the .jpg next to a .png).
+/// - Classic: files in the media folders named after the ROM (or with an old suffix such as
+///   "-image") that no media field of any game points to.
+#[tauri::command]
+pub fn find_game_leftover_media(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_path: String,
+) -> Result<Vec<UnusedMediaFile>, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let mut leftovers = match layout {
+        Layout::Classic => {
+            let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+            game_leftovers_classic(&system, &gamelist, &game_path)
+        }
+        Layout::Esde(_) => game_leftovers_esde(&layout, &system, &game_path),
+    };
+    leftovers.sort_by(|a, b| a.relative.cmp(&b.relative));
+    Ok(leftovers)
+}
+
+fn game_leftovers_esde(layout: &Layout, system: &SystemRef, game_path: &str) -> Vec<UnusedMediaFile> {
+    let stem = crate::layout::rom_media_stem(system, game_path);
+    let media_base = layout.media_type_dir(system, "");
+    let mut leftovers = Vec::new();
+
+    for kind in MEDIA_KINDS.iter().filter(|k| k.in_esde) {
+        // Files of this type named after the ROM, in ES-DE's preference order
+        let dir = layout.media_type_dir(system, kind.folder);
+        let found: Vec<PathBuf> = files_named(&dir.join(&stem))
+            .into_iter()
+            .filter_map(|file| {
+                let ext = media::extension_lower(&file)?;
+                let priority = kind.extensions().iter().position(|e| *e == ext)?;
+                Some((priority, file))
+            })
+            .collect::<std::collections::BTreeMap<_, _>>()
+            .into_values()
+            .collect();
+        // The first one is what ES-DE shows; the rest are leftovers
+        for file in found.into_iter().skip(1) {
+            leftovers.push(unused_file(&file, &media_base));
+        }
+    }
+    leftovers
+}
+
+fn game_leftovers_classic(system: &SystemRef, gamelist: &GameList, game_path: &str) -> Vec<UnusedMediaFile> {
+    let stem = crate::layout::rom_media_stem(system, game_path);
+    let Some(rom_name) = stem.file_name().and_then(|n| n.to_str()) else { return Vec::new() };
+    let referenced = collect_referenced_paths(gamelist, &system.rom_dir);
+
+    // Names that belong to OTHER ROMs, so "Mario" never takes "Mario-cart"'s files
+    let other_names: HashSet<String> = gamelist
+        .games
+        .iter()
+        .filter(|g| g.path != game_path)
+        .filter_map(|g| {
+            let other = crate::layout::rom_media_stem(system, &g.path);
+            other.file_name().map(|n| n.to_string_lossy().to_lowercase())
+        })
+        .collect();
+    let suffixes: HashSet<&str> = super::images::legacy_targets()
+        .into_iter()
+        .flat_map(|(_, _, suffixes)| suffixes)
+        .collect();
+    let belongs_to_rom = |file_stem: &str| -> bool {
+        if other_names.contains(&file_stem.to_lowercase()) {
+            return false;
+        }
+        file_stem == rom_name
+            || file_stem
+                .strip_prefix(rom_name)
+                .is_some_and(|rest| suffixes.contains(rest))
+    };
+
+    // Every folder where meROMS (or older tools) may have left media
+    let mut folders: Vec<&str> = MEDIA_DIRS.to_vec();
+    for (dirs, _, _) in super::images::legacy_targets() {
+        folders.extend(dirs);
+    }
+    folders.sort_unstable();
+    folders.dedup();
+
+    let sub = stem.parent().unwrap_or(Path::new(""));
+    let mut leftovers = Vec::new();
+    for folder in folders {
+        let dir = system.rom_dir.join(folder).join(sub);
+        let Ok(entries) = fs::read_dir(&dir) else { continue };
+        for path in entries.flatten().map(|e| e.path()).filter(|p| p.is_file()) {
+            let is_media = media::extension_lower(&path).is_some_and(|ext| MEDIA_EXTENSIONS.contains(&ext.as_str()));
+            let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+            if !is_media || !belongs_to_rom(file_stem) {
+                continue;
+            }
+            let canonical = fs::canonicalize(&path)
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_else(|_| path.to_string_lossy().to_string());
+            if !referenced.contains(&canonical) {
+                leftovers.push(unused_file(&path, &system.rom_dir));
+            }
+        }
+    }
+    leftovers
+}
+
+/// Files in the same folder as `stem_path` whose name (without extension) is its file name.
+fn files_named(stem_path: &Path) -> Vec<PathBuf> {
+    let (Some(dir), Some(name)) = (stem_path.parent(), stem_path.file_name()) else { return Vec::new() };
+    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
+    entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_file() && p.file_stem() == Some(name))
+        .collect()
+}
+
+fn unused_file(path: &Path, base: &Path) -> UnusedMediaFile {
+    UnusedMediaFile {
+        path: path.to_string_lossy().to_string(),
+        relative: path
+            .strip_prefix(base)
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|_| path.to_string_lossy().to_string()),
+        size: fs::metadata(path).map(|m| m.len()).unwrap_or(0),
+    }
+}
+
 /// Delete a list of files by their absolute paths.
 #[tauri::command]
 pub fn delete_files(paths: Vec<String>) -> Result<usize, String> {
@@ -232,6 +363,56 @@ mod tests {
     fn touch(path: &Path) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, b"x").unwrap();
+    }
+
+    #[test]
+    fn esde_game_leftovers_are_the_formats_es_de_does_not_show() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = Layout::Esde(EsdePaths {
+            home: tmp.path().join("ES-DE"),
+            media_root: tmp.path().join("ES-DE/downloaded_media"),
+        });
+        let system = SystemRef::from_rom_dir(tmp.path().join("ROMs/snes"));
+        touch(&system.rom_dir.join("Juego.sfc"));
+        let media = tmp.path().join("ES-DE/downloaded_media/snes");
+        touch(&media.join("covers/Juego.png"));
+        touch(&media.join("covers/Juego.jpg"));
+        touch(&media.join("fanart/Juego.jpg"));
+        touch(&media.join("covers/Otro.jpg"));
+
+        let leftovers = game_leftovers_esde(&layout, &system, "./Juego.sfc");
+        let names: Vec<_> = leftovers.iter().map(|u| u.relative.clone()).collect();
+        assert_eq!(names, vec!["covers/Juego.jpg"]);
+    }
+
+    #[test]
+    fn classic_game_leftovers_skip_used_files_and_other_roms() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        touch(&system.rom_dir.join("covers/Juego.png"));
+        touch(&system.rom_dir.join("covers/Juego.jpg"));
+        touch(&system.rom_dir.join("images/Juego-image.png"));
+        touch(&system.rom_dir.join("images/Juego-cart.png"));
+        touch(&system.rom_dir.join("images/Juego-thumb.png"));
+        touch(&system.rom_dir.join("covers/Otro.png"));
+        let gamelist = GameList {
+            games: vec![
+                crate::models::Game {
+                    path: "./Juego.sfc".into(),
+                    image: Some("./covers/Juego.png".into()),
+                    thumbnail: Some("./images/Juego-thumb.png".into()),
+                    ..Default::default()
+                },
+                // Another ROM whose name looks like "Juego" + a suffix
+                crate::models::Game { path: "./Juego-cart.sfc".into(), ..Default::default() },
+            ],
+            ..Default::default()
+        };
+
+        let leftovers = game_leftovers_classic(&system, &gamelist, "./Juego.sfc");
+        let mut names: Vec<_> = leftovers.iter().map(|u| u.relative.clone()).collect();
+        names.sort();
+        assert_eq!(names, vec!["covers/Juego.jpg", "images/Juego-image.png"]);
     }
 
     #[test]

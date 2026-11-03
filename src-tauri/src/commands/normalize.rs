@@ -47,13 +47,21 @@ pub struct NormalizeResult {
     pub skipped: Vec<String>,
 }
 
+/// Con `game_path` solo se planifica ese juego (desde el detalle del juego).
 #[tauri::command]
-pub fn plan_media_normalization(app: tauri::AppHandle, system_path: String) -> Result<Vec<NormalizeItem>, String> {
+pub fn plan_media_normalization(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_path: Option<String>,
+) -> Result<Vec<NormalizeItem>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
     ensure_classic(&layout)?;
-    let gamelist = super::gamelist::read_gamelist(&layout, &system)?;
-    Ok(plan(&layout, &system, &settings, &gamelist.games))
+    let mut games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    if let Some(only) = &game_path {
+        games.retain(|g| &g.path == only);
+    }
+    Ok(plan(&layout, &system, &settings, &games))
 }
 
 #[tauri::command]

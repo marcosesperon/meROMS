@@ -59,12 +59,15 @@ fn sanitize_filename(name: &str) -> String {
         .to_string()
 }
 
-/// List all ROMs with a proposed new name, from the gamelist title or the cleanup rules.
+/// List ROMs with a proposed new name, from the gamelist title or the cleanup rules.
+/// With `game_path` only that game is proposed (game detail panel): the other ROMs keep
+/// their names, so only files already on disk can clash with it.
 #[tauri::command]
 pub fn list_rename_candidates(
     app: tauri::AppHandle,
     system_path: String,
     source: Option<RenameSource>,
+    game_path: Option<String>,
 ) -> Result<Vec<RenameEntry>, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
@@ -75,6 +78,7 @@ pub fn list_rename_candidates(
     let mut entries: Vec<RenameEntry> = gamelist
         .games
         .iter()
+        .filter(|game| game_path.as_ref().is_none_or(|only| &game.path == only))
         .map(|game| propose(game, source, &rules))
         .collect();
     mark_conflicts(&mut entries, &system.rom_dir);
@@ -143,6 +147,36 @@ fn mark_conflicts(entries: &mut [RenameEntry], rom_dir: &Path) {
             e.conflict = Some("exists".into());
         }
     }
+}
+
+/// Check a name typed by hand for one ROM (game detail panel).
+/// Returns None if it can be used, or why not: "invalid" (empty or with characters not
+/// allowed in file names) or "exists" (another file already has that name).
+#[tauri::command]
+pub fn check_rename_target(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_path: String,
+    new_name: String,
+) -> Result<Option<String>, String> {
+    let (_, system) = super::system_context(&app, &system_path)?;
+    Ok(target_conflict(&system.rom_dir, &game_path, &new_name))
+}
+
+fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<String> {
+    if new_name.is_empty() || sanitize_filename(new_name) != new_name {
+        return Some("invalid".into());
+    }
+    let mut entry = [RenameEntry {
+        current_path: game_path.to_string(),
+        current_name: String::new(),
+        game_title: None,
+        proposed_name: new_name.to_string(),
+        can_rename: true,
+        conflict: None,
+    }];
+    mark_conflicts(&mut entry, rom_dir);
+    entry[0].conflict.take()
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -390,6 +424,19 @@ mod tests {
     fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
         propose(&game, source, &CompiledRules::new(&default_rules()))
+    }
+
+    #[test]
+    fn typed_name_is_checked_against_disk_and_invalid_characters() {
+        let tmp = tempfile::tempdir().unwrap();
+        fs::write(tmp.path().join("Otro.sfc"), b"x").unwrap();
+        fs::write(tmp.path().join("Juego.sfc"), b"x").unwrap();
+        assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "Nuevo"), None);
+        assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "Otro").as_deref(), Some("exists"));
+        assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "Mal: nombre").as_deref(), Some("invalid"));
+        assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "").as_deref(), Some("invalid"));
+        // Keeping the same name is not a clash with itself
+        assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "Juego"), None);
     }
 
     #[test]
