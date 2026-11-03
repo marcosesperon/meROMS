@@ -285,6 +285,21 @@ const es: Record<TranslationKeys, string> = {
   "profiles.mediaDirHelp": "Déjala vacía para usar la de ES-DE por defecto (downloaded_media dentro de la carpeta de ES-DE).",
   "profiles.settingsNotFound": "No se encuentra settings/es_settings.xml: se usan las carpetas por defecto de ES-DE. Revisa la carpeta de ROMs.",
   "profiles.legacyWarning": "ES-DE tiene activado LegacyGamelistFileLocation: lee las gamelists de las carpetas de ROMs y no de su carpeta gamelists/. Quizá esta biblioteca encaje mejor con un perfil clásico.",
+  // Normalizador de medios
+  "normalize.button": "Normalizar medios",
+  "normalize.title": "Normalizar nombres de medios",
+  "normalize.description": "Mueve los medios de este sistema a <carpeta>/<nombre de la ROM>.<ext> (nombres de carpeta de ES-DE) y actualiza la gamelist, para que después la biblioteca se pueda migrar simplemente moviendo carpetas.",
+  "normalize.scanning": "Buscando medios...",
+  "normalize.nothing": "Todos los medios siguen ya el nombrado unificado.",
+  "normalize.found": "{count} cambios propuestos",
+  "normalize.conflicts": "{count} conflictos (el destino ya está ocupado, no se tocan)",
+  "normalize.status_move": "mover",
+  "normalize.status_link": "actualizar campo",
+  "normalize.status_conflict": "conflicto",
+  "normalize.apply": "Aplicar {count} cambios",
+  "normalize.done": "Hecho: {moved} ficheros movidos, {linked} campos actualizados.",
+  "normalize.skipped": "{count} saltados:",
+  "normalize.failed": "Ha fallado la normalización: {error}",
 };
 
 export default es;

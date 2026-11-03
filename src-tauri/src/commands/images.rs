@@ -121,7 +121,7 @@ pub fn scan_game_media(
 
 /// Classic only: media named the old ways (Skraper/EmulationStation suffixes, "images/" folder…).
 /// Uses the legacy subfolder/suffix hints still stored in settings, then common patterns.
-fn scan_legacy_media(
+pub fn scan_legacy_media(
     settings: &crate::models::AppSettings,
     system: &SystemRef,
     game_path: &str,

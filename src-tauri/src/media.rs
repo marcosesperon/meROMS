@@ -271,6 +271,50 @@ pub fn rename_rom_media(
     moved
 }
 
+/// Mueve un fichero creando las carpetas que falten. Si es a otro disco (rename falla),
+/// copia y borra el original. Nunca pisa un destino que ya exista.
+pub fn move_file(from: &Path, to: &Path) -> Result<(), String> {
+    if to.exists() {
+        return Err(format!("Destination already exists: {}", to.display()));
+    }
+    if let Some(dir) = to.parent() {
+        fs::create_dir_all(dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
+    }
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    fs::copy(from, to).map_err(|e| format!("Failed to copy {}: {}", from.display(), e))?;
+    fs::remove_file(from).map_err(|e| format!("Failed to remove {}: {}", from.display(), e))
+}
+
+/// Copia un fichero creando las carpetas que falten. Nunca pisa un destino que ya exista.
+pub fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
+    if to.exists() {
+        return Err(format!("Destination already exists: {}", to.display()));
+    }
+    if let Some(dir) = to.parent() {
+        fs::create_dir_all(dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
+    }
+    fs::copy(from, to)
+        .map(|_| ())
+        .map_err(|e| format!("Failed to copy {}: {}", from.display(), e))
+}
+
+/// Borra las carpetas que se han quedado vacías, subiendo desde `dir` hasta `stop` (sin incluirlo).
+pub fn remove_empty_dirs_up_to(dir: &Path, stop: &Path) {
+    let mut current = dir.to_path_buf();
+    while current.starts_with(stop) && current != stop {
+        // remove_dir solo funciona si está vacía: justo lo que queremos
+        if fs::remove_dir(&current).is_err() {
+            break;
+        }
+        match current.parent() {
+            Some(parent) => current = parent.to_path_buf(),
+            None => break,
+        }
+    }
+}
+
 pub fn extension_lower(path: &Path) -> Option<String> {
     path.extension().and_then(|e| e.to_str()).map(|e| e.to_lowercase())
 }

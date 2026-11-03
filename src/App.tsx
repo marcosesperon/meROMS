@@ -11,6 +11,7 @@ import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
+import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
 import { scrapeSystem } from "./commands";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
@@ -36,6 +37,7 @@ function App() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
+  const [showNormalizeModal, setShowNormalizeModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const games = useAppStore((s) => s.games);
   const showDetailPanel = selectedGame !== null || showNewGame;
@@ -71,7 +73,8 @@ function App() {
     !!(settings.ss_devid && settings.ss_devpassword) || !!settings.tgdb_apikey;
 
   // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder)
-  const hasUsableProfile = isProfileComplete(getActiveProfile(settings));
+  const activeProfile = getActiveProfile(settings);
+  const hasUsableProfile = isProfileComplete(activeProfile);
   useEffect(() => {
     if (!hasUsableProfile) {
       setShowSettings(true);
@@ -123,6 +126,15 @@ function App() {
               >
                 {t("rename.button")}
               </button>
+              {activeProfile?.kind === "classic" && (
+                <button
+                  onClick={() => setShowNormalizeModal(true)}
+                  className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+                  title={t("normalize.description")}
+                >
+                  {t("normalize.button")}
+                </button>
+              )}
               <button
                 onClick={() => setShowCleanupModal(true)}
                 className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
@@ -203,6 +215,12 @@ function App() {
         systemPath={selectedSystem?.path || ""}
         games={games}
         onClose={() => setShowCollectionsModal(false)}
+      />
+
+      <NormalizeMediaModal
+        open={showNormalizeModal}
+        systemPath={selectedSystem?.path || ""}
+        onClose={() => setShowNormalizeModal(false)}
       />
 
       <SettingsView

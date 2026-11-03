@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, NormalizeItem, NormalizeResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -176,6 +176,15 @@ export async function generateM3uPlaylists(systemPath: string, groups: DiscGroup
 /** Writes the collection where the active profile keeps them (system folder or ES-DE collections/). */
 export async function generateCollection(systemPath: string, name: string, gamePaths: string[]): Promise<string> {
   return invoke("generate_collection", { systemPath, name, gamePaths });
+}
+
+// Media normalizer (Classic profiles)
+export async function planMediaNormalization(systemPath: string): Promise<NormalizeItem[]> {
+  return invoke("plan_media_normalization", { systemPath });
+}
+
+export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[]): Promise<NormalizeResult> {
+  return invoke("apply_media_normalization", { systemPath, items });
 }
 
 // Folders

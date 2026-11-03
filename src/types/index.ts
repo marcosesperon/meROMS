@@ -190,6 +190,25 @@ export interface RenameRequest {
   new_name: string;
 }
 
+/** One proposed change of the media normalizer (Classic profiles) */
+export interface NormalizeItem {
+  game_path: string;
+  game_name: string;
+  field: string;
+  from: string;
+  to: string;
+  from_relative: string;
+  to_relative: string;
+  /** move = file is moved/renamed · link = only the field changes · conflict = destination taken */
+  status: "move" | "link" | "conflict";
+}
+
+export interface NormalizeResult {
+  moved: number;
+  linked: number;
+  skipped: string[];
+}
+
 export type ViewMode = "table" | "grid";
 export type CurrentView = "browser" | "settings";
 

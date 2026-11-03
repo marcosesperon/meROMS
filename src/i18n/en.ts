@@ -283,6 +283,21 @@ const en = {
   "profiles.mediaDirHelp": "Leave empty to use ES-DE's default (downloaded_media inside the ES-DE folder).",
   "profiles.settingsNotFound": "settings/es_settings.xml not found: ES-DE default folders are used. Check the ROM folder.",
   "profiles.legacyWarning": "ES-DE has LegacyGamelistFileLocation enabled: it reads gamelists from the ROM folders, not from its gamelists/ folder. A Classic profile may suit this library better.",
+  // Media normalizer
+  "normalize.button": "Normalize Media",
+  "normalize.title": "Normalize media names",
+  "normalize.description": "Moves this system's media to <folder>/<ROM name>.<ext> (ES-DE folder names) and updates the gamelist, so the library can later be migrated just by moving folders.",
+  "normalize.scanning": "Looking for media...",
+  "normalize.nothing": "All media already follow the unified naming.",
+  "normalize.found": "{count} changes proposed",
+  "normalize.conflicts": "{count} conflicts (destination already taken, not changed)",
+  "normalize.status_move": "move",
+  "normalize.status_link": "update field",
+  "normalize.status_conflict": "conflict",
+  "normalize.apply": "Apply {count} changes",
+  "normalize.done": "Done: {moved} files moved, {linked} fields updated.",
+  "normalize.skipped": "{count} skipped:",
+  "normalize.failed": "Normalization failed: {error}",
 } as const;
 
 export default en;

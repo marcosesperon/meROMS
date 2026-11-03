@@ -6,6 +6,7 @@ pub mod export;
 pub mod gamelist;
 pub mod rename;
 pub mod images;
+pub mod normalize;
 pub mod profiles;
 pub mod scraper;
 pub mod scraper_tgdb;
