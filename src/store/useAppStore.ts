@@ -10,12 +10,14 @@ import type {
 } from "../types";
 import * as commands from "../commands";
 import { useI18nStore } from "../i18n";
+import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 
 interface AppState {
   // Settings
   settings: AppSettings;
   loadSettings: () => Promise<void>;
   updateSettings: (settings: AppSettings) => Promise<void>;
+  setActiveProfile: (profileId: string) => Promise<void>;
 
   // Systems
   systems: SystemInfo[];
@@ -74,7 +76,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (settings.language === "es" || settings.language === "en") {
         useI18nStore.getState().setLocale(settings.language);
       }
-      if (settings.rom_root_path) {
+      if (isProfileComplete(getActiveProfile(settings))) {
         get().loadSystems();
       }
     } catch (e) {
@@ -82,22 +84,44 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   updateSettings: async (settings: AppSettings) => {
+    const previousKey = profileLocationKey(getActiveProfile(get().settings));
     await commands.saveSettings(settings);
     set({ settings });
-    if (settings.rom_root_path) {
+
+    const active = getActiveProfile(settings);
+    // Another library (or the same one with other folders/structure): start from scratch
+    if (profileLocationKey(active) !== previousKey) {
+      set({
+        systems: [],
+        selectedSystem: null,
+        selectedGame: null,
+        games: [],
+        folders: [],
+        provider: undefined,
+        searchQuery: "",
+        filters: {},
+        activeFolderPath: null,
+      });
+    }
+    if (isProfileComplete(active)) {
       get().loadSystems();
     }
+  },
+  setActiveProfile: async (profileId: string) => {
+    const { settings, updateSettings } = get();
+    if (settings.active_profile_id === profileId) return;
+    await updateSettings({ ...settings, active_profile_id: profileId });
   },
 
   // Systems
   systems: [],
   selectedSystem: null,
   loadSystems: async () => {
-    const { settings } = get();
-    if (!settings.rom_root_path) return;
+    const profile = getActiveProfile(get().settings);
+    if (!profile || !isProfileComplete(profile)) return;
     try {
       set({ loading: true, scanProgress: null });
-      const systems = await commands.scanSystems(settings.rom_root_path);
+      const systems = await commands.scanSystems(profile.rom_root_path);
       set({ systems, loading: false, scanProgress: null });
     } catch (e) {
       console.error("Failed to scan systems:", e);

@@ -160,17 +160,12 @@ const es: Record<TranslationKeys, string> = {
   "settings.systemsHelp": "Configura los ajustes de visualización para cada sistema detectado.",
 
   // Media config
-  "media.title": "Rutas de Descarga de Media",
-  "media.description": "Configura dónde se guardan los archivos multimedia scrapeados y cómo se nombran.",
-  "media.preset": "Preajuste",
-  "media.presetEsde": "ES-DE (recomendado)",
-  "media.presetLegacy": "EmulationStation clásico",
-  "media.presetCustom": "Personalizado",
+  "media.title": "Archivos de Media",
+  "media.description": "En todos los perfiles los medios se guardan como <carpeta>/<nombre de la ROM>.<ext>, con los nombres de carpeta de ES-DE. Así es fácil migrar una biblioteca de una estructura a otra.",
   "media.mediaType": "Tipo de Media",
-  "media.subfolder": "Subcarpeta",
-  "media.suffix": "Sufijo del Nombre",
+  "media.subfolder": "Carpeta",
   "media.gameField": "Campo Gamelist",
-  "media.suffixHelp": "Se añade al nombre de la ROM (vacío = sin sufijo). Ej. sufijo \"-image\" para \"Mario-image.png\"",
+  "media.fieldHelp": "El campo de la gamelist solo se usa en perfiles clásicos (ES-DE busca los medios por el nombre de la ROM y no guarda rutas).",
 
   // Cleanup
   "cleanup.button": "Limpiar Media",
@@ -266,6 +261,30 @@ const es: Record<TranslationKeys, string> = {
   "collections.generated": "Generados: {files}",
   "collections.collectionName": "Nombre de la Colección",
   "collections.selectGames": "Selecciona juegos para la colección",
+  // Perfiles
+  "settings.tabProfiles": "Perfiles",
+  "sidebar.profile": "Perfil",
+  "profiles.description": "Cada perfil es una biblioteca de ROMs y la estructura de carpetas que sigue.",
+  "profiles.none": "Todavía no hay perfiles.",
+  "profiles.add": "+ Nuevo perfil",
+  "profiles.defaultName": "Nuevo perfil",
+  "profiles.active": "Activo",
+  "profiles.incomplete": "incompleto",
+  "profiles.activate": "Usar este perfil",
+  "profiles.delete": "Borrar perfil",
+  "profiles.deleteConfirm": "¿Borrar el perfil «{name}»? No se borra ningún fichero.",
+  "profiles.name": "Nombre",
+  "profiles.kind": "Estructura",
+  "profiles.kindClassic": "Clásica",
+  "profiles.kindEsde": "ES-DE",
+  "profiles.kindClassicHelp": "EmulationStation clásico (RetroPie, Batocera…): gamelist.xml y medios dentro de cada carpeta de sistema, con las rutas de los medios escritas en la gamelist.",
+  "profiles.kindEsdeHelp": "ES-DE: gamelists, medios y colecciones en las carpetas propias de ES-DE. Los medios se encuentran por el nombre de la ROM.",
+  "profiles.esdeHome": "Carpeta de ES-DE",
+  "profiles.esdeHomeHelp": "Carpeta de datos de ES-DE (la que tiene settings/, gamelists/ y downloaded_media/). Las carpetas de ROMs y medios se leen de su es_settings.xml.",
+  "profiles.mediaDir": "Carpeta de medios",
+  "profiles.mediaDirHelp": "Déjala vacía para usar la de ES-DE por defecto (downloaded_media dentro de la carpeta de ES-DE).",
+  "profiles.settingsNotFound": "No se encuentra settings/es_settings.xml: se usan las carpetas por defecto de ES-DE. Revisa la carpeta de ROMs.",
+  "profiles.legacyWarning": "ES-DE tiene activado LegacyGamelistFileLocation: lee las gamelists de las carpetas de ROMs y no de su carpeta gamelists/. Quizá esta biblioteca encaje mejor con un perfil clásico.",
 };
 
 export default es;

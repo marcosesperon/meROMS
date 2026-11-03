@@ -4,7 +4,7 @@ mod media;
 mod models;
 mod parser;
 
-use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, rename, scraper, settings, systems};
+use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, profiles, rename, scraper, settings, systems};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -54,6 +54,7 @@ pub fn run() {
             settings::save_settings,
             settings::export_settings,
             settings::import_settings,
+            profiles::detect_esde_paths,
             systems::scan_systems,
             gamelist::load_gamelist,
             gamelist::save_gamelist,

@@ -64,6 +64,8 @@ impl AppSettings {
                 let profile = Profile::default_classic(root, self.language.as_deref());
                 self.active_profile_id = Some(profile.id.clone());
                 self.profiles.push(profile);
+                // Migrated once: otherwise deleting every profile would bring this one back
+                self.rom_root_path = None;
                 changed = true;
             }
         }
@@ -151,6 +153,7 @@ mod tests {
         assert_eq!(active.kind, StructureKind::Classic);
         assert_eq!(active.rom_root_path, "/ficticio/ROMs");
         assert_eq!(active.name, "Clásico");
+        assert!(settings.rom_root_path.is_none());
 
         // Running it again changes nothing
         assert!(!settings.migrate_legacy());

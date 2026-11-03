@@ -2,6 +2,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo } from "../common/SystemLogo";
 import { SettingsIcon } from "../common/Icons";
+import { getActiveProfile } from "../../utils/profiles";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -10,7 +11,12 @@ export function Sidebar() {
   const setCurrentView = useAppStore((s) => s.setCurrentView);
   const loading = useAppStore((s) => s.loading);
   const scanProgress = useAppStore((s) => s.scanProgress);
+  const settings = useAppStore((s) => s.settings);
+  const setActiveProfile = useAppStore((s) => s.setActiveProfile);
   const { t } = useTranslation();
+
+  const profiles = settings.profiles ?? [];
+  const activeProfile = getActiveProfile(settings);
 
   const isScanning = loading && scanProgress !== null;
 
@@ -19,6 +25,23 @@ export function Sidebar() {
       <div className="p-4 border-b border-zinc-700">
         <h1 className="text-lg font-bold text-zinc-100">{t("sidebar.title")}</h1>
         <p className="text-xs text-zinc-500">{t("sidebar.subtitle")}</p>
+        {profiles.length > 0 && (
+          <label className="block mt-3">
+            <span className="text-[10px] uppercase tracking-wide text-zinc-500">{t("sidebar.profile")}</span>
+            <select
+              value={activeProfile?.id ?? ""}
+              onChange={(e) => setActiveProfile(e.target.value)}
+              disabled={loading}
+              className="mt-1 w-full bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+            >
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.kind === "esde" ? "ES-DE" : t("profiles.kindClassic")})
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">

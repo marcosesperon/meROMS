@@ -92,8 +92,34 @@ export interface SystemInfo {
   rom_count: number;
 }
 
+/** How a library is organised on disk */
+export type StructureKind = "classic" | "esde";
+
+/** A saved library: where the ROMs are and which structure it follows */
+export interface Profile {
+  id: string;
+  name: string;
+  kind: StructureKind;
+  rom_root_path: string;
+  /** ES-DE only: ES-DE data folder (has settings/, gamelists/, collections/…) */
+  esde_home_path?: string;
+  /** ES-DE only: media folder when it isn't <ES-DE>/downloaded_media */
+  media_dir?: string;
+}
+
+/** Paths read from an ES-DE folder's es_settings.xml */
+export interface EsdeDetectedPaths {
+  rom_root_path: string;
+  media_dir: string;
+  settings_found: boolean;
+  legacy_gamelist_location: boolean;
+}
+
 export interface AppSettings {
+  /** Legacy single ROM root (before profiles). Migrated by the backend; don't use. */
   rom_root_path?: string;
+  profiles?: Profile[];
+  active_profile_id?: string;
   ss_devid?: string;
   ss_devpassword?: string;
   ss_user?: string;
@@ -184,46 +210,59 @@ export const AVAILABLE_MEDIA_TYPES = [
 
 export const DEFAULT_MEDIA_TYPES = ["box-2D", "ss", "marquee"];
 
-/** Configuration for how each media type is saved locally */
+/** Gamelist fields that can hold a media path */
+export type MediaGameField =
+  | "image" | "thumbnail" | "marquee" | "video" | "fanart" | "titleshot"
+  | "boxback" | "boxart" | "wheel" | "mix" | "cartridge" | "manual";
+
+export const MEDIA_GAME_FIELDS: MediaGameField[] = [
+  "image", "thumbnail", "marquee", "video", "fanart", "titleshot",
+  "boxback", "boxart", "wheel", "mix", "cartridge", "manual",
+];
+
+/**
+ * Folder each scraper media type is saved to (ES-DE folder names, same in every profile).
+ * Mirrors media::kind_for_scraper_type in Rust.
+ */
+export const MEDIA_TYPE_FOLDERS: Record<string, string> = {
+  "box-2D": "covers",
+  "box-3D": "3dboxes",
+  ss: "screenshots",
+  sstitle: "titlescreens",
+  marquee: "marquees",
+  wheel: "marquees",
+  "wheel-hd": "marquees",
+  fanart: "fanart",
+  screenmarquee: "marquees",
+  mixrbv1: "miximages",
+  mixrbv2: "miximages",
+  video: "videos",
+};
+
+/** Per scraper media type: which gamelist field it fills (Classic structure only) */
 export interface MediaPathConfig {
   /** Scraper media type ID (e.g. "box-2D", "ss") */
   mediaType: string;
-  /** Subfolder inside the system folder (e.g. "covers", "screenshots") */
-  subfolder: string;
-  /** Suffix appended to the ROM stem before extension (empty = no suffix) */
-  suffix: string;
+  /** Legacy: folder used before the unified naming. Only a hint for the media normalizer. */
+  subfolder?: string;
+  /** Legacy: suffix used before the unified naming. Only a hint for the media normalizer. */
+  suffix?: string;
   /** Which gamelist.xml field this maps to */
-  gameField: "image" | "thumbnail" | "marquee" | "video";
+  gameField: MediaGameField;
 }
 
-/** Default ES-DE standard media path configuration */
+/** Default field for each media type (meROMS' historical choice) */
 export const DEFAULT_MEDIA_PATHS: MediaPathConfig[] = [
-  { mediaType: "box-2D", subfolder: "covers", suffix: "", gameField: "image" },
-  { mediaType: "box-3D", subfolder: "3dboxes", suffix: "", gameField: "image" },
-  { mediaType: "ss", subfolder: "screenshots", suffix: "", gameField: "thumbnail" },
-  { mediaType: "sstitle", subfolder: "titlescreens", suffix: "", gameField: "thumbnail" },
-  { mediaType: "marquee", subfolder: "marquees", suffix: "", gameField: "marquee" },
-  { mediaType: "wheel", subfolder: "marquees", suffix: "", gameField: "marquee" },
-  { mediaType: "wheel-hd", subfolder: "marquees", suffix: "", gameField: "marquee" },
-  { mediaType: "fanart", subfolder: "fanart", suffix: "", gameField: "image" },
-  { mediaType: "screenmarquee", subfolder: "marquees", suffix: "", gameField: "marquee" },
-  { mediaType: "mixrbv1", subfolder: "miximages", suffix: "", gameField: "image" },
-  { mediaType: "mixrbv2", subfolder: "miximages", suffix: "", gameField: "image" },
-  { mediaType: "video", subfolder: "videos", suffix: "", gameField: "video" },
-];
-
-/** Legacy EmulationStation media path configuration (uses suffixes) */
-export const LEGACY_MEDIA_PATHS: MediaPathConfig[] = [
-  { mediaType: "box-2D", subfolder: "images", suffix: "-image", gameField: "image" },
-  { mediaType: "box-3D", subfolder: "images", suffix: "-box3d", gameField: "image" },
-  { mediaType: "ss", subfolder: "images", suffix: "-screenshot", gameField: "thumbnail" },
-  { mediaType: "sstitle", subfolder: "images", suffix: "-titlescreen", gameField: "thumbnail" },
-  { mediaType: "marquee", subfolder: "images", suffix: "-marquee", gameField: "marquee" },
-  { mediaType: "wheel", subfolder: "images", suffix: "-wheel", gameField: "marquee" },
-  { mediaType: "wheel-hd", subfolder: "images", suffix: "-wheel", gameField: "marquee" },
-  { mediaType: "fanart", subfolder: "images", suffix: "-fanart", gameField: "image" },
-  { mediaType: "screenmarquee", subfolder: "images", suffix: "-marquee", gameField: "marquee" },
-  { mediaType: "mixrbv1", subfolder: "images", suffix: "-mix", gameField: "image" },
-  { mediaType: "mixrbv2", subfolder: "images", suffix: "-mix", gameField: "image" },
-  { mediaType: "video", subfolder: "videos", suffix: "", gameField: "video" },
+  { mediaType: "box-2D", gameField: "image" },
+  { mediaType: "box-3D", gameField: "image" },
+  { mediaType: "ss", gameField: "thumbnail" },
+  { mediaType: "sstitle", gameField: "thumbnail" },
+  { mediaType: "marquee", gameField: "marquee" },
+  { mediaType: "wheel", gameField: "marquee" },
+  { mediaType: "wheel-hd", gameField: "marquee" },
+  { mediaType: "fanart", gameField: "image" },
+  { mediaType: "screenmarquee", gameField: "marquee" },
+  { mediaType: "mixrbv1", gameField: "image" },
+  { mediaType: "mixrbv2", gameField: "image" },
+  { mediaType: "video", gameField: "video" },
 ];

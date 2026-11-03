@@ -158,17 +158,12 @@ const en = {
   "settings.systemsHelp": "Configure display settings for each detected system.",
 
   // Media config
-  "media.title": "Media Download Paths",
-  "media.description": "Configure where scraped media files are saved and how they are named.",
-  "media.preset": "Preset",
-  "media.presetEsde": "ES-DE (recommended)",
-  "media.presetLegacy": "Legacy EmulationStation",
-  "media.presetCustom": "Custom",
+  "media.title": "Media Files",
+  "media.description": "Media are always saved as <folder>/<ROM name>.<ext>, using ES-DE folder names, in every profile. This keeps libraries easy to migrate between structures.",
   "media.mediaType": "Media Type",
-  "media.subfolder": "Subfolder",
-  "media.suffix": "Filename Suffix",
+  "media.subfolder": "Folder",
   "media.gameField": "Gamelist Field",
-  "media.suffixHelp": "Appended to ROM name (empty = no suffix). E.g. suffix \"-image\" for \"Mario-image.png\"",
+  "media.fieldHelp": "The gamelist field is only used by Classic profiles (ES-DE finds media by ROM name and does not store paths).",
 
   // Cleanup
   "cleanup.button": "Clean Media",
@@ -264,6 +259,30 @@ const en = {
   "collections.generated": "Generated: {files}",
   "collections.collectionName": "Collection Name",
   "collections.selectGames": "Select games for the collection",
+  // Profiles
+  "settings.tabProfiles": "Profiles",
+  "sidebar.profile": "Profile",
+  "profiles.description": "Each profile is a ROM library and the folder structure it follows.",
+  "profiles.none": "No profiles yet.",
+  "profiles.add": "+ New profile",
+  "profiles.defaultName": "New profile",
+  "profiles.active": "Active",
+  "profiles.incomplete": "incomplete",
+  "profiles.activate": "Use this profile",
+  "profiles.delete": "Delete profile",
+  "profiles.deleteConfirm": "Delete profile \"{name}\"? No files are deleted.",
+  "profiles.name": "Name",
+  "profiles.kind": "Structure",
+  "profiles.kindClassic": "Classic",
+  "profiles.kindEsde": "ES-DE",
+  "profiles.kindClassicHelp": "EmulationStation classic (RetroPie, Batocera...): gamelist.xml and media inside each system folder, media paths written in the gamelist.",
+  "profiles.kindEsdeHelp": "ES-DE: gamelists, media and collections in ES-DE's own folders. Media are found by ROM name.",
+  "profiles.esdeHome": "ES-DE Folder",
+  "profiles.esdeHomeHelp": "ES-DE data folder (the one with settings/, gamelists/ and downloaded_media/). ROM and media folders are read from its es_settings.xml.",
+  "profiles.mediaDir": "Media Folder",
+  "profiles.mediaDirHelp": "Leave empty to use ES-DE's default (downloaded_media inside the ES-DE folder).",
+  "profiles.settingsNotFound": "settings/es_settings.xml not found: ES-DE default folders are used. Check the ROM folder.",
+  "profiles.legacyWarning": "ES-DE has LegacyGamelistFileLocation enabled: it reads gamelists from the ROM folders, not from its gamelists/ folder. A Classic profile may suit this library better.",
 } as const;
 
 export default en;

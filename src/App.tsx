@@ -14,6 +14,7 @@ import { CollectionsModal } from "./components/common/CollectionsModal";
 import { scrapeSystem } from "./commands";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
+import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import "./App.css";
 
 function App() {
@@ -69,12 +70,13 @@ function App() {
   const hasCredentials =
     !!(settings.ss_devid && settings.ss_devpassword) || !!settings.tgdb_apikey;
 
-  // Auto-show settings if no ROM folder configured
+  // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder)
+  const hasUsableProfile = isProfileComplete(getActiveProfile(settings));
   useEffect(() => {
-    if (!settings.rom_root_path) {
+    if (!hasUsableProfile) {
       setShowSettings(true);
     }
-  }, [settings.rom_root_path]);
+  }, [hasUsableProfile]);
 
   // Open settings modal when currentView changes to "settings"
   useEffect(() => {

@@ -11,10 +11,11 @@ import {
   type MediaPathConfig,
 } from "../../types";
 import { MediaConfigTab } from "./MediaConfigTab";
+import { ProfilesTab } from "./ProfilesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
 
-type SettingsTab = "general" | "media" | "systems";
+type SettingsTab = "profiles" | "general" | "media" | "systems";
 
 interface SettingsViewProps {
   open: boolean;
@@ -30,7 +31,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   const setLocale = useI18nStore((s) => s.setLocale);
 
   const [form, setForm] = useState(settings);
-  const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profiles");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,15 +41,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   const selectedMedia = form.ss_media_types ?? [...DEFAULT_MEDIA_TYPES];
   const mediaPaths: MediaPathConfig[] =
     form.media_paths ?? [...DEFAULT_MEDIA_PATHS];
-
-  async function handlePickFolder() {
-    const selected = await openDialog({ directory: true, multiple: false });
-    if (selected) {
-      const updated = { ...form, rom_root_path: selected };
-      setForm(updated);
-      await updateSettings(updated);
-    }
-  }
 
   async function handleSave() {
     await updateSettings(form);
@@ -99,6 +91,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   }
 
   const tabs: { id: SettingsTab; label: string }[] = [
+    { id: "profiles", label: t("settings.tabProfiles") },
     { id: "general", label: t("settings.tabGeneral") },
     { id: "media", label: t("settings.tabMedia") },
     { id: "systems", label: t("settings.tabSystems") },
@@ -175,31 +168,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     </button>
                   ))}
                 </div>
-              </section>
-
-              {/* ROM Folder */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">
-                  {t("settings.romFolder")}
-                </h3>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    readOnly
-                    value={form.rom_root_path || ""}
-                    placeholder={t("settings.noFolder")}
-                    className="flex-1 bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500"
-                  />
-                  <button
-                    onClick={handlePickFolder}
-                    className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
-                  >
-                    {t("settings.browse")}
-                  </button>
-                </div>
-                <p className="text-xs text-zinc-500 mt-2">
-                  {t("settings.romFolderHelp")}
-                </p>
               </section>
 
               {/* ScreenScraper Credentials */}
@@ -346,6 +314,16 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </p>
               </section>
             </>
+          )}
+
+          {activeTab === "profiles" && (
+            <ProfilesTab
+              profiles={form.profiles ?? []}
+              activeProfileId={form.active_profile_id}
+              onChange={(profiles, activeProfileId) =>
+                setForm({ ...form, profiles, active_profile_id: activeProfileId })
+              }
+            />
           )}
 
           {activeTab === "media" && (

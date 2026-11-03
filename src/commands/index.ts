@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, Folder, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -15,6 +15,11 @@ export async function exportSettings(destPath: string): Promise<void> {
 
 export async function importSettings(filePath: string): Promise<AppSettings> {
   return invoke("import_settings", { filePath });
+}
+
+/** Reads ROM/media folders from an ES-DE folder's settings/es_settings.xml */
+export async function detectEsdePaths(esdeHome: string): Promise<EsdeDetectedPaths> {
+  return invoke("detect_esde_paths", { esdeHome });
 }
 
 export async function scanSystems(rootPath: string): Promise<SystemInfo[]> {
