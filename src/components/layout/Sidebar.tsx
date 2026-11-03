@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo } from "../common/SystemLogo";
 import { SettingsIcon } from "../common/Icons";
-import { getActiveProfile } from "../../utils/profiles";
+import { getActiveProfile, isProfileComplete } from "../../utils/profiles";
+import { MigrationModal } from "../common/MigrationModal";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -17,6 +19,7 @@ export function Sidebar() {
 
   const profiles = settings.profiles ?? [];
   const activeProfile = getActiveProfile(settings);
+  const [showMigration, setShowMigration] = useState(false);
 
   const isScanning = loading && scanProgress !== null;
 
@@ -42,6 +45,16 @@ export function Sidebar() {
             </select>
           </label>
         )}
+        {isProfileComplete(activeProfile) && (
+          <button
+            onClick={() => setShowMigration(true)}
+            disabled={loading}
+            className="mt-2 text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+          >
+            {t("migration.button")}
+          </button>
+        )}
+        <MigrationModal open={showMigration} onClose={() => setShowMigration(false)} />
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">

@@ -209,6 +209,34 @@ export interface NormalizeResult {
   skipped: string[];
 }
 
+export type MigrationMode = "copy" | "move";
+
+/** Per-system result (or preview) of a structure migration */
+export interface MigrationSystemReport {
+  name: string;
+  has_gamelist: boolean;
+  dest_gamelist_exists: boolean;
+  games: number;
+  media_transferred: number;
+  media_skipped_count: number;
+  media_skipped: string[];
+  media_unsupported: number;
+  not_normalized: number;
+}
+
+export interface MigrationReport {
+  dry_run: boolean;
+  systems: MigrationSystemReport[];
+  collections: string[];
+  warnings: string[];
+}
+
+export interface MigrationProgress {
+  current: number;
+  total: number;
+  system: string;
+}
+
 export type ViewMode = "table" | "grid";
 export type CurrentView = "browser" | "settings";
 

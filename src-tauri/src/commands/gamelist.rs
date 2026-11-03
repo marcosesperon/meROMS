@@ -31,6 +31,19 @@ pub fn read_gamelist(layout: &Layout, system: &SystemRef) -> Result<GameList, St
 /// Write a system's gamelist (backing up the previous one first).
 /// In ES-DE media fields are dropped: ES-DE finds media by ROM name and doesn't want paths.
 pub fn write_gamelist(layout: &Layout, system: &SystemRef, gamelist: &GameList) -> Result<(), String> {
+    // Read original XML to preserve unknown fields during merge
+    let original_xml = fs::read_to_string(layout.gamelist_path(system)).ok();
+    write_gamelist_with_original(layout, system, gamelist, original_xml.as_deref())
+}
+
+/// Same as write_gamelist, but unknown fields are taken from `original_xml` instead of the
+/// file being replaced (the migrator passes the source gamelist so nothing gets lost).
+pub fn write_gamelist_with_original(
+    layout: &Layout,
+    system: &SystemRef,
+    gamelist: &GameList,
+    original_xml: Option<&str>,
+) -> Result<(), String> {
     crate::commands::backup::backup_gamelist(layout, system)?;
 
     let gamelist_path = layout.gamelist_path(system);
@@ -47,9 +60,7 @@ pub fn write_gamelist(layout: &Layout, system: &SystemRef, gamelist: &GameList) 
         }
     }
 
-    // Read original XML to preserve unknown fields during merge
-    let original_xml = fs::read_to_string(&gamelist_path).ok();
-    let xml = parser::serialize_gamelist(&to_write, original_xml.as_deref())?;
+    let xml = parser::serialize_gamelist(&to_write, original_xml)?;
 
     fs::write(&gamelist_path, xml)
         .map_err(|e| format!("Failed to write gamelist.xml: {}", e))

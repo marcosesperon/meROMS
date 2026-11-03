@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, NormalizeItem, NormalizeResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NormalizeItem, NormalizeResult, Profile, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -185,6 +185,15 @@ export async function planMediaNormalization(systemPath: string): Promise<Normal
 
 export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[]): Promise<NormalizeResult> {
   return invoke("apply_media_normalization", { systemPath, items });
+}
+
+// Structure migration (Classic <-> ES-DE). The target always keeps the source's ROM folder.
+export async function planMigration(sourceProfileId: string, target: Profile, mode: MigrationMode): Promise<MigrationReport> {
+  return invoke("plan_migration", { sourceProfileId, target, mode });
+}
+
+export async function runMigration(sourceProfileId: string, target: Profile, mode: MigrationMode): Promise<MigrationReport> {
+  return invoke("run_migration", { sourceProfileId, target, mode });
 }
 
 // Folders

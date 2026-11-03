@@ -4,7 +4,7 @@ mod media;
 mod models;
 mod parser;
 
-use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, normalize, profiles, rename, scraper, settings, systems};
+use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, migrate, normalize, profiles, rename, scraper, settings, systems};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -78,6 +78,8 @@ pub fn run() {
             images::switch_image_type,
             normalize::plan_media_normalization,
             normalize::apply_media_normalization,
+            migrate::plan_migration,
+            migrate::run_migration,
             duplicates::find_duplicates,
             collections::detect_multidisc_games,
             collections::generate_m3u_playlists,

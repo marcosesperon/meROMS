@@ -139,7 +139,7 @@ pub fn generate_collection(
 
 /// `custom-<name>.cfg`. Classic keeps meROMS' historical underscores; ES-DE shows the
 /// file name as the collection name, so spaces are kept there.
-fn collection_file_name(layout: &Layout, name: &str) -> String {
+pub fn collection_file_name(layout: &Layout, name: &str) -> String {
     let safe: String = name
         .chars()
         .map(|c| if matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') { '_' } else { c })
@@ -151,7 +151,7 @@ fn collection_file_name(layout: &Layout, name: &str) -> String {
 }
 
 /// Existing lines first, then new ones not already present; one entry per line.
-fn merge_collection_entries(existing: &str, new_entries: &[String]) -> String {
+pub fn merge_collection_entries(existing: &str, new_entries: &[String]) -> String {
     let mut lines: Vec<String> = existing
         .lines()
         .map(str::trim)
