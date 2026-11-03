@@ -256,7 +256,8 @@ export interface MigrationSystemReport {
   media_skipped_count: number;
   media_skipped: string[];
   media_unsupported: number;
-  not_normalized: number;
+  /** Classic -> ES-DE: legacy-named media that go over already renamed (included in media_transferred) */
+  media_renamed: number;
 }
 
 export interface MigrationReport {

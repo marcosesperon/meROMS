@@ -321,7 +321,7 @@ const es: Record<TranslationKeys, string> = {
   "migration.running": "Migrando...",
   "migration.summaryPlan": "Se escribirán {gamelists} gamelists y se pasarán {media} ficheros de medios y {collections} colecciones.",
   "migration.summaryDone": "Hecho: {gamelists} gamelists escritas, {media} ficheros de medios pasados y {collections} colecciones.",
-  "migration.notNormalized": "{count} medios de las gamelists no se llaman como su ROM y NO se van a migrar. Pasa antes «Normalizar medios» en cada sistema.",
+  "migration.renamed": "{count} medios con nombre antiguo pasan ya con el nombre de su ROM (al copiar, el origen conserva sus nombres).",
   "migration.unsupported": "{count} medios son de un tipo que ES-DE no usa (wheels/) y no se migran.",
   "migration.skipped": "{count} medios ya existen en el destino y se saltan (pasa el ratón por los números para verlos).",
   "migration.colSystem": "Sistema",

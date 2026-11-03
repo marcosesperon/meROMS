@@ -319,7 +319,7 @@ const en = {
   "migration.running": "Migrating...",
   "migration.summaryPlan": "Will write {gamelists} gamelists, transfer {media} media files and {collections} collections.",
   "migration.summaryDone": "Done: {gamelists} gamelists written, {media} media files transferred, {collections} collections.",
-  "migration.notNormalized": "{count} media files referenced in the gamelists are not named like their ROM and will NOT be migrated. Run \"Normalize Media\" on each system first.",
+  "migration.renamed": "{count} media files with old names go over renamed after their ROM (the source keeps its names when copying).",
   "migration.unsupported": "{count} media files are of a type ES-DE does not use (wheels/) and are not migrated.",
   "migration.skipped": "{count} media files already exist at the destination and are skipped (hover the numbers to see them).",
   "migration.colSystem": "System",

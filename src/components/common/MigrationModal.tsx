@@ -139,10 +139,10 @@ export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
       media: acc.media + s.media_transferred,
       skipped: acc.skipped + s.media_skipped_count,
       unsupported: acc.unsupported + s.media_unsupported,
-      notNormalized: acc.notNormalized + s.not_normalized,
+      renamed: acc.renamed + s.media_renamed,
       gamelists: acc.gamelists + (s.has_gamelist ? 1 : 0),
     }),
-    { media: 0, skipped: 0, unsupported: 0, notNormalized: 0, gamelists: 0 }
+    { media: 0, skipped: 0, unsupported: 0, renamed: 0, gamelists: 0 }
   );
 
   return (
@@ -263,8 +263,9 @@ export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
               </p>
 
               {/* Avisos importantes primero */}
-              {totals.notNormalized > 0 && (
-                <p className="text-xs text-amber-400">{t("migration.notNormalized", { count: totals.notNormalized })}</p>
+              {/* Informativo: los medios con nombre antiguo pasan ya con el nombre de la ROM */}
+              {totals.renamed > 0 && (
+                <p className="text-xs text-zinc-400">{t("migration.renamed", { count: totals.renamed })}</p>
               )}
               {totals.unsupported > 0 && (
                 <p className="text-xs text-amber-400">{t("migration.unsupported", { count: totals.unsupported })}</p>
