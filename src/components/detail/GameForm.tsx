@@ -6,6 +6,8 @@ import type { TranslationKeys } from "../../i18n/en";
 interface GameFormProps {
   game: Game;
   onChange: (field: keyof Game, value: string) => void;
+  /** Shows a "Rename..." button next to the ROM path (existing games only) */
+  onRenameRom?: () => void;
 }
 
 type FieldType = "text" | "textarea" | "number" | "toggle";
@@ -44,7 +46,7 @@ const MAIN_FIELDS: FieldDef[] = [
   { key: "hash", labelKey: "form.hash" },
 ];
 
-export function GameForm({ game, onChange }: GameFormProps) {
+export function GameForm({ game, onChange, onRenameRom }: GameFormProps) {
   const { t } = useTranslation();
 
   function getValue(field: FieldDef): string {
@@ -112,13 +114,25 @@ export function GameForm({ game, onChange }: GameFormProps) {
               className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 resize-none"
             />
           ) : (
-            <input
-              type={field.type || "text"}
-              value={getValue(field)}
-              onChange={(e) => handleChange(field, e.target.value)}
-              placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
-              className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
-            />
+            <div className="flex gap-2">
+              <input
+                type={field.type || "text"}
+                value={getValue(field)}
+                onChange={(e) => handleChange(field, e.target.value)}
+                placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
+                className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+              />
+              {/* Renames the file on disk (the field alone only changes the gamelist) */}
+              {field.key === "path" && onRenameRom && (
+                <button
+                  type="button"
+                  onClick={onRenameRom}
+                  className="shrink-0 px-2.5 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+                >
+                  {t("gameTools.renameRom")}
+                </button>
+              )}
+            </div>
           )}
         </div>
       ))}

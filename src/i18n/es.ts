@@ -365,6 +365,25 @@ const es: Record<TranslationKeys, string> = {
   "rules.down": "Bajar",
   "rules.remove": "Quitar",
   "rules.syntaxHelp": "Los patrones usan la sintaxis regex de Rust (sin look-around). En el reemplazo, $1, $2... insertan los grupos capturados. La regla (Disc x) -> .partx viene desactivada para que la detección multidisco siga funcionando.",
+  // Herramientas del detalle del juego
+  "gameTools.renameRom": "Renombrar...",
+  "gameTools.normalize": "Normalizar",
+  "gameTools.clean": "Limpiar",
+  "gameTools.renameTitle": "Renombrar ROM",
+  "gameTools.renameCurrent": "Nombre actual",
+  "gameTools.renameNew": "Nombre nuevo",
+  "gameTools.renameApply": "Renombrar",
+  "gameTools.renameSame": "El nombre no cambia.",
+  "gameTools.renameHelp": "Se renombran la ROM y sus medios, y se actualizan su ruta en la gamelist, las colecciones y los .m3u.",
+  "gameTools.conflictInvalid": "Nombre vacío o con caracteres que no valen en un nombre de fichero (/ \\ : * ? \" < > |).",
+  "gameTools.conflictExists": "Ya hay otro fichero con este nombre.",
+  "gameTools.renameSkipped": "No se ha renombrado la ROM (falta el fichero o el nombre está ocupado).",
+  "gameTools.normalizeTitle": "Normalizar medios de «{name}»",
+  "gameTools.cleanTitle": "Medios sobrantes de «{name}»",
+  "gameTools.cleanDescription": "Ficheros con el nombre de esta ROM que no usa (otros formatos del mismo tipo, ficheros con nombre antiguo). Los medios que usa no salen.",
+  "gameTools.cleanNothing": "No sobra nada: este juego solo tiene los medios que usa.",
+  "gameTools.unsavedMessage": "Tienes cambios sin guardar. ¿Los guardas antes de seguir?",
+  "gameTools.saveAndContinue": "Guardar y continuar",
 };
 
 export default es;

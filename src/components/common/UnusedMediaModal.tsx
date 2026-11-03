@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { findUnusedMedia, deleteFiles } from "../../commands";
+import { findUnusedMedia, findGameLeftoverMedia, deleteFiles } from "../../commands";
 import type { UnusedMediaFile } from "../../types";
 
 interface UnusedMediaModalProps {
   open: boolean;
   systemPath: string;
   onClose: () => void;
+  /** Only this game's leftover media (game detail panel); without it, the whole system */
+  gamePath?: string;
+  gameName?: string;
 }
 
 function formatSize(bytes: number): string {
@@ -19,6 +22,8 @@ export function UnusedMediaModal({
   open,
   systemPath,
   onClose,
+  gamePath,
+  gameName,
 }: UnusedMediaModalProps) {
   const { t } = useTranslation();
   const [files, setFiles] = useState<UnusedMediaFile[]>([]);
@@ -33,12 +38,14 @@ export function UnusedMediaModal({
       return;
     }
     scan();
-  }, [open, systemPath]);
+  }, [open, systemPath, gamePath]);
 
   async function scan() {
     setScanning(true);
     try {
-      const result = await findUnusedMedia(systemPath);
+      const result = gamePath
+        ? await findGameLeftoverMedia(systemPath, gamePath)
+        : await findUnusedMedia(systemPath);
       setFiles(result);
       setSelected(new Set(result.map((f) => f.path)));
     } catch (e) {
@@ -96,8 +103,13 @@ export function UnusedMediaModal({
         {/* Header */}
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">
-            {t("cleanup.title")}
+            {gamePath
+              ? t("gameTools.cleanTitle", { name: gameName || gamePath })
+              : t("cleanup.title")}
           </h3>
+          {gamePath && (
+            <p className="text-xs text-zinc-500 mt-1">{t("gameTools.cleanDescription")}</p>
+          )}
           {!scanning && files.length > 0 && (
             <p className="text-sm text-zinc-400 mt-1">
               {t("cleanup.found", {
@@ -116,7 +128,7 @@ export function UnusedMediaModal({
             </div>
           ) : files.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {t("cleanup.noUnused")}
+              {gamePath ? t("gameTools.cleanNothing") : t("cleanup.noUnused")}
             </div>
           ) : (
             <>

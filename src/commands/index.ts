@@ -74,15 +74,34 @@ export async function findUnusedMedia(
   return invoke("find_unused_media", { systemPath });
 }
 
+/** Media files named after one game's ROM that the game doesn't use. */
+export async function findGameLeftoverMedia(
+  systemPath: string,
+  gamePath: string
+): Promise<UnusedMediaFile[]> {
+  return invoke("find_game_leftover_media", { systemPath, gamePath });
+}
+
 export async function deleteFiles(paths: string[]): Promise<number> {
   return invoke("delete_files", { paths });
 }
 
+/** With gamePath, only that game is proposed (game detail panel). */
 export async function listRenameCandidates(
   systemPath: string,
-  source: RenameSource = "title"
+  source: RenameSource = "title",
+  gamePath?: string
 ): Promise<RenameEntry[]> {
-  return invoke("list_rename_candidates", { systemPath, source });
+  return invoke("list_rename_candidates", { systemPath, source, gamePath });
+}
+
+/** null = the name can be used; otherwise "invalid" or "exists". */
+export async function checkRenameTarget(
+  systemPath: string,
+  gamePath: string,
+  newName: string
+): Promise<"invalid" | "exists" | null> {
+  return invoke("check_rename_target", { systemPath, gamePath, newName });
 }
 
 export async function renameRoms(
@@ -198,8 +217,8 @@ export async function generateCollection(systemPath: string, name: string, gameP
 }
 
 // Media normalizer (Classic profiles)
-export async function planMediaNormalization(systemPath: string): Promise<NormalizeItem[]> {
-  return invoke("plan_media_normalization", { systemPath });
+export async function planMediaNormalization(systemPath: string, gamePath?: string): Promise<NormalizeItem[]> {
+  return invoke("plan_media_normalization", { systemPath, gamePath });
 }
 
 export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[]): Promise<NormalizeResult> {

@@ -8,6 +8,11 @@ interface NormalizeMediaModalProps {
   open: boolean;
   systemPath: string;
   onClose: () => void;
+  /** Solo este juego (desde el detalle del juego); sin él, todo el sistema */
+  gamePath?: string;
+  gameName?: string;
+  /** Se llama tras aplicar en lugar de recargar la lista (el detalle recarga y reselecciona) */
+  onDone?: () => void;
 }
 
 // Clave única de cada cambio propuesto (un juego puede tener varios campos)
@@ -18,7 +23,7 @@ const itemKey = (item: NormalizeItem) => `${item.game_path}|${item.field}`;
  * `<carpeta>/<nombre ROM>.<ext>` y deja elegir cuáles aplicar. Los conflictos
  * (destino ocupado por otro fichero) se enseñan pero no se pueden marcar.
  */
-export function NormalizeMediaModal({ open, systemPath, onClose }: NormalizeMediaModalProps) {
+export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameName, onDone }: NormalizeMediaModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
   const [items, setItems] = useState<NormalizeItem[]>([]);
@@ -35,13 +40,13 @@ export function NormalizeMediaModal({ open, systemPath, onClose }: NormalizeMedi
       return;
     }
     scan();
-  }, [open, systemPath]);
+  }, [open, systemPath, gamePath]);
 
   async function scan() {
     setScanning(true);
     setError(null);
     try {
-      const plan = await planMediaNormalization(systemPath);
+      const plan = await planMediaNormalization(systemPath, gamePath);
       setItems(plan);
       setSelected(new Set(plan.filter((i) => i.status !== "conflict").map(itemKey)));
     } catch (e) {
@@ -72,7 +77,8 @@ export function NormalizeMediaModal({ open, systemPath, onClose }: NormalizeMedi
     try {
       const chosen = applicable.filter((i) => selected.has(itemKey(i)));
       const result = await applyMediaNormalization(systemPath, chosen);
-      loadGames(systemPath);
+      if (onDone) onDone();
+      else loadGames(systemPath);
       let message = t("normalize.done", { moved: result.moved, linked: result.linked });
       if (result.skipped.length > 0) {
         message += "\n\n" + t("normalize.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
@@ -98,7 +104,9 @@ export function NormalizeMediaModal({ open, systemPath, onClose }: NormalizeMedi
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
       <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[860px] max-h-[80vh] flex flex-col mx-4">
         <div className="px-5 py-4 border-b border-zinc-700">
-          <h3 className="text-base font-semibold text-zinc-100">{t("normalize.title")}</h3>
+          <h3 className="text-base font-semibold text-zinc-100">
+            {gamePath ? t("gameTools.normalizeTitle", { name: gameName || gamePath }) : t("normalize.title")}
+          </h3>
           <p className="text-sm text-zinc-400 mt-1">{t("normalize.description")}</p>
           {!scanning && items.length > 0 && (
             <p className="text-xs text-zinc-500 mt-2">

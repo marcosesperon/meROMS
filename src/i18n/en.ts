@@ -363,6 +363,25 @@ const en = {
   "rules.down": "Move down",
   "rules.remove": "Remove",
   "rules.syntaxHelp": "Patterns use Rust regex syntax (no look-around). In replacements, $1, $2... insert the captured groups. The rule (Disc x) -> .partx is disabled by default so multi-disc detection keeps working.",
+  // Game detail panel tools
+  "gameTools.renameRom": "Rename...",
+  "gameTools.normalize": "Normalize",
+  "gameTools.clean": "Clean up",
+  "gameTools.renameTitle": "Rename ROM",
+  "gameTools.renameCurrent": "Current name",
+  "gameTools.renameNew": "New name",
+  "gameTools.renameApply": "Rename",
+  "gameTools.renameSame": "The name does not change.",
+  "gameTools.renameHelp": "The ROM, its media, its path in the gamelist, collections and .m3u playlists are updated.",
+  "gameTools.conflictInvalid": "Empty name or characters not allowed in file names (/ \\ : * ? \" < > |).",
+  "gameTools.conflictExists": "Another file already has this name.",
+  "gameTools.renameSkipped": "The ROM was not renamed (the file is missing or the name is taken).",
+  "gameTools.normalizeTitle": "Normalize media of \"{name}\"",
+  "gameTools.cleanTitle": "Leftover media of \"{name}\"",
+  "gameTools.cleanDescription": "Files named after this ROM that it does not use (other formats of the same type, files with old names). The media it uses are not listed.",
+  "gameTools.cleanNothing": "Nothing left over: this game only has the media it uses.",
+  "gameTools.unsavedMessage": "You have unsaved changes. Save them before continuing?",
+  "gameTools.saveAndContinue": "Save and continue",
 } as const;
 
 export default en;

@@ -12,6 +12,9 @@ interface ImageManagerProps {
   game: Game;
   systemPath: string;
   onUpdate: (field: keyof Game, value: string) => void;
+  /** Per-game tools in the section header; each button shows only if its handler is given */
+  onNormalize?: () => void;
+  onClean?: () => void;
 }
 
 // The backend decides the folder and file name (unified naming of the active profile)
@@ -32,7 +35,7 @@ const EXTENDED_IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys }[] = 
   { key: "manual", labelKey: "images.manual" },
 ];
 
-export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) {
+export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean }: ImageManagerProps) {
   const { t } = useTranslation();
   const [videoFullscreen, setVideoFullscreen] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
@@ -119,15 +122,33 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-zinc-300">{t("images.title")}</h4>
-        <button
-          onClick={handleScanMedia}
-          disabled={scanning}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
-          title={t("images.scanMedia")}
-        >
-          <SearchIcon size={12} className={scanning ? "animate-spin" : ""} />
-          {t("images.scanMedia")}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {onNormalize && (
+            <button
+              onClick={onNormalize}
+              className="px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+            >
+              {t("gameTools.normalize")}
+            </button>
+          )}
+          {onClean && (
+            <button
+              onClick={onClean}
+              className="px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+            >
+              {t("gameTools.clean")}
+            </button>
+          )}
+          <button
+            onClick={handleScanMedia}
+            disabled={scanning}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
+            title={t("images.scanMedia")}
+          >
+            <SearchIcon size={12} className={scanning ? "animate-spin" : ""} />
+            {t("images.scanMedia")}
+          </button>
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {IMAGE_FIELDS.map(({ key, labelKey }) => (

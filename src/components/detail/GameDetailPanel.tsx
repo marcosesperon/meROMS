@@ -7,6 +7,13 @@ import { ImageManager } from "./ImageManager";
 import { saveGamelist, removeGame, scrapeGame } from "../../commands";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { CloseIcon } from "../common/Icons";
+import { RenameGameModal } from "../common/RenameGameModal";
+import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
+import { UnusedMediaModal } from "../common/UnusedMediaModal";
+import { getActiveProfile } from "../../utils/profiles";
+
+// Per-game tools (the same ones the system toolbar has, limited to this game)
+type GameTool = "rename" | "normalize" | "clean";
 
 interface GameDetailPanelProps {
   isNewGame?: boolean;
@@ -21,6 +28,9 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
   const provider = useAppStore((s) => s.provider);
   const setGames = useAppStore((s) => s.setGames);
   const selectGame = useAppStore((s) => s.selectGame);
+  const loadGames = useAppStore((s) => s.loadGames);
+  const settings = useAppStore((s) => s.settings);
+  const isClassic = getActiveProfile(settings)?.kind === "classic";
   const { t } = useTranslation();
 
   const initialGame = useMemo(
@@ -35,6 +45,9 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
   const [scraping, setScraping] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const [activeTool, setActiveTool] = useState<GameTool | null>(null);
+  // Tool waiting for the "unsaved changes" answer
+  const [pendingTool, setPendingTool] = useState<GameTool | null>(null);
 
   useEffect(() => {
     if (!isNewGame && selectedGame) {
@@ -68,8 +81,9 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     setEditedGame((prev) => ({ ...prev, [field]: value || undefined }));
   }
 
-  async function handleSave() {
-    if (!selectedSystem) return;
+  /** Saves the game without closing the panel. Returns false if it failed. */
+  async function persist(): Promise<boolean> {
+    if (!selectedSystem) return false;
     setSaving(true);
     try {
       let updatedGames: Game[];
@@ -83,13 +97,38 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
       await saveGamelist(selectedSystem.path, { games: updatedGames, folders: folders || [], provider });
       setGames(updatedGames);
       if (!isNewGame) selectGame(editedGame);
-      onClose();
+      return true;
     } catch (e) {
       console.error("Failed to save:", e);
       alert(t("detail.saveFailed", { error: String(e) }));
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSave() {
+    if (await persist()) onClose();
+  }
+
+  // The tools write the gamelist themselves: unsaved edits must be saved first
+  function runTool(tool: GameTool) {
+    if (hasChanges()) setPendingTool(tool);
+    else setActiveTool(tool);
+  }
+
+  async function saveAndRunTool() {
+    const tool = pendingTool;
+    setPendingTool(null);
+    if (tool && (await persist())) setActiveTool(tool);
+  }
+
+  /** After a tool: reload the system list and show this game again (maybe with a new path) */
+  async function refreshGame(gamePath: string) {
+    if (!selectedSystem) return;
+    await loadGames(selectedSystem.path);
+    const fresh = useAppStore.getState().games.find((g) => g.path === gamePath);
+    selectGame(fresh ?? null);
   }
 
   async function handleScrape() {
@@ -164,9 +203,15 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               game={editedGame}
               systemPath={selectedSystem.path}
               onUpdate={handleFieldChange}
+              onNormalize={!isNewGame && isClassic ? () => runTool("normalize") : undefined}
+              onClean={!isNewGame ? () => runTool("clean") : undefined}
             />
           )}
-          <GameForm game={editedGame} onChange={handleFieldChange} />
+          <GameForm
+            game={editedGame}
+            onChange={handleFieldChange}
+            onRenameRom={!isNewGame ? () => runTool("rename") : undefined}
+          />
         </div>
 
         <div className="border-t border-zinc-700 h-12 shrink-0 px-4 flex items-center justify-end gap-3">
@@ -193,6 +238,61 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
       />
+
+      {/* Unsaved changes before running a tool */}
+      {pendingTool && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+          <div className="bg-zinc-800 border border-zinc-600 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-zinc-100 mb-2">
+              {t("detail.unsavedTitle")}
+            </h3>
+            <p className="text-zinc-400 mb-6">
+              {t("gameTools.unsavedMessage")}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setPendingTool(null)}
+                className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+              >
+                {t("detail.cancel")}
+              </button>
+              <button
+                onClick={saveAndRunTool}
+                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
+              >
+                {t("gameTools.saveAndContinue")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedSystem && selectedGame && (
+        <>
+          <RenameGameModal
+            open={activeTool === "rename"}
+            systemPath={selectedSystem.path}
+            gamePath={selectedGame.path}
+            onClose={() => setActiveTool(null)}
+            onDone={refreshGame}
+          />
+          <NormalizeMediaModal
+            open={activeTool === "normalize"}
+            systemPath={selectedSystem.path}
+            gamePath={selectedGame.path}
+            gameName={selectedGame.name}
+            onClose={() => setActiveTool(null)}
+            onDone={() => refreshGame(selectedGame.path)}
+          />
+          <UnusedMediaModal
+            open={activeTool === "clean"}
+            systemPath={selectedSystem.path}
+            gamePath={selectedGame.path}
+            gameName={selectedGame.name}
+            onClose={() => setActiveTool(null)}
+          />
+        </>
+      )}
 
       {/* Unsaved changes dialog */}
       {showUnsavedConfirm && (
