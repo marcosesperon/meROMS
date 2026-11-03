@@ -12,10 +12,11 @@ import {
 } from "../../types";
 import { MediaConfigTab } from "./MediaConfigTab";
 import { ProfilesTab } from "./ProfilesTab";
+import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
 
-type SettingsTab = "profiles" | "general" | "media" | "systems";
+type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems";
 
 interface SettingsViewProps {
   open: boolean;
@@ -94,6 +95,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     { id: "profiles", label: t("settings.tabProfiles") },
     { id: "general", label: t("settings.tabGeneral") },
     { id: "media", label: t("settings.tabMedia") },
+    { id: "rules", label: t("settings.tabRules") },
     { id: "systems", label: t("settings.tabSystems") },
   ];
 
@@ -330,6 +332,13 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
             <MediaConfigTab
               mediaPaths={mediaPaths}
               onChange={(paths) => setForm({ ...form, media_paths: paths })}
+            />
+          )}
+
+          {activeTab === "rules" && (
+            <RenameRulesTab
+              rules={form.rename_rules}
+              onChange={(rules) => setForm({ ...form, rename_rules: rules })}
             />
           )}
 

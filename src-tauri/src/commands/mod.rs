@@ -5,6 +5,7 @@ pub mod duplicates;
 pub mod export;
 pub mod gamelist;
 pub mod rename;
+pub mod rules;
 pub mod images;
 pub mod migrate;
 pub mod normalize;

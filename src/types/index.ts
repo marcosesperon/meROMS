@@ -120,6 +120,8 @@ export interface AppSettings {
   rom_root_path?: string;
   profiles?: Profile[];
   active_profile_id?: string;
+  /** ROM name cleanup rules; undefined = built-in defaults */
+  rename_rules?: RenameRule[];
   ss_devid?: string;
   ss_devpassword?: string;
   ss_user?: string;
@@ -183,6 +185,30 @@ export interface RenameEntry {
   game_title?: string;
   proposed_name: string;
   can_rename: boolean;
+  /** duplicate = another ROM would get the same name · exists = a different file has it */
+  conflict?: "duplicate" | "exists";
+}
+
+/** Where the proposed name comes from */
+export type RenameSource = "title" | "rules";
+
+export interface RenameResult {
+  gamelist: GameList;
+  renamed: number;
+  skipped: string[];
+}
+
+/** ROM name cleanup rule (rules.json format of ES-DE-Roms-Renamer, plus "enabled") */
+export interface RenameRule {
+  pattern: string;
+  replacement: string;
+  description?: string;
+  enabled: boolean;
+}
+
+export interface RuleTestResult {
+  result: string;
+  errors: { index: number; message: string }[];
 }
 
 export interface RenameRequest {

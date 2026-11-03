@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
-import type { RenameEntry } from "../../types";
+import type { RenameEntry, RenameSource } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 
 interface RenameModalProps {
@@ -18,6 +18,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const [editedNames, setEditedNames] = useState<Record<string, string>>({});
   const [scanning, setScanning] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [source, setSource] = useState<RenameSource>("title");
 
   useEffect(() => {
     if (!open) {
@@ -27,15 +28,20 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       return;
     }
     scan();
-  }, [open, systemPath]);
+  }, [open, systemPath, source]);
+
+  // A conflicting proposal can't be applied unless the user types another name
+  function isBlocked(entry: RenameEntry, names: Record<string, string> = editedNames): boolean {
+    return !!entry.conflict && (names[entry.current_path] ?? entry.proposed_name) === entry.proposed_name;
+  }
 
   async function scan() {
     setScanning(true);
     try {
-      const result = await listRenameCandidates(systemPath);
+      const result = await listRenameCandidates(systemPath, source);
       setEntries(result);
-      // Select those that can be renamed by default
-      setSelected(new Set(result.filter((e) => e.can_rename).map((e) => e.current_path)));
+      // Select those that can be renamed by default (conflicts are left out)
+      setSelected(new Set(result.filter((e) => e.can_rename && !e.conflict).map((e) => e.current_path)));
       // Pre-fill edited names with proposed names
       const names: Record<string, string> = {};
       for (const e of result) {
@@ -59,7 +65,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   }
 
   function toggleAll() {
-    const renameable = entries.filter((e) => e.can_rename);
+    const renameable = entries.filter((e) => e.can_rename && !isBlocked(e));
     if (selected.size === renameable.length) {
       setSelected(new Set());
     } else {
@@ -75,16 +81,22 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
     if (selected.size === 0) return;
     setRenaming(true);
     try {
+      const blocked = new Set(entries.filter((e) => isBlocked(e)).map((e) => e.current_path));
       const renames = Array.from(selected)
+        .filter((path) => !blocked.has(path))
         .map((path) => ({
           current_path: path,
           new_name: editedNames[path] || "",
         }))
         .filter((r) => r.new_name.length > 0);
 
-      await renameRoms(systemPath, renames);
+      const result = await renameRoms(systemPath, renames);
       loadGames(systemPath);
-      alert(t("rename.done", { count: renames.length }));
+      let message = t("rename.done", { count: result.renamed });
+      if (result.skipped.length > 0) {
+        message += "\n\n" + t("rename.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
+      }
+      alert(message);
       onClose();
     } catch (e) {
       alert(t("rename.failed", { error: String(e) }));
@@ -96,6 +108,8 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   if (!open) return null;
 
   const renameableCount = entries.filter((e) => e.can_rename).length;
+  const selectableCount = entries.filter((e) => e.can_rename && !isBlocked(e)).length;
+  const conflictCount = entries.filter((e) => e.can_rename && e.conflict).length;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -105,9 +119,32 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           <h3 className="text-base font-semibold text-zinc-100">
             {t("rename.title")}
           </h3>
+          {/* Where the new name comes from */}
+          <div className="flex gap-2 mt-3">
+            {(["title", "rules"] as RenameSource[]).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSource(s)}
+                disabled={scanning || renaming}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  source === s
+                    ? "bg-indigo-600 text-white"
+                    : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                }`}
+              >
+                {t(s === "title" ? "rename.sourceTitle" : "rename.sourceRules")}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500 mt-2">
+            {t(source === "title" ? "rename.sourceTitleHelp" : "rename.sourceRulesHelp")}
+          </p>
           {!scanning && renameableCount > 0 && (
             <p className="text-sm text-zinc-400 mt-1">
               {t("rename.found", { count: renameableCount })}
+              {conflictCount > 0 && (
+                <span className="text-amber-400"> · {t("rename.conflicts", { count: conflictCount })}</span>
+              )}
             </p>
           )}
         </div>
@@ -120,7 +157,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
             </div>
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {t("rename.noRenames")}
+              {t(source === "title" ? "rename.noRenames" : "rename.noRenamesRules")}
             </div>
           ) : (
             <>
@@ -130,12 +167,12 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                   <input
                     type="checkbox"
                     checked={
-                      selected.size === renameableCount && renameableCount > 0
+                      selected.size === selectableCount && selectableCount > 0
                     }
                     onChange={toggleAll}
                     className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
                   />
-                  {selected.size === renameableCount
+                  {selected.size === selectableCount
                     ? t("rename.deselectAll")
                     : t("rename.selectAll")}
                 </label>
@@ -165,8 +202,8 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                     >
                       <input
                         type="checkbox"
-                        checked={isSelected}
-                        disabled={!entry.can_rename}
+                        checked={isSelected && !isBlocked(entry)}
+                        disabled={!entry.can_rename || isBlocked(entry)}
                         onChange={() => toggleEntry(entry.current_path)}
                         className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 disabled:opacity-30"
                       />
@@ -177,6 +214,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                         {entry.current_name}
                       </span>
                       {entry.can_rename ? (
+                        <div className="flex items-center gap-2 min-w-0">
                         <input
                           type="text"
                           value={editedNames[entry.current_path] || ""}
@@ -189,6 +227,15 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                               : "border-zinc-600 text-zinc-300"
                           }`}
                         />
+                        {isBlocked(entry) && (
+                          <span
+                            className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-300"
+                            title={t(entry.conflict === "duplicate" ? "rename.conflictDuplicateHelp" : "rename.conflictExistsHelp")}
+                          >
+                            {t(entry.conflict === "duplicate" ? "rename.conflictDuplicate" : "rename.conflictExists")}
+                          </span>
+                        )}
+                        </div>
                       ) : (
                         <span className="text-sm text-zinc-500 italic">
                           {entry.current_name}

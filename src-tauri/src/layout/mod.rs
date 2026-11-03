@@ -69,13 +69,6 @@ impl Layout {
         }
     }
 
-    pub fn kind(&self) -> StructureKind {
-        match self {
-            Layout::Classic => StructureKind::Classic,
-            Layout::Esde(_) => StructureKind::Esde,
-        }
-    }
-
     /// Carpeta donde está el gamelist.xml del sistema.
     pub fn gamelist_dir(&self, system: &SystemRef) -> PathBuf {
         match self {

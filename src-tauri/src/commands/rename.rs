@@ -1,10 +1,14 @@
 use std::fs;
 use std::path::Path;
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
+use crate::layout::{Layout, SystemRef};
 use crate::media;
 use crate::models::GameList;
+use crate::rename_rules::CompiledRules;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameEntry {
@@ -14,10 +18,33 @@ pub struct RenameEntry {
     pub current_name: String,
     /// Game title from gamelist.xml (None if no title)
     pub game_title: Option<String>,
-    /// Proposed new filename (sanitized title)
+    /// Proposed new filename (sanitized title, or the name cleaned by the rules)
     pub proposed_name: String,
-    /// Whether a rename is possible (has title and title differs from current name)
+    /// Whether a rename makes sense (there is a proposal and it differs from the current name)
     pub can_rename: bool,
+    /// Why the proposal can't be applied as is: "duplicate" (another ROM would get the
+    /// same name) or "exists" (a different file already has that name)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conflict: Option<String>,
+}
+
+/// Where the proposed name comes from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum RenameSource {
+    /// Game title from the gamelist (meROMS' original behaviour)
+    #[default]
+    Title,
+    /// Current file name cleaned with the regex rules (ES-DE-Roms-Renamer style)
+    Rules,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct RenameResult {
+    pub gamelist: GameList,
+    pub renamed: usize,
+    /// ROMs not renamed (source missing or destination taken)
+    pub skipped: Vec<String>,
 }
 
 /// Characters not allowed in filenames.
@@ -32,45 +59,90 @@ fn sanitize_filename(name: &str) -> String {
         .to_string()
 }
 
-/// List all ROMs with their current filename and gamelist title.
+/// List all ROMs with a proposed new name, from the gamelist title or the cleanup rules.
 #[tauri::command]
-pub fn list_rename_candidates(app: tauri::AppHandle, system_path: String) -> Result<Vec<RenameEntry>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path)?;
+pub fn list_rename_candidates(
+    app: tauri::AppHandle,
+    system_path: String,
+    source: Option<RenameSource>,
+) -> Result<Vec<RenameEntry>, String> {
+    let settings = crate::commands::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let rules = CompiledRules::new(&settings.rename_rules_or_default());
+    let source = source.unwrap_or_default();
 
-    let mut entries = Vec::new();
-
-    for game in &gamelist.games {
-        let rom_path = Path::new(&game.path);
-        let ext = rom_path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
-        let current_name = rom_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or(&game.path)
-            .to_string();
-
-        let game_title = game.name.clone();
-        let proposed = if let Some(ref title) = game_title {
-            sanitize_filename(title)
-        } else {
-            current_name.clone()
-        };
-
-        let can_rename = game_title.is_some() && proposed != current_name && !ext.is_empty();
-
-        entries.push(RenameEntry {
-            current_path: game.path.clone(),
-            current_name,
-            game_title,
-            proposed_name: proposed,
-            can_rename,
-        });
-    }
+    let mut entries: Vec<RenameEntry> = gamelist
+        .games
+        .iter()
+        .map(|game| propose(game, source, &rules))
+        .collect();
+    mark_conflicts(&mut entries, &system.rom_dir);
 
     entries.sort_by(|a, b| a.current_name.to_lowercase().cmp(&b.current_name.to_lowercase()));
     Ok(entries)
+}
+
+fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules) -> RenameEntry {
+    let rom_path = Path::new(&game.path);
+    let ext = rom_path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
+    let current_name = rom_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(&game.path)
+        .to_string();
+
+    let game_title = game.name.clone();
+    let proposed = match source {
+        RenameSource::Title => game_title.as_deref().map(sanitize_filename),
+        RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
+    }
+    .filter(|p| !p.is_empty())
+    .unwrap_or_else(|| current_name.clone());
+
+    let can_rename = proposed != current_name && !ext.is_empty();
+
+    RenameEntry {
+        current_path: game.path.clone(),
+        current_name,
+        game_title,
+        proposed_name: proposed,
+        can_rename,
+        conflict: None,
+    }
+}
+
+/// Flag proposals that can't be applied: two ROMs ending with the same name, or a
+/// different file already using it. Compared case-insensitively (macOS/Windows disks are).
+fn mark_conflicts(entries: &mut [RenameEntry], rom_dir: &Path) {
+    let target_of = |e: &RenameEntry| -> String {
+        let current = Path::new(e.current_path.strip_prefix("./").unwrap_or(&e.current_path));
+        let ext = current.extension().and_then(|x| x.to_str()).unwrap_or("");
+        current
+            .with_file_name(format!("{}.{}", e.proposed_name, ext))
+            .to_string_lossy()
+            .to_lowercase()
+    };
+
+    let mut counts: HashMap<String, usize> = HashMap::new();
+    for e in entries.iter() {
+        // ROMs that keep their name also "occupy" it
+        let key = if e.can_rename { target_of(e) } else { e.current_path.trim_start_matches("./").to_lowercase() };
+        *counts.entry(key).or_default() += 1;
+    }
+
+    for e in entries.iter_mut().filter(|e| e.can_rename) {
+        let target = target_of(e);
+        let own = e.current_path.trim_start_matches("./").to_lowercase();
+        if counts.get(&target).copied().unwrap_or(0) > 1 {
+            e.conflict = Some("duplicate".into());
+        } else if target != own && rom_dir.join(&target).exists() {
+            e.conflict = Some("exists".into());
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -87,12 +159,14 @@ pub fn rename_roms(
     app: tauri::AppHandle,
     system_path: String,
     renames: Vec<RenameRequest>,
-) -> Result<GameList, String> {
+) -> Result<RenameResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let sys_path = system.rom_dir.clone();
 
     // write_gamelist() backs the gamelist up before saving
     let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let mut done: Vec<(String, String)> = Vec::new();
+    let mut skipped: Vec<String> = Vec::new();
 
     for req in &renames {
         let old_rel = req.current_path.strip_prefix("./").unwrap_or(&req.current_path);
@@ -119,10 +193,8 @@ pub fn rename_roms(
         let new_abs = sys_path.join(&new_rel);
 
         // Skip if source doesn't exist or destination already exists
-        if !old_abs.exists() {
-            continue;
-        }
-        if new_abs.exists() && old_abs != new_abs {
+        if !old_abs.exists() || (new_abs.exists() && old_abs != new_abs) {
+            skipped.push(old_rel.to_string());
             continue;
         }
         let rom_is_dir = old_abs.is_dir();
@@ -134,6 +206,7 @@ pub fn rename_roms(
         }
 
         let moved = media::rename_rom_media(&layout, &system, &req.current_path, &new_relative, rom_is_dir);
+        done.push((req.current_path.clone(), new_relative.clone()));
 
         // Update gamelist entry
         for game in &mut gamelist.games {
@@ -151,8 +224,85 @@ pub fn rename_roms(
     }
 
     crate::commands::gamelist::write_gamelist(&layout, &system, &gamelist)?;
-    // Re-read so ES-DE media fields reflect the renamed files
-    crate::commands::gamelist::read_gamelist(&layout, &system)
+    update_references(&layout, &system, &done);
+
+    Ok(RenameResult {
+        // Re-read so ES-DE media fields reflect the renamed files
+        gamelist: crate::commands::gamelist::read_gamelist(&layout, &system)?,
+        renamed: done.len(),
+        skipped,
+    })
+}
+
+/// After renaming ROMs, fix what points to them by file name:
+/// custom collections (where the active structure keeps them) and .m3u playlists.
+fn update_references(layout: &Layout, system: &SystemRef, renamed: &[(String, String)]) {
+    if renamed.is_empty() {
+        return;
+    }
+
+    // Collections: entries are written exactly as collection_entry() builds them
+    let collection_renames: HashMap<String, String> = renamed
+        .iter()
+        .map(|(old, new)| (layout.collection_entry(system, old), layout.collection_entry(system, new)))
+        .collect();
+    let collections_dir = layout.collections_dir(system);
+    if let Ok(entries) = fs::read_dir(&collections_dir) {
+        for path in entries.flatten().map(|e| e.path()) {
+            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            if name.starts_with("custom-") && name.ends_with(".cfg") {
+                rewrite_lines(&path, |line| collection_renames.get(line.trim()).cloned());
+            }
+        }
+    }
+
+    // .m3u playlists: lines are paths relative to the playlist's own folder
+    let renamed_abs: HashMap<std::path::PathBuf, String> = renamed
+        .iter()
+        .map(|(old, new)| {
+            let new_name = Path::new(new).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            (system.rom_dir.join(crate::layout::strip_dot_slash(old)), new_name)
+        })
+        .collect();
+    for m3u in media::list_files_recursive(&system.rom_dir)
+        .into_iter()
+        .filter(|p| media::extension_lower(p).as_deref() == Some("m3u"))
+    {
+        let Some(dir) = m3u.parent().map(Path::to_path_buf) else { continue };
+        rewrite_lines(&m3u, |line| {
+            let trimmed = line.trim();
+            if trimmed.is_empty() || trimmed.starts_with('#') {
+                return None;
+            }
+            let new_name = renamed_abs.get(&dir.join(trimmed))?;
+            Some(Path::new(trimmed).with_file_name(new_name).to_string_lossy().replace('\\', "/"))
+        });
+    }
+}
+
+/// Rewrite a text file line by line (keeping its line endings); `change` returns the
+/// new content for a line, or None to leave it as is. Only writes if something changed.
+fn rewrite_lines(path: &Path, change: impl Fn(&str) -> Option<String>) {
+    let Ok(content) = fs::read_to_string(path) else { return };
+    let newline = if content.contains("\r\n") { "\r\n" } else { "\n" };
+    let mut changed = false;
+    let lines: Vec<String> = content
+        .lines()
+        .map(|line| match change(line) {
+            Some(new) if new != line => {
+                changed = true;
+                new
+            }
+            _ => line.to_string(),
+        })
+        .collect();
+    if changed {
+        let mut out = lines.join(newline);
+        if content.ends_with('\n') {
+            out.push_str(newline);
+        }
+        let _ = fs::write(path, out);
+    }
 }
 
 /// Classic: point a media field to its renamed file. Unified files were already moved
@@ -228,5 +378,64 @@ fn rename_media_field(
     } else {
         // File might not exist, just update the path reference
         *field = Some(format!("./{}", new_media_rel));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Game;
+    use crate::rename_rules::default_rules;
+
+    fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
+        let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
+        propose(&game, source, &CompiledRules::new(&default_rules()))
+    }
+
+    #[test]
+    fn rules_source_cleans_the_file_name() {
+        let e = entry_for("./Super Juego (USA) (Rev 1).sfc", RenameSource::Rules);
+        assert_eq!(e.proposed_name, "Super Juego");
+        assert!(e.can_rename);
+        let e = entry_for("./Super Juego (USA).sfc", RenameSource::Title);
+        assert_eq!(e.proposed_name, "Titulo");
+    }
+
+    #[test]
+    fn same_target_twice_is_a_duplicate_and_existing_files_are_flagged() {
+        let tmp = tempfile::tempdir().unwrap();
+        fs::write(tmp.path().join("Otro.sfc"), b"x").unwrap();
+        let mut entries = vec![
+            entry_for("./Juego (USA).sfc", RenameSource::Rules),
+            entry_for("./Juego (Europe).sfc", RenameSource::Rules),
+            entry_for("./Otro (Japan).sfc", RenameSource::Rules),
+            entry_for("./Bien (USA).sfc", RenameSource::Rules),
+        ];
+        mark_conflicts(&mut entries, tmp.path());
+        assert_eq!(entries[0].conflict.as_deref(), Some("duplicate"));
+        assert_eq!(entries[1].conflict.as_deref(), Some("duplicate"));
+        assert_eq!(entries[2].conflict.as_deref(), Some("exists"));
+        assert_eq!(entries[3].conflict, None);
+    }
+
+    #[test]
+    fn collections_and_m3u_follow_the_renamed_roms() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("psx"));
+        fs::create_dir_all(&system.rom_dir).unwrap();
+        fs::write(system.rom_dir.join("custom-Favs.cfg"), "./Juego (USA) (Disc 1).cue\n./Otro.cue\n").unwrap();
+        fs::write(system.rom_dir.join("Juego.m3u"), "Juego (USA) (Disc 1).cue\r\nJuego (USA) (Disc 2).cue\r\n").unwrap();
+
+        let renamed = vec![("./Juego (USA) (Disc 1).cue".to_string(), "./Juego (Disc 1).cue".to_string())];
+        update_references(&Layout::Classic, &system, &renamed);
+
+        assert_eq!(
+            fs::read_to_string(system.rom_dir.join("custom-Favs.cfg")).unwrap(),
+            "./Juego (Disc 1).cue\n./Otro.cue\n"
+        );
+        assert_eq!(
+            fs::read_to_string(system.rom_dir.join("Juego.m3u")).unwrap(),
+            "Juego (Disc 1).cue\r\nJuego (USA) (Disc 2).cue\r\n"
+        );
     }
 }

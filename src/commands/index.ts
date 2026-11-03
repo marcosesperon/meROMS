@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NormalizeItem, NormalizeResult, Profile, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NormalizeItem, NormalizeResult, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -79,16 +79,35 @@ export async function deleteFiles(paths: string[]): Promise<number> {
 }
 
 export async function listRenameCandidates(
-  systemPath: string
+  systemPath: string,
+  source: RenameSource = "title"
 ): Promise<RenameEntry[]> {
-  return invoke("list_rename_candidates", { systemPath });
+  return invoke("list_rename_candidates", { systemPath, source });
 }
 
 export async function renameRoms(
   systemPath: string,
   renames: RenameRequest[]
-): Promise<GameList> {
+): Promise<RenameResult> {
   return invoke("rename_roms", { systemPath, renames });
+}
+
+// ROM name cleanup rules
+export async function getDefaultRenameRules(): Promise<RenameRule[]> {
+  return invoke("get_default_rename_rules");
+}
+
+export async function testRenameRules(name: string, rules: RenameRule[]): Promise<RuleTestResult> {
+  return invoke("test_rename_rules", { name, rules });
+}
+
+export async function importRenameRules(filePath: string): Promise<RenameRule[]> {
+  return invoke("import_rename_rules", { filePath });
+}
+
+/** Writes the enabled rules in the original rules.json format */
+export async function exportRenameRules(rules: RenameRule[], destPath: string): Promise<void> {
+  return invoke("export_rename_rules", { rules, destPath });
 }
 
 export async function listBackups(

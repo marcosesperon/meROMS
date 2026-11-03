@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::profile::Profile;
+use crate::rename_rules::{default_rules, RenameRule};
 
 /// Per scraper media type: which gamelist field it fills (Classic structure only).
 /// Folder and file name are fixed now (`<ES-DE folder>/<ROM name>.<ext>`); `subfolder` and
@@ -45,6 +46,9 @@ pub struct AppSettings {
     pub language: Option<String>,
     // Per-system configuration keyed by normalized system name
     pub system_configs: Option<std::collections::HashMap<String, SystemConfig>>,
+    // ROM name cleanup rules (None = built-in defaults)
+    #[serde(default)]
+    pub rename_rules: Option<Vec<RenameRule>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -89,6 +93,11 @@ impl AppSettings {
     pub fn active_profile(&self) -> Option<&Profile> {
         let id = self.active_profile_id.as_ref()?;
         self.profiles.iter().find(|p| &p.id == id)
+    }
+
+    /// Configured rename rules, or the built-in ones if the user never changed them.
+    pub fn rename_rules_or_default(&self) -> Vec<RenameRule> {
+        self.rename_rules.clone().unwrap_or_else(default_rules)
     }
 
     pub fn default_media_types() -> Vec<String> {
