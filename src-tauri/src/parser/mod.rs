@@ -71,6 +71,80 @@ const KNOWN_GAME_FIELDS: &[&str] = &[
 /// Known attribute names we manage on <game> elements.
 const KNOWN_GAME_ATTRS: &[&str] = &["id", "source"];
 
+/// Root-level elements we manage; anything else under <gameList> (e.g. ES-DE's
+/// <alternativeEmulator>) is preserved as raw XML.
+const KNOWN_ROOT_ELEMENTS: &[&str] = &["provider", "folder", "game"];
+
+/// Extract the raw XML of unknown direct children of <gameList>, in document order.
+fn extract_root_unknowns(original_xml: &str) -> Result<Vec<String>, String> {
+    let mut reader = Reader::from_str(original_xml);
+    let mut unknowns: Vec<String> = Vec::new();
+    let mut depth = 0;
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                depth += 1;
+                if depth == 2 {
+                    let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                    if KNOWN_ROOT_ELEMENTS.contains(&tag.as_str()) {
+                        skip_subtree(&mut reader)?;
+                    } else {
+                        let mut capture_depth = depth;
+                        unknowns.push(capture_element_raw(&mut reader, e, &mut capture_depth)?);
+                    }
+                    // Both helpers consume the matching end tag
+                    depth -= 1;
+                }
+            }
+            Ok(Event::Empty(ref e)) if depth == 1 => {
+                let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
+                if !KNOWN_ROOT_ELEMENTS.contains(&tag.as_str()) {
+                    unknowns.push(empty_element_raw(e));
+                }
+            }
+            Ok(Event::End(_)) => depth -= 1,
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(format!("XML parse error: {}", e)),
+            _ => {}
+        }
+    }
+
+    Ok(unknowns)
+}
+
+/// Consume events until the end tag matching an already-read start tag.
+fn skip_subtree(reader: &mut Reader<&[u8]>) -> Result<(), String> {
+    let mut inner_depth = 1;
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(_)) => inner_depth += 1,
+            Ok(Event::End(_)) => {
+                inner_depth -= 1;
+                if inner_depth == 0 {
+                    return Ok(());
+                }
+            }
+            Ok(Event::Eof) => return Ok(()),
+            Err(e) => return Err(format!("XML parse error: {}", e)),
+            _ => {}
+        }
+    }
+}
+
+/// Raw XML for a self-closing element, keeping its attributes.
+fn empty_element_raw(e: &BytesStart) -> String {
+    let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
+    let mut raw = format!("<{}", tag);
+    for attr in e.attributes().flatten() {
+        let k = String::from_utf8_lossy(attr.key.as_ref());
+        let v = String::from_utf8_lossy(&attr.value);
+        raw.push_str(&format!(" {}=\"{}\"", k, v));
+    }
+    raw.push_str("/>");
+    raw
+}
+
 /// Extract the raw XML of unknown child elements for each <game> in the original XML.
 /// Returns a map from game path -> Vec of raw XML strings for unknown elements.
 fn extract_unknown_elements(original_xml: &str) -> Result<HashMap<String, Vec<String>>, String> {
@@ -145,15 +219,7 @@ fn extract_game_unknowns(
                 let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
                 if !KNOWN_GAME_FIELDS.contains(&tag.as_str()) && tag != "path" {
                     // Self-closing unknown element
-                    let mut raw = String::from("<");
-                    raw.push_str(&tag);
-                    for attr in e.attributes().flatten() {
-                        let k = String::from_utf8_lossy(attr.key.as_ref());
-                        let v = String::from_utf8_lossy(&attr.value);
-                        raw.push_str(&format!(" {}=\"{}\"", k, v));
-                    }
-                    raw.push_str("/>");
-                    unknowns.push(raw);
+                    unknowns.push(empty_element_raw(e));
                 }
             }
             Ok(Event::End(_)) => {
@@ -229,7 +295,9 @@ fn capture_element_raw(
                 raw.push_str("/>");
             }
             Ok(Event::Text(ref t)) => {
-                raw.push_str(&t.unescape().unwrap_or_default());
+                // Re-escape: the text is written back as raw XML (e.g. "&amp;" must stay "&amp;")
+                let text = t.unescape().unwrap_or_default();
+                raw.push_str(&quick_xml::escape::escape(text.as_ref()));
             }
             Ok(Event::CData(ref t)) => {
                 let cdata = String::from_utf8_lossy(t.as_ref()).to_string();
@@ -256,6 +324,7 @@ fn capture_element_raw(
 /// Merge-serialize: combine our known GameList data with unknown elements from original XML.
 fn merge_serialize(gamelist: &GameList, original_xml: &str) -> Result<String, String> {
     let unknown_map = extract_unknown_elements(original_xml)?;
+    let root_unknowns = extract_root_unknowns(original_xml)?;
 
     // Build output using quick-xml writer for proper escaping
     let mut writer = Writer::new_with_indent(Vec::new(), b' ', 2);
@@ -269,6 +338,13 @@ fn merge_serialize(gamelist: &GameList, original_xml: &str) -> Result<String, St
     writer
         .write_event(Event::Start(BytesStart::new("gameList")))
         .map_err(|e| format!("Write error: {}", e))?;
+
+    // Unknown root elements first (ES-DE writes <alternativeEmulator> before the games)
+    for raw in &root_unknowns {
+        // Raw bytes bypass the writer's indentation, so start each one on its own line
+        writer.get_mut().extend_from_slice(b"\n  ");
+        writer.get_mut().extend_from_slice(raw.as_bytes());
+    }
 
     // <provider> if present
     if let Some(ref provider) = gamelist.provider {
@@ -442,4 +518,56 @@ fn write_game(
         .write_event(Event::End(BytesEnd::new("game")))
         .map_err(|e| format!("Write error: {}", e))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const ESDE_GAMELIST: &str = r#"<?xml version="1.0"?>
+<gameList>
+	<alternativeEmulator>
+		<label>Snes9x - Current</label>
+	</alternativeEmulator>
+	<game>
+		<path>./Juego Ficticio.sfc</path>
+		<name>Juego Ficticio</name>
+		<completed>true</completed>
+		<altemulator>Mesen &amp; co</altemulator>
+	</game>
+</gameList>
+"#;
+
+    #[test]
+    fn preserves_unknown_root_elements() {
+        let gamelist = parse_gamelist(ESDE_GAMELIST).unwrap();
+        let out = serialize_gamelist(&gamelist, Some(ESDE_GAMELIST)).unwrap();
+
+        assert!(out.contains("\n  <alternativeEmulator>"));
+        assert!(out.contains("<label>Snes9x - Current</label>"));
+        assert!(out.contains("</alternativeEmulator>"));
+        // Root unknowns go before the games, like ES-DE writes them
+        assert!(out.find("<alternativeEmulator>").unwrap() < out.find("<game>").unwrap());
+    }
+
+    #[test]
+    fn preserves_unknown_game_fields_with_escaping() {
+        let gamelist = parse_gamelist(ESDE_GAMELIST).unwrap();
+        let out = serialize_gamelist(&gamelist, Some(ESDE_GAMELIST)).unwrap();
+
+        assert!(out.contains("<completed>true</completed>"));
+        assert!(out.contains("<altemulator>Mesen &amp; co</altemulator>"));
+        // The result must still be a valid gamelist
+        let reparsed = parse_gamelist(&out).unwrap();
+        assert_eq!(reparsed.games.len(), 1);
+        assert_eq!(reparsed.games[0].name.as_deref(), Some("Juego Ficticio"));
+    }
+
+    #[test]
+    fn round_trip_is_stable() {
+        let gamelist = parse_gamelist(ESDE_GAMELIST).unwrap();
+        let first = serialize_gamelist(&gamelist, Some(ESDE_GAMELIST)).unwrap();
+        let second = serialize_gamelist(&parse_gamelist(&first).unwrap(), Some(&first)).unwrap();
+        assert_eq!(first, second);
+    }
 }

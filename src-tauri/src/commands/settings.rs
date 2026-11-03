@@ -21,8 +21,14 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
     }
     let content = fs::read_to_string(&path)
         .map_err(|e| format!("Failed to read settings: {}", e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse settings: {}", e))
+    let mut settings: AppSettings = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse settings: {}", e))?;
+
+    // Old settings files have no profiles: convert them once and persist the result
+    if settings.migrate_legacy() {
+        save_settings(app, settings.clone())?;
+    }
+    Ok(settings)
 }
 
 #[tauri::command]
@@ -47,6 +53,9 @@ pub fn export_settings(app: tauri::AppHandle, dest_path: String) -> Result<(), S
 pub fn import_settings(file_path: String) -> Result<AppSettings, String> {
     let content = fs::read_to_string(&file_path)
         .map_err(|e| format!("Failed to read import file: {}", e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Invalid settings file: {}", e))
+    let mut settings: AppSettings = serde_json::from_str(&content)
+        .map_err(|e| format!("Invalid settings file: {}", e))?;
+    // Exports made before profiles existed are migrated the same way
+    settings.migrate_legacy();
+    Ok(settings)
 }
