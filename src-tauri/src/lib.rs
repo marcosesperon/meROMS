@@ -56,6 +56,7 @@ pub fn run() {
             settings::export_settings,
             settings::import_settings,
             profiles::detect_esde_paths,
+            profiles::detect_pending_structure,
             systems::scan_systems,
             gamelist::load_gamelist,
             gamelist::save_gamelist,

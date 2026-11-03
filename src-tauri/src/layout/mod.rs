@@ -171,6 +171,7 @@ mod tests {
             rom_root_path: "/ficticio/ROMs".into(),
             esde_home_path: Some(home.into()),
             media_dir: media.map(String::from),
+            skip_structure_prompt: false,
         }
     }
 

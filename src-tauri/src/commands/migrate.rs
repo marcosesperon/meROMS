@@ -67,15 +67,19 @@ struct MigrationProgress {
     system: String,
 }
 
+/// `source` puede ser un perfil guardado o uno «detectado» que no está en los ajustes
+/// (p. ej. la estructura clásica de la misma carpeta). Con `systems` solo se migran esos.
 #[tauri::command]
 pub async fn plan_migration(
-    app: tauri::AppHandle,
-    source_profile_id: String,
+    source: Profile,
     target: Profile,
     mode: MigrationMode,
+    systems: Option<Vec<String>>,
 ) -> Result<MigrationReport, String> {
-    let (src, dst, rom_root) = prepare(&app, &source_profile_id, &target)?;
-    tauri::async_runtime::spawn_blocking(move || migrate(&src, &dst, &rom_root, mode, true, &mut |_, _, _| {}))
+    let (src, dst, rom_root) = prepare(&source, &target)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        migrate(&src, &dst, &rom_root, systems.as_deref(), mode, true, &mut |_, _, _| {})
+    })
         .await
         .map_err(|e| format!("Migration task failed: {}", e))?
 }
@@ -83,15 +87,16 @@ pub async fn plan_migration(
 #[tauri::command]
 pub async fn run_migration(
     app: tauri::AppHandle,
-    source_profile_id: String,
+    source: Profile,
     target: Profile,
     mode: MigrationMode,
+    systems: Option<Vec<String>>,
 ) -> Result<MigrationReport, String> {
-    let (src, dst, rom_root) = prepare(&app, &source_profile_id, &target)?;
+    let (src, dst, rom_root) = prepare(&source, &target)?;
     let emitter = app.clone();
     // En otro hilo: copiar miles de medios no debe congelar la ventana
     tauri::async_runtime::spawn_blocking(move || {
-        migrate(&src, &dst, &rom_root, mode, false, &mut |current, total, system| {
+        migrate(&src, &dst, &rom_root, systems.as_deref(), mode, false, &mut |current, total, system| {
             let _ = emitter.emit(
                 "migration-progress",
                 MigrationProgress { current, total, system: system.to_string() },
@@ -104,13 +109,7 @@ pub async fn run_migration(
 
 /// Comprueba los perfiles y monta los dos layouts. El destino usa siempre la misma
 /// carpeta de ROMs que el origen: las ROMs no se mueven.
-fn prepare(app: &tauri::AppHandle, source_profile_id: &str, target: &Profile) -> Result<(Layout, Layout, PathBuf), String> {
-    let settings = super::settings::get_settings(app.clone())?;
-    let source = settings
-        .profiles
-        .iter()
-        .find(|p| p.id == source_profile_id)
-        .ok_or_else(|| format!("Profile not found: {}", source_profile_id))?;
+fn prepare(source: &Profile, target: &Profile) -> Result<(Layout, Layout, PathBuf), String> {
     if source.kind == target.kind {
         return Err("Source and destination use the same structure".into());
     }
@@ -129,6 +128,7 @@ fn migrate(
     src: &Layout,
     dst: &Layout,
     rom_root: &Path,
+    only: Option<&[String]>,
     mode: MigrationMode,
     dry_run: bool,
     on_progress: &mut dyn FnMut(usize, usize, &str),
@@ -136,7 +136,10 @@ fn migrate(
     let mut report = MigrationReport { dry_run, ..Default::default() };
     report.warnings.extend(esde_rom_dir_warning(dst, rom_root));
 
-    let systems = list_system_dirs(rom_root)?;
+    let mut systems = list_system_dirs(rom_root)?;
+    if let Some(only) = only {
+        systems.retain(|dir| only.contains(&SystemRef::from_rom_dir(dir).name));
+    }
     let total = systems.len();
     for (i, dir) in systems.iter().enumerate() {
         let system = SystemRef::from_rom_dir(dir);
@@ -166,7 +169,7 @@ fn migrate(
 }
 
 /// Carpetas de sistema dentro de la carpeta de ROMs (las ocultas no).
-fn list_system_dirs(rom_root: &Path) -> Result<Vec<PathBuf>, String> {
+pub(super) fn list_system_dirs(rom_root: &Path) -> Result<Vec<PathBuf>, String> {
     let mut dirs: Vec<PathBuf> = fs::read_dir(rom_root)
         .map_err(|e| format!("Failed to read ROM folder: {}", e))?
         .flatten()
@@ -354,11 +357,14 @@ fn migrate_esde_collections(
 
         let mut by_system: BTreeMap<String, Vec<String>> = BTreeMap::new();
         let mut unconverted = 0;
+        // Entradas de sistemas que no entran en esta migración: se dejan para otra vez
+        let mut not_in_scope = 0;
         for line in content.lines().map(str::trim).filter(|l| !l.is_empty()) {
             match parse_esde_entry(line, rom_root) {
                 Some((system, rom_path)) if migrated.contains(&system) => {
                     by_system.entry(system).or_default().push(rom_path)
                 }
+                Some((system, _)) if only_some_systems(rom_root, &system, &migrated) => not_in_scope += 1,
                 _ => unconverted += 1,
             }
         }
@@ -376,11 +382,16 @@ fn migrate_esde_collections(
             push_unique(&mut report.collections, dest.to_string_lossy().to_string());
         }
         // Solo se quita el original si se ha podido convertir entero
-        if !dry_run && mode == MigrationMode::Move && unconverted == 0 {
+        if !dry_run && mode == MigrationMode::Move && unconverted == 0 && not_in_scope == 0 {
             let _ = fs::remove_file(&file);
         }
     }
     Ok(())
+}
+
+/// ¿La entrada es de un sistema que existe pero no se está migrando ahora?
+fn only_some_systems(rom_root: &Path, system: &str, migrated: &[String]) -> bool {
+    !migrated.iter().any(|m| m == system) && rom_root.join(system).is_dir()
 }
 
 /// «%ROMPATH%/snes/Juego.sfc» (o una ruta absoluta dentro de la carpeta de ROMs)
@@ -500,10 +511,10 @@ mod tests {
     #[test]
     fn la_vista_previa_no_toca_nada_y_cuenta_lo_mismo_que_la_ejecucion() {
         let f = classic_library();
-        let plan = migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Copy, true, &mut |_, _, _| {}).unwrap();
+        let plan = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, true, &mut |_, _, _| {}).unwrap();
         assert!(!f.root.join("ES-DE").exists(), "dry run must not write anything");
 
-        let run = migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        let run = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
         assert_eq!(plan.systems[0].media_transferred, run.systems[0].media_transferred);
         assert_eq!(run.systems[0].media_transferred, 2);
         // El marquee con nombre antiguo no se migra: se avisa para pasar el normalizador
@@ -511,9 +522,23 @@ mod tests {
     }
 
     #[test]
+    fn con_lista_de_sistemas_solo_migra_esos() {
+        let f = classic_library();
+        touch(&f.roms.join("megadrive/Otro.md"), b"rom");
+        touch(&f.roms.join("megadrive/gamelist.xml"), b"<gameList><game><path>./Otro.md</path></game></gameList>");
+        let only = vec!["snes".to_string()];
+        let report = migrate(&Layout::Classic, &f.esde, &f.roms, Some(&only), MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+
+        let names: Vec<_> = report.systems.iter().map(|s| s.name.clone()).collect();
+        assert_eq!(names, vec!["snes"]);
+        assert!(f.root.join("ES-DE/gamelists/snes/gamelist.xml").exists());
+        assert!(!f.root.join("ES-DE/gamelists/megadrive").exists());
+    }
+
+    #[test]
     fn clasica_a_esde_copiando() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
 
         let media = f.root.join("ES-DE/downloaded_media/snes");
         assert!(media.join("covers/Juego Uno.png").exists());
@@ -533,7 +558,7 @@ mod tests {
     #[test]
     fn clasica_a_esde_moviendo_deja_el_origen_en_las_copias() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
 
         let snes = f.roms.join("snes");
         assert!(!snes.join("covers").exists(), "moved media folders are removed when empty");
@@ -547,8 +572,8 @@ mod tests {
     #[test]
     fn ida_y_vuelta_regenera_las_rutas_de_la_clasica() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
-        let back = migrate(&f.esde, &Layout::Classic, &f.roms, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        let back = migrate(&f.esde, &Layout::Classic, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
 
         assert_eq!(back.systems[0].media_transferred, 2);
         let xml = fs::read_to_string(f.roms.join("snes/gamelist.xml")).unwrap();
@@ -563,7 +588,7 @@ mod tests {
     fn no_pisa_lo_que_ya_existe_en_el_destino() {
         let f = classic_library();
         touch(&f.root.join("ES-DE/downloaded_media/snes/covers/Juego Uno.png"), b"ya estaba");
-        let report = migrate(&Layout::Classic, &f.esde, &f.roms, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        let report = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
 
         assert_eq!(report.systems[0].media_skipped, vec!["covers/Juego Uno.png".to_string()]);
         assert_eq!(

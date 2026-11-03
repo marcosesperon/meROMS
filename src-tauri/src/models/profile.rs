@@ -29,6 +29,9 @@ pub struct Profile {
     /// Solo ES-DE: carpeta de medios si no es la de por defecto (<ES-DE>/downloaded_media).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub media_dir: Option<String>,
+    /// «No volver a preguntar»: no avisar al entrar si hay sistemas con la otra estructura.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub skip_structure_prompt: bool,
 }
 
 impl Profile {
@@ -46,6 +49,7 @@ impl Profile {
             rom_root_path: rom_root_path.to_string(),
             esde_home_path: None,
             media_dir: None,
+            skip_structure_prompt: false,
         }
     }
 }
