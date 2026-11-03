@@ -105,6 +105,15 @@ export interface Profile {
   esde_home_path?: string;
   /** ES-DE only: media folder when it isn't <ES-DE>/downloaded_media */
   media_dir?: string;
+  /** "Don't ask again": no prompt when systems are found in the other structure */
+  skip_structure_prompt?: boolean;
+}
+
+/** Systems of the active profile that are in the other structure, and where to migrate them from */
+export interface PendingStructure {
+  /** May be a profile that is not saved (detected classic data, or ~/ES-DE) */
+  source: Profile;
+  systems: string[];
 }
 
 /** Paths read from an ES-DE folder's es_settings.xml */

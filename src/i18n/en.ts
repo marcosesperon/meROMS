@@ -382,6 +382,17 @@ const en = {
   "gameTools.cleanNothing": "Nothing left over: this game only has the media it uses.",
   "gameTools.unsavedMessage": "You have unsaved changes. Save them before continuing?",
   "gameTools.saveAndContinue": "Save and continue",
+  // Systems found in the other structure
+  "structure.promptTitle": "Library in another structure",
+  "structure.promptMessage": "{count} system(s) of this profile are in {kind} structure and have nothing in this profile's structure ({target}). Migrate them?",
+  "structure.promptSource": "Found in: {path}",
+  "structure.dontAsk": "Don't ask again for this profile",
+  "structure.notNow": "Not now",
+  "structure.migrate": "Migrate...",
+  "structure.banner": "This system is in {kind} structure.",
+  "structure.mark": "In {kind} structure: can be migrated",
+  "structure.presetSystems": "Systems to migrate: {systems}",
+  "structure.finish": "Done",
 } as const;
 
 export default en;

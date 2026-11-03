@@ -15,6 +15,7 @@ export function Sidebar() {
   const scanProgress = useAppStore((s) => s.scanProgress);
   const settings = useAppStore((s) => s.settings);
   const setActiveProfile = useAppStore((s) => s.setActiveProfile);
+  const pendingStructure = useAppStore((s) => s.pendingStructure);
   const { t } = useTranslation();
 
   const profiles = settings.profiles ?? [];
@@ -101,6 +102,15 @@ export function Sidebar() {
                   : "text-zinc-300 hover:bg-zinc-800"
               }`}
             >
+              {/* Marca: este sistema está en la otra estructura y se puede migrar */}
+              {pendingStructure?.systems.includes(system.name) && (
+                <span
+                  className="absolute top-2 left-2 w-2 h-2 rounded-full bg-amber-400"
+                  title={t("structure.mark", {
+                    kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
+                  })}
+                />
+              )}
               {/* Badge con número de juegos/roms */}
               {(system.has_gamelist ? system.game_count > 0 : system.rom_count > 0) && (
                 <span className="absolute top-1.5 right-2 text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">

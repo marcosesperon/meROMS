@@ -4,6 +4,7 @@ import type {
   CurrentView,
   Folder,
   Game,
+  PendingStructure,
   Provider,
   SystemInfo,
   ViewMode,
@@ -11,6 +12,10 @@ import type {
 import * as commands from "../commands";
 import { useI18nStore } from "../i18n";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
+
+// Library (profile + folders) we already asked about migrating, so the prompt shows
+// once per profile activation and not on every rescan
+let promptedLocationKey: string | null = null;
 
 interface AppState {
   // Settings
@@ -63,6 +68,18 @@ interface AppState {
   // Folder browsing
   activeFolderPath: string | null;
   setActiveFolderPath: (path: string | null) => void;
+
+  // Systems in the other structure (offered to migrate)
+  pendingStructure: PendingStructure | null;
+  checkPendingStructure: () => Promise<void>;
+  structurePromptOpen: boolean;
+  closeStructurePrompt: (dontAskAgain: boolean) => Promise<void>;
+  /** Migration window pre-filled with source, destination (active profile) and systems */
+  migrationPreset: PendingStructure | null;
+  openPresetMigration: (systems?: string[]) => void;
+  closePresetMigration: () => void;
+  /** Rescan systems and reload the selected one (after a migration) */
+  reloadLibrary: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -123,6 +140,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ loading: true, scanProgress: null });
       const systems = await commands.scanSystems(profile.rom_root_path);
       set({ systems, loading: false, scanProgress: null });
+      get().checkPendingStructure();
     } catch (e) {
       console.error("Failed to scan systems:", e);
       set({ loading: false, scanProgress: null });
@@ -228,4 +246,50 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Folder browsing
   activeFolderPath: null,
   setActiveFolderPath: (path) => set({ activeFolderPath: path }),
+
+  // Systems in the other structure
+  pendingStructure: null,
+  structurePromptOpen: false,
+  migrationPreset: null,
+  checkPendingStructure: async () => {
+    const profile = getActiveProfile(get().settings);
+    try {
+      const pending = await commands.detectPendingStructure();
+      const key = profileLocationKey(profile);
+      const justEntered = key !== promptedLocationKey;
+      promptedLocationKey = key;
+      set({
+        pendingStructure: pending,
+        structurePromptOpen: !!pending && justEntered && !profile?.skip_structure_prompt,
+      });
+    } catch (e) {
+      console.error("Failed to detect pending structure:", e);
+      set({ pendingStructure: null });
+    }
+  },
+  closeStructurePrompt: async (dontAskAgain: boolean) => {
+    set({ structurePromptOpen: false });
+    if (!dontAskAgain) return;
+    const { settings, updateSettings } = get();
+    const active = getActiveProfile(settings);
+    if (!active) return;
+    const profiles = (settings.profiles ?? []).map((p) =>
+      p.id === active.id ? { ...p, skip_structure_prompt: true } : p
+    );
+    await updateSettings({ ...settings, profiles });
+  },
+  openPresetMigration: (systems?: string[]) => {
+    const pending = get().pendingStructure;
+    if (!pending) return;
+    set({ migrationPreset: { source: pending.source, systems: systems ?? pending.systems } });
+  },
+  closePresetMigration: () => set({ migrationPreset: null }),
+  reloadLibrary: async () => {
+    await get().loadSystems();
+    const { systems, selectedSystem } = get();
+    if (!selectedSystem) return;
+    const fresh = systems.find((s) => s.path === selectedSystem.path);
+    set({ selectedSystem: fresh ?? null, selectedGame: null });
+    if (fresh) get().loadGames(fresh.path);
+  },
 }));

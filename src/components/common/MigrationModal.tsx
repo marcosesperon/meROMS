@@ -3,13 +3,18 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "../../i18n";
 import { detectEsdePaths, planMigration, runMigration } from "../../commands";
-import type { MigrationMode, MigrationProgress, MigrationReport, Profile } from "../../types";
+import type { MigrationMode, MigrationProgress, MigrationReport, PendingStructure, Profile } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { createProfile, getActiveProfile } from "../../utils/profiles";
 
 interface MigrationModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Modo «rellenado» (sistemas detectados en la otra estructura): el origen es el detectado,
+   * el destino es el perfil activo y solo se migran esos sistemas. No se elige destino.
+   */
+  preset?: PendingStructure | null;
 }
 
 type Step = "config" | "preview" | "running" | "done";
@@ -19,12 +24,16 @@ type Step = "config" | "preview" | "running" | "done";
  * configurar destino → vista previa → ejecución con progreso → informe.
  * Al acabar ofrece crear (o activar) el perfil de destino.
  */
-export function MigrationModal({ open, onClose }: MigrationModalProps) {
+export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
   const { t } = useTranslation();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const source = getActiveProfile(settings);
+  const reloadLibrary = useAppStore((s) => s.reloadLibrary);
+  const activeProfile = getActiveProfile(settings);
+  // Normal: del perfil activo a otro. Rellenado: de lo detectado al perfil activo.
+  const source = preset ? preset.source : activeProfile;
   const targetKind = source?.kind === "esde" ? "classic" : "esde";
+  const kindLabel = (kind: Profile["kind"]) => (kind === "esde" ? "ES-DE" : t("profiles.kindClassic"));
 
   // Perfiles ya guardados que podrían ser el destino: la otra estructura y la misma carpeta de ROMs
   const candidates = useMemo(
@@ -48,7 +57,7 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
     setReport(null);
     setProgress(null);
     setError(null);
-    setTarget(candidates[0] ?? newTarget());
+    setTarget(preset ? activeProfile ?? null : candidates[0] ?? newTarget());
   }, [open]);
 
   useEffect(() => {
@@ -84,7 +93,7 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
     setBusy(true);
     setError(null);
     try {
-      setReport(await planMigration(source.id, target, mode));
+      setReport(await planMigration(source, target, mode, preset?.systems));
       setStep("preview");
     } catch (e) {
       setError(String(e));
@@ -100,12 +109,18 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
     setProgress(null);
     setError(null);
     try {
-      setReport(await runMigration(source.id, target, mode));
+      setReport(await runMigration(source, target, mode, preset?.systems));
       setStep("done");
     } catch (e) {
       setError(String(e));
       setStep("preview");
     }
+  }
+
+  // Rellenado: el destino ya es el perfil activo; solo hay que volver a escanear
+  async function handleFinishPreset() {
+    onClose();
+    await reloadLibrary();
   }
 
   // Crea el perfil de destino si es nuevo y lo deja activo
@@ -137,8 +152,9 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
           <h3 className="text-base font-semibold text-zinc-100">{t("migration.title")}</h3>
           <p className="text-sm text-zinc-400 mt-1">
             {t("migration.fromTo", {
-              from: `${source.name} (${source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic")})`,
-              to: targetKind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
+              // Un origen detectado puede no tener nombre (la estructura clásica de esta carpeta)
+              from: source.name ? `${source.name} (${kindLabel(source.kind)})` : kindLabel(source.kind),
+              to: preset && target ? `${target.name} (${kindLabel(target.kind)})` : kindLabel(targetKind),
             })}
           </p>
         </div>
@@ -150,7 +166,12 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
             <>
               <p className="text-xs text-zinc-500">{t("migration.description")}</p>
 
-              {/* Destino: perfil existente o nuevo */}
+              {preset && (
+                <p className="text-sm text-zinc-300">{t("structure.presetSystems", { systems: preset.systems.join(", ") })}</p>
+              )}
+
+              {/* Destino: perfil existente o nuevo (en modo rellenado ya está fijado) */}
+              {!preset && (
               <section className="space-y-2">
                 <label className="text-xs text-zinc-400 block">{t("migration.target")}</label>
                 <select
@@ -196,6 +217,7 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
                 )}
                 <p className="text-xs text-zinc-500">{t("migration.romsStay", { path: source.rom_root_path })}</p>
               </section>
+              )}
 
               {/* Copiar o mover */}
               <section className="space-y-2">
@@ -288,7 +310,7 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between gap-2">
           <button
-            onClick={step === "preview" ? () => setStep("config") : onClose}
+            onClick={step === "preview" ? () => setStep("config") : step === "done" && preset ? handleFinishPreset : onClose}
             disabled={step === "running"}
             className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
@@ -311,7 +333,15 @@ export function MigrationModal({ open, onClose }: MigrationModalProps) {
               {t(mode === "copy" ? "migration.runCopy" : "migration.runMove")}
             </button>
           )}
-          {step === "done" && (
+          {step === "done" && preset && (
+            <button
+              onClick={handleFinishPreset}
+              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
+            >
+              {t("structure.finish")}
+            </button>
+          )}
+          {step === "done" && !preset && (
             <button
               onClick={handleActivateTarget}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"

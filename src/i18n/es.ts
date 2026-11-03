@@ -384,6 +384,17 @@ const es: Record<TranslationKeys, string> = {
   "gameTools.cleanNothing": "No sobra nada: este juego solo tiene los medios que usa.",
   "gameTools.unsavedMessage": "Tienes cambios sin guardar. ¿Los guardas antes de seguir?",
   "gameTools.saveAndContinue": "Guardar y continuar",
+  // Sistemas en la otra estructura
+  "structure.promptTitle": "Biblioteca en otra estructura",
+  "structure.promptMessage": "{count} sistema(s) de este perfil están en estructura {kind} y no tienen nada en la del perfil ({target}). ¿Migrarlos?",
+  "structure.promptSource": "Encontrado en: {path}",
+  "structure.dontAsk": "No volver a preguntar en este perfil",
+  "structure.notNow": "Ahora no",
+  "structure.migrate": "Migrar…",
+  "structure.banner": "Este sistema está en estructura {kind}.",
+  "structure.mark": "En estructura {kind}: se puede migrar",
+  "structure.presetSystems": "Sistemas a migrar: {systems}",
+  "structure.finish": "Hecho",
 };
 
 export default es;

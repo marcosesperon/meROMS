@@ -12,6 +12,8 @@ import { ExportModal } from "./components/common/ExportModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
+import { MigrationModal } from "./components/common/MigrationModal";
+import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { scrapeSystem } from "./commands";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
@@ -27,6 +29,10 @@ function App() {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const loadGames = useAppStore((s) => s.loadGames);
   const setScanProgress = useAppStore((s) => s.setScanProgress);
+  const pendingStructure = useAppStore((s) => s.pendingStructure);
+  const migrationPreset = useAppStore((s) => s.migrationPreset);
+  const openPresetMigration = useAppStore((s) => s.openPresetMigration);
+  const closePresetMigration = useAppStore((s) => s.closePresetMigration);
 
   const { t } = useTranslation();
   const [showNewGame, setShowNewGame] = useState(false);
@@ -93,6 +99,22 @@ function App() {
   return (
     <MainLayout>
         <div className="flex-1 flex flex-col overflow-hidden">
+          {/* This system's data is in the other structure: offer to migrate just this one */}
+          {selectedSystem && pendingStructure?.systems.includes(selectedSystem.name) && (
+            <div className="px-6 py-2 shrink-0 border-b border-amber-700/40 bg-amber-600/10 flex items-center justify-between gap-3">
+              <p className="text-sm text-amber-300">
+                {t("structure.banner", {
+                  kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
+                })}
+              </p>
+              <button
+                onClick={() => openPresetMigration([selectedSystem.name])}
+                className="shrink-0 px-3 py-1 text-sm bg-amber-600 text-white rounded hover:bg-amber-500 transition-colors"
+              >
+                {t("structure.migrate")}
+              </button>
+            </div>
+          )}
           <GameListView />
           {selectedSystem && (
             <div className="px-6 h-12 shrink-0 border-t border-zinc-700 flex items-center justify-end gap-2">
@@ -221,6 +243,14 @@ function App() {
         open={showNormalizeModal}
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowNormalizeModal(false)}
+      />
+
+      <StructurePromptModal />
+
+      <MigrationModal
+        open={!!migrationPreset}
+        preset={migrationPreset}
+        onClose={closePresetMigration}
       />
 
       <SettingsView
