@@ -106,18 +106,15 @@ export async function deleteBackup(
   return invoke("delete_backup", { systemPath, backupFilename });
 }
 
-export async function copyImageToSystem(
-  source: string,
+/** Copies a picked file as a game's media using the active profile's naming.
+ * Returns the value to store in the game field. */
+export async function setGameMedia(
   systemPath: string,
-  subfolder: string,
-  filename: string
+  gamePath: string,
+  field: string,
+  source: string
 ): Promise<string> {
-  return invoke("copy_image_to_system", {
-    source,
-    systemPath,
-    subfolder,
-    filename,
-  });
+  return invoke("set_game_media", { systemPath, gamePath, field, source });
 }
 
 export async function scanGameMedia(
@@ -171,8 +168,9 @@ export async function generateM3uPlaylists(systemPath: string, groups: DiscGroup
   return invoke("generate_m3u_playlists", { systemPath, groups });
 }
 
-export async function generateCollection(name: string, gamePaths: string[], outputDir: string): Promise<string> {
-  return invoke("generate_collection", { name, gamePaths, outputDir });
+/** Writes the collection where the active profile keeps them (system folder or ES-DE collections/). */
+export async function generateCollection(systemPath: string, name: string, gamePaths: string[]): Promise<string> {
+  return invoke("generate_collection", { systemPath, name, gamePaths });
 }
 
 // Folders

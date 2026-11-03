@@ -2,11 +2,20 @@ use serde::{Deserialize, Serialize};
 
 use super::profile::Profile;
 
+/// Per scraper media type: which gamelist field it fills (Classic structure only).
+/// Folder and file name are fixed now (`<ES-DE folder>/<ROM name>.<ext>`); `subfolder` and
+/// `suffix` are kept only as legacy hints so the media normalizer can find old files.
+/// The frontend sends camelCase; snake_case aliases keep older settings files loadable.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MediaPathConfig {
+    #[serde(alias = "media_type")]
     pub media_type: String,
+    #[serde(default)]
     pub subfolder: String,
+    #[serde(default)]
     pub suffix: String,
+    #[serde(alias = "game_field")]
     pub game_field: String,
 }
 
@@ -103,32 +112,24 @@ impl AppSettings {
         self.tgdb_apikey.as_ref().is_some_and(|s| !s.is_empty())
     }
 
-    /// Get the media path config for a given scraper media type.
-    /// Falls back to ES-DE defaults if not configured.
-    pub fn media_path_for(&self, media_type: &str) -> (String, String, String) {
-        if let Some(paths) = &self.media_paths {
-            if let Some(cfg) = paths.iter().find(|p| p.media_type == media_type) {
-                return (
-                    cfg.subfolder.clone(),
-                    cfg.suffix.clone(),
-                    cfg.game_field.clone(),
-                );
-            }
+    /// Gamelist field a scraper media type fills in the Classic structure:
+    /// the user's choice if configured, otherwise meROMS' historical default.
+    pub fn media_field_for(&self, media_type: &str) -> Option<String> {
+        if let Some(cfg) = self
+            .media_paths
+            .as_ref()
+            .and_then(|paths| paths.iter().find(|p| p.media_type == media_type))
+        {
+            return Some(cfg.game_field.clone());
         }
-        // ES-DE defaults
-        match media_type {
-            "box-2D" => ("covers".into(), "".into(), "image".into()),
-            "box-3D" => ("3dboxes".into(), "".into(), "image".into()),
-            "ss" => ("screenshots".into(), "".into(), "thumbnail".into()),
-            "sstitle" => ("titlescreens".into(), "".into(), "thumbnail".into()),
-            "marquee" | "wheel" | "wheel-hd" | "screenmarquee" => {
-                ("marquees".into(), "".into(), "marquee".into())
-            }
-            "fanart" => ("fanart".into(), "".into(), "image".into()),
-            "mixrbv1" | "mixrbv2" => ("miximages".into(), "".into(), "image".into()),
-            "video" => ("videos".into(), "".into(), "video".into()),
-            _ => ("images".into(), "".into(), "image".into()),
-        }
+        let field = match media_type {
+            "box-2D" | "box-3D" | "fanart" | "mixrbv1" | "mixrbv2" => "image",
+            "ss" | "sstitle" => "thumbnail",
+            "marquee" | "wheel" | "wheel-hd" | "screenmarquee" => "marquee",
+            "video" => "video",
+            _ => return None,
+        };
+        Some(field.to_string())
     }
 }
 
@@ -173,6 +174,18 @@ mod tests {
         };
         assert!(settings.migrate_legacy());
         assert_eq!(settings.active_profile().unwrap().name, "Classic");
+    }
+
+    #[test]
+    fn media_paths_accept_camel_and_snake_case() {
+        let camel = r#"{"media_paths":[{"mediaType":"ss","subfolder":"x","suffix":"","gameField":"image"}]}"#;
+        let snake = r#"{"media_paths":[{"media_type":"ss","game_field":"image"}]}"#;
+        for json in [camel, snake] {
+            let settings: AppSettings = serde_json::from_str(json).unwrap();
+            assert_eq!(settings.media_field_for("ss").as_deref(), Some("image"));
+        }
+        // Not configured: historical default
+        assert_eq!(AppSettings::default().media_field_for("ss").as_deref(), Some("thumbnail"));
     }
 
     #[test]

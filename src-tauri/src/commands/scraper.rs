@@ -8,6 +8,8 @@ use serde_json::Value;
 use tauri::Emitter;
 use tokio::time::{sleep, Duration};
 
+use crate::layout::{Layout, SystemRef};
+use crate::media;
 use crate::models::game::Game;
 use crate::models::scraper::{ScrapeProgress, ScrapeResult};
 use crate::models::system::screenscraper_id_for_system;
@@ -173,8 +175,8 @@ fn find_media_url(medias: &Value, media_type: &str) -> Option<String> {
     None
 }
 
-// media_type_to_game_field and media_type_to_subfolder are now handled
-// by AppSettings::media_path_for() which reads user configuration.
+// Where each media type is saved and which field it fills is decided by
+// media::scraped_media_target() (unified naming + active structure).
 
 /// Download an image from URL and save to disk.
 async fn download_media(
@@ -209,16 +211,11 @@ async fn process_scrape_response(
     client: &Client,
     jeu: &Value,
     existing_game: &Game,
-    system_path: &str,
+    layout: &Layout,
+    system: &SystemRef,
     media_types: &[String],
     settings: &AppSettings,
 ) -> Result<Game, String> {
-    let rom_stem = Path::new(&existing_game.path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("unknown")
-        .to_string();
-
     // Preferred language from app settings
     let lang = ss_language(settings);
 
@@ -262,10 +259,8 @@ async fn process_scrape_response(
 
     // Download media
     let medias = &jeu["medias"];
-    let mut image: Option<String> = existing_game.image.clone();
-    let mut thumbnail: Option<String> = existing_game.thumbnail.clone();
-    let mut marquee: Option<String> = existing_game.marquee.clone();
-    let mut video: Option<String> = existing_game.video.clone();
+    // (game field, value) of each media file actually downloaded
+    let mut downloaded: Vec<(String, String)> = Vec::new();
 
     for media_type in media_types {
         // ScreenScraper uses "video" and "video-normalized" as media type names
@@ -292,19 +287,14 @@ async fn process_scrape_response(
                 .next()
                 .unwrap_or(if media_type == "video" { "mp4" } else { "png" });
 
-            let (subfolder, suffix, game_field) = settings.media_path_for(media_type);
-            let filename = format!("{}{}.{}", rom_stem, suffix, ext);
-            let dest = Path::new(system_path).join(&subfolder).join(&filename);
+            let Some(target) = media::scraped_media_target(
+                layout, system, settings, media_type, &existing_game.path, ext,
+            ) else {
+                continue; // media type without a known folder
+            };
 
-            if download_media(client, &url, &dest).await.is_ok() {
-                let relative_path = format!("./{}/{}", subfolder, filename);
-                match game_field.as_str() {
-                    "image" => image = Some(relative_path),
-                    "thumbnail" => thumbnail = Some(relative_path),
-                    "marquee" => marquee = Some(relative_path),
-                    "video" => video = Some(relative_path),
-                    _ => {}
-                }
+            if download_media(client, &url, &target.dest).await.is_ok() {
+                downloaded.push((target.field, target.value));
             }
         }
     }
@@ -320,10 +310,9 @@ async fn process_scrape_response(
     if players.is_some() { game.players = players; }
     if rating.is_some() { game.rating = rating; }
     if releasedate.is_some() { game.releasedate = releasedate; }
-    game.image = image;
-    game.thumbnail = thumbnail;
-    game.marquee = marquee;
-    game.video = video;
+    for (field, value) in downloaded {
+        media::set_field(&mut game, &field, Some(value));
+    }
 
     // Extract ScreenScraper game ID
     if let Some(id) = jeu.get("id").and_then(|v| v.as_u64()) {
@@ -351,14 +340,15 @@ async fn process_scrape_response(
 async fn scrape_game_screenscraper(
     settings: &AppSettings,
     existing_game: &Game,
-    system_path: &str,
-    folder_name: &str,
+    layout: &Layout,
+    system: &SystemRef,
 ) -> Result<ScrapeResult, String> {
+    let folder_name = system.name.as_str();
     let system_id = screenscraper_id_for_system(folder_name)
         .ok_or_else(|| format!("Unknown system for ScreenScraper: {}", folder_name))?;
 
     let rom_relative = existing_game.path.strip_prefix("./").unwrap_or(&existing_game.path);
-    let rom_absolute = Path::new(system_path).join(rom_relative);
+    let rom_absolute = system.rom_dir.join(rom_relative);
     let md5_hash = compute_md5(&rom_absolute)?;
 
     let rom_filename = Path::new(&existing_game.path)
@@ -413,7 +403,7 @@ async fn scrape_game_screenscraper(
 
     let media_types = settings.media_types();
     let updated_game =
-        process_scrape_response(&client, jeu, existing_game, system_path, &media_types, settings).await?;
+        process_scrape_response(&client, jeu, existing_game, layout, system, &media_types, settings).await?;
 
     Ok(ScrapeResult {
         game: updated_game,
@@ -429,14 +419,9 @@ pub async fn scrape_game(
     game_path: String,
 ) -> Result<ScrapeResult, String> {
     let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
 
-    let folder_name = Path::new(&system_path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("")
-        .to_string();
-
-    let gamelist = crate::commands::gamelist::load_gamelist(system_path.clone())?;
+    let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
     let existing_game = gamelist
         .games
         .iter()
@@ -446,22 +431,20 @@ pub async fn scrape_game(
 
     // Try ScreenScraper first if configured
     if settings.has_screenscraper() {
-        return scrape_game_screenscraper(&settings, &existing_game, &system_path, &folder_name)
-            .await;
+        return scrape_game_screenscraper(&settings, &existing_game, &layout, &system).await;
     }
 
     // Fallback to TheGamesDB
     if settings.has_tgdb() {
         let client = build_http_client()?;
         let api_key = settings.tgdb_apikey.as_deref().unwrap();
-        let media_types = settings.media_types();
         return crate::commands::scraper_tgdb::scrape_game_tgdb(
             &client,
             api_key,
             &existing_game,
-            &system_path,
-            &folder_name,
-            &media_types,
+            &layout,
+            &system,
+            &settings,
         )
         .await;
     }
@@ -474,11 +457,11 @@ async fn scrape_one(
     settings: &AppSettings,
     client: &Client,
     game: &Game,
-    system_path: &str,
-    folder_name: &str,
+    layout: &Layout,
+    system: &SystemRef,
 ) -> (&'static str, Game) {
     if settings.has_screenscraper() {
-        match scrape_game_screenscraper(settings, game, system_path, folder_name).await {
+        match scrape_game_screenscraper(settings, game, layout, system).await {
             Ok(r) if r.found => return ("success", r.game),
             Ok(_) => {}
             Err(_) => {}
@@ -487,14 +470,13 @@ async fn scrape_one(
 
     if settings.has_tgdb() {
         let api_key = settings.tgdb_apikey.as_deref().unwrap();
-        let media_types = settings.media_types();
         match crate::commands::scraper_tgdb::scrape_game_tgdb(
             client,
             api_key,
             game,
-            system_path,
-            folder_name,
-            &media_types,
+            layout,
+            system,
+            settings,
         )
         .await
         {
@@ -513,7 +495,8 @@ pub async fn scrape_system(
     app: tauri::AppHandle,
     system_path: String,
 ) -> Result<(), String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(system_path.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
     let total = gamelist.games.len();
 
     if total == 0 {
@@ -528,12 +511,6 @@ pub async fn scrape_system(
                 .into(),
         );
     }
-
-    let folder_name = Path::new(&system_path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("")
-        .to_string();
 
     let client = build_http_client()?;
     let mut updated_games: Vec<Game> = Vec::new();
@@ -556,7 +533,7 @@ pub async fn scrape_system(
         }
 
         let (status, updated_game) =
-            scrape_one(&settings, &client, game, &system_path, &folder_name).await;
+            scrape_one(&settings, &client, game, &layout, &system).await;
         updated_games.push(updated_game);
 
         let _ = app.emit(
@@ -575,7 +552,7 @@ pub async fn scrape_system(
         folders: gamelist.folders,
         provider: gamelist.provider,
     };
-    crate::commands::gamelist::save_gamelist(system_path, updated_gamelist)?;
+    crate::commands::gamelist::write_gamelist(&layout, &system, &updated_gamelist)?;
 
     Ok(())
 }

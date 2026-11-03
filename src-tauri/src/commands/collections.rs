@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use crate::layout::Layout;
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DiscGroup {
     pub base_name: String,
@@ -10,8 +12,8 @@ pub struct DiscGroup {
 
 /// Detect multi-disc games by matching patterns like (Disc 1), (CD1), (Disk 1), etc.
 #[tauri::command]
-pub fn detect_multidisc_games(system_path: String) -> Result<Vec<DiscGroup>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(system_path)?;
+pub fn detect_multidisc_games(app: tauri::AppHandle, system_path: String) -> Result<Vec<DiscGroup>, String> {
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path)?;
     let mut groups: HashMap<String, Vec<(String, u32)>> = HashMap::new();
 
     for game in &gamelist.games {
@@ -100,19 +102,94 @@ pub fn generate_m3u_playlists(
     Ok(created)
 }
 
-/// Generate a .cfg collection file (EmulationStation format)
+/// Generate a .cfg custom collection where the active structure keeps them:
+/// - Classic: in the system folder, with gamelist-style paths (`./game.zip`), replacing the file.
+/// - ES-DE: in `<ES-DE>/collections`, with `%ROMPATH%/<system>/game.zip` entries. ES-DE
+///   collections span systems, so new entries are merged into an existing file instead.
 #[tauri::command]
 pub fn generate_collection(
+    app: tauri::AppHandle,
+    system_path: String,
     name: String,
     game_paths: Vec<String>,
-    output_dir: String,
 ) -> Result<String, String> {
-    let filename = format!("custom-{}.cfg", name.replace(' ', "_"));
-    let output_path = Path::new(&output_dir).join(&filename);
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let dir = layout.collections_dir(&system);
+    fs::create_dir_all(&dir).map_err(|e| format!("Failed to create collections folder: {}", e))?;
 
-    let content = game_paths.join("\n");
+    let filename = collection_file_name(&layout, &name);
+    let output_path = dir.join(&filename);
+    let new_entries: Vec<String> = game_paths
+        .iter()
+        .map(|p| layout.collection_entry(&system, p))
+        .collect();
+
+    let content = match layout {
+        Layout::Classic => new_entries.join("\n"),
+        Layout::Esde(_) => {
+            let existing = fs::read_to_string(&output_path).unwrap_or_default();
+            merge_collection_entries(&existing, &new_entries)
+        }
+    };
     fs::write(&output_path, &content)
         .map_err(|e| format!("Failed to write collection: {}", e))?;
 
     Ok(filename)
+}
+
+/// `custom-<name>.cfg`. Classic keeps meROMS' historical underscores; ES-DE shows the
+/// file name as the collection name, so spaces are kept there.
+fn collection_file_name(layout: &Layout, name: &str) -> String {
+    let safe: String = name
+        .chars()
+        .map(|c| if matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|') { '_' } else { c })
+        .collect();
+    match layout {
+        Layout::Classic => format!("custom-{}.cfg", safe.replace(' ', "_")),
+        Layout::Esde(_) => format!("custom-{}.cfg", safe.trim()),
+    }
+}
+
+/// Existing lines first, then new ones not already present; one entry per line.
+fn merge_collection_entries(existing: &str, new_entries: &[String]) -> String {
+    let mut lines: Vec<String> = existing
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .map(String::from)
+        .collect();
+    for entry in new_entries {
+        if !lines.contains(entry) {
+            lines.push(entry.clone());
+        }
+    }
+    let mut out = lines.join("\n");
+    out.push('\n');
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn esde_merges_without_duplicates() {
+        let existing = "%ROMPATH%/nes/a.nes\n%ROMPATH%/snes/b.sfc\n";
+        let merged = merge_collection_entries(
+            existing,
+            &["%ROMPATH%/snes/b.sfc".into(), "%ROMPATH%/snes/c.sfc".into()],
+        );
+        assert_eq!(merged, "%ROMPATH%/nes/a.nes\n%ROMPATH%/snes/b.sfc\n%ROMPATH%/snes/c.sfc\n");
+    }
+
+    #[test]
+    fn file_names_per_structure() {
+        let esde = Layout::Esde(crate::layout::EsdePaths {
+            home: "/ficticio/ES-DE".into(),
+            media_root: "/ficticio/ES-DE/downloaded_media".into(),
+        });
+        assert_eq!(collection_file_name(&Layout::Classic, "Mis Juegos"), "custom-Mis_Juegos.cfg");
+        assert_eq!(collection_file_name(&esde, "Mis Juegos"), "custom-Mis Juegos.cfg");
+        assert_eq!(collection_file_name(&esde, "a/b"), "custom-a_b.cfg");
+    }
 }

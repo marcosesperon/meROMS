@@ -4,6 +4,7 @@ use std::path::Path;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+use crate::layout::SystemRef;
 use crate::models::system::{extensions_for_system, system_full_name, SystemInfo};
 use crate::parser;
 
@@ -43,6 +44,7 @@ pub fn scan_systems(root_path: String, app: AppHandle) -> Result<Vec<SystemInfo>
     if !root.is_dir() {
         return Err(format!("Path is not a directory: {}", root_path));
     }
+    let layout = super::active_layout(&app)?;
 
     // First pass: collect valid directories to get total count
     let dirs: Vec<_> = fs::read_dir(root)
@@ -80,7 +82,8 @@ pub fn scan_systems(root_path: String, app: AppHandle) -> Result<Vec<SystemInfo>
             current_name: full_name.clone(),
         });
 
-        let gamelist_path = path.join("gamelist.xml");
+        // Classic: <system>/gamelist.xml — ES-DE: <ES-DE>/gamelists/<system>/gamelist.xml
+        let gamelist_path = layout.gamelist_path(&SystemRef::from_rom_dir(&path));
         let has_gamelist = gamelist_path.exists();
 
         let game_count = if has_gamelist {

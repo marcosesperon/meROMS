@@ -4,8 +4,11 @@ use std::path::Path;
 use reqwest::Client;
 use serde_json::Value;
 
+use crate::layout::{Layout, SystemRef};
+use crate::media;
 use crate::models::game::Game;
 use crate::models::scraper::ScrapeResult;
+use crate::models::AppSettings;
 
 const API_BASE: &str = "https://api.thegamesdb.net/v1";
 const IMAGE_BASE: &str = "https://cdn.thegamesdb.net/images/original/";
@@ -105,11 +108,11 @@ pub async fn scrape_game_tgdb(
     client: &Client,
     api_key: &str,
     game: &Game,
-    system_path: &str,
-    folder_name: &str,
-    _media_types: &[String],
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
 ) -> Result<ScrapeResult, String> {
-    let platform_id = tgdb_platform_id(folder_name);
+    let platform_id = tgdb_platform_id(&system.name);
 
     // Use game name or derive from filename
     let search_name = game
@@ -216,15 +219,18 @@ pub async fn scrape_game_tgdb(
         .and_then(|id| id.as_u64())
         .map(|id| id.to_string());
 
-    // Extract images from the include.boxart section
-    let rom_stem = Path::new(&game.path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("unknown")
-        .to_string();
-
-    let mut image = game.image.clone();
-    let mut thumbnail = game.thumbnail.clone();
+    // Extract images from the include.boxart section.
+    // Front box art counts as ScreenScraper's "box-2D" and screenshots as "ss",
+    // so they land in the same unified folders (covers/, screenshots/).
+    // Only download what the game doesn't have yet (in the field each type maps to)
+    let has_media = |media_type: &str| {
+        media::field_for_scraper_type(layout, settings, media_type)
+            .is_some_and(|field| media::get_field(game, &field).is_some())
+    };
+    let need_image = !has_media("box-2D");
+    let need_thumbnail = !has_media("ss");
+    let mut image: Option<String> = None;
+    let mut thumbnail: Option<String> = None;
 
     let base_url = body["include"]["boxart"]["base_url"]["original"]
         .as_str()
@@ -244,24 +250,16 @@ pub async fn scrape_game_tgdb(
             let img_url = format!("{}{}", base_url, filename);
             let ext = filename.rsplit('.').next().unwrap_or("jpg");
 
-            if img_type == "boxart" && side == "front" && image.is_none() {
-                let local_name = format!("{}-boxart.{}", rom_stem, ext);
-                let dest = Path::new(system_path).join("images").join(&local_name);
-                if download_image(client, &img_url, &dest).await.is_ok() {
-                    image = Some(format!("./images/{}", local_name));
-                }
-            } else if img_type == "screenshot" && thumbnail.is_none() {
-                let local_name = format!("{}-screenshot.{}", rom_stem, ext);
-                let dest = Path::new(system_path).join("images").join(&local_name);
-                if download_image(client, &img_url, &dest).await.is_ok() {
-                    thumbnail = Some(format!("./images/{}", local_name));
-                }
+            if img_type == "boxart" && side == "front" && need_image && image.is_none() {
+                image = download_as(client, &img_url, layout, system, settings, "box-2D", &game.path, ext).await;
+            } else if img_type == "screenshot" && need_thumbnail && thumbnail.is_none() {
+                thumbnail = download_as(client, &img_url, layout, system, settings, "ss", &game.path, ext).await;
             }
         }
     }
 
     // If we have a game ID, fetch additional images
-    if game_id > 0 && (image.is_none() || thumbnail.is_none()) {
+    if game_id > 0 && ((need_image && image.is_none()) || (need_thumbnail && thumbnail.is_none())) {
         if let Ok(extra_images) = fetch_game_images(client, api_key, game_id).await {
             let img_base = extra_images["data"]["base_url"]["original"]
                 .as_str()
@@ -278,22 +276,13 @@ pub async fn scrape_game_tgdb(
                     let img_url = format!("{}{}", img_base, filename);
                     let ext = filename.rsplit('.').next().unwrap_or("jpg");
 
-                    if img_type == "boxart" && image.is_none() {
+                    if img_type == "boxart" && need_image && image.is_none() {
                         let side = img["side"].as_str().unwrap_or("");
                         if side == "front" {
-                            let local_name = format!("{}-boxart.{}", rom_stem, ext);
-                            let dest =
-                                Path::new(system_path).join("images").join(&local_name);
-                            if download_image(client, &img_url, &dest).await.is_ok() {
-                                image = Some(format!("./images/{}", local_name));
-                            }
+                            image = download_as(client, &img_url, layout, system, settings, "box-2D", &game.path, ext).await;
                         }
-                    } else if img_type == "screenshot" && thumbnail.is_none() {
-                        let local_name = format!("{}-screenshot.{}", rom_stem, ext);
-                        let dest = Path::new(system_path).join("images").join(&local_name);
-                        if download_image(client, &img_url, &dest).await.is_ok() {
-                            thumbnail = Some(format!("./images/{}", local_name));
-                        }
+                    } else if img_type == "screenshot" && need_thumbnail && thumbnail.is_none() {
+                        thumbnail = download_as(client, &img_url, layout, system, settings, "ss", &game.path, ext).await;
                     }
                 }
             }
@@ -310,8 +299,12 @@ pub async fn scrape_game_tgdb(
     if players.is_some() { updated.players = players; }
     if rating.is_some() { updated.rating = rating; }
     if releasedate.is_some() { updated.releasedate = releasedate; }
-    if image.is_some() { updated.image = image; }
-    if thumbnail.is_some() { updated.thumbnail = thumbnail; }
+    // Classic may map these media types to other fields; write each one where configured
+    for (media_type, value) in [("box-2D", image), ("ss", thumbnail)] {
+        if let (Some(value), Some(field)) = (value, media::field_for_scraper_type(layout, settings, media_type)) {
+            media::set_field(&mut updated, &field, Some(value));
+        }
+    }
 
     Ok(ScrapeResult {
         game: updated,
@@ -330,6 +323,23 @@ async fn fetch_game_images(client: &Client, api_key: &str, game_id: u64) -> Resu
         .await
         .map_err(|e| e.to_string())?;
     resp.json().await.map_err(|e| e.to_string())
+}
+
+/// Download one image as the given scraper media type; returns the value for the game field.
+#[allow(clippy::too_many_arguments)]
+async fn download_as(
+    client: &Client,
+    url: &str,
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
+    media_type: &str,
+    rom_path: &str,
+    ext: &str,
+) -> Option<String> {
+    let target = media::scraped_media_target(layout, system, settings, media_type, rom_path, ext)?;
+    download_image(client, url, &target.dest).await.ok()?;
+    Some(target.value)
 }
 
 async fn download_image(client: &Client, url: &str, dest: &Path) -> Result<(), String> {

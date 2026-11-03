@@ -2,31 +2,55 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
+use crate::layout::SystemRef;
+use crate::media::{self, MediaIndex, MEDIA_KINDS};
+
+/// Copy a user-picked file as a game's media, using the unified naming
+/// `<media folder>/<ROM name>.<ext>` of the active structure.
+/// Returns the value to store in the game field (relative in Classic, absolute in ES-DE).
 #[tauri::command]
-pub fn copy_image_to_system(
-    source: String,
+pub fn set_game_media(
+    app: tauri::AppHandle,
     system_path: String,
-    subfolder: String,
-    filename: String,
+    game_path: String,
+    field: String,
+    source: String,
 ) -> Result<String, String> {
-    let dest_dir = Path::new(&system_path).join(&subfolder);
-    fs::create_dir_all(&dest_dir)
-        .map_err(|e| format!("Failed to create directory {}: {}", subfolder, e))?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let kind = media::kind_for_field(&field).ok_or_else(|| format!("Unknown media field: {}", field))?;
+    let ext = media::extension_lower(Path::new(&source)).unwrap_or_else(|| "png".into());
 
-    let dest_path = dest_dir.join(&filename);
-    fs::copy(&source, &dest_path)
-        .map_err(|e| format!("Failed to copy image: {}", e))?;
+    // Remove the same media with another extension, or the old one could keep winning
+    for other_ext in kind.extensions().iter().filter(|e| **e != ext) {
+        let old = layout.media_file_path(&system, kind.folder, &game_path, other_ext);
+        if old.exists() {
+            fs::remove_file(&old).map_err(|e| format!("Failed to replace old media: {}", e))?;
+        }
+    }
 
-    Ok(format!("./{}/{}", subfolder, filename))
+    let dest = layout.media_file_path(&system, kind.folder, &game_path, &ext);
+    if let Some(dir) = dest.parent() {
+        fs::create_dir_all(dir).map_err(|e| format!("Failed to create media folder: {}", e))?;
+    }
+    fs::copy(&source, &dest).map_err(|e| format!("Failed to copy media: {}", e))?;
+
+    Ok(media::media_ref(&layout, &system, &dest))
 }
 
 #[tauri::command]
 pub fn switch_image_type(
+    app: tauri::AppHandle,
     system_path: String,
     primary_subfolder: String,
     fallback_subfolders: Vec<String>,
 ) -> Result<crate::models::GameList, String> {
-    let mut gamelist = crate::commands::gamelist::load_gamelist(system_path.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    if !layout.writes_media_tags() {
+        // ES-DE decides which media to show by itself; there is no image path to switch
+        return Err("Switching image type is only available for the Classic structure".into());
+    }
+
+    let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
     let sys_path = Path::new(&system_path);
     let image_exts = ["png", "jpg", "jpeg", "gif", "webp"];
 
@@ -62,22 +86,47 @@ pub fn switch_image_type(
         }
     }
 
-    // Save
-    crate::commands::gamelist::save_gamelist(system_path, gamelist.clone())?;
+    crate::commands::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     Ok(gamelist)
 }
 
-/// Scan media subfolders for files matching a ROM's filename stem.
-/// Uses configured media_paths suffixes and subfolder names from settings.
-/// Returns a map of game_field → relative_path for each match found.
+/// Look for a ROM's media files on disk.
+/// Returns a map of game_field → path for each match found.
+/// - ES-DE: only the unified `<folder>/<ROM name>.<ext>` (that's all ES-DE reads).
+/// - Classic: the unified name first, then legacy folders/suffixes left by other scrapers.
 #[tauri::command]
 pub fn scan_game_media(
     app: tauri::AppHandle,
     system_path: String,
     game_path: String,
 ) -> Result<HashMap<String, String>, String> {
-    let settings = crate::commands::settings::get_settings(app)?;
-    let sys = Path::new(&system_path);
+    let settings = crate::commands::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+
+    let mut results = HashMap::new();
+    let index = MediaIndex::build(&layout, &system);
+    for kind in MEDIA_KINDS {
+        if let Some(found) = index.find(&system, kind, &game_path) {
+            results.insert(kind.field.to_string(), media::media_ref(&layout, &system, found));
+        }
+    }
+
+    if layout.writes_media_tags() {
+        for (field, path) in scan_legacy_media(&settings, &system, &game_path) {
+            results.entry(field).or_insert(path);
+        }
+    }
+    Ok(results)
+}
+
+/// Classic only: media named the old ways (Skraper/EmulationStation suffixes, "images/" folder…).
+/// Uses the legacy subfolder/suffix hints still stored in settings, then common patterns.
+fn scan_legacy_media(
+    settings: &crate::models::AppSettings,
+    system: &SystemRef,
+    game_path: &str,
+) -> HashMap<String, String> {
+    let sys = system.rom_dir.as_path();
     let rom_stem = Path::new(&game_path)
         .file_stem()
         .and_then(|s| s.to_str())
@@ -85,7 +134,7 @@ pub fn scan_game_media(
         .to_string();
 
     if rom_stem.is_empty() {
-        return Ok(HashMap::new());
+        return HashMap::new();
     }
 
     let image_exts = ["png", "jpg", "jpeg", "gif", "webp", "bmp"];
@@ -96,48 +145,21 @@ pub fn scan_game_media(
     let mut configured_subfolders: HashMap<String, String> = HashMap::new();
     if let Some(paths) = &settings.media_paths {
         for cfg in paths {
-            configured_subfolders.insert(cfg.game_field.clone(), cfg.subfolder.clone());
+            if !cfg.subfolder.is_empty() {
+                configured_subfolders.insert(cfg.game_field.clone(), cfg.subfolder.clone());
+            }
             if !cfg.suffix.is_empty() {
                 configured_suffixes.insert(cfg.game_field.clone(), cfg.suffix.clone());
             }
         }
     }
 
-    // Map: (subfolder variants, game_field, common file suffixes)
-    // Suffixes are tried after the configured suffix and before exact ROM stem
-    let default_targets: Vec<(Vec<&str>, &str, Vec<&str>)> = vec![
-        (vec!["images", "covers", "box2d", "box-2D", "boxart"], "image",
-         vec!["-image", "-boxart", "-box2d", "-box-2D", "-cover", "-front"]),
-        (vec!["images", "screenshots", "screenshot", "snap"], "thumbnail",
-         vec!["-thumbnail", "-screenshot", "-ss", "-snap", "-thumb"]),
-        (vec!["images", "marquees", "marquee", "wheel", "wheels"], "marquee",
-         vec!["-marquee", "-wheel", "-logo"]),
-        (vec!["images", "fanart", "fanarts"], "fanart",
-         vec!["-fanart", "-fan"]),
-        (vec!["images", "titlescreens", "titlescreen", "titleshots"], "titleshot",
-         vec!["-titleshot", "-titlescreen", "-title"]),
-        (vec!["images", "box-back", "boxback", "boxbacks"], "boxback",
-         vec!["-boxback", "-box-back", "-back"]),
-        (vec!["images", "3dboxes", "3dbox", "box3d", "box-3D"], "boxart",
-         vec!["-boxart", "-box3d", "-box-3D", "-3dbox"]),
-        (vec!["images", "wheels", "wheel"], "wheel",
-         vec!["-wheel", "-logo"]),
-        (vec!["images", "miximages", "miximage", "mixed"], "mix",
-         vec!["-mix", "-miximage", "-mixrbv1", "-mixrbv2"]),
-        (vec!["images", "cartridges", "cartridge", "carts"], "cartridge",
-         vec!["-cartridge", "-cart"]),
-        (vec!["images", "manuals", "manual"], "manual",
-         vec!["-manual"]),
-        (vec!["videos", "video", "snaps"], "video",
-         vec!["-video", "-snap"]),
-    ];
-
     let mut results = HashMap::new();
 
-    for (default_subfolders, field, common_suffixes) in &default_targets {
+    for (default_subfolders, field, common_suffixes) in legacy_targets() {
         // Build ordered list of subfolders: configured first, then defaults
         let mut subfolders_to_try: Vec<String> = Vec::new();
-        if let Some(configured) = configured_subfolders.get(*field) {
+        if let Some(configured) = configured_subfolders.get(field) {
             subfolders_to_try.push(configured.clone());
         }
         for sf in default_subfolders {
@@ -150,10 +172,8 @@ pub fn scan_game_media(
         // Build ordered list of stems to try
         let mut stems_to_try: Vec<String> = Vec::new();
         // 1. Configured suffix from settings (e.g. "-boxart" from media paths config)
-        if let Some(suffix) = configured_suffixes.get(*field) {
-            if !suffix.is_empty() {
-                stems_to_try.push(format!("{}{}", rom_stem, suffix));
-            }
+        if let Some(suffix) = configured_suffixes.get(field) {
+            stems_to_try.push(format!("{}{}", rom_stem, suffix));
         }
         // 2. Exact ROM stem (e.g. "Ghoul Patrol")
         stems_to_try.push(rom_stem.clone());
@@ -165,7 +185,7 @@ pub fn scan_game_media(
             }
         }
 
-        let exts = if *field == "video" { &video_exts[..] } else { &image_exts[..] };
+        let exts = if field == "video" { &video_exts[..] } else { &image_exts[..] };
 
         let mut found = false;
         for subfolder in &subfolders_to_try {
@@ -192,5 +212,37 @@ pub fn scan_game_media(
         }
     }
 
-    Ok(results)
+    results
 }
+
+/// Legacy media locations: (subfolder variants, game_field, common file suffixes).
+/// Also used by the media normalizer to find files to bring to the unified naming.
+pub fn legacy_targets() -> Vec<(Vec<&'static str>, &'static str, Vec<&'static str>)> {
+    vec![
+        (vec!["images", "covers", "box2d", "box-2D", "boxart"], "image",
+         vec!["-image", "-boxart", "-box2d", "-box-2D", "-cover", "-front"]),
+        (vec!["images", "screenshots", "screenshot", "snap"], "thumbnail",
+         vec!["-thumbnail", "-screenshot", "-ss", "-snap", "-thumb"]),
+        (vec!["images", "marquees", "marquee", "wheel", "wheels"], "marquee",
+         vec!["-marquee", "-wheel", "-logo"]),
+        (vec!["images", "fanart", "fanarts"], "fanart",
+         vec!["-fanart", "-fan"]),
+        (vec!["images", "titlescreens", "titlescreen", "titleshots"], "titleshot",
+         vec!["-titleshot", "-titlescreen", "-title"]),
+        (vec!["images", "box-back", "boxback", "boxbacks", "backcovers"], "boxback",
+         vec!["-boxback", "-box-back", "-back"]),
+        (vec!["images", "3dboxes", "3dbox", "box3d", "box-3D"], "boxart",
+         vec!["-boxart", "-box3d", "-box-3D", "-3dbox"]),
+        (vec!["images", "wheels", "wheel"], "wheel",
+         vec!["-wheel", "-logo"]),
+        (vec!["images", "miximages", "miximage", "mixed"], "mix",
+         vec!["-mix", "-miximage", "-mixrbv1", "-mixrbv2"]),
+        (vec!["images", "cartridges", "cartridge", "carts", "physicalmedia"], "cartridge",
+         vec!["-cartridge", "-cart"]),
+        (vec!["images", "manuals", "manual"], "manual",
+         vec!["-manual"]),
+        (vec!["videos", "video", "snaps"], "video",
+         vec!["-video", "-snap"]),
+    ]
+}
+

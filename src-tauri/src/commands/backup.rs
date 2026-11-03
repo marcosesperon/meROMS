@@ -4,7 +4,8 @@ use std::path::Path;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 
-const BACKUP_DIR: &str = ".backups";
+use crate::layout::{Layout, SystemRef};
+
 const MAX_BACKUPS: usize = 20;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -16,16 +17,17 @@ pub struct BackupEntry {
 }
 
 /// Create a backup of gamelist.xml before modifying it.
-/// Stores backups in `{system_path}/.backups/gamelist_YYYYMMDD_HHMMSS.xml`.
+/// Stores backups next to the gamelist in `.backups/gamelist_YYYYMMDD_HHMMSS.xml`
+/// (system folder in Classic, `gamelists/<system>/` in ES-DE).
 /// Automatically prunes old backups beyond MAX_BACKUPS.
-pub fn backup_gamelist(system_path: &str) -> Result<(), String> {
-    let gamelist_path = Path::new(system_path).join("gamelist.xml");
+pub fn backup_gamelist(layout: &Layout, system: &SystemRef) -> Result<(), String> {
+    let gamelist_path = layout.gamelist_path(system);
 
     if !gamelist_path.exists() {
         return Ok(()); // Nothing to back up
     }
 
-    let backup_dir = Path::new(system_path).join(BACKUP_DIR);
+    let backup_dir = layout.backups_dir(system);
     fs::create_dir_all(&backup_dir)
         .map_err(|e| format!("Failed to create backup directory: {}", e))?;
 
@@ -74,8 +76,9 @@ fn prune_backups(backup_dir: &Path) {
 
 /// List all available backups for a system, newest first.
 #[tauri::command]
-pub fn list_backups(system_path: String) -> Result<Vec<BackupEntry>, String> {
-    let backup_dir = Path::new(&system_path).join(BACKUP_DIR);
+pub fn list_backups(app: tauri::AppHandle, system_path: String) -> Result<Vec<BackupEntry>, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let backup_dir = layout.backups_dir(&system);
 
     if !backup_dir.exists() {
         return Ok(Vec::new());
@@ -133,19 +136,18 @@ pub fn list_backups(system_path: String) -> Result<Vec<BackupEntry>, String> {
 /// Restore a backup by copying it back as gamelist.xml.
 /// Creates a backup of the current gamelist.xml first.
 #[tauri::command]
-pub fn restore_backup(system_path: String, backup_filename: String) -> Result<(), String> {
-    let backup_path = Path::new(&system_path)
-        .join(BACKUP_DIR)
-        .join(&backup_filename);
+pub fn restore_backup(app: tauri::AppHandle, system_path: String, backup_filename: String) -> Result<(), String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let backup_path = backup_file_path(&layout, &system, &backup_filename)?;
 
     if !backup_path.exists() {
         return Err(format!("Backup not found: {}", backup_filename));
     }
 
     // Backup current state before restoring
-    backup_gamelist(&system_path)?;
+    backup_gamelist(&layout, &system)?;
 
-    let gamelist_path = Path::new(&system_path).join("gamelist.xml");
+    let gamelist_path = layout.gamelist_path(&system);
     fs::copy(&backup_path, &gamelist_path)
         .map_err(|e| format!("Failed to restore backup: {}", e))?;
 
@@ -154,10 +156,9 @@ pub fn restore_backup(system_path: String, backup_filename: String) -> Result<()
 
 /// Delete a specific backup file.
 #[tauri::command]
-pub fn delete_backup(system_path: String, backup_filename: String) -> Result<(), String> {
-    let backup_path = Path::new(&system_path)
-        .join(BACKUP_DIR)
-        .join(&backup_filename);
+pub fn delete_backup(app: tauri::AppHandle, system_path: String, backup_filename: String) -> Result<(), String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let backup_path = backup_file_path(&layout, &system, &backup_filename)?;
 
     if backup_path.exists() {
         fs::remove_file(&backup_path)
@@ -165,4 +166,12 @@ pub fn delete_backup(system_path: String, backup_filename: String) -> Result<(),
     }
 
     Ok(())
+}
+
+/// Path of a backup file, refusing names that could escape the backups folder.
+fn backup_file_path(layout: &Layout, system: &SystemRef, backup_filename: &str) -> Result<std::path::PathBuf, String> {
+    if Path::new(backup_filename).file_name().and_then(|n| n.to_str()) != Some(backup_filename) {
+        return Err(format!("Invalid backup name: {}", backup_filename));
+    }
+    Ok(layout.backups_dir(system).join(backup_filename))
 }

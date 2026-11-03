@@ -3,8 +3,8 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::media;
 use crate::models::GameList;
-use crate::parser;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameEntry {
@@ -34,8 +34,8 @@ fn sanitize_filename(name: &str) -> String {
 
 /// List all ROMs with their current filename and gamelist title.
 #[tauri::command]
-pub fn list_rename_candidates(system_path: String) -> Result<Vec<RenameEntry>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(system_path.clone())?;
+pub fn list_rename_candidates(app: tauri::AppHandle, system_path: String) -> Result<Vec<RenameEntry>, String> {
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path)?;
 
     let mut entries = Vec::new();
 
@@ -80,23 +80,23 @@ pub struct RenameRequest {
 }
 
 /// Rename ROM files and update all references in gamelist.xml.
+/// Media are renamed too: the unified `<folder>/<ROM name>.<ext>` files in both structures,
+/// plus (Classic) any other file the gamelist points to that is named after the ROM.
 #[tauri::command]
 pub fn rename_roms(
+    app: tauri::AppHandle,
     system_path: String,
     renames: Vec<RenameRequest>,
 ) -> Result<GameList, String> {
-    let sys_path = Path::new(&system_path);
-    let gamelist_path = sys_path.join("gamelist.xml");
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let sys_path = system.rom_dir.clone();
 
-    // Backup before modifying
-    crate::commands::backup::backup_gamelist(&system_path)?;
-
-    let xml = fs::read_to_string(&gamelist_path)
-        .map_err(|e| format!("Failed to read gamelist.xml: {}", e))?;
-    let mut gamelist = parser::parse_gamelist(&xml)?;
+    // write_gamelist() backs the gamelist up before saving
+    let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
 
     for req in &renames {
-        let old_rom = Path::new(&req.current_path);
+        let old_rel = req.current_path.strip_prefix("./").unwrap_or(&req.current_path);
+        let old_rom = Path::new(old_rel);
         let ext = old_rom
             .extension()
             .and_then(|e| e.to_str())
@@ -106,13 +106,17 @@ pub fn rename_roms(
             .and_then(|s| s.to_str())
             .unwrap_or("");
 
+        // Keep the ROM in its own subfolder (only the file name changes)
         let new_filename = format!("{}.{}", req.new_name, ext);
-        let new_relative = format!("./{}", new_filename);
+        let new_rel = match old_rom.parent().filter(|p| !p.as_os_str().is_empty()) {
+            Some(parent) => parent.join(&new_filename).to_string_lossy().replace('\\', "/"),
+            None => new_filename.clone(),
+        };
+        let new_relative = format!("./{}", new_rel);
 
         // Resolve absolute paths
-        let old_rel = req.current_path.strip_prefix("./").unwrap_or(&req.current_path);
         let old_abs = sys_path.join(old_rel);
-        let new_abs = sys_path.join(&new_filename);
+        let new_abs = sys_path.join(&new_rel);
 
         // Skip if source doesn't exist or destination already exists
         if !old_abs.exists() {
@@ -121,6 +125,7 @@ pub fn rename_roms(
         if new_abs.exists() && old_abs != new_abs {
             continue;
         }
+        let rom_is_dir = old_abs.is_dir();
 
         // Rename the ROM file
         if old_abs != new_abs {
@@ -128,28 +133,50 @@ pub fn rename_roms(
                 .map_err(|e| format!("Failed to rename {}: {}", old_rel, e))?;
         }
 
+        let moved = media::rename_rom_media(&layout, &system, &req.current_path, &new_relative, rom_is_dir);
+
         // Update gamelist entry
         for game in &mut gamelist.games {
             if game.path == req.current_path {
                 game.path = new_relative.clone();
 
-                // Rename associated media files (same stem → new stem)
-                rename_media_field(&mut game.image, sys_path, old_stem, &req.new_name);
-                rename_media_field(&mut game.thumbnail, sys_path, old_stem, &req.new_name);
-                rename_media_field(&mut game.marquee, sys_path, old_stem, &req.new_name);
-                rename_media_field(&mut game.video, sys_path, old_stem, &req.new_name);
+                if layout.writes_media_tags() {
+                    for field in media::media_fields() {
+                        update_media_field(game, field, &layout, &system, &moved, old_stem, &req.new_name);
+                    }
+                }
                 break;
             }
         }
     }
 
-    // Save updated gamelist, preserving unknown fields
-    let original_xml = fs::read_to_string(&gamelist_path).ok();
-    let xml_out = parser::serialize_gamelist(&gamelist, original_xml.as_deref())?;
-    fs::write(&gamelist_path, xml_out)
-        .map_err(|e| format!("Failed to write gamelist.xml: {}", e))?;
+    crate::commands::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+    // Re-read so ES-DE media fields reflect the renamed files
+    crate::commands::gamelist::read_gamelist(&layout, &system)
+}
 
-    Ok(gamelist)
+/// Classic: point a media field to its renamed file. Unified files were already moved
+/// (`moved`); anything else named after the ROM (legacy suffixes) is renamed here.
+fn update_media_field(
+    game: &mut crate::models::Game,
+    field: &str,
+    layout: &crate::layout::Layout,
+    system: &crate::layout::SystemRef,
+    moved: &[(std::path::PathBuf, std::path::PathBuf)],
+    old_stem: &str,
+    new_stem: &str,
+) {
+    let Some(current) = media::get_field(game, field).cloned() else { return };
+    let current_abs = media::resolve_media_path(system, &current);
+
+    if let Some((_, new)) = moved.iter().find(|(old, _)| *old == current_abs) {
+        media::set_field(game, field, Some(media::media_ref(layout, system, new)));
+        return;
+    }
+
+    let mut value = Some(current);
+    rename_media_field(&mut value, &system.rom_dir, old_stem, new_stem);
+    media::set_field(game, field, value);
 }
 
 /// Rename a media file if its stem matches the old ROM stem.

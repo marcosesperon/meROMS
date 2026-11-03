@@ -104,7 +104,11 @@ impl Layout {
     /// Ruta del fichero de medio de una ROM: <carpeta del tipo>/<subcarpetas de la ROM>/<nombre ROM>.<ext>
     /// Es igual en las dos estructuras (solo cambia la carpeta base), así migrar es mover carpetas tal cual.
     pub fn media_file_path(&self, system: &SystemRef, media_folder: &str, rom_path: &str, ext: &str) -> PathBuf {
-        let stem = rom_media_stem(system, rom_path);
+        self.media_file_for_stem(system, media_folder, &rom_media_stem(system, rom_path), ext)
+    }
+
+    /// Lo mismo, pero partiendo ya del nombre base (con sus subcarpetas).
+    pub fn media_file_for_stem(&self, system: &SystemRef, media_folder: &str, stem: &Path, ext: &str) -> PathBuf {
         let file_name = format!("{}.{}", stem.to_string_lossy(), ext.trim_start_matches('.'));
         self.media_type_dir(system, media_folder).join(file_name)
     }
@@ -144,8 +148,15 @@ pub fn strip_dot_slash(rom_path: &str) -> &str {
 /// - Carpeta que ES-DE trata como fichero (p. ej. «dig.scummvm/»): el nombre completo,
 ///   porque ES-DE incluye esa «extensión» en el nombre del medio («dig.scummvm.png»).
 pub fn rom_media_stem(system: &SystemRef, rom_path: &str) -> PathBuf {
+    let is_dir = system.rom_dir.join(strip_dot_slash(rom_path)).is_dir();
+    media_stem_for(rom_path, is_dir)
+}
+
+/// Igual que `rom_media_stem` pero diciendo nosotros si la ROM es una carpeta.
+/// Hace falta al renombrar: la ruta vieja ya no existe (o la nueva todavía no) y no se puede mirar en disco.
+pub fn media_stem_for(rom_path: &str, is_dir: bool) -> PathBuf {
     let relative = Path::new(strip_dot_slash(rom_path));
-    if system.rom_dir.join(relative).is_dir() {
+    if is_dir {
         return relative.to_path_buf();
     }
     match relative.file_stem() {

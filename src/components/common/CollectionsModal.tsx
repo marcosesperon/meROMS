@@ -90,9 +90,9 @@ export function CollectionsModal({
     if (!collectionName.trim() || selectedGames.size === 0) return;
     try {
       const filename = await generateCollection(
+        systemPath,
         collectionName.trim(),
-        Array.from(selectedGames),
-        systemPath
+        Array.from(selectedGames)
       );
       setCollectionResult(filename);
     } catch (e) {

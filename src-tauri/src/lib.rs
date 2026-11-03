@@ -1,5 +1,6 @@
 mod commands;
 mod layout;
+mod media;
 mod models;
 mod parser;
 
@@ -61,7 +62,7 @@ pub fn run() {
             gamelist::generate_gamelist,
             gamelist::add_folder,
             gamelist::remove_folder,
-            images::copy_image_to_system,
+            images::set_game_media,
             images::scan_game_media,
             scraper::scrape_game,
             scraper::scrape_system,

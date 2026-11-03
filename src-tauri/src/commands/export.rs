@@ -53,11 +53,12 @@ fn export_retroarch(
 
 #[tauri::command]
 pub fn export_gamelist(
+    app: tauri::AppHandle,
     system_path: String,
     format: String,
     output_path: String,
 ) -> Result<String, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(system_path.clone())?;
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path.clone())?;
 
     let system_name = Path::new(&system_path)
         .file_name()

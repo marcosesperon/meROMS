@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { Game } from "../../types";
 import { useTranslation } from "../../i18n";
 import { ImagePreview } from "./ImagePreview";
-import { copyImageToSystem, deleteFiles, scanGameMedia } from "../../commands";
+import { deleteFiles, scanGameMedia, setGameMedia } from "../../commands";
 import { resolveImageSrc } from "../../utils/images";
 import { ExpandIcon, PencilIcon, TrashIcon, CloseIcon, SearchIcon } from "../common/Icons";
 import type { TranslationKeys } from "../../i18n/en";
@@ -14,21 +14,22 @@ interface ImageManagerProps {
   onUpdate: (field: keyof Game, value: string) => void;
 }
 
-const IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys; subfolder: string }[] = [
-  { key: "image", labelKey: "images.boxArt", subfolder: "images" },
-  { key: "thumbnail", labelKey: "images.thumbnail", subfolder: "images" },
-  { key: "marquee", labelKey: "images.marquee", subfolder: "images" },
+// The backend decides the folder and file name (unified naming of the active profile)
+const IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys }[] = [
+  { key: "image", labelKey: "images.boxArt" },
+  { key: "thumbnail", labelKey: "images.thumbnail" },
+  { key: "marquee", labelKey: "images.marquee" },
 ];
 
-const EXTENDED_IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys; subfolder: string }[] = [
-  { key: "fanart", labelKey: "images.fanart", subfolder: "images" },
-  { key: "titleshot", labelKey: "images.titleshot", subfolder: "images" },
-  { key: "boxback", labelKey: "images.boxback", subfolder: "images" },
-  { key: "boxart", labelKey: "images.boxart", subfolder: "images" },
-  { key: "wheel", labelKey: "images.wheel", subfolder: "images" },
-  { key: "mix", labelKey: "images.mix", subfolder: "images" },
-  { key: "cartridge", labelKey: "images.cartridge", subfolder: "images" },
-  { key: "manual", labelKey: "images.manual", subfolder: "images" },
+const EXTENDED_IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys }[] = [
+  { key: "fanart", labelKey: "images.fanart" },
+  { key: "titleshot", labelKey: "images.titleshot" },
+  { key: "boxback", labelKey: "images.boxback" },
+  { key: "boxart", labelKey: "images.boxart" },
+  { key: "wheel", labelKey: "images.wheel" },
+  { key: "mix", labelKey: "images.mix" },
+  { key: "cartridge", labelKey: "images.cartridge" },
+  { key: "manual", labelKey: "images.manual" },
 ];
 
 export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) {
@@ -57,7 +58,7 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
     }
   }
 
-  async function handleChangeImage(field: keyof Game, subfolder: string) {
+  async function handleChangeImage(field: keyof Game) {
     const selected = await open({
       multiple: false,
       filters: [
@@ -70,21 +71,8 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
 
     if (!selected) return;
 
-    const sourcePath = String(selected);
-    // Extract only the filename stem from the ROM path (no subdirs)
-    const romFilename = game.path.replace(/^\.\//, "").split("/").pop() || game.path;
-    const baseName = romFilename.replace(/\.[^.]+$/, "");
-    const ext = sourcePath.split(".").pop() || "png";
-    const filename = `${baseName}-${field}.${ext}`;
-
-    const relativePath = await copyImageToSystem(
-      sourcePath,
-      systemPath,
-      subfolder,
-      filename
-    );
-
-    onUpdate(field, relativePath);
+    const storedPath = await setGameMedia(systemPath, game.path, field, String(selected));
+    onUpdate(field, storedPath);
   }
 
   async function handleDeleteMedia(field: keyof Game) {
@@ -121,20 +109,8 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
 
     if (!selected) return;
 
-    const sourcePath = String(selected);
-    const romFilename = game.path.replace(/^\.\//, "").split("/").pop() || game.path;
-    const baseName = romFilename.replace(/\.[^.]+$/, "");
-    const ext = sourcePath.split(".").pop() || "mp4";
-    const filename = `${baseName}.${ext}`;
-
-    const relativePath = await copyImageToSystem(
-      sourcePath,
-      systemPath,
-      "videos",
-      filename
-    );
-
-    onUpdate("video", relativePath);
+    const storedPath = await setGameMedia(systemPath, game.path, "video", String(selected));
+    onUpdate("video", storedPath);
   }
 
   const videoSrc = resolveImageSrc(game.video, systemPath);
@@ -154,13 +130,13 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
         </button>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        {IMAGE_FIELDS.map(({ key, labelKey, subfolder }) => (
+        {IMAGE_FIELDS.map(({ key, labelKey }) => (
           <ImagePreview
             key={key}
             label={t(labelKey)}
             imagePath={game[key] as string | undefined}
             systemPath={systemPath}
-            onChangeRequest={() => handleChangeImage(key, subfolder)}
+            onChangeRequest={() => handleChangeImage(key)}
             onDelete={game[key] ? () => handleDeleteMedia(key) : undefined}
           />
         ))}
@@ -182,13 +158,13 @@ export function ImageManager({ game, systemPath, onUpdate }: ImageManagerProps) 
         </button>
         {showExtended && (
           <div className="grid grid-cols-3 gap-3 mt-2">
-            {EXTENDED_IMAGE_FIELDS.map(({ key, labelKey, subfolder }) => (
+            {EXTENDED_IMAGE_FIELDS.map(({ key, labelKey }) => (
               <ImagePreview
                 key={key}
                 label={t(labelKey)}
                 imagePath={game[key] as string | undefined}
                 systemPath={systemPath}
-                onChangeRequest={() => handleChangeImage(key, subfolder)}
+                onChangeRequest={() => handleChangeImage(key)}
                 onDelete={game[key] ? () => handleDeleteMedia(key) : undefined}
               />
             ))}
