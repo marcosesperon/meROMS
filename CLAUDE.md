@@ -16,6 +16,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Cleanup** — find unused media files and duplicate games, then delete them
 - **Media normalizer** (Classic) — move legacy-named media (suffixes, `images/`…) to the unified naming
 - **Migration** — Classic ↔ ES-DE, copy or move; gamelists, media and collections (ROMs never touched)
+- **Per-game tools** — Rename, Normalize media and Clean up leftover media from the game detail panel
 - **Rename** — batch-rename ROM files from the gamelist title or with regex cleanup rules (ES-DE-Roms-Renamer style); updates media, gamelist, collections and `.m3u`
 - **Backups** — automatic gamelist.xml backup before every save; list/restore/delete
 - **Collections** — detect multi-disc games and generate `.m3u` playlists; generate custom collections
@@ -69,11 +70,11 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - `images.rs` — `set_game_media` (copies a picked file with unified naming), `scan_game_media`, `switch_image_type` (Classic only)
   - `scraper.rs` — `scrape_game` (ScreenScraper if configured, else TheGamesDB), `scrape_system` (per game: ScreenScraper, then TheGamesDB; emits `scrape-progress`)
   - `scraper_tgdb.rs` — TheGamesDB client helpers (no commands of its own)
-  - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `delete_files`
+  - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `find_game_leftover_media` (one game: files named after its ROM it doesn't use), `delete_files`
   - `duplicates.rs` — `find_duplicates`
-  - `normalize.rs` — `plan_media_normalization`, `apply_media_normalization` (Classic only)
+  - `normalize.rs` — `plan_media_normalization` (optional `game_path`), `apply_media_normalization` (Classic only)
   - `migrate.rs` — `plan_migration`, `run_migration` (same code path with `dry_run`; async + `spawn_blocking`; emits `migration-progress`)
-  - `rename.rs` — `list_rename_candidates` (source `title` | `rules`, flags `duplicate`/`exists` conflicts), `rename_roms` (returns renamed/skipped; updates collections and `.m3u`)
+  - `rename.rs` — `list_rename_candidates` (source `title` | `rules`, optional `game_path`, flags `duplicate`/`exists` conflicts), `check_rename_target` (a hand-typed name: `invalid`/`exists`), `rename_roms` (returns renamed/skipped; updates collections and `.m3u`)
   - `rules.rs` — `get_default_rename_rules`, `test_rename_rules`, `import_rename_rules`, `export_rename_rules`
   - `backup.rs` — `list_backups`, `restore_backup`, `delete_backup`
   - `export.rs` — `export_gamelist`
@@ -88,10 +89,10 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `App.tsx` — Root: renders the per-system tool toolbar and owns the open/close state of every tool modal and the settings view
 - `components/layout/` — `MainLayout`, `Sidebar` (profile selector, "Migrate structure…", system list), `Header` (search + filters toggle + view toggle)
 - `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard`
-- `components/detail/` — `GameDetailPanel` (slide-over editor), `GameForm`, `ImageManager`/`ImagePreview`
+- `components/detail/` — `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab`, General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
-  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `NormalizeMediaModal`, `MigrationModal`, `BackupsModal`, `CollectionsModal`, `ExportModal`
+  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal`, `BackupsModal`, `CollectionsModal`, `ExportModal`; `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs
