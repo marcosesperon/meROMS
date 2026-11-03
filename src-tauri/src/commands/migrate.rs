@@ -11,7 +11,7 @@
 //! La vista previa y la ejecución usan exactamente el mismo código (`dry_run`), para que
 //! lo que se enseña sea lo que luego pasa.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -20,7 +20,7 @@ use tauri::Emitter;
 
 use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MEDIA_KINDS};
-use crate::models::{GameList, Profile};
+use crate::models::{AppSettings, Game, GameList, Profile};
 use crate::parser;
 
 /// Como mucho se devuelven estos ficheros saltados por sistema (el resto solo se cuenta).
@@ -46,9 +46,9 @@ pub struct SystemReport {
     pub media_skipped: Vec<String>,
     /// Medios de tipos que la estructura destino no tiene (p. ej. wheels/ → ES-DE)
     pub media_unsupported: usize,
-    /// Clásica: medios referenciados en el XML que no siguen el nombrado unificado
-    /// (no se migran: hay que pasar antes el normalizador)
-    pub not_normalized: usize,
+    /// Clásica → ES-DE: medios con nombre antiguo que pasan ya con el nombrado unificado
+    /// (incluidos en `media_transferred`)
+    pub media_renamed: usize,
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -71,14 +71,18 @@ struct MigrationProgress {
 /// (p. ej. la estructura clásica de la misma carpeta). Con `systems` solo se migran esos.
 #[tauri::command]
 pub async fn plan_migration(
+    app: tauri::AppHandle,
     source: Profile,
     target: Profile,
     mode: MigrationMode,
     systems: Option<Vec<String>>,
 ) -> Result<MigrationReport, String> {
     let (src, dst, rom_root) = prepare(&source, &target)?;
+    // Los ajustes hacen falta para reconocer medios con nombre antiguo configurado
+    let settings = super::settings::get_settings(app)?;
     tauri::async_runtime::spawn_blocking(move || {
-        migrate(&src, &dst, &rom_root, systems.as_deref(), mode, true, &mut |_, _, _| {})
+        let scope = Scope { rom_root: &rom_root, only: systems.as_deref(), settings: &settings };
+        migrate(&src, &dst, &scope, mode, true, &mut |_, _, _| {})
     })
         .await
         .map_err(|e| format!("Migration task failed: {}", e))?
@@ -93,10 +97,12 @@ pub async fn run_migration(
     systems: Option<Vec<String>>,
 ) -> Result<MigrationReport, String> {
     let (src, dst, rom_root) = prepare(&source, &target)?;
+    let settings = super::settings::get_settings(app.clone())?;
     let emitter = app.clone();
     // En otro hilo: copiar miles de medios no debe congelar la ventana
     tauri::async_runtime::spawn_blocking(move || {
-        migrate(&src, &dst, &rom_root, systems.as_deref(), mode, false, &mut |current, total, system| {
+        let scope = Scope { rom_root: &rom_root, only: systems.as_deref(), settings: &settings };
+        migrate(&src, &dst, &scope, mode, false, &mut |current, total, system| {
             let _ = emitter.emit(
                 "migration-progress",
                 MigrationProgress { current, total, system: system.to_string() },
@@ -123,21 +129,29 @@ fn prepare(source: &Profile, target: &Profile) -> Result<(Layout, Layout, PathBu
     Ok((Layout::for_profile(source)?, Layout::for_profile(&target)?, rom_root))
 }
 
+/// Qué se migra: la carpeta de ROMs, opcionalmente solo unos sistemas, y los ajustes
+/// (para reconocer los medios con nombre antiguo).
+struct Scope<'a> {
+    rom_root: &'a Path,
+    only: Option<&'a [String]>,
+    settings: &'a AppSettings,
+}
+
 /// El migrador en sí. Con `dry_run` solo calcula el informe sin tocar el disco.
 fn migrate(
     src: &Layout,
     dst: &Layout,
-    rom_root: &Path,
-    only: Option<&[String]>,
+    scope: &Scope,
     mode: MigrationMode,
     dry_run: bool,
     on_progress: &mut dyn FnMut(usize, usize, &str),
 ) -> Result<MigrationReport, String> {
+    let rom_root = scope.rom_root;
     let mut report = MigrationReport { dry_run, ..Default::default() };
     report.warnings.extend(esde_rom_dir_warning(dst, rom_root));
 
-    let mut systems = list_system_dirs(rom_root)?;
-    if let Some(only) = only {
+    let mut systems = list_system_dirs(rom_root, &[src, dst])?;
+    if let Some(only) = scope.only {
         systems.retain(|dir| only.contains(&SystemRef::from_rom_dir(dir).name));
     }
     let total = systems.len();
@@ -146,9 +160,15 @@ fn migrate(
         on_progress(i + 1, total, &system.name);
 
         let mut sr = SystemReport { name: system.name.clone(), ..Default::default() };
-        // Primero se lee la gamelist (antes de mover medios, para contar los no normalizados)
+        // Primero se lee la gamelist: dice qué fichero es el bueno de cada juego
         let source_gamelist = read_source_gamelist(src, &system, &mut sr)?;
-        transfer_media(src, dst, &system, mode, dry_run, &mut sr);
+        let games: &[Game] = source_gamelist.as_ref().map(|(g, _)| g.games.as_slice()).unwrap_or(&[]);
+        let handled = if src.writes_media_tags() {
+            transfer_normalized_media(src, dst, &system, scope.settings, games, mode, dry_run, &mut sr)
+        } else {
+            HashSet::new()
+        };
+        transfer_media(src, dst, &system, &handled, mode, dry_run, &mut sr);
         if let Some((gamelist, xml)) = source_gamelist {
             write_destination_gamelist(src, dst, &system, gamelist, &xml, mode, dry_run, &mut sr)?;
         }
@@ -168,20 +188,22 @@ fn migrate(
     Ok(report)
 }
 
-/// Carpetas de sistema dentro de la carpeta de ROMs (las ocultas no).
-pub(super) fn list_system_dirs(rom_root: &Path) -> Result<Vec<PathBuf>, String> {
+/// Carpetas de sistema dentro de la carpeta de ROMs (ni las ocultas ni las propias de
+/// ES-DE de ninguno de los `layouts`, por si ES-DE vive dentro de la carpeta de ROMs).
+pub(super) fn list_system_dirs(rom_root: &Path, layouts: &[&Layout]) -> Result<Vec<PathBuf>, String> {
     let mut dirs: Vec<PathBuf> = fs::read_dir(rom_root)
         .map_err(|e| format!("Failed to read ROM folder: {}", e))?
         .flatten()
         .map(|e| e.path())
         .filter(|p| p.is_dir() && !p.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.')))
+        .filter(|p| !layouts.iter().any(|l| l.is_own_folder(p)))
         .collect();
     dirs.sort();
     Ok(dirs)
 }
 
 /// Lee la gamelist de origen tal cual está en disco (XML incluido, para conservar los
-/// campos desconocidos) y cuenta los medios que no siguen el nombrado unificado.
+/// campos desconocidos).
 fn read_source_gamelist(src: &Layout, system: &SystemRef, sr: &mut SystemReport) -> Result<Option<(GameList, String)>, String> {
     let path = src.gamelist_path(system);
     if !path.exists() {
@@ -191,33 +213,111 @@ fn read_source_gamelist(src: &Layout, system: &SystemRef, sr: &mut SystemReport)
     let gamelist = parser::parse_gamelist(&xml)?;
     sr.has_gamelist = true;
     sr.games = gamelist.games.len();
-
-    if src.writes_media_tags() {
-        let index = MediaIndex::build(src, system);
-        sr.not_normalized = gamelist
-            .games
-            .iter()
-            .flat_map(|game| media::media_fields().filter_map(move |f| media::get_field(game, f).map(|v| (game, v))))
-            .filter(|(game, value)| {
-                let file = media::resolve_media_path(system, value);
-                file.is_file() && !is_unified_file(&index, system, &game.path, &file)
-            })
-            .count();
-    }
     Ok(Some((gamelist, xml)))
 }
 
-/// ¿Es `file` el medio unificado de esa ROM para algún tipo?
-fn is_unified_file(index: &MediaIndex, system: &SystemRef, rom_path: &str, file: &Path) -> bool {
-    MEDIA_KINDS.iter().any(|kind| index.find(system, kind, rom_path).is_some_and(|f| f == file))
+/// Clásica → ES-DE: los medios que no siguen el nombrado unificado pasan directamente con
+/// él. Qué fichero es el bueno lo decide el normalizador (`normalize::plan`), así la regla
+/// vive en un solo sitio. Devuelve los ficheros de origen ya tratados, para que el recorrido
+/// de carpetas de después no los copie otra vez con su nombre viejo.
+#[allow(clippy::too_many_arguments)]
+fn transfer_normalized_media(
+    src: &Layout,
+    dst: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
+    games: &[Game],
+    mode: MigrationMode,
+    dry_run: bool,
+    sr: &mut SystemReport,
+) -> HashSet<PathBuf> {
+    use super::normalize::NormalizeStatus;
+
+    let src_base = src.media_type_dir(system, "");
+    let dst_base = dst.media_type_dir(system, "");
+    let items = super::normalize::plan(src, system, settings, games);
+    let move_targets: HashSet<&str> = items
+        .iter()
+        .filter(|i| i.status == NormalizeStatus::Move)
+        .map(|i| i.to.as_str())
+        .collect();
+    let mut handled = HashSet::new();
+
+    for item in &items {
+        let from = PathBuf::from(&item.from);
+        let to = PathBuf::from(&item.to);
+        match item.status {
+            // Ya está con su nombre: lo pasa el recorrido de carpetas
+            NormalizeStatus::Link => continue,
+            NormalizeStatus::Conflict if move_targets.contains(item.to.as_str()) => {
+                // Otro fichero ya va a ese destino: este se queda fuera
+                handled.insert(from);
+                skip(sr, format!("{} (-> {})", item.from_relative, item.to_relative));
+                continue;
+            }
+            NormalizeStatus::Conflict => {
+                // En el origen ya hay un unificado, pero la gamelist apunta a otro: gana el de la gamelist
+                handled.insert(to.clone());
+                skip(sr, format!("{} (-> {})", item.to_relative, item.from_relative));
+            }
+            NormalizeStatus::Move => {}
+        }
+        handled.insert(from.clone());
+
+        let Ok(rel) = to.strip_prefix(&src_base) else { continue };
+        let supported = rel
+            .components()
+            .next()
+            .and_then(|c| media::kind_for_folder(&c.as_os_str().to_string_lossy()))
+            .is_some_and(|kind| kind.in_esde || dst.writes_media_tags());
+        if !supported {
+            sr.media_unsupported += 1;
+            continue;
+        }
+        let dest = dst_base.join(rel);
+        if dest.exists() {
+            skip(sr, item.to_relative.clone());
+            continue;
+        }
+        if !dry_run {
+            let done = match mode {
+                MigrationMode::Copy => media::copy_file(&from, &dest),
+                MigrationMode::Move => media::move_file(&from, &dest),
+            };
+            if let Err(e) = done {
+                skip(sr, format!("{} ({})", item.from_relative, e));
+                continue;
+            }
+            if mode == MigrationMode::Move {
+                if let Some(dir) = from.parent() {
+                    media::remove_empty_dirs_up_to(dir, &src_base);
+                }
+            }
+        }
+        sr.media_transferred += 1;
+        sr.media_renamed += 1;
+    }
+    handled
 }
 
 /// Copia o mueve las carpetas de medios de un sistema a la estructura destino.
-fn transfer_media(src: &Layout, dst: &Layout, system: &SystemRef, mode: MigrationMode, dry_run: bool, sr: &mut SystemReport) {
+/// `handled`: ficheros que ya ha pasado (o descartado) `transfer_normalized_media`.
+fn transfer_media(
+    src: &Layout,
+    dst: &Layout,
+    system: &SystemRef,
+    handled: &HashSet<PathBuf>,
+    mode: MigrationMode,
+    dry_run: bool,
+    sr: &mut SystemReport,
+) {
     let src_base = src.media_type_dir(system, "");
     for kind in MEDIA_KINDS {
         let src_dir = src.media_type_dir(system, kind.folder);
-        let files = media::list_files_recursive(&src_dir);
+        let files: Vec<PathBuf> = media::list_files_recursive(&src_dir)
+            .into_iter()
+            .filter(|f| !handled.contains(f))
+            .collect();
         if files.is_empty() {
             continue;
         }
@@ -470,6 +570,21 @@ mod tests {
         fs::write(path, content).unwrap();
     }
 
+    /// Migra la biblioteca de prueba con los ajustes por defecto.
+    fn run_on(
+        f: &Fixture,
+        src: &Layout,
+        dst: &Layout,
+        only: Option<&Vec<String>>,
+        mode: MigrationMode,
+        dry_run: bool,
+        on_progress: &mut dyn FnMut(usize, usize, &str),
+    ) -> Result<MigrationReport, String> {
+        let settings = AppSettings::default();
+        let scope = Scope { rom_root: &f.roms, only: only.map(|o| o.as_slice()), settings: &settings };
+        migrate(src, dst, &scope, mode, dry_run, on_progress)
+    }
+
     struct Fixture {
         _tmp: tempfile::TempDir,
         root: PathBuf,
@@ -511,14 +626,15 @@ mod tests {
     #[test]
     fn la_vista_previa_no_toca_nada_y_cuenta_lo_mismo_que_la_ejecucion() {
         let f = classic_library();
-        let plan = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, true, &mut |_, _, _| {}).unwrap();
+        let plan = run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Copy, true, &mut |_, _, _| {}).unwrap();
         assert!(!f.root.join("ES-DE").exists(), "dry run must not write anything");
 
-        let run = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        let run = run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
         assert_eq!(plan.systems[0].media_transferred, run.systems[0].media_transferred);
-        assert_eq!(run.systems[0].media_transferred, 2);
-        // El marquee con nombre antiguo no se migra: se avisa para pasar el normalizador
-        assert_eq!(run.systems[0].not_normalized, 1);
+        assert_eq!(run.systems[0].media_transferred, 3);
+        // El marquee con nombre antiguo pasa ya renombrado
+        assert_eq!(run.systems[0].media_renamed, 1);
+        assert_eq!(plan.systems[0].media_renamed, 1);
     }
 
     #[test]
@@ -527,7 +643,7 @@ mod tests {
         touch(&f.roms.join("megadrive/Otro.md"), b"rom");
         touch(&f.roms.join("megadrive/gamelist.xml"), b"<gameList><game><path>./Otro.md</path></game></gameList>");
         let only = vec!["snes".to_string()];
-        let report = migrate(&Layout::Classic, &f.esde, &f.roms, Some(&only), MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        let report = run_on(&f, &Layout::Classic, &f.esde, Some(&only), MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
 
         let names: Vec<_> = report.systems.iter().map(|s| s.name.clone()).collect();
         assert_eq!(names, vec!["snes"]);
@@ -538,11 +654,14 @@ mod tests {
     #[test]
     fn clasica_a_esde_copiando() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
 
         let media = f.root.join("ES-DE/downloaded_media/snes");
         assert!(media.join("covers/Juego Uno.png").exists());
         assert!(media.join("videos/Juego Uno.mp4").exists());
+        // El medio con nombre antiguo llega con el nombrado unificado (y no con el viejo)
+        assert!(media.join("marquees/Juego Uno.png").exists());
+        assert!(!media.join("images").exists());
         // Copiar deja el origen intacto
         assert!(f.roms.join("snes/covers/Juego Uno.png").exists());
         assert!(f.roms.join("snes/gamelist.xml").exists());
@@ -558,10 +677,11 @@ mod tests {
     #[test]
     fn clasica_a_esde_moviendo_deja_el_origen_en_las_copias() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
 
         let snes = f.roms.join("snes");
         assert!(!snes.join("covers").exists(), "moved media folders are removed when empty");
+        assert!(!snes.join("images").exists(), "legacy folders too");
         assert!(!snes.join("gamelist.xml").exists());
         assert!(fs::read_dir(snes.join(".backups")).unwrap().count() >= 1);
         assert!(!snes.join("custom-Favoritos.cfg").exists());
@@ -572,23 +692,47 @@ mod tests {
     #[test]
     fn ida_y_vuelta_regenera_las_rutas_de_la_clasica() {
         let f = classic_library();
-        migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
-        let back = migrate(&f.esde, &Layout::Classic, &f.roms, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
+        let back = run_on(&f, &f.esde, &Layout::Classic, None, MigrationMode::Move, false, &mut |_, _, _| {}).unwrap();
 
-        assert_eq!(back.systems[0].media_transferred, 2);
+        assert_eq!(back.systems[0].media_transferred, 3);
         let xml = fs::read_to_string(f.roms.join("snes/gamelist.xml")).unwrap();
         assert!(xml.contains("<image>./covers/Juego Uno.png</image>"), "{}", xml);
         assert!(xml.contains("<video>./videos/Juego Uno.mp4</video>"));
+        assert!(xml.contains("<marquee>./marquees/Juego Uno.png</marquee>"), "{}", xml);
         assert!(xml.contains("<completed>true</completed>"));
         let collection = fs::read_to_string(f.roms.join("snes/custom-Favoritos.cfg")).unwrap();
         assert_eq!(collection, "./Juego Uno.sfc\n");
     }
 
     #[test]
+    fn si_la_gamelist_apunta_a_otro_fichero_gana_ese() {
+        let f = classic_library();
+        // Ya hay un marquee unificado, pero la gamelist apunta al de nombre antiguo
+        touch(&f.roms.join("snes/marquees/Juego Uno.png"), b"unificado");
+        let report = run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+
+        let dest = f.root.join("ES-DE/downloaded_media/snes/marquees/Juego Uno.png");
+        assert_eq!(fs::read(dest).unwrap(), b"legacy");
+        assert!(report.systems[0].media_skipped.iter().any(|s| s.starts_with("marquees/Juego Uno.png")));
+    }
+
+    #[test]
+    fn las_carpetas_propias_de_esde_no_se_migran() {
+        let f = classic_library();
+        // ES-DE dentro de la carpeta de ROMs: su gamelists/ no es un sistema
+        let esde = Layout::Esde(EsdePaths { home: f.roms.clone(), media_root: f.roms.join("downloaded_media") });
+        touch(&f.roms.join("gamelists/cps1/gamelist.xml"), b"<gameList/>");
+        let report = run_on(&f, &Layout::Classic, &esde, None, MigrationMode::Copy, true, &mut |_, _, _| {}).unwrap();
+        let names: Vec<_> = report.systems.iter().map(|s| s.name.clone()).collect();
+        assert_eq!(names, vec!["snes"]);
+    }
+
+    #[test]
     fn no_pisa_lo_que_ya_existe_en_el_destino() {
         let f = classic_library();
         touch(&f.root.join("ES-DE/downloaded_media/snes/covers/Juego Uno.png"), b"ya estaba");
-        let report = migrate(&Layout::Classic, &f.esde, &f.roms, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
+        let report = run_on(&f, &Layout::Classic, &f.esde, None, MigrationMode::Copy, false, &mut |_, _, _| {}).unwrap();
 
         assert_eq!(report.systems[0].media_skipped, vec!["covers/Juego Uno.png".to_string()]);
         assert_eq!(

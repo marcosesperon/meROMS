@@ -89,7 +89,7 @@ fn ensure_classic(layout: &Layout) -> Result<(), String> {
 }
 
 /// Calcula los cambios para todos los juegos. No toca el disco.
-fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, games: &[Game]) -> Vec<NormalizeItem> {
+pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, games: &[Game]) -> Vec<NormalizeItem> {
     let index = MediaIndex::build(layout, system);
     let mut items = Vec::new();
     // destino → origen que lo ocupa, para detectar dos ficheros distintos que irían al mismo sitio

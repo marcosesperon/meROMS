@@ -11,6 +11,25 @@ use crate::models::{Profile, StructureKind};
 const GAMELIST_FILE: &str = "gamelist.xml";
 const BACKUP_DIR: &str = ".backups";
 
+/// Carpetas que ES-DE crea dentro de su carpeta de datos.
+const ESDE_OWN_FOLDERS: &[&str] = &[
+    "gamelists",
+    "downloaded_media",
+    "settings",
+    "collections",
+    "themes",
+    "custom_systems",
+    "logs",
+    "controllers",
+    "scripts",
+    "screensavers",
+];
+
+/// Ruta real en disco para comparar (enlaces simbólicos, «..»); si no existe, tal cual.
+fn canonical(path: &Path) -> PathBuf {
+    std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+}
+
 /// Un sistema concreto: su nombre de carpeta (snes, psx…) y dónde están sus ROMs.
 #[derive(Debug, Clone, PartialEq)]
 pub struct SystemRef {
@@ -121,6 +140,18 @@ impl Layout {
         }
     }
 
+    /// ¿Es esta carpeta una de las propias de ES-DE (gamelists/, downloaded_media/…)?
+    /// Pasa cuando la carpeta de ES-DE está dentro de la de ROMs (o es la misma): esas
+    /// carpetas quedan junto a snes/, psx/… y no son sistemas.
+    pub fn is_own_folder(&self, dir: &Path) -> bool {
+        let Layout::Esde(esde) = self else { return false };
+        let dir = canonical(dir);
+        let mut own: Vec<PathBuf> = ESDE_OWN_FOLDERS.iter().map(|f| esde.home.join(f)).collect();
+        own.push(esde.media_root.clone());
+        own.push(esde.home.clone());
+        own.iter().any(|o| canonical(o) == dir)
+    }
+
     /// Cómo se escribe una ROM dentro de un fichero de colección.
     pub fn collection_entry(&self, system: &SystemRef, rom_path: &str) -> String {
         match self {
@@ -173,6 +204,20 @@ mod tests {
             media_dir: media.map(String::from),
             skip_structure_prompt: false,
         }
+    }
+
+    #[test]
+    fn carpetas_propias_de_esde_no_son_sistemas() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_path_buf();
+        // La carpeta de ES-DE es la misma que la de ROMs
+        let layout = Layout::Esde(EsdePaths { home: root.clone(), media_root: root.join("downloaded_media") });
+        fs::create_dir_all(root.join("gamelists")).unwrap();
+        fs::create_dir_all(root.join("snes")).unwrap();
+        assert!(layout.is_own_folder(&root.join("gamelists")));
+        assert!(layout.is_own_folder(&root.join("downloaded_media")));
+        assert!(!layout.is_own_folder(&root.join("snes")));
+        assert!(!Layout::Classic.is_own_folder(&root.join("gamelists")));
     }
 
     fn snes() -> SystemRef {

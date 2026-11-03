@@ -56,7 +56,8 @@ pub fn scan_systems(root_path: String, app: AppHandle) -> Result<Vec<SystemInfo>
                 return false;
             }
             let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            !name.starts_with('.')
+            // ES-DE's own folders (gamelists/, downloaded_media/...) when it lives in the ROM folder
+            !name.starts_with('.') && !layout.is_own_folder(&path)
         })
         .collect();
 

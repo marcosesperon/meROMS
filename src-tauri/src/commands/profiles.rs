@@ -40,7 +40,7 @@ pub fn detect_pending_structure(app: tauri::AppHandle) -> Result<Option<PendingS
 
 fn find_pending(active: &Profile, profiles: &[Profile], default_esde_home: Option<&Path>) -> Option<PendingStructure> {
     let target = Layout::for_profile(active).ok()?;
-    let systems: Vec<SystemRef> = super::migrate::list_system_dirs(Path::new(&active.rom_root_path))
+    let systems: Vec<SystemRef> = super::migrate::list_system_dirs(Path::new(&active.rom_root_path), &[&target])
         .ok()?
         .iter()
         .map(SystemRef::from_rom_dir)
@@ -56,6 +56,7 @@ fn find_pending(active: &Profile, profiles: &[Profile], default_esde_home: Optio
         let src = Layout::for_profile(&source).ok()?;
         let pending: Vec<String> = systems
             .iter()
+            .filter(|s| !src.is_own_folder(&s.rom_dir))
             .filter(|s| src.gamelist_path(s).is_file() && !target.gamelist_path(s).is_file())
             .map(|s| s.name.clone())
             .collect();
