@@ -9,7 +9,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   return (
     <div className="flex h-screen bg-zinc-900 text-zinc-200">
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden">{children}</main>
+      <main className="flex-1 flex overflow-hidden">{children}</main>
     </div>
   );
 }

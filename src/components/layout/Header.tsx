@@ -25,11 +25,11 @@ export function Header() {
 
   return (
     <div>
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 bg-zinc-900/50">
+      <header className="flex items-center justify-between gap-4 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
         <div className="flex items-center gap-4">
-          <SystemLogo name={selectedSystem.name} width={140} maxHeight={40} />
+          <SystemLogo name={selectedSystem.name} width={110} maxHeight={34} />
           <div>
-            <h2 className="text-xl font-semibold text-zinc-100">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-100">
               {selectedSystem.full_name}
             </h2>
             <p className="text-xs text-zinc-500">
@@ -37,7 +37,7 @@ export function Header() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <SearchBar />
           <button
             onClick={() => setShowFilters((v) => !v)}

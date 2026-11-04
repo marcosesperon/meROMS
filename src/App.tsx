@@ -3,6 +3,7 @@ import { useAppStore } from "./store/useAppStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
 import { GameDetailPanel } from "./components/detail/GameDetailPanel";
+import { GameInfoPanel } from "./components/detail/GameInfoPanel";
 import { SettingsView } from "./components/settings/SettingsView";
 import { ScrapeProgressModal } from "./components/common/ScrapeProgressModal";
 import { UnusedMediaModal } from "./components/common/UnusedMediaModal";
@@ -52,7 +53,10 @@ function App() {
   const [newRomsCount, setNewRomsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const games = useAppStore((s) => s.games);
-  const showDetailPanel = selectedGame !== null || showNewGame;
+  const editorOpen = useAppStore((s) => s.editorOpen);
+  const closeEditor = useAppStore((s) => s.closeEditor);
+  // Selecting a game only shows it in the info panel; the editor opens on "Edit" / double click
+  const showDetailPanel = (editorOpen && selectedGame !== null) || showNewGame;
 
   useEffect(() => {
     loadSettings();
@@ -139,7 +143,7 @@ function App() {
           )}
           <GameListView />
           {selectedSystem && (
-            <div className="px-6 h-12 shrink-0 border-t border-zinc-700 flex items-center gap-2">
+            <div className="px-6 h-12 shrink-0 border-t border-zinc-800 bg-zinc-900 flex items-center gap-2">
               {newRomsCount > 0 && (
                 <button
                   onClick={() => setShowNewRomsModal(true)}
@@ -187,12 +191,14 @@ function App() {
             </div>
           )}
         </div>
+        {selectedSystem && <GameInfoPanel />}
 
       {showDetailPanel && (
         <GameDetailPanel
           isNewGame={showNewGame}
           onClose={() => {
-            selectGame(null);
+            // Back to the info panel with the game still selected
+            closeEditor();
             setShowNewGame(false);
           }}
         />
