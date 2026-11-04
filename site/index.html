@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>meROMS - ROM manager for EmulationStation and ES-DE</title>
+  <meta name="description" content="Desktop ROM manager for EmulationStation gamelist.xml files: browse, edit, scrape and tidy your retro game library. Classic EmulationStation and ES-DE.">
+  <meta property="og:title" content="meROMS">
+  <meta property="og:description" content="Desktop ROM manager for EmulationStation and ES-DE gamelists.">
+  <meta property="og:image" content="images/grid.jpg">
+  <link rel="icon" type="image/png" href="images/icon.png">
+  <style>
+    /* Mismos colores que la app (src/App.css): casi negro cálido y acento violeta */
+    :root {
+      --bg: #151211;
+      --bg-deep: #0d0b0a;
+      --card: #1c1917;
+      --card-hi: #231f1d;
+      --line: #36302d;
+      --text: #f3f0ee;
+      --text-soft: #cbc3be;
+      --text-dim: #a59c96;
+      --accent: #7f56e3;
+      --accent-hi: #9670f2;
+      --accent-soft: #c2abff;
+      --green: #2f9e6b;
+      --radius: 14px;
+      --max: 1120px;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 16px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent-soft); text-decoration: none; }
+    a:hover { color: #fff; }
+    img { max-width: 100%; height: auto; display: block; }
+    /* Sin esto, un hijo ancho (las rutas de ejemplo) ensancha la columna y la página se sale en móvil */
+    .tour-item > *, .grid > *, .structures > *, .downloads > * { min-width: 0; }
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 16px; }
+
+    /* Idioma: cada texto va en inglés y en español; se enseña el del idioma activo */
+    html[data-lang="en"] [lang="es"], html[data-lang="es"] [lang="en"] { display: none !important; }
+
+    /* Barra superior */
+    .top {
+      position: sticky; top: 0; z-index: 10;
+      background: color-mix(in srgb, var(--bg) 85%, transparent);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+    }
+    .top .wrap { display: flex; align-items: center; gap: 16px; height: 60px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
+    .brand img { width: 30px; height: 30px; border-radius: 7px; }
+    .top nav { margin-left: auto; display: flex; align-items: center; gap: 20px; font-size: 14px; }
+    .top nav a { color: var(--text-dim); }
+    .top nav a:hover { color: var(--text); }
+    .lang { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+    .lang button {
+      background: none; border: 0; color: var(--text-dim); font: inherit; font-size: 12px; font-weight: 600;
+      padding: 5px 10px; cursor: pointer;
+    }
+    .lang button.on { background: var(--accent); color: #fff; }
+
+    /* Portada */
+    .hero { position: relative; padding: 72px 0 40px; text-align: center; overflow: hidden; }
+    .hero::before {
+      content: ""; position: absolute; inset: -40% -10% auto; height: 600px; z-index: -1;
+      background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 35%, transparent), transparent);
+    }
+    .hero h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.08; margin: 0 0 18px; letter-spacing: -0.02em; }
+    .hero h1 em { font-style: normal; color: var(--accent-soft); }
+    .hero p.lead { font-size: clamp(16px, 2.2vw, 20px); color: var(--text-soft); max-width: 720px; margin: 0 auto 30px; }
+    .cta { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px;
+      font-weight: 600; font-size: 15px; border: 1px solid transparent; transition: background .15s, border-color .15s;
+    }
+    .btn.main { background: var(--accent); color: #fff; }
+    .btn.main:hover { background: var(--accent-hi); }
+    .btn.ghost { border-color: var(--line); color: var(--text); background: var(--card); }
+    .btn.ghost:hover { border-color: var(--text-dim); }
+    .btn svg { width: 18px; height: 18px; }
+    .platforms-line { margin-top: 16px; font-size: 13px; color: var(--text-dim); }
+    .shot-main {
+      display: block; margin: 48px auto 0; max-width: 1040px; border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.03);
+    }
+
+    /* Secciones */
+    section { padding: 72px 0; }
+    section.alt { background: var(--bg-deep); border-top: 1px solid var(--card-hi); border-bottom: 1px solid var(--card-hi); }
+    .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent-soft); font-weight: 700; margin: 0 0 8px; }
+    h2 { font-size: clamp(26px, 4vw, 36px); margin: 0 0 14px; letter-spacing: -0.01em; line-height: 1.2; }
+    .intro { color: var(--text-soft); max-width: 680px; margin: 0 0 40px; }
+
+    /* Capturas: texto e imagen alternos */
+    .tour { display: grid; gap: 64px; }
+    .tour-item { display: grid; grid-template-columns: 1fr 1.6fr; gap: 40px; align-items: center; }
+    .tour-item:nth-child(even) { grid-template-columns: 1.6fr 1fr; }
+    .tour-item:nth-child(even) .tour-text { order: 2; }
+    .tour-text h3 { font-size: 22px; margin: 0 0 10px; }
+    .tour-text p { color: var(--text-soft); margin: 0; }
+    .tour-item a.shot { display: block; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); }
+    .tour-item a.shot img { transition: transform .3s; }
+    .tour-item a.shot:hover img { transform: scale(1.015); }
+
+    /* Funciones */
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--card-hi); border-radius: var(--radius); padding: 22px; }
+    .card .ico {
+      width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 14px;
+      background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent-soft);
+    }
+    .card .ico svg { width: 20px; height: 20px; }
+    .card h3 { font-size: 16px; margin: 0 0 6px; }
+    .card p { font-size: 14px; color: var(--text-dim); margin: 0; }
+
+    /* Estructuras */
+    .structures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .structures .card h3 { font-size: 18px; }
+    .structures code {
+      display: block; margin-top: 12px; font: 13px/1.7 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      color: var(--text-soft); background: var(--bg-deep); border: 1px solid var(--card-hi); border-radius: 8px; padding: 12px 14px;
+      white-space: pre; overflow-x: auto;
+    }
+
+    /* Descargas */
+    .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .dl { text-align: center; padding: 28px 22px; }
+    .dl svg { width: 34px; height: 34px; color: var(--text-soft); margin: 0 auto 12px; }
+    .dl h3 { font-size: 18px; margin: 0 0 4px; }
+    .dl .files { font-size: 13px; color: var(--text-dim); margin: 0 0 18px; }
+    .dl .btn { width: 100%; justify-content: center; }
+    .note { margin-top: 22px; font-size: 13px; color: var(--text-dim); text-align: center; }
+
+    /* Donativo: el amarillo de Buy Me a Coffee, igual que en los demás proyectos del autor */
+    .btn.coffee { background: #ffdd00; color: #111; border-color: #ffdd00; }
+    .btn.coffee:hover { background: #f5d000; border-color: #f5d000; color: #111; }
+    .chip-coffee {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px;
+      font-size: 12px; font-weight: 600; background: #ffdd00; color: #111 !important;
+    }
+    .chip-coffee:hover { background: #f5d000; }
+    .cup { width: 15px; height: 15px; flex: none; }
+    footer .btn.coffee { padding: 7px 12px; font-size: 13px; }
+
+    footer { padding: 36px 0 48px; color: var(--text-dim); font-size: 13px; }
+    footer .wrap { display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; align-items: center; }
+
+    /* Visor de capturas a pantalla completa */
+    dialog.viewer { border: 0; padding: 0; background: transparent; max-width: 96vw; max-height: 94vh; }
+    dialog.viewer::backdrop { background: rgba(5,4,4,.88); }
+    dialog.viewer img { max-width: 96vw; max-height: 94vh; border-radius: 8px; }
+
+    @media (max-width: 860px) {
+      .tour-item, .tour-item:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
+      .tour-item:nth-child(even) .tour-text { order: 0; }
+      .structures, .downloads { grid-template-columns: 1fr; }
+      .top nav a:not(.chip-coffee) { display: none; }
+      .chip-coffee .chip-text { display: none; }
+      .hero { padding-top: 48px; }
+      section { padding: 56px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#"><img src="images/icon.png" alt="">meROMS</a>
+      <nav>
+        <a href="#tour"><span lang="en">Tour</span><span lang="es">Recorrido</span></a>
+        <a href="#features"><span lang="en">Features</span><span lang="es">Funciones</span></a>
+        <a href="#download"><span lang="en">Download</span><span lang="es">Descargar</span></a>
+        <a href="https://github.com/marcosesperon/meROMS">GitHub</a>
+        <a class="chip-coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span class="chip-text"><span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></span></a>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-set-lang="en">EN</button>
+          <button type="button" data-set-lang="es">ES</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="wrap">
+        <h1>
+          <span lang="en">Your retro library,<br><em>tidy and complete</em></span>
+          <span lang="es">Tu biblioteca retro,<br><em>ordenada y completa</em></span>
+        </h1>
+        <p class="lead">
+          <span lang="en">meROMS is a desktop manager for EmulationStation <code>gamelist.xml</code> files. Browse your systems, edit game data and media, scrape what's missing and clean up the rest &mdash; for classic EmulationStation and ES-DE.</span>
+          <span lang="es">meROMS es un gestor de escritorio para los <code>gamelist.xml</code> de EmulationStation. Recorre tus sistemas, edita datos y medios de cada juego, descarga lo que falta y limpia lo que sobra &mdash; para EmulationStation clásico y ES-DE.</span>
+        </p>
+        <div class="cta">
+          <a class="btn main" href="#download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-5-5m5 5 5-5M5 21h14"/></svg>
+            <span lang="en">Download</span><span lang="es">Descargar</span>
+          </a>
+          <a class="btn ghost" href="https://github.com/marcosesperon/meROMS">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.73-1.54-2.56-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.78 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
+            <span lang="en">Source on GitHub</span><span lang="es">Código en GitHub</span>
+          </a>
+          <a class="btn coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></a>
+        </div>
+        <p class="platforms-line">
+          <span lang="en">Free and open source &middot; macOS, Windows and Linux &middot; English and Spanish</span>
+          <span lang="es">Gratis y de código abierto &middot; macOS, Windows y Linux &middot; inglés y español</span>
+        </p>
+        <a class="shot-main" href="images/grid.jpg" data-viewer>
+          <img src="images/grid.jpg" width="1600" height="901" alt="meROMS: game grid with the details of the selected game">
+        </a>
+      </div>
+    </div>
+
+    <!-- Recorrido por las pantallas -->
+    <section id="tour" class="alt">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Tour</span><span lang="es">Recorrido</span></p>
+        <h2><span lang="en">Everything about a game, at a glance</span><span lang="es">Todo sobre cada juego, de un vistazo</span></h2>
+        <p class="intro">
+          <span lang="en">A cover grid or a table on the left; on the right, the selected game with artwork, screenshots, video and details. Mark favourites, scrape or delete without opening the editor.</span>
+          <span lang="es">Cuadrícula de carátulas o tabla a la izquierda; a la derecha, el juego elegido con arte, capturas, vídeo y datos. Marca favoritos, scrapea o borra sin abrir el editor.</span>
+        </p>
+        <div class="tour">
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">A table when you need data</span><span lang="es">Una tabla cuando necesitas datos</span></h3>
+              <p>
+                <span lang="en">Thumbnails, sortable columns you choose and reorder, saved widths and the name frozen while you scroll sideways. Keyboard navigation too.</span>
+                <span lang="es">Miniaturas, columnas ordenables que eliges y recolocas, anchos que se recuerdan y el nombre fijo al desplazarte en horizontal. También con el teclado.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/table.jpg" data-viewer><img src="images/table.jpg" width="1600" height="901" loading="lazy" alt="Table view"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Know each system</span><span lang="es">Conoce cada sistema</span></h3>
+              <p>
+                <span lang="en">Logos for nearly a hundred systems, a short history, technical specs and how complete your library is: covers, descriptions, videos, favourites.</span>
+                <span lang="es">Logos de casi cien sistemas, un poco de historia, ficha técnica y lo completa que está tu biblioteca: carátulas, descripciones, vídeos, favoritos.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/system.jpg" data-viewer><img src="images/system.jpg" width="1600" height="802" loading="lazy" alt="System summary"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">A full editor</span><span lang="es">Un editor completo</span></h3>
+              <p>
+                <span lang="en">Media on one side, data on the other. Set any image or video, fix a cover saved as a screenshot, rename the ROM and its media in one go.</span>
+                <span lang="es">Medios a un lado y datos al otro. Asigna cualquier imagen o vídeo, corrige una carátula guardada como captura, renombra la ROM y sus medios de una vez.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/editor.jpg" data-viewer><img src="images/editor.jpg" width="1600" height="901" loading="lazy" alt="Game editor"></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Funciones -->
+    <section id="features">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Features</span><span lang="es">Funciones</span></p>
+        <h2><span lang="en">Built for big, messy libraries</span><span lang="es">Pensado para bibliotecas grandes y desordenadas</span></h2>
+        <p class="intro">
+          <span lang="en">Every change to a gamelist is backed up first, and files are sent to the trash instead of being deleted.</span>
+          <span lang="es">Antes de cada cambio en un gamelist se guarda una copia, y los ficheros van a la papelera en lugar de borrarse.</span>
+        </p>
+        <div class="grid">
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></div>
+            <h3><span lang="en">Scraping</span><span lang="es">Scraper</span></h3>
+            <p><span lang="en">ScreenScraper with TheGamesDB as fallback, for one game or a whole system. Choose what may be overwritten, and your preferred regions and languages.</span><span lang="es">ScreenScraper con TheGamesDB de respaldo, para un juego o un sistema entero. Tú eliges qué se puede sobrescribir y el orden de regiones e idiomas.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3h4v4M21 3l-7 7M7 21H3v-4M3 21l7-7"/></svg></div>
+            <h3><span lang="en">Classic &harr; ES-DE migration</span><span lang="es">Migración clásica &harr; ES-DE</span></h3>
+            <p><span lang="en">Copy or move gamelists, media and collections between both structures. Your ROMs are never touched.</span><span lang="es">Copia o mueve gamelists, medios y colecciones entre las dos estructuras. Tus ROMs no se tocan nunca.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
+            <h3><span lang="en">New ROMs</span><span lang="es">ROMs nuevas</span></h3>
+            <p><span lang="en">Find ROM files the gamelist doesn't know yet, add them with clean names and scrape just those. Remove junk files while you're at it.</span><span lang="es">Encuentra ficheros que el gamelist aún no tiene, añádelos con nombres limpios y scrapea solo esos. De paso, quita los que no son ROMs.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg></div>
+            <h3><span lang="en">Cleanup</span><span lang="es">Limpieza</span></h3>
+            <p><span lang="en">Duplicates, games without ROM, unused media, the same image saved as several types and broken media links in the XML.</span><span lang="es">Duplicados, juegos sin ROM, medios que no usa nadie, la misma imagen guardada como varios tipos y enlaces rotos en el XML.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M15 7h4v4M9 17H5v-4"/></svg></div>
+            <h3><span lang="en">Media types</span><span lang="es">Tipos de medio</span></h3>
+            <p><span lang="en">Detects covers and screenshots saved the other way round by their shape, and swaps them for one game or a whole system.</span><span lang="es">Detecta por su forma las carátulas y capturas guardadas al revés, y las intercambia en un juego o en todo el sistema.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg></div>
+            <h3><span lang="en">Rename with rules</span><span lang="es">Renombrar con reglas</span></h3>
+            <p><span lang="en">Rename ROMs from their title or with regex cleanup rules. Media, gamelist, collections and <code>.m3u</code> playlists follow along.</span><span lang="es">Renombra ROMs a partir del título o con reglas de limpieza (regex). Medios, gamelist, colecciones y listas <code>.m3u</code> se actualizan solos.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
+            <h3><span lang="en">DAT files</span><span lang="es">Ficheros DAT</span></h3>
+            <p><span lang="en">Load a MAME, Logiqx or No-Intro DAT per system: missing games, unknown files, clones and BIOS, and a "hide clones" filter.</span><span lang="es">Carga un DAT de MAME, Logiqx o No-Intro por sistema: juegos que faltan, ficheros desconocidos, clones y BIOS, y un filtro para ocultar clones.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h4M7 13h10M7 17h6"/></svg></div>
+            <h3><span lang="en">Bulk edit</span><span lang="es">Edición múltiple</span></h3>
+            <p><span lang="en">Select many games and change common fields and flags at once, with find &amp; replace and a preview before saving.</span><span lang="es">Selecciona varios juegos y cambia campos y marcas a la vez, con buscar y reemplazar y vista previa antes de guardar.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <h3><span lang="en">Multi-disc &amp; collections</span><span lang="es">Multidisco y colecciones</span></h3>
+            <p><span lang="en">Detect multi-disc games and generate their <code>.m3u</code> playlists, or build custom collections from a filter.</span><span lang="es">Detecta juegos de varios discos y genera sus listas <code>.m3u</code>, o crea colecciones personalizadas.</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Estructuras -->
+    <section class="alt">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Profiles</span><span lang="es">Perfiles</span></p>
+        <h2><span lang="en">Classic EmulationStation or ES-DE</span><span lang="es">EmulationStation clásico o ES-DE</span></h2>
+        <p class="intro">
+          <span lang="en">Save several libraries as profiles and switch between them. meROMS knows where each structure keeps gamelists and media, and reads ES-DE's own settings &mdash; portable installs included.</span>
+          <span lang="es">Guarda varias bibliotecas como perfiles y cambia entre ellas. meROMS sabe dónde guarda cada estructura los gamelists y los medios, y lee los ajustes del propio ES-DE &mdash; también en instalaciones portables.</span>
+        </p>
+        <div class="structures">
+          <div class="card">
+            <h3><span lang="en">Classic</span><span lang="es">Clásica</span></h3>
+            <p><span lang="en">Everything inside each system's ROM folder.</span><span lang="es">Todo dentro de la carpeta de ROMs de cada sistema.</span></p>
+            <code>ROMs/snes/gamelist.xml
+ROMs/snes/covers/Aladdin.png
+ROMs/snes/Aladdin.zip</code>
+          </div>
+          <div class="card">
+            <h3>ES-DE</h3>
+            <p><span lang="en">Gamelists and media in ES-DE's own folders, found by ROM name.</span><span lang="es">Gamelists y medios en las carpetas de ES-DE, enlazados por el nombre de la ROM.</span></p>
+            <code>ES-DE/gamelists/snes/gamelist.xml
+downloaded_media/snes/covers/Aladdin.png
+ROMs/snes/Aladdin.zip</code>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Descargas -->
+    <section id="download">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Download</span><span lang="es">Descargar</span></p>
+        <h2><span lang="en">Get meROMS</span><span lang="es">Consigue meROMS</span></h2>
+        <p class="intro">
+          <span lang="en">Installers for every platform are on the GitHub Releases page.</span>
+          <span lang="es">Los instaladores de cada plataforma están en la página de Releases de GitHub.</span>
+        </p>
+        <div class="downloads">
+          <div class="card dl">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 1.43c0 1.14-.42 2.2-1.12 2.98-.84.93-2.2 1.65-3.3 1.56-.14-1.1.41-2.25 1.1-3 .78-.86 2.12-1.5 3.32-1.54ZM20.5 17.2c-.56 1.3-.83 1.88-1.55 3.03-1 1.6-2.42 3.6-4.18 3.61-1.56.02-1.96-1.02-4.08-1-2.12 0-2.56 1.02-4.12 1-1.76-.02-3.1-1.82-4.1-3.42-2.8-4.46-3.1-9.7-1.37-12.48 1.23-1.98 3.17-3.14 5-3.14 1.85 0 3.02 1.02 4.56 1.02 1.5 0 2.4-1.02 4.56-1.02 1.63 0 3.35.89 4.58 2.42-4.03 2.2-3.37 7.95.7 9.98Z"/></svg>
+            <h3>macOS</h3>
+            <p class="files"><span lang="en">Universal .dmg (Intel &amp; Apple Silicon)</span><span lang="es">.dmg universal (Intel y Apple Silicon)</span></p>
+            <a class="btn main" href="https://github.com/marcosesperon/meROMS/releases/latest"><span lang="en">Download</span><span lang="es">Descargar</span></a>
+          </div>
+          <div class="card dl">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 4.3 10 3.2v7.6H2V4.3Zm9-1.24L22 1.5v9.3H11V3.06ZM2 12h8v7.7l-8-1.1V12Zm9 0h11v9.5l-11-1.54V12Z"/></svg>
+            <h3>Windows</h3>
+            <p class="files"><span lang="en">Setup .exe or .msi (10 / 11)</span><span lang="es">Instalador .exe o .msi (10 / 11)</span></p>
+            <a class="btn main" href="https://github.com/marcosesperon/meROMS/releases/latest"><span lang="en">Download</span><span lang="es">Descargar</span></a>
+          </div>
+          <div class="card dl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="m7 9 3 2-3 2M12 13h4M8 21h8"/></svg>
+            <h3>Linux</h3>
+            <p class="files">.deb &middot; .rpm &middot; AppImage</p>
+            <a class="btn main" href="https://github.com/marcosesperon/meROMS/releases/latest"><span lang="en">Download</span><span lang="es">Descargar</span></a>
+          </div>
+        </div>
+        <p class="note">
+          <span lang="en">The installers are not signed yet: the first time, macOS needs right-click &gt; Open, and Windows SmartScreen needs "More info" &gt; "Run anyway". Prefer to build it yourself? The <a href="https://github.com/marcosesperon/meROMS#building-the-app-from-source">README</a> explains how.</span>
+          <span lang="es">Los instaladores aún no están firmados: la primera vez, en macOS hay que hacer clic derecho &gt; Abrir, y en Windows SmartScreen «Más información» &gt; «Ejecutar de todas formas». ¿Prefieres compilarlo tú? El <a href="https://github.com/marcosesperon/meROMS#building-the-app-from-source">README</a> explica cómo.</span>
+        </p>
+        <p class="note">
+          <span lang="en">meROMS is free. If it saves you time, a small donation helps keep it going.</span>
+          <span lang="es">meROMS es gratis. Si te ahorra tiempo, una pequeña donación ayuda a seguir con él.</span>
+          <br><br><a class="btn coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></a>
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>meROMS &middot; <span lang="en">made by</span><span lang="es">hecho por</span> Marcos Esperón &middot; Tauri, Rust &amp; React</span>
+      <a class="btn coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></a>
+      <span>
+        <span lang="en">Not affiliated with EmulationStation, ES-DE, ScreenScraper or TheGamesDB.</span>
+        <span lang="es">Sin relación con EmulationStation, ES-DE, ScreenScraper ni TheGamesDB.</span>
+      </span>
+    </div>
+  </footer>
+
+  <dialog class="viewer" id="viewer"><img alt=""></dialog>
+
+  <script>
+    // Idioma: el guardado, si no el del navegador (español si empieza por "es"), y si no inglés
+    function get_saved_lang() {
+      try { return localStorage.getItem("meroms-lang"); } catch (v_error) { return null; }
+    }
+    function set_lang(v_lang) {
+      document.documentElement.dataset.lang = v_lang;
+      document.documentElement.lang = v_lang;
+      document.querySelectorAll("[data-set-lang]").forEach(function (v_button) {
+        v_button.classList.toggle("on", v_button.dataset.setLang === v_lang);
+      });
+      try { localStorage.setItem("meroms-lang", v_lang); } catch (v_error) { /* sin almacenamiento: no pasa nada */ }
+    }
+    var v_start_lang = get_saved_lang() || ((navigator.language || "").toLowerCase().indexOf("es") === 0 ? "es" : "en");
+    set_lang(v_start_lang);
+    document.querySelectorAll("[data-set-lang]").forEach(function (v_button) {
+      v_button.addEventListener("click", function () { set_lang(v_button.dataset.setLang); });
+    });
+
+    // Visor: al pulsar una captura se abre en grande; un clic o Esc la cierra
+    var v_viewer = document.getElementById("viewer");
+    var v_viewer_img = v_viewer.querySelector("img");
+    document.querySelectorAll("[data-viewer]").forEach(function (v_link) {
+      v_link.addEventListener("click", function (v_event) {
+        if (!v_viewer.showModal) return; // navegador antiguo: se abre la imagen tal cual
+        v_event.preventDefault();
+        v_viewer_img.src = v_link.getAttribute("href");
+        v_viewer_img.alt = v_link.querySelector("img").alt;
+        v_viewer.showModal();
+      });
+    });
+    v_viewer.addEventListener("click", function () { v_viewer.close(); });
+  </script>
+</body>
+</html>

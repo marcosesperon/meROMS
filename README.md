@@ -9,6 +9,9 @@ The UI is available in English and Spanish.
 
 ---
 
+Website: <https://marcosesperon.github.io/meROMS/> (source in `site/`, published by
+`.github/workflows/pages.yml`).
+
 ## Building the app from source
 
 The app has to be built **on the same operating system it is for**: build the Windows installer
