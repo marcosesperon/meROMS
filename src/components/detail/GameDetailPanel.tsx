@@ -4,13 +4,14 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { GameForm } from "./GameForm";
 import { ImageManager } from "./ImageManager";
-import { saveGamelist, removeGame, scrapeGame } from "../../commands";
+import { saveGamelist, removeGame, scrapeGame, swapMedia } from "../../commands";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
-import { showMessage } from "../../utils/dialogs";
+import { askConfirm, showMessage } from "../../utils/dialogs";
+import { bumpMediaVersion } from "../../utils/images";
 
 // Per-game tools (the same ones the system toolbar has, limited to this game)
 type GameTool = "rename" | "normalize" | "clean";
@@ -129,6 +130,26 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     selectGame(fresh ?? null);
   }
 
+  /** "This is...": the file of `from` is really a `to` (swapped with `to`'s file if any) */
+  async function handleChangeKind(from: keyof Game, to: keyof Game) {
+    if (!selectedSystem || !selectedGame) return;
+    // It writes the gamelist itself (Classic): unsaved edits go first
+    if (hasChanges()) {
+      if (!(await askConfirm(t("gameTools.unsavedMessage")))) return;
+      if (!(await persist())) return;
+    }
+    try {
+      const result = await swapMedia(selectedSystem.path, [selectedGame.path], from, to);
+      if (result.skipped.length > 0) {
+        await showMessage(t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n"));
+      }
+      bumpMediaVersion();
+      await refreshGame(selectedGame.path);
+    } catch (e) {
+      await showMessage(t("mediaKinds.failed", { error: String(e) }), "error");
+    }
+  }
+
   async function handleScrape() {
     if (!selectedSystem || !editedGame.path) return;
     setScraping(true);
@@ -203,6 +224,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               onUpdate={handleFieldChange}
               onNormalize={!isNewGame ? () => runTool("normalize") : undefined}
               onClean={!isNewGame ? () => runTool("clean") : undefined}
+              onChangeKind={!isNewGame ? handleChangeKind : undefined}
             />
           )}
           <GameForm

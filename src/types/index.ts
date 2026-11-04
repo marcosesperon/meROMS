@@ -1,3 +1,4 @@
+import type { TranslationKeys } from "../i18n/en";
 export interface Game {
   // XML attributes
   id?: string;
@@ -223,6 +224,38 @@ export interface RuleTestResult {
 export interface RenameRequest {
   current_path: string;
   new_name: string;
+}
+
+/** Image media types that can be swapped / re-typed (mirrors media::MEDIA_KINDS, ES-DE ones) */
+export const SWAPPABLE_MEDIA: { field: keyof Game; labelKey: TranslationKeys }[] = [
+  { field: "image", labelKey: "images.boxArt" },
+  { field: "thumbnail", labelKey: "info.screenshot" },
+  { field: "titleshot", labelKey: "images.titleshot" },
+  { field: "boxart", labelKey: "images.boxart" },
+  { field: "boxback", labelKey: "images.boxback" },
+  { field: "marquee", labelKey: "images.marquee" },
+  { field: "fanart", labelKey: "images.fanart" },
+  { field: "mix", labelKey: "images.mix" },
+  { field: "cartridge", labelKey: "images.cartridge" },
+];
+
+export interface SwapResult {
+  swapped: number;
+  skipped: string[];
+}
+
+export interface MediaFileInfo {
+  path: string;
+  width: number;
+  height: number;
+}
+
+/** A game whose cover and screenshot look swapped (by image shape) */
+export interface SwapProposal {
+  game_path: string;
+  game_name: string;
+  cover: MediaFileInfo | null;
+  screenshot: MediaFileInfo | null;
 }
 
 /** A ROM file in the system folder that isn't in the gamelist */

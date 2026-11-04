@@ -9,6 +9,9 @@ interface ImagePreviewProps {
   systemPath: string;
   onChangeRequest: () => void;
   onDelete?: () => void;
+  /** "This is..." menu: other media types this file can be moved to (swapped if taken) */
+  kindOptions?: { field: string; label: string }[];
+  onChangeKind?: (field: string) => void;
 }
 
 export function ImagePreview({
@@ -17,6 +20,8 @@ export function ImagePreview({
   systemPath,
   onChangeRequest,
   onDelete,
+  kindOptions,
+  onChangeKind,
 }: ImagePreviewProps) {
   const src = resolveImageSrc(imagePath, systemPath);
   const { t } = useTranslation();
@@ -25,7 +30,25 @@ export function ImagePreview({
   return (
     <>
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">{label}</label>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <label className="text-xs text-zinc-400 truncate">{label}</label>
+          {/* «Esto es…»: el fichero en realidad es de otro tipo */}
+          {src && kindOptions && onChangeKind && (
+            <select
+              value=""
+              onChange={(e) => e.target.value && onChangeKind(e.target.value)}
+              className="max-w-[90px] bg-transparent text-[10px] text-zinc-500 hover:text-zinc-300 focus:outline-none cursor-pointer"
+              title={t("mediaKinds.thisIs")}
+            >
+              <option value="">{t("mediaKinds.thisIs")}</option>
+              {kindOptions.map((o) => (
+                <option key={o.field} value={o.field}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
         <div className="relative group w-full aspect-video bg-zinc-800 rounded overflow-hidden border border-zinc-700">
           {src ? (
             <>

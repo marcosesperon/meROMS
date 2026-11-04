@@ -15,9 +15,12 @@ import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
 import { NewRomsModal } from "./components/common/NewRomsModal";
 import { ToolsMenu } from "./components/common/ToolsMenu";
+import { MediaReviewModal } from "./components/common/MediaReviewModal";
+import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { listNewRoms, scrapeSystem } from "./commands";
+import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
@@ -49,6 +52,8 @@ function App() {
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
   const [showNewRomsModal, setShowNewRomsModal] = useState(false);
+  const [showMediaReview, setShowMediaReview] = useState(false);
+  const [showMediaSwap, setShowMediaSwap] = useState(false);
   // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
   const [newRomsCount, setNewRomsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -87,6 +92,15 @@ function App() {
       cancelled = true;
     };
   }, [selectedSystem?.path, games]);
+
+  // After media files moved between types: drop cached images, reload and refresh the selection
+  async function reloadAfterMediaChange() {
+    if (!selectedSystem) return;
+    bumpMediaVersion();
+    await loadGames(selectedSystem.path);
+    const { games: fresh, selectedGame: current } = useAppStore.getState();
+    if (current) selectGame(fresh.find((g) => g.path === current.path) ?? null);
+  }
 
   async function handleScrapeAll(gamePaths?: string[]) {
     if (!selectedSystem) return;
@@ -165,6 +179,8 @@ function App() {
                     title: t(activeProfile?.kind === "esde" ? "normalize.descriptionEsde" : "normalize.description"),
                   },
                   { label: t("cleanup.button"), onClick: () => setShowCleanupModal(true) },
+                  { label: t("mediaKinds.reviewButton"), onClick: () => setShowMediaReview(true) },
+                  { label: t("mediaKinds.swapButton"), onClick: () => setShowMediaSwap(true) },
                   { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
                   { label: t("collections.button"), onClick: () => setShowCollectionsModal(true), separatorBefore: true },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
@@ -203,6 +219,21 @@ function App() {
           }}
         />
       )}
+
+      <MediaReviewModal
+        open={showMediaReview}
+        systemPath={selectedSystem?.path || ""}
+        onClose={() => setShowMediaReview(false)}
+        onDone={reloadAfterMediaChange}
+      />
+
+      <MediaSwapModal
+        open={showMediaSwap}
+        systemPath={selectedSystem?.path || ""}
+        games={games}
+        onClose={() => setShowMediaSwap(false)}
+        onDone={reloadAfterMediaChange}
+      />
 
       <NewRomsModal
         open={showNewRomsModal}

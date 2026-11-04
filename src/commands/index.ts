@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, SwapProposal, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -67,6 +67,16 @@ export async function scrapeGame(
 /** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added) */
 export async function scrapeSystem(systemPath: string, gamePaths?: string[]): Promise<void> {
   return invoke("scrape_system", { systemPath, gamePaths });
+}
+
+/** Swap two media types (gamelist fields, e.g. "image" and "thumbnail") in the given games */
+export async function swapMedia(systemPath: string, gamePaths: string[], fieldA: string, fieldB: string): Promise<SwapResult> {
+  return invoke("swap_media", { systemPath, gamePaths, fieldA, fieldB });
+}
+
+/** Games whose cover and screenshot look swapped */
+export async function detectSwappedMedia(systemPath: string): Promise<SwapProposal[]> {
+  return invoke("detect_swapped_media", { systemPath });
 }
 
 /** ROM files in the system folder that the gamelist doesn't have */

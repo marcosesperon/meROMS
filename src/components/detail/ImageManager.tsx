@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { Game } from "../../types";
+import { SWAPPABLE_MEDIA, type Game } from "../../types";
 import { useTranslation } from "../../i18n";
 import { ImagePreview } from "./ImagePreview";
 import { deleteFiles, scanGameMedia, setGameMedia } from "../../commands";
@@ -16,6 +16,8 @@ interface ImageManagerProps {
   /** Per-game tools in the section header; each button shows only if its handler is given */
   onNormalize?: () => void;
   onClean?: () => void;
+  /** "This is...": move a media file to another type (swap if that type already has one) */
+  onChangeKind?: (from: keyof Game, to: keyof Game) => void;
 }
 
 // The backend decides the folder and file name (unified naming of the active profile)
@@ -36,8 +38,16 @@ const EXTENDED_IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys }[] = 
   { key: "manual", labelKey: "images.manual" },
 ];
 
-export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean }: ImageManagerProps) {
+export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean, onChangeKind }: ImageManagerProps) {
   const { t } = useTranslation();
+  // Options of the "This is..." menu for one field (only swappable image types, never itself)
+  const kindProps = (field: keyof Game) =>
+    onChangeKind && SWAPPABLE_MEDIA.some((m) => m.field === field)
+      ? {
+          kindOptions: SWAPPABLE_MEDIA.filter((m) => m.field !== field).map((m) => ({ field: m.field, label: t(m.labelKey) })),
+          onChangeKind: (to: string) => onChangeKind(field, to as keyof Game),
+        }
+      : {};
   const [videoFullscreen, setVideoFullscreen] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -160,6 +170,7 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean 
             systemPath={systemPath}
             onChangeRequest={() => handleChangeImage(key)}
             onDelete={game[key] ? () => handleDeleteMedia(key) : undefined}
+            {...kindProps(key)}
           />
         ))}
       </div>
@@ -188,6 +199,7 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean 
                 systemPath={systemPath}
                 onChangeRequest={() => handleChangeImage(key)}
                 onDelete={game[key] ? () => handleDeleteMedia(key) : undefined}
+                {...kindProps(key)}
               />
             ))}
           </div>
