@@ -115,6 +115,15 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center justify-center gap-2">
+        {/* Solo el icono; el texto sale al pasar el ratón */}
+        <button
+          onClick={() => setCurrentView("settings")}
+          title={t("sidebar.settings")}
+          aria-label={t("sidebar.settings")}
+          className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
+        >
+          <SettingsIcon size={18} />
+        </button>
         {/* Interruptor: solo sistemas con juegos (por defecto) / todos */}
         <button
           role="switch"
@@ -127,15 +136,6 @@ export function Sidebar() {
           <span
             className={`absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all ${onlyWithGames ? "left-[17px]" : "left-[3px]"}`}
           />
-        </button>
-        {/* Solo el icono; el texto sale al pasar el ratón */}
-        <button
-          onClick={() => setCurrentView("settings")}
-          title={t("sidebar.settings")}
-          aria-label={t("sidebar.settings")}
-          className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
-        >
-          <SettingsIcon size={18} />
         </button>
       </div>
     </aside>
