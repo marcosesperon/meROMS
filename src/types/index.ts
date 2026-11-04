@@ -225,6 +225,20 @@ export interface RenameRequest {
   new_name: string;
 }
 
+/** A ROM file in the system folder that isn't in the gamelist */
+export interface NewRom {
+  /** As it will go in the gamelist: "./sub/Game.sms" */
+  path: string;
+  proposed_name: string;
+  /** false = extension not in the system's list (offered unchecked) */
+  known_extension: boolean;
+}
+
+export interface NewRomEntry {
+  path: string;
+  name: string;
+}
+
 /** One proposed change of the media normalizer (Classic profiles) */
 export interface NormalizeItem {
   game_path: string;

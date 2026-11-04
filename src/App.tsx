@@ -12,9 +12,10 @@ import { ExportModal } from "./components/common/ExportModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
+import { NewRomsModal } from "./components/common/NewRomsModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
-import { scrapeSystem } from "./commands";
+import { listNewRoms, scrapeSystem } from "./commands";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
@@ -45,6 +46,9 @@ function App() {
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
+  const [showNewRomsModal, setShowNewRomsModal] = useState(false);
+  // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
+  const [newRomsCount, setNewRomsCount] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const games = useAppStore((s) => s.games);
   const showDetailPanel = selectedGame !== null || showNewGame;
@@ -64,11 +68,26 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
-  async function handleScrapeAll() {
+  // Recount whenever the games change (system loaded, ROMs added, renamed, removed...)
+  useEffect(() => {
+    if (!selectedSystem) {
+      setNewRomsCount(0);
+      return;
+    }
+    let cancelled = false;
+    listNewRoms(selectedSystem.path)
+      .then((roms) => !cancelled && setNewRomsCount(roms.length))
+      .catch(() => !cancelled && setNewRomsCount(0));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSystem?.path, games]);
+
+  async function handleScrapeAll(gamePaths?: string[]) {
     if (!selectedSystem) return;
     setShowScrapeModal(true);
     try {
-      await scrapeSystem(selectedSystem.path);
+      await scrapeSystem(selectedSystem.path, gamePaths);
       // Reload games after scraping completes
       loadGames(selectedSystem.path);
     } catch (e) {
@@ -120,6 +139,15 @@ function App() {
           <GameListView />
           {selectedSystem && (
             <div className="px-6 h-12 shrink-0 border-t border-zinc-700 flex items-center justify-end gap-2">
+              {newRomsCount > 0 && (
+                <button
+                  onClick={() => setShowNewRomsModal(true)}
+                  className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-300 border border-amber-700/60 rounded hover:bg-amber-600/30 transition-colors"
+                  title={t("newRoms.description")}
+                >
+                  {t("newRoms.button", { count: newRomsCount })}
+                </button>
+              )}
               <button
                 onClick={() => setShowExportModal(true)}
                 className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
@@ -165,7 +193,7 @@ function App() {
               </button>
               {hasCredentials && (
                 <button
-                  onClick={handleScrapeAll}
+                  onClick={() => handleScrapeAll()}
                   className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors"
                 >
                   {t("app.scrapeAll")}
@@ -193,6 +221,19 @@ function App() {
           }}
         />
       )}
+
+      <NewRomsModal
+        open={showNewRomsModal}
+        systemPath={selectedSystem?.path || ""}
+        canScrape={hasCredentials}
+        onClose={() => setShowNewRomsModal(false)}
+        onAdded={(paths, scrape) => {
+          if (!selectedSystem) return;
+          // Scraping reloads the games when it ends; otherwise reload now
+          if (scrape) handleScrapeAll(paths);
+          else loadGames(selectedSystem.path);
+        }}
+      />
 
       <ScrapeProgressModal
         open={showScrapeModal}

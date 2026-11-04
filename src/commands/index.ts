@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -64,8 +64,19 @@ export async function scrapeGame(
   return invoke("scrape_game", { systemPath, gamePath });
 }
 
-export async function scrapeSystem(systemPath: string): Promise<void> {
-  return invoke("scrape_system", { systemPath });
+/** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added) */
+export async function scrapeSystem(systemPath: string, gamePaths?: string[]): Promise<void> {
+  return invoke("scrape_system", { systemPath, gamePaths });
+}
+
+/** ROM files in the system folder that the gamelist doesn't have */
+export async function listNewRoms(systemPath: string): Promise<NewRom[]> {
+  return invoke("list_new_roms", { systemPath });
+}
+
+/** Add ROMs to the gamelist with the given names; returns how many were added */
+export async function addNewRoms(systemPath: string, entries: NewRomEntry[]): Promise<number> {
+  return invoke("add_new_roms", { systemPath, entries });
 }
 
 export async function findUnusedMedia(
