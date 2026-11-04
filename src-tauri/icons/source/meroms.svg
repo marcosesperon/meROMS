@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Icono de meROMS: mueble arcade cuya pantalla es una lista de juegos (gestionar, no jugar).
+       Colores de src/App.css. El cuadrado de fondo deja el margen que espera macOS (824 de 1024). -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c2724"/>
+      <stop offset="1" stop-color="#151211"/>
+    </linearGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9670f2"/>
+      <stop offset=".7" stop-color="#7f56e3"/>
+      <stop offset="1" stop-color="#6943c4"/>
+    </linearGradient>
+    <linearGradient id="marquee" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d7c8ff"/>
+      <stop offset="1" stop-color="#ab8cfb"/>
+    </linearGradient>
+    <linearGradient id="thumb" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c2abff"/>
+      <stop offset="1" stop-color="#7f56e3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fondo -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)"/>
+  <rect x="101" y="101" width="822" height="822" rx="184" fill="none" stroke="#4d4642" stroke-opacity=".7" stroke-width="2"/>
+
+  <!-- Mueble -->
+  <rect x="356" y="270" width="312" height="540" rx="26" fill="url(#body)"/>
+  <!-- Marquesina -->
+  <rect x="336" y="228" width="352" height="96" rx="28" fill="url(#marquee)"/>
+  <rect x="384" y="260" width="256" height="32" rx="16" fill="#4f3297"/>
+
+  <!-- Pantalla: la lista de juegos, con el segundo seleccionado -->
+  <rect x="380" y="346" width="264" height="240" rx="22" fill="#151211"/>
+  <rect x="404" y="374" width="40" height="40" rx="8" fill="#4d4642"/>
+  <rect x="458" y="380" width="150" height="14" rx="7" fill="#a59c96"/>
+  <rect x="458" y="401" width="80" height="9" rx="4.5" fill="#4d4642"/>
+
+  <rect x="394" y="430" width="236" height="64" rx="14" fill="#7f56e3" fill-opacity=".38"/>
+  <rect x="404" y="442" width="40" height="40" rx="8" fill="url(#thumb)"/>
+  <rect x="458" y="448" width="156" height="14" rx="7" fill="#f3f0ee"/>
+  <rect x="458" y="469" width="96" height="9" rx="4.5" fill="#c2abff"/>
+
+  <rect x="404" y="510" width="40" height="40" rx="8" fill="#4d4642"/>
+  <rect x="458" y="516" width="124" height="14" rx="7" fill="#a59c96"/>
+  <rect x="458" y="537" width="70" height="9" rx="4.5" fill="#4d4642"/>
+
+  <!-- Panel de mandos: solo botones (nada de palanca) -->
+  <path d="M370 612 h284 l34 56 h-352 z" fill="#4f3297"/>
+  <rect x="336" y="664" width="352" height="20" rx="6" fill="#34216a"/>
+  <circle cx="432" cy="640" r="11" fill="#f3f0ee"/>
+  <circle cx="574" cy="640" r="11" fill="#c2abff"/>
+  <circle cx="610" cy="640" r="11" fill="#c2abff"/>
+
+  <!-- Puerta de monedas y zócalo -->
+  <rect x="474" y="716" width="76" height="52" rx="10" fill="#4f3297"/>
+  <rect x="502" y="730" width="20" height="24" rx="4" fill="#d7c8ff"/>
+  <rect x="340" y="790" width="344" height="24" rx="10" fill="#34216a"/>
+</svg>
