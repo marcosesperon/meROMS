@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+/*
+ * Tema de meROMS (estilo GOG / Epic): casi negro y cálido, con acento violeta.
+ * Toda la app está pintada con las clases zinc-* (grises) e indigo-* (acento) de Tailwind;
+ * en lugar de cambiarlas en cada componente, aquí se redefinen esas dos paletas.
+ * Para retocar el tema basta con cambiar estos valores.
+ */
+@theme {
+  --color-zinc-50: #faf8f7;
+  --color-zinc-100: #f3f0ee;
+  --color-zinc-200: #e6e1de;
+  --color-zinc-300: #cbc3be;
+  --color-zinc-400: #a59c96;
+  --color-zinc-500: #7e7570;
+  --color-zinc-600: #4d4642;
+  --color-zinc-700: #36302d;
+  --color-zinc-750: #2c2724;
+  --color-zinc-800: #231f1d;
+  --color-zinc-850: #1c1917;
+  --color-zinc-900: #151211;
+  --color-zinc-950: #0d0b0a;
+
+  --color-indigo-50: #f4f0ff;
+  --color-indigo-100: #e9e1ff;
+  --color-indigo-200: #d7c8ff;
+  --color-indigo-300: #c2abff;
+  --color-indigo-400: #ab8cfb;
+  --color-indigo-500: #9670f2;
+  --color-indigo-600: #7f56e3;
+  --color-indigo-700: #6943c4;
+  --color-indigo-800: #4f3297;
+  --color-indigo-900: #34216a;
+  --color-indigo-950: #1f1342;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html,
+body {
+  background: var(--color-zinc-900);
+  -webkit-font-smoothing: antialiased;
+}
+
 * {
   user-select: none;
   -webkit-user-select: none;
@@ -10,4 +52,23 @@ textarea,
 [contenteditable="true"] {
   user-select: text;
   -webkit-user-select: text;
+}
+
+/* Barras de scroll finas y oscuras, que no se coman el diseño */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-700);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-zinc-600);
+  background-clip: padding-box;
 }
