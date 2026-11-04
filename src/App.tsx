@@ -4,6 +4,7 @@ import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
 import { GameDetailPanel } from "./components/detail/GameDetailPanel";
 import { GameInfoPanel } from "./components/detail/GameInfoPanel";
+import { BulkEditPanel } from "./components/detail/BulkEditPanel";
 import { SettingsView } from "./components/settings/SettingsView";
 import { ScrapeProgressModal } from "./components/common/ScrapeProgressModal";
 import { UnusedMediaModal } from "./components/common/UnusedMediaModal";
@@ -58,6 +59,7 @@ function App() {
   // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
   const [newRomsCount, setNewRomsCount] = useState(0);
   const [showMissingRoms, setShowMissingRoms] = useState(false);
+  const multiSelect = useAppStore((s) => s.multiSelect);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
   const [showSettings, setShowSettings] = useState(false);
@@ -226,7 +228,8 @@ function App() {
             </div>
           )}
         </div>
-        {selectedSystem && <GameInfoPanel />}
+        {/* Multi-select mode: the right panel edits every selected game at once */}
+        {selectedSystem && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
 
       {showDetailPanel && (
         <GameDetailPanel

@@ -14,6 +14,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress; meROMS' ScreenScraper developer credentials can be built in at compile time (`src-tauri/build.rs`: env `MEROMS_SS_DEVID`/`MEROMS_SS_DEVPASSWORD` or the git-ignored `src-tauri/screenscraper.env`; CI secrets `SS_DEVID`/`SS_DEVPASSWORD`), so users only enter their account
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
 - **Media types** — detect covers/screenshots saved the other way round (by image shape), swap two media types for a whole system, or re-type one media file in the editor ("This is...")
+- **Bulk edit** — "Multi-select" switch in the filter bar: clicks mark games and the right panel becomes `BulkEditPanel` (common fields with a "change" checkbox, flags yes/no/keep, find & replace with case/regex and preview); one gamelist save
 - **Games without ROM** — gamelist entries whose ROM file/folder is gone: marked in grid/table, "No ROM (N)" button to remove them and send their media to the trash
 - **New ROMs** — ROM files in the system folder (and subfolders) that the gamelist doesn't have: add them with editable names (proposed with the cleanup rules) and optionally scrape just those
 - **Cleanup** — find unused media files and duplicate games, then delete them
@@ -87,7 +88,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 
 ### React Frontend (`src/`)
 
-- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; `editorOpen` (selecting a game only shows it in the info panel), `infoPanelCollapsed` (localStorage); switching profile resets selection and rescans; every scan runs `checkPendingStructure` (`pendingStructure`, prompt once per profile activation unless `skip_structure_prompt`, `migrationPreset` for the pre-filled migration window)
+- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; `editorOpen` (selecting a game only shows it in the info panel), `multiSelect`/`selectedPaths` (bulk edit; reset on system change; keyboard navigation off while on), `infoPanelCollapsed` (localStorage); switching profile resets selection and rescans; every scan runs `checkPendingStructure` (`pendingStructure`, prompt once per profile activation unless `skip_structure_prompt`, `migrationPreset` for the pre-filled migration window)
 - `commands/index.ts` — Typed wrappers around `invoke()` for all Rust commands
 - `types/index.ts` — TypeScript interfaces mirroring Rust structs; `MEDIA_TYPE_FOLDERS` mirrors `media::kind_for_scraper_type`
 - `i18n/` — `en.ts` (keep it ASCII-only), `es.ts` translation dictionaries; `index.ts` exposes `useI18nStore` (locale) and `useTranslation()`

@@ -16,7 +16,9 @@ export function Header() {
 
   if (!selectedSystem) return null;
 
+  const multiSelect = useAppStore((s) => s.multiSelect);
   const hasActiveFilters =
+    multiSelect ||
     filters.genre ||
     filters.developer ||
     filters.favorite ||

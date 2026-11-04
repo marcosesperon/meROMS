@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useAppStore } from "../../store/useAppStore";
+import { useFilteredGames } from "../../hooks/useFilteredGames";
 import { useTranslation } from "../../i18n";
 import { StarIcon, EyeSlashIcon, ChildIcon } from "./Icons";
 
@@ -19,6 +20,11 @@ export function FilterBar() {
   const filters = useAppStore((s) => s.filters);
   const setFilters = useAppStore((s) => s.setFilters);
   const clearFilters = useAppStore((s) => s.clearFilters);
+  const multiSelect = useAppStore((s) => s.multiSelect);
+  const setMultiSelect = useAppStore((s) => s.setMultiSelect);
+  const selectedCount = useAppStore((s) => s.selectedPaths.size);
+  const setSelectedPaths = useAppStore((s) => s.setSelectedPaths);
+  const visibleGames = useFilteredGames();
   const { t } = useTranslation();
 
   const uniqueGenres = useMemo(() => {
@@ -116,6 +122,37 @@ export function FilterBar() {
         <ChildIcon size={12} />
         {t("filter.kidgames")}
       </button>
+
+      {/* Selección múltiple: el clic marca juegos y el panel derecho pasa a la edición en bloque */}
+      <div className="flex items-center gap-2 h-8 pl-3 border-l border-zinc-700">
+        <button
+          role="switch"
+          aria-checked={multiSelect}
+          onClick={() => setMultiSelect(!multiSelect)}
+          className="flex items-center gap-2 text-xs text-zinc-300"
+        >
+          <span className={`relative w-8 h-[18px] rounded-full transition-colors ${multiSelect ? "bg-indigo-600" : "bg-zinc-600"}`}>
+            <span
+              className={`absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all ${multiSelect ? "left-[17px]" : "left-[3px]"}`}
+            />
+          </span>
+          {t("bulk.multiSelect")}
+        </button>
+        {multiSelect && (
+          <>
+            <span className="text-xs text-zinc-500">{t("bulk.selected", { count: selectedCount })}</span>
+            <button
+              onClick={() => setSelectedPaths(new Set(visibleGames.map((g) => g.path)))}
+              className="text-xs text-indigo-400 hover:text-indigo-300"
+            >
+              {t("bulk.selectVisible")}
+            </button>
+            <button onClick={() => setSelectedPaths(new Set())} className="text-xs text-indigo-400 hover:text-indigo-300">
+              {t("bulk.selectNone")}
+            </button>
+          </>
+        )}
+      </div>
 
       {/* Clear all */}
       {hasActiveFilters && (

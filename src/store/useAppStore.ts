@@ -71,6 +71,13 @@ interface AppState {
   editorOpen: boolean;
   openEditor: () => void;
   closeEditor: () => void;
+  /** Multi-select mode (switch in the filter bar): a click marks games instead of opening them,
+   * and the right panel becomes the bulk editor */
+  multiSelect: boolean;
+  selectedPaths: Set<string>;
+  setMultiSelect: (on: boolean) => void;
+  toggleSelected: (path: string) => void;
+  setSelectedPaths: (paths: Set<string>) => void;
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
   setMissingRomPaths: (paths: Set<string>) => void;
@@ -197,6 +204,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       searchQuery: "",
       filters: {},
       activeFolderPath: null,
+      // Another system: multi-select starts off and empty
+      multiSelect: false,
+      selectedPaths: new Set(),
     });
     get().loadGames(system.path);
   },
@@ -278,6 +288,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   editorOpen: false,
   openEditor: () => set({ editorOpen: true }),
   closeEditor: () => set({ editorOpen: false }),
+  multiSelect: false,
+  selectedPaths: new Set(),
+  setMultiSelect: (on) => set({ multiSelect: on, selectedPaths: new Set(), selectedGame: null }),
+  toggleSelected: (path) => {
+    const next = new Set(get().selectedPaths);
+    if (next.has(path)) next.delete(path);
+    else next.add(path);
+    set({ selectedPaths: next });
+  },
+  setSelectedPaths: (paths) => set({ selectedPaths: paths }),
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),

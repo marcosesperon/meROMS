@@ -29,6 +29,8 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // In multi-select mode the click marks games; the keyboard doesn't move the selection
+      if (useAppStore.getState().multiSelect) return;
       // Escribiendo en un campo: las teclas son para él
       const target = e.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;

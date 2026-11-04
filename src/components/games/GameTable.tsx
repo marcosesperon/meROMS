@@ -63,6 +63,9 @@ export function GameTable({ games }: GameTableProps) {
   const selectGame = useAppStore((s) => s.selectGame);
   const openEditor = useAppStore((s) => s.openEditor);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
+  const multiSelect = useAppStore((s) => s.multiSelect);
+  const selectedPaths = useAppStore((s) => s.selectedPaths);
+  const toggleSelected = useAppStore((s) => s.toggleSelected);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const { t } = useTranslation();
 
@@ -229,14 +232,15 @@ export function GameTable({ games }: GameTableProps) {
             <tr
               key={row.id}
               data-game-path={row.original.path}
-              onClick={() => selectGame(row.original)}
+              onClick={() => (multiSelect ? toggleSelected(row.original.path) : selectGame(row.original))}
               onDoubleClick={() => {
+                if (multiSelect) return;
                 selectGame(row.original);
                 openEditor();
               }}
               // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
               className={`cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
-                selectedGame?.path === row.original.path
+                (multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path)
                   ? "bg-indigo-600/15"
                   : "hover:bg-zinc-800/50"
               } ${missingRomPaths.has(row.original.path) ? "opacity-50 line-through decoration-red-500/60" : ""}`}

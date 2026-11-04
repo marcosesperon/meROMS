@@ -18,6 +18,9 @@ export function GameCard({ game }: GameCardProps) {
   const openEditor = useAppStore((s) => s.openEditor);
   // ROM no longer on disk: dimmed card with a "No ROM" label
   const romMissing = useAppStore((s) => s.missingRomPaths.has(game.path));
+  const multiSelect = useAppStore((s) => s.multiSelect);
+  const checked = useAppStore((s) => s.selectedPaths.has(game.path));
+  const toggleSelected = useAppStore((s) => s.toggleSelected);
   const { t } = useTranslation();
   const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
 
@@ -35,16 +38,18 @@ export function GameCard({ game }: GameCardProps) {
   const systemConfigs = useAppStore((s) => s.settings.system_configs);
   const aspectRatio = getSystemAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
 
-  const selected = selectedGame?.path === game.path;
+  const selected = multiSelect ? checked : selectedGame?.path === game.path;
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
 
   return (
     <div
       data-game-path={game.path}
-      onClick={() => selectGame(game)}
+      // En selección múltiple el clic marca/desmarca; si no, enseña el juego en la ficha
+      onClick={() => (multiSelect ? toggleSelected(game.path) : selectGame(game))}
       // Doble clic: abrir directamente el editor de ese juego
       onDoubleClick={() => {
+        if (multiSelect) return;
         selectGame(game);
         openEditor();
       }}
@@ -56,6 +61,15 @@ export function GameCard({ game }: GameCardProps) {
         className="relative bg-zinc-800 rounded-md flex items-center justify-center overflow-hidden shadow-lg shadow-black/40"
         style={{ aspectRatio }}
       >
+        {multiSelect && (
+          <div
+            className={`absolute bottom-1.5 right-1.5 z-10 w-5 h-5 rounded border-2 flex items-center justify-center text-[11px] text-white ${
+              checked ? "bg-indigo-600 border-indigo-400" : "bg-black/50 border-white/70"
+            }`}
+          >
+            {checked ? "✓" : ""}
+          </div>
+        )}
         {romMissing && (
           <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-red-600/90 text-[10px] font-semibold text-white">
             {t("missingRoms.badge")}
