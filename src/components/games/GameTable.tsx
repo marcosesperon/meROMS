@@ -15,6 +15,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { StarIcon, StarOutlineIcon, EyeSlashIcon, ChildIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
+import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
 
 const columnHelper = createColumnHelper<Game>();
@@ -58,6 +59,22 @@ function ToggleCell({
   );
 }
 
+/** Miniatura de una fila: el medio de la cuadrícula (o carátula / captura); nada si no hay o falla */
+function RowThumb({ game }: { game: Game }) {
+  const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
+  const systemPath = useAppStore((s) => s.selectedSystem?.path) || "";
+  const [failed, setFailed] = useState(false);
+  const value = (game as unknown as Record<string, string | undefined>)[gridMediaField] || game.image || game.thumbnail;
+  const src = resolveImageSrc(value, systemPath);
+  return (
+    <div className="w-9 h-9 rounded bg-zinc-800 overflow-hidden flex items-center justify-center">
+      {src && !failed && (
+        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className="max-w-full max-h-full object-contain" />
+      )}
+    </div>
+  );
+}
+
 export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
@@ -72,6 +89,16 @@ export function GameTable({ games }: GameTableProps) {
 
   const columns = useMemo(
     () => [
+      // Miniatura: el mismo medio que la cuadrícula (Ajustes → General), en pequeño
+      columnHelper.display({
+        id: "thumb",
+        header: "",
+        cell: (info) => <RowThumb game={info.row.original} />,
+        size: 56,
+        minSize: 56,
+        enableResizing: false,
+        enableSorting: false,
+      }),
       columnHelper.accessor("name", {
         header: t("table.name"),
         cell: (info) => (
@@ -255,7 +282,7 @@ export function GameTable({ games }: GameTableProps) {
               {row.getVisibleCells().map((cell) => (
                 <td
                   key={cell.id}
-                  className="px-4 py-2.5 text-zinc-300 truncate"
+                  className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate`}
                   style={{ width: cell.column.getSize() }}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
