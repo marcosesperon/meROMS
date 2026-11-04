@@ -151,13 +151,13 @@ much faster. When it finishes, the results are in `src-tauri/target/release/bund
 
 | Platform | What you get | Where |
 |---|---|---|
-| **macOS** | App bundle | `bundle/macos/meroms.app` |
-| | Disk image (installer) | `bundle/dmg/meroms_0.1.0_<arch>.dmg` |
-| **Windows** | Setup program (recommended) | `bundle/nsis/meroms_0.1.0_x64-setup.exe` |
-| | MSI installer | `bundle/msi/meroms_0.1.0_x64_en-US.msi` |
-| **Linux** | Debian/Ubuntu package | `bundle/deb/meroms_0.1.0_amd64.deb` |
-| | Fedora/openSUSE package | `bundle/rpm/meroms-0.1.0-1.x86_64.rpm` |
-| | Portable AppImage | `bundle/appimage/meroms_0.1.0_amd64.AppImage` |
+| **macOS** | App bundle | `bundle/macos/meROMS.app` |
+| | Disk image (installer) | `bundle/dmg/meROMS_0.1.0_<arch>.dmg` |
+| **Windows** | Setup program (recommended) | `bundle/nsis/meROMS_0.1.0_x64-setup.exe` |
+| | MSI installer | `bundle/msi/meROMS_0.1.0_x64_en-US.msi` |
+| **Linux** | Debian/Ubuntu package | `bundle/deb/meROMS_0.1.0_amd64.deb` |
+| | Fedora/openSUSE package | `bundle/rpm/meROMS-0.1.0-1.x86_64.rpm` |
+| | Portable AppImage | `bundle/appimage/meROMS_0.1.0_amd64.AppImage` |
 
 The bare executable (without installer) is also at `src-tauri/target/release/meroms`
 (`meroms.exe` on Windows).
@@ -183,15 +183,15 @@ The universal app is left in `src-tauri/target/universal-apple-darwin/release/bu
 
 ### 5. Install and run
 
-- **macOS**: open the `.dmg` and drag **meroms** to Applications. The build is not signed, so the
+- **macOS**: open the `.dmg` and drag **meROMS** to Applications. The build is not signed, so the
   first time macOS will block it: right-click the app > **Open** > **Open**, or run
-  `xattr -dr com.apple.quarantine /Applications/meroms.app`.
-- **Windows**: run `meroms_0.1.0_x64-setup.exe`. As the installer is not signed, SmartScreen may
+  `xattr -dr com.apple.quarantine /Applications/meROMS.app`.
+- **Windows**: run `meROMS_0.1.0_x64-setup.exe`. As the installer is not signed, SmartScreen may
   warn: click **More info** > **Run anyway**.
 - **Linux**:
-  - `.deb`: `sudo apt install ./meroms_0.1.0_amd64.deb`
-  - `.rpm`: `sudo dnf install ./meroms-0.1.0-1.x86_64.rpm`
-  - AppImage: `chmod +x meroms_0.1.0_amd64.AppImage && ./meroms_0.1.0_amd64.AppImage`
+  - `.deb`: `sudo apt install ./meROMS_0.1.0_amd64.deb`
+  - `.rpm`: `sudo dnf install ./meROMS-0.1.0-1.x86_64.rpm`
+  - AppImage: `chmod +x meROMS_0.1.0_amd64.AppImage && ./meROMS_0.1.0_amd64.AppImage`
 
 On first launch the app opens the Settings window so you can create a profile (your ROM folder
 and its structure: Classic or ES-DE).
