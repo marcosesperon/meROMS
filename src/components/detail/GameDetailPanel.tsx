@@ -76,6 +76,20 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     }
   }, [hasChanges, onClose]);
 
+  // Esc cierra el editor (con el aviso de cambios sin guardar), salvo que haya otra ventana
+  // encima (confirmaciones, herramientas, imagen a pantalla completa): esa va primero
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      const overlays = document.querySelectorAll(".fixed.inset-0:not([data-editor-layer])");
+      if (overlays.length > 0) return;
+      e.preventDefault();
+      handleClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleClose]);
+
   function handleFieldChange(field: keyof Game, value: string) {
     setEditedGame((prev) => ({ ...prev, [field]: value || undefined }));
   }
@@ -184,8 +198,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
   return (
     <>
       {/* Ventana centrada y grande (antes era un panel lateral estrecho) */}
-      <div className="fixed inset-0 bg-black/60 z-40" onClick={handleClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+      <div data-editor-layer className="fixed inset-0 bg-black/60 z-40" onClick={handleClose} />
+      <div data-editor-layer className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
       <div className="pointer-events-auto w-full max-w-6xl h-full max-h-[900px] bg-zinc-900 border border-zinc-700 rounded-xl flex flex-col overflow-hidden shadow-2xl">
         <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-700">
           <h3 className="text-sm font-semibold text-zinc-200">
