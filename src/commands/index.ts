@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, RepeatedMedia, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -111,6 +111,16 @@ export async function findGameLeftoverMedia(
 /** Same file in more than one media type (optionally only one game) */
 export async function findRepeatedMedia(systemPath: string, gamePath?: string): Promise<RepeatedMedia[]> {
   return invoke("find_repeated_media", { systemPath, gamePath });
+}
+
+/** Gamelist media fields pointing to missing files (Classic; optionally only one game) */
+export async function findBrokenMediaRefs(systemPath: string, gamePath?: string): Promise<BrokenMediaRef[]> {
+  return invoke("find_broken_media_refs", { systemPath, gamePath });
+}
+
+/** Remove those fields from the gamelist (one save, with backup); returns how many */
+export async function clearMediaRefs(systemPath: string, refs: BrokenMediaRef[]): Promise<number> {
+  return invoke("clear_media_refs", { systemPath, refs });
 }
 
 /** Send media files of the system to the trash (Classic: clears the gamelist fields using them) */

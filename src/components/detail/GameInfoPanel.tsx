@@ -73,12 +73,24 @@ function GameInfo({ game }: { game: Game }) {
   const isFavorite = game.favorite === "true";
   const { scrape, remove, scraping } = useGameActions();
   const systemPath = selectedSystem?.path || "";
-  const src = (value?: string) => resolveImageSrc(value, systemPath);
+  // Medios que no se han podido cargar (la gamelist apunta a un fichero que no existe):
+  // no se pintan, para no dejar el icono de imagen rota
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+  useEffect(() => setFailed(new Set()), [game.path]);
+  const markFailed = (url: string) => setFailed((prev) => new Set(prev).add(url));
+  const src = (value?: string) => {
+    const url = resolveImageSrc(value, systemPath);
+    return url && !failed.has(url) ? url : undefined;
+  };
 
   // Lo que hay de verdad para la galería
   const media = useMemo(
-    () => GALLERY.filter((m) => !!game[m.field]).map((m) => ({ ...m, url: src(game[m.field] as string)! })),
-    [game, systemPath]
+    () =>
+      GALLERY.flatMap((m) => {
+        const url = src(game[m.field] as string | undefined);
+        return url ? [{ ...m, url }] : [];
+      }),
+    [game, systemPath, failed]
   );
   const [current, setCurrent] = useState(0);
   // Al cambiar de juego, la galería vuelve al principio
@@ -86,16 +98,17 @@ function GameInfo({ game }: { game: Game }) {
   const shown = media[current] ?? media[0];
   // Lo que ya se ve arriba (la carátula y la imagen de fondo de la cabecera): si no hay nada
   // más, el visor solo repetiría lo mismo y no se enseña
-  const coverField: keyof Game | null = game.image ? "image" : game.boxart ? "boxart" : null;
-  const sceneField: keyof Game | null = game.fanart ? "fanart" : game.thumbnail ? "thumbnail" : game.titleshot ? "titleshot" : null;
+  const firstShown = (fields: (keyof Game)[]) => fields.find((f) => !!src(game[f] as string | undefined)) ?? null;
+  const coverField = firstShown(["image", "boxart"]);
+  const sceneField = firstShown(["fanart", "thumbnail", "titleshot"]);
   const onlyShownAbove = media.every((m) => m.field === coverField || m.field === sceneField);
 
   // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante).
   // Sin ninguna de las dos, la propia carátula muy desenfocada: deja un fondo con sus colores.
-  const cover = src(game.image) ?? src(game.boxart);
-  const scene = src(game.fanart) ?? src(game.thumbnail) ?? src(game.titleshot);
+  const cover = coverField ? src(game[coverField] as string) : undefined;
+  const scene = sceneField ? src(game[sceneField] as string) : undefined;
   const hero = scene ?? cover;
-  const heroStyle = game.fanart ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
+  const heroStyle = sceneField === "fanart" ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
 
   const details: [TranslationKey, string | undefined][] = [
     ["form.releaseDate", formatReleaseDate(game.releasedate)],
@@ -115,6 +128,7 @@ function GameInfo({ game }: { game: Game }) {
           <img
             src={hero}
             alt=""
+            onError={() => markFailed(hero)}
             // Capturas: ampliadas sin suavizar (píxeles nítidos). Carátula de relleno: muy desenfocada
             className={`absolute inset-0 w-full h-full object-cover ${heroStyle}`}
           />
@@ -140,6 +154,7 @@ function GameInfo({ game }: { game: Game }) {
           <img
             src={cover}
             alt=""
+            onError={() => markFailed(cover)}
             // Tamaño según su forma: alta (Master System) o apaisada (SNES PAL) sin deformarse
             className="-mt-24 w-auto h-auto max-h-44 max-w-[180px] shrink-0 rounded-sm shadow-2xl shadow-black/70 ring-1 ring-black/50"
           />
@@ -189,9 +204,9 @@ function GameInfo({ game }: { game: Game }) {
         <div className="px-5 pt-4">
           <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
             {shown.field === "video" ? (
-              <video key={shown.url} src={shown.url} controls autoPlay muted loop className="w-full h-full object-contain" />
+              <video key={shown.url} src={shown.url} onError={() => markFailed(shown.url)} controls autoPlay muted loop className="w-full h-full object-contain" />
             ) : (
-              <img src={shown.url} alt={t(shown.label)} className="w-full h-full object-contain" />
+              <img src={shown.url} alt={t(shown.label)} onError={() => markFailed(shown.url)} className="w-full h-full object-contain" />
             )}
           </div>
           {media.length > 1 && (
@@ -209,7 +224,7 @@ function GameInfo({ game }: { game: Game }) {
                   {m.field === "video" ? (
                     <span className="w-full h-full flex items-center justify-center text-zinc-300 text-lg">▶</span>
                   ) : (
-                    <img src={m.url} alt="" className="w-full h-full object-cover" />
+                    <img src={m.url} alt="" onError={() => markFailed(m.url)} className="w-full h-full object-cover" />
                   )}
                 </button>
               ))}

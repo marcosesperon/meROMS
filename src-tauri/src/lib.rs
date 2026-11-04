@@ -74,6 +74,8 @@ pub fn run() {
             cleanup::find_game_leftover_media,
             cleanup::find_repeated_media,
             cleanup::trash_media,
+            cleanup::find_broken_media_refs,
+            cleanup::clear_media_refs,
             rename::list_rename_candidates,
             rename::rename_roms,
             rename::check_rename_target,

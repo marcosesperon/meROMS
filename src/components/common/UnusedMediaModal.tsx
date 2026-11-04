@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, trashMedia } from "../../commands";
-import { SWAPPABLE_MEDIA, type RepeatedMedia, type UnusedMediaFile } from "../../types";
+import { clearMediaRefs, findBrokenMediaRefs, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, trashMedia } from "../../commands";
+import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMediaFile } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { resolveImageSrc } from "../../utils/images";
 
@@ -15,6 +15,10 @@ interface UnusedMediaModalProps {
   /** After sending files to the trash (to reload the games) */
   onDone?: () => void;
 }
+
+// Selection key of a broken reference (files use their path)
+const REF_PREFIX = "ref:";
+const refKey = (r: BrokenMediaRef) => `${REF_PREFIX}${r.game_path}|${r.field}`;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -34,6 +38,8 @@ export function UnusedMediaModal({
   const [files, setFiles] = useState<UnusedMediaFile[]>([]);
   // Same file in more than one media type: the extra copies
   const [repeated, setRepeated] = useState<RepeatedMedia[]>([]);
+  // Media fields of the gamelist pointing to files that don't exist (Classic only)
+  const [broken, setBroken] = useState<BrokenMediaRef[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -42,6 +48,7 @@ export function UnusedMediaModal({
     if (!open) {
       setFiles([]);
       setRepeated([]);
+      setBroken([]);
       setSelected(new Set());
       return;
     }
@@ -51,13 +58,17 @@ export function UnusedMediaModal({
   async function scan() {
     setScanning(true);
     try {
-      const [result, dupes] = await Promise.all([
+      const [result, dupes, refs] = await Promise.all([
         gamePath ? findGameLeftoverMedia(systemPath, gamePath) : findUnusedMedia(systemPath),
         findRepeatedMedia(systemPath, gamePath),
+        findBrokenMediaRefs(systemPath, gamePath),
       ]);
       setFiles(result);
       setRepeated(dupes);
-      setSelected(new Set([...result.map((f) => f.path), ...dupes.flatMap((r) => r.remove.map((f) => f.path))]));
+      setBroken(refs);
+      setSelected(
+        new Set([...result.map((f) => f.path), ...dupes.flatMap((r) => r.remove.map((f) => f.path)), ...refs.map(refKey)])
+      );
     } catch (e) {
       console.error("Scan failed:", e);
     } finally {
@@ -75,9 +86,12 @@ export function UnusedMediaModal({
   }
 
   // Everything that can be sent to the trash: unused files + extra copies of repeated media
+  // Everything that can be cleaned: files (to the trash) and broken references (out of the
+  // gamelist). Broken references are keyed with refKey() in the same selection.
   const allItems = [
     ...files.map((f) => ({ path: f.path, size: f.size })),
     ...repeated.flatMap((r) => r.remove.map((f) => ({ path: f.path, size: f.size }))),
+    ...broken.map((r) => ({ path: refKey(r), size: 0 })),
   ];
 
   function toggleAll() {
@@ -90,15 +104,25 @@ export function UnusedMediaModal({
 
   async function handleDelete() {
     if (selected.size === 0) return;
-    if (!(await askConfirm(t("cleanup.trashConfirm", { count: selected.size })))) return;
+    const refs = broken.filter((r) => selected.has(refKey(r)));
+    const paths = Array.from(selected).filter((key) => !key.startsWith(REF_PREFIX));
+    if (!(await askConfirm(t("cleanup.cleanConfirm", { files: paths.length, refs: refs.length })))) return;
     setDeleting(true);
     try {
-      const result = await trashMedia(systemPath, Array.from(selected));
-      let message = t("cleanup.deleted", { count: result.trashed });
-      if (result.failed.length > 0) {
-        message += "\n\n" + t("cleanup.trashFailed", { count: result.failed.length }) + "\n" + result.failed.join("\n");
+      const lines: string[] = [];
+      let failed = false;
+      if (paths.length > 0) {
+        const result = await trashMedia(systemPath, paths);
+        lines.push(t("cleanup.deleted", { count: result.trashed }));
+        if (result.failed.length > 0) {
+          failed = true;
+          lines.push("", t("cleanup.trashFailed", { count: result.failed.length }), ...result.failed);
+        }
       }
-      await showMessage(message, result.failed.length > 0 ? "error" : "info");
+      if (refs.length > 0) {
+        lines.push(t("cleanup.refsCleared", { count: await clearMediaRefs(systemPath, refs) }));
+      }
+      await showMessage(lines.join("\n"), failed ? "error" : "info");
       onDone?.();
       await scan();
     } catch (e) {
@@ -239,6 +263,39 @@ export function UnusedMediaModal({
                   </div>
                 </>
               )}
+
+              {/* Gamelist fields pointing to files that don't exist: taken out of the XML */}
+              {broken.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.brokenSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.brokenHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">
+                    {broken.map((r) => (
+                      <label
+                        key={refKey(r)}
+                        className="flex items-center gap-3 px-5 py-2 cursor-pointer transition-colors hover:bg-zinc-700/30"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(refKey(r))}
+                          onChange={() => toggleFile(refKey(r))}
+                          className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-zinc-300 truncate">
+                            {r.game_name} <span className="text-zinc-500">· {kindLabel(r.field)}</span>
+                          </p>
+                          <p className="text-xs text-zinc-500 font-mono truncate" title={r.value}>
+                            {r.value}
+                          </p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -259,7 +316,7 @@ export function UnusedMediaModal({
             >
               {deleting
                 ? "..."
-                : t("cleanup.delete", { count: selected.size })}
+                : t("cleanup.clean", { count: selected.size })}
             </button>
           )}
         </div>

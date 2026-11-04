@@ -452,6 +452,84 @@ fn file_md5(path: &Path) -> Option<String> {
     Some(format!("{:x}", Md5::digest(&bytes)))
 }
 
+/// Un campo de medio de la gamelist que apunta a un fichero que no existe
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BrokenMediaRef {
+    pub game_path: String,
+    pub game_name: String,
+    pub field: String,
+    /// La ruta tal como está en la gamelist
+    pub value: String,
+}
+
+/// Campos de medios que apuntan a ficheros que no existen (solo clásica: en ES-DE la
+/// gamelist no guarda rutas de medios). Con `game_path`, solo ese juego.
+#[tauri::command]
+pub fn find_broken_media_refs(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    if !layout.writes_media_tags() {
+        return Ok(Vec::new());
+    }
+    let gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    Ok(broken_refs(&system, &gamelist, game_path.as_deref()))
+}
+
+fn broken_refs(system: &SystemRef, gamelist: &GameList, only: Option<&str>) -> Vec<BrokenMediaRef> {
+    let mut out = Vec::new();
+    for game in gamelist.games.iter().filter(|g| only.is_none_or(|p| p == g.path)) {
+        for field in media::media_fields() {
+            let Some(value) = media::get_field(game, field) else { continue };
+            if value.trim().is_empty() || is_remote(value) || media::resolve_media_path(system, value).exists() {
+                continue;
+            }
+            out.push(BrokenMediaRef {
+                game_path: game.path.clone(),
+                game_name: game.name.clone().unwrap_or_else(|| game.path.clone()),
+                field: field.to_string(),
+                value: value.clone(),
+            });
+        }
+    }
+    out
+}
+
+/// Una URL no es un fichero local: no se da por rota
+fn is_remote(value: &str) -> bool {
+    let v = value.to_lowercase();
+    v.starts_with("http://") || v.starts_with("https://")
+}
+
+/// Quita de la gamelist los campos indicados, si siguen apuntando a un fichero que no existe
+/// (una sola escritura, con copia de seguridad). Devuelve cuántos se quitaron.
+#[tauri::command]
+pub fn clear_media_refs(app: tauri::AppHandle, system_path: String, refs: Vec<BrokenMediaRef>) -> Result<usize, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    if !layout.writes_media_tags() {
+        return Ok(0);
+    }
+    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let cleared = clear_refs(&system, &mut gamelist, &refs);
+    if cleared > 0 {
+        super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+    }
+    Ok(cleared)
+}
+
+fn clear_refs(system: &SystemRef, gamelist: &mut GameList, refs: &[BrokenMediaRef]) -> usize {
+    let mut cleared = 0;
+    for r in refs {
+        let Some(game) = gamelist.games.iter_mut().find(|g| g.path == r.game_path) else { continue };
+        // Solo si el campo sigue igual y el fichero sigue sin existir (por si algo cambió entre medias)
+        let still_broken = media::get_field(game, &r.field)
+            .is_some_and(|v| *v == r.value && !media::resolve_media_path(system, v).exists());
+        if still_broken {
+            media::set_field(game, &r.field, None);
+            cleared += 1;
+        }
+    }
+    cleared
+}
+
 /// Manda medios a la papelera (no usados o repetidos). Solo acepta ficheros de la carpeta del
 /// sistema o de su carpeta de medios. En clásica vacía los campos de la gamelist que apuntaban
 /// a ellos (con copia de seguridad).
@@ -707,5 +785,42 @@ mod tests {
         assert!(clear_fields_pointing_to(&system, &mut gamelist, &removed));
         assert_eq!(gamelist.games[0].thumbnail, None);
         assert_eq!(gamelist.games[0].image.as_deref(), Some("./covers/a.png"));
+    }
+
+    #[test]
+    fn broken_refs_are_media_fields_pointing_to_missing_files() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        touch(&system.rom_dir.join("covers/a.png"));
+        let mut g = game("./a.sfc");
+        g.image = Some("./covers/a.png".into());
+        g.thumbnail = Some("./screenshots/a.png".into()); // no existe
+        g.video = Some("https://ejemplo.invalid/a.mp4".into()); // remota: no cuenta
+        let mut other = game("./b.sfc");
+        other.marquee = Some("./marquees/b.png".into()); // no existe
+        let mut gamelist = GameList { games: vec![g, other], ..Default::default() };
+
+        let all = broken_refs(&system, &gamelist, None);
+        let fields: Vec<_> = all.iter().map(|r| (r.game_path.as_str(), r.field.as_str())).collect();
+        assert_eq!(fields, vec![("./a.sfc", "thumbnail"), ("./b.sfc", "marquee")]);
+        assert_eq!(broken_refs(&system, &gamelist, Some("./b.sfc")).len(), 1);
+
+        assert_eq!(clear_refs(&system, &mut gamelist, &all), 2);
+        assert_eq!(gamelist.games[0].thumbnail, None);
+        assert_eq!(gamelist.games[0].image.as_deref(), Some("./covers/a.png"));
+        assert_eq!(gamelist.games[1].marquee, None);
+    }
+
+    #[test]
+    fn a_ref_whose_file_appeared_is_not_cleared() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        let mut g = game("./a.sfc");
+        g.image = Some("./covers/a.png".into());
+        let mut gamelist = GameList { games: vec![g], ..Default::default() };
+        let refs = broken_refs(&system, &gamelist, None);
+        touch(&system.rom_dir.join("covers/a.png")); // aparece entre medias
+        assert_eq!(clear_refs(&system, &mut gamelist, &refs), 0);
+        assert!(gamelist.games[0].image.is_some());
     }
 }
