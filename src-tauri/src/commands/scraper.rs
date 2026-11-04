@@ -83,92 +83,32 @@ fn build_api_url(
     Ok(url)
 }
 
-/// Map app language code to ScreenScraper language code.
-fn ss_language(settings: &AppSettings) -> &str {
-    match settings.language.as_deref().unwrap_or("en") {
-        "es" => "es",
-        "fr" => "fr",
-        "de" => "de",
-        "it" => "it",
-        "pt" => "pt",
-        "ja" => "ja",
-        "zh" => "zh",
-        "ko" => "ko",
-        "nl" => "nl",
-        "sv" => "sv",
-        "da" => "da",
-        "no" => "no",
-        "fi" => "fi",
-        "hu" => "hu",
-        "pl" => "pl",
-        "cs" => "cs",
-        "ro" => "ro",
-        "ru" => "ru",
-        _ => "en",
-    }
+/// The first item of a ScreenScraper list whose `key` (region / langue) comes first in
+/// `preferred`; if none matches, the first item (as before). `keep` picks which items count.
+fn pick_preferred<'a>(items: &'a [Value], key: &str, preferred: &[String], keep: impl Fn(&Value) -> bool) -> Option<&'a Value> {
+    let candidates: Vec<&Value> = items.iter().filter(|i| keep(i)).collect();
+    preferred
+        .iter()
+        .find_map(|p| candidates.iter().find(|i| i.get(key).and_then(|v| v.as_str()) == Some(p.as_str())).copied())
+        .or_else(|| candidates.first().copied())
 }
 
-/// Extract a text value from a ScreenScraper localized array, preferring a given language.
-fn extract_localized(arr: &Value, lang: &str) -> Option<String> {
-    let items = arr.as_array()?;
-    // Try preferred language first
-    for item in items {
-        if item.get("langue").and_then(|l| l.as_str()) == Some(lang) {
-            return item.get("text").and_then(|t| t.as_str()).map(String::from);
-        }
-    }
-    // Try English
-    for item in items {
-        if item.get("langue").and_then(|l| l.as_str()) == Some("en") {
-            return item.get("text").and_then(|t| t.as_str()).map(String::from);
-        }
-    }
-    // Fallback to first
-    items
-        .first()
-        .and_then(|item| item.get("text").and_then(|t| t.as_str()).map(String::from))
+/// Text from a ScreenScraper localized array, in the preferred language order.
+fn extract_localized(arr: &Value, languages: &[String]) -> Option<String> {
+    let item = pick_preferred(arr.as_array()?, "langue", languages, |_| true)?;
+    item.get("text").and_then(|t| t.as_str()).map(String::from)
 }
 
-/// Extract a regional text value, preferring "wor" (world) then "us" then "eu" then first.
-fn extract_regional(arr: &Value, _field: &str) -> Option<String> {
-    let items = arr.as_array()?;
-    let preferred = ["wor", "us", "eu", "jp", "ss"];
-    for region in &preferred {
-        for item in items {
-            if item.get("region").and_then(|r| r.as_str()) == Some(region) {
-                return item.get("text").and_then(|t| t.as_str()).map(String::from);
-            }
-        }
-    }
-    items
-        .first()
-        .and_then(|item| item.get("text").and_then(|t| t.as_str()).map(String::from))
+/// Text from a ScreenScraper regional array (names, dates), in the preferred region order.
+fn extract_regional(arr: &Value, regions: &[String]) -> Option<String> {
+    let item = pick_preferred(arr.as_array()?, "region", regions, |_| true)?;
+    item.get("text").and_then(|t| t.as_str()).map(String::from)
 }
 
-/// Find media URL for a given type, preferring certain regions.
-fn find_media_url(medias: &Value, media_type: &str) -> Option<String> {
-    let items = medias.as_array()?;
-    let preferred_regions = ["wor", "us", "eu", "jp", "ss"];
-
-    // Try preferred regions
-    for region in &preferred_regions {
-        for item in items {
-            if item.get("type").and_then(|t| t.as_str()) == Some(media_type)
-                && item.get("region").and_then(|r| r.as_str()) == Some(region)
-            {
-                return item.get("url").and_then(|u| u.as_str()).map(String::from);
-            }
-        }
-    }
-
-    // Fallback: first match with no region filter
-    for item in items {
-        if item.get("type").and_then(|t| t.as_str()) == Some(media_type) {
-            return item.get("url").and_then(|u| u.as_str()).map(String::from);
-        }
-    }
-
-    None
+/// Media URL of a type, in the preferred region order.
+fn find_media_url(medias: &Value, media_type: &str, regions: &[String]) -> Option<String> {
+    let item = pick_preferred(medias.as_array()?, "region", regions, |i| i.get("type").and_then(|t| t.as_str()) == Some(media_type))?;
+    item.get("url").and_then(|u| u.as_str()).map(String::from)
 }
 
 // Where each media type is saved and which field it fills is decided by
@@ -213,19 +153,21 @@ async fn process_scrape_response(
     settings: &AppSettings,
 ) -> Result<Game, String> {
     // Preferred language from app settings
-    let lang = ss_language(settings);
+    // Preferred regions (names, dates, media) and languages (texts), from Settings
+    let regions = settings.scrape_regions();
+    let languages = settings.scrape_languages();
 
     // Extract metadata
-    let name = extract_regional(&jeu["noms"], "noms")
+    let name = extract_regional(&jeu["noms"], &regions)
         .or_else(|| existing_game.name.clone());
 
-    let desc = extract_localized(&jeu["synopsis"], lang);
+    let desc = extract_localized(&jeu["synopsis"], &languages);
 
     let genre = jeu["genres"]
         .as_array()
         .and_then(|genres| {
             genres.first().and_then(|g| {
-                extract_localized(&g["noms"], lang)
+                extract_localized(&g["noms"], &languages)
             })
         });
 
@@ -251,7 +193,7 @@ async fn process_scrape_response(
         .and_then(|s| s.parse::<f64>().ok())
         .map(|r| format!("{:.2}", r / 20.0));
 
-    let releasedate = extract_regional(&jeu["dates"], "dates");
+    let releasedate = extract_regional(&jeu["dates"], &regions);
 
     // What may be updated (Settings, or the choice made when launching «Scrape all»)
     let policy = settings.scrape_policy();
@@ -279,10 +221,10 @@ async fn process_scrape_response(
             media_type.as_str()
         };
 
-        if let Some(url) = find_media_url(medias, search_type)
+        if let Some(url) = find_media_url(medias, search_type, &regions)
             .or_else(|| {
                 if media_type == "video" {
-                    find_media_url(medias, "video")
+                    find_media_url(medias, "video", &regions)
                 } else {
                     None
                 }
@@ -333,7 +275,7 @@ async fn process_scrape_response(
 
     // Extract additional metadata from ScreenScraper
     if let Some(family) = jeu.get("familles").and_then(|f| f.as_array()).and_then(|arr| {
-        arr.first().and_then(|f| extract_localized(&f["noms"], "en"))
+        arr.first().and_then(|f| extract_localized(&f["noms"], &languages))
     }) {
         game.family = Some(family);
     }
@@ -423,6 +365,19 @@ async fn scrape_game_screenscraper(
 }
 
 /// Scrape a single game — dispatches to ScreenScraper or TheGamesDB based on settings.
+#[derive(serde::Serialize)]
+pub struct ScrapeOrder {
+    pub regions: Vec<String>,
+    pub languages: Vec<String>,
+}
+
+/// Region and language order the scraper uses right now (saved, or defaults from the app language)
+#[tauri::command]
+pub fn get_scrape_order(app: tauri::AppHandle) -> Result<ScrapeOrder, String> {
+    let settings = crate::commands::settings::get_settings(app)?;
+    Ok(ScrapeOrder { regions: settings.scrape_regions(), languages: settings.scrape_languages() })
+}
+
 /// What the scraper may update right now (saved, or derived from the old media list)
 #[tauri::command]
 pub fn get_scrape_policy(app: tauri::AppHandle) -> Result<crate::models::settings::ScrapePolicy, String> {
@@ -609,4 +564,52 @@ pub async fn scrape_system(
     crate::commands::gamelist::write_gamelist(&layout, &system, &updated_gamelist)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn langs(v: &[&str]) -> Vec<String> {
+        v.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn follows_the_preferred_order_and_falls_back_to_the_first() {
+        let names = serde_json::json!([
+            {"region": "us", "text": "Alien Syndrome (USA)"},
+            {"region": "eu", "text": "Alien Syndrome (Europa)"},
+            {"region": "jp", "text": "Alien Syndrome (Japón)"},
+        ]);
+        assert_eq!(extract_regional(&names, &langs(&["eu", "wor", "us"])).as_deref(), Some("Alien Syndrome (Europa)"));
+        assert_eq!(extract_regional(&names, &langs(&["us", "eu"])).as_deref(), Some("Alien Syndrome (USA)"));
+        // Ninguna coincide: la primera
+        assert_eq!(extract_regional(&names, &langs(&["br"])).as_deref(), Some("Alien Syndrome (USA)"));
+
+        let synopsis = serde_json::json!([{"langue": "en", "text": "English"}, {"langue": "es", "text": "Español"}]);
+        assert_eq!(extract_localized(&synopsis, &langs(&["es", "en"])).as_deref(), Some("Español"));
+        assert_eq!(extract_localized(&synopsis, &langs(&["fr", "en"])).as_deref(), Some("English"));
+
+        let medias = serde_json::json!([
+            {"type": "ss", "region": "eu", "url": "ss-eu"},
+            {"type": "box-2D", "region": "us", "url": "box-us"},
+            {"type": "box-2D", "region": "eu", "url": "box-eu"},
+        ]);
+        assert_eq!(find_media_url(&medias, "box-2D", &langs(&["eu", "us"])).as_deref(), Some("box-eu"));
+        assert_eq!(find_media_url(&medias, "box-2D", &langs(&["jp"])).as_deref(), Some("box-us"));
+        assert_eq!(find_media_url(&medias, "video", &langs(&["eu"])), None);
+    }
+
+    #[test]
+    fn default_orders_depend_on_the_app_language() {
+        let mut s = AppSettings::default();
+        s.language = Some("es".into());
+        assert_eq!(s.scrape_regions()[0], "eu");
+        assert_eq!(s.scrape_languages(), langs(&["es", "en"]));
+        s.language = Some("en".into());
+        assert_eq!(s.scrape_regions()[0], "us");
+        assert_eq!(s.scrape_languages(), langs(&["en"]));
+        s.ss_languages = Some(langs(&["fr"]));
+        assert_eq!(s.scrape_languages(), langs(&["fr"]));
+    }
 }

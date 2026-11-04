@@ -68,6 +68,7 @@ pub fn run() {
             scraper::scrape_game,
             scraper::scraper_status,
             scraper::get_scrape_policy,
+            scraper::get_scrape_order,
             scraper::scrape_system,
             cleanup::find_unused_media,
             cleanup::find_game_leftover_media,

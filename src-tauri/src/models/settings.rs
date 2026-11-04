@@ -40,6 +40,12 @@ pub struct AppSettings {
     // What the scraper may update, per data field and per media type
     #[serde(default)]
     pub scrape_fields: Option<ScrapePolicy>,
+    // ScreenScraper region order (names, dates, media) and language order (texts), in
+    // ScreenScraper codes; None = defaults from the app language
+    #[serde(default)]
+    pub ss_regions: Option<Vec<String>>,
+    #[serde(default)]
+    pub ss_languages: Option<Vec<String>>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration
@@ -160,6 +166,33 @@ impl AppSettings {
             "ss".to_string(),
             "marquee".to_string(),
         ]
+    }
+
+    /// ScreenScraper regions in order of preference (saved, or by app language: English ->
+    /// USA first, any other -> Europe first)
+    pub fn scrape_regions(&self) -> Vec<String> {
+        match self.ss_regions.as_ref().filter(|r| !r.is_empty()) {
+            Some(saved) => saved.clone(),
+            None => {
+                let order: &[&str] = if self.app_language() == "en" { &["us", "wor", "eu", "jp", "ss"] } else { &["eu", "wor", "us", "jp", "ss"] };
+                order.iter().map(|r| r.to_string()).collect()
+            }
+        }
+    }
+
+    /// ScreenScraper languages in order of preference (saved, or the app language then English)
+    pub fn scrape_languages(&self) -> Vec<String> {
+        match self.ss_languages.as_ref().filter(|l| !l.is_empty()) {
+            Some(saved) => saved.clone(),
+            None => {
+                let lang = self.app_language();
+                if lang == "en" { vec!["en".into()] } else { vec![lang.to_string(), "en".into()] }
+            }
+        }
+    }
+
+    fn app_language(&self) -> &str {
+        self.language.as_deref().filter(|l| !l.is_empty()).unwrap_or("en")
     }
 
     /// Media types to download: those whose policy isn't «don't touch»
