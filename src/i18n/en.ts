@@ -288,6 +288,7 @@ const en = {
   "profiles.settingsNotFound": "settings/es_settings.xml not found: ES-DE default folders are used. Check the ROM folder.",
   "profiles.legacyWarning": "ES-DE has LegacyGamelistFileLocation enabled: it reads gamelists from the ROM folders, not from its gamelists/ folder. A Classic profile may suit this library better.",
   // Media normalizer
+  "toolbar.tools": "Tools",
   "newRoms.button": "New ROMs ({count})",
   "newRoms.title": "New ROMs",
   "newRoms.description": "ROM files in this system's folder (and subfolders) that are not in the gamelist. Check the ones to add and adjust their names.",

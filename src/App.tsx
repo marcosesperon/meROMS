@@ -13,6 +13,7 @@ import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
 import { NewRomsModal } from "./components/common/NewRomsModal";
+import { ToolsMenu } from "./components/common/ToolsMenu";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { listNewRoms, scrapeSystem } from "./commands";
@@ -138,63 +139,38 @@ function App() {
           )}
           <GameListView />
           {selectedSystem && (
-            <div className="px-6 h-12 shrink-0 border-t border-zinc-700 flex items-center justify-end gap-2">
+            <div className="px-6 h-12 shrink-0 border-t border-zinc-700 flex items-center gap-2">
               {newRomsCount > 0 && (
                 <button
                   onClick={() => setShowNewRomsModal(true)}
-                  className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-300 border border-amber-700/60 rounded hover:bg-amber-600/30 transition-colors"
+                  className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-300 border border-amber-700/60 rounded hover:bg-amber-600/30 transition-colors whitespace-nowrap"
                   title={t("newRoms.description")}
                 >
                   {t("newRoms.button", { count: newRomsCount })}
                 </button>
               )}
-              <button
-                onClick={() => setShowExportModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("export.button")}
-              </button>
-              <button
-                onClick={() => setShowDuplicatesModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("duplicates.button")}
-              </button>
-              <button
-                onClick={() => setShowCollectionsModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("collections.button")}
-              </button>
-              <button
-                onClick={() => setShowBackupsModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("backup.button")}
-              </button>
-              <button
-                onClick={() => setShowRenameModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("rename.button")}
-              </button>
-              <button
-                onClick={() => setShowNormalizeModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-                title={t(activeProfile?.kind === "esde" ? "normalize.descriptionEsde" : "normalize.description")}
-              >
-                {t("normalize.button")}
-              </button>
-              <button
-                onClick={() => setShowCleanupModal(true)}
-                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-              >
-                {t("cleanup.button")}
-              </button>
+              <div className="flex-1" />
+              {/* Secondary tools live in a menu so the bar never wraps */}
+              <ToolsMenu
+                label={t("toolbar.tools")}
+                items={[
+                  { label: t("rename.button"), onClick: () => setShowRenameModal(true) },
+                  {
+                    label: t("normalize.button"),
+                    onClick: () => setShowNormalizeModal(true),
+                    title: t(activeProfile?.kind === "esde" ? "normalize.descriptionEsde" : "normalize.description"),
+                  },
+                  { label: t("cleanup.button"), onClick: () => setShowCleanupModal(true) },
+                  { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
+                  { label: t("collections.button"), onClick: () => setShowCollectionsModal(true), separatorBefore: true },
+                  { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
+                  { label: t("export.button"), onClick: () => setShowExportModal(true) },
+                ]}
+              />
               {hasCredentials && (
                 <button
                   onClick={() => handleScrapeAll()}
-                  className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors"
+                  className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors whitespace-nowrap"
                 >
                   {t("app.scrapeAll")}
                 </button>
@@ -204,7 +180,7 @@ function App() {
                   selectGame(null);
                   setShowNewGame(true);
                 }}
-                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
+                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors whitespace-nowrap"
               >
                 {t("app.addGame")}
               </button>

@@ -290,6 +290,7 @@ const es: Record<TranslationKeys, string> = {
   "profiles.settingsNotFound": "No se encuentra settings/es_settings.xml: se usan las carpetas por defecto de ES-DE. Revisa la carpeta de ROMs.",
   "profiles.legacyWarning": "ES-DE tiene activado LegacyGamelistFileLocation: lee las gamelists de las carpetas de ROMs y no de su carpeta gamelists/. Quizá esta biblioteca encaje mejor con un perfil clásico.",
   // Normalizador de medios
+  "toolbar.tools": "Herramientas",
   "newRoms.button": "ROMs nuevas ({count})",
   "newRoms.title": "ROMs nuevas",
   "newRoms.description": "Ficheros de ROM de la carpeta del sistema (y sus subcarpetas) que no están en la gamelist. Marca las que quieras añadir y ajusta su nombre.",

@@ -88,12 +88,13 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `commands/index.ts` — Typed wrappers around `invoke()` for all Rust commands
 - `types/index.ts` — TypeScript interfaces mirroring Rust structs; `MEDIA_TYPE_FOLDERS` mirrors `media::kind_for_scraper_type`
 - `i18n/` — `en.ts` (keep it ASCII-only), `es.ts` translation dictionaries; `index.ts` exposes `useI18nStore` (locale) and `useTranslation()`
-- `App.tsx` — Root: renders the per-system tool toolbar and owns the open/close state of every tool modal and the settings view
+- `App.tsx` — Root: renders the per-system toolbar (New ROMs on the left; `ToolsMenu` "Tools ▾" with the secondary tools, Scrape All and Add Game on the right — keep it from wrapping) and owns the open/close state of every tool modal and the settings view
 - `components/layout/` — `MainLayout`, `Sidebar` (profile selector, system list with an amber dot on systems pending migration), `Header` (search + filters toggle + view toggle)
 - `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard`
 - `components/detail/` — `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab` ("Migrate structure…" for the selected profile; unsaved settings are saved first), General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
+  - `ToolsMenu` — drop-up menu of the toolbar's secondary tools (closes on pick, outside click, Esc)
   - `StructurePromptModal` — "systems in the other structure, migrate?" prompt shown when entering a profile
   - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`, `NewRomsModal` (button with a count, shown only when the system has ROMs outside the gamelist); `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
