@@ -1,5 +1,6 @@
 pub mod backup;
 pub mod cleanup;
+pub mod dat;
 pub mod collections;
 pub mod duplicates;
 pub mod export;

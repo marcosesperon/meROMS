@@ -137,26 +137,36 @@ fn split_inside(system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<Stri
     (inside, rejected)
 }
 
+/// Ficheros de la carpeta del sistema (y subcarpetas) que pueden ser ROMs: sin carpetas de
+/// medios ni ocultas, sin extensiones que no son ROMs y sin los discos que ya usa un .m3u.
+/// También lo usa la herramienta DAT («ficheros que no están en el DAT»).
+pub(super) fn rom_files(system: &SystemRef) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    collect_files(&system.rom_dir, &skipped_dirs(), &mut files);
+    // Los discos que ya usa un .m3u no son juegos sueltos
+    let in_playlists = m3u_entries(&files);
+    files
+        .into_iter()
+        .filter(|f| !in_playlists.contains(f))
+        .filter(|f| {
+            f.extension().and_then(|e| e.to_str()).map(str::to_lowercase).is_some_and(|ext| {
+                !NOT_ROM_EXTENSIONS.contains(&ext.as_str()) && !ext.starts_with("state")
+            })
+        })
+        .collect()
+}
+
 /// Busca las ROMs de la carpeta del sistema que no tiene ningún juego de la gamelist.
 fn find_new_roms(system: &SystemRef, games: &[Game], rules: &CompiledRules) -> Vec<NewRom> {
     // Lo que ya está en la gamelist, en ruta absoluta (así da igual «./x» o «x»)
     let in_gamelist: HashSet<PathBuf> = games.iter().map(|g| media::resolve_media_path(system, &g.path)).collect();
     let known: Vec<&str> = extensions_for_system(&system.name);
-    let skipped_dirs = skipped_dirs();
 
-    let mut files = Vec::new();
-    collect_files(&system.rom_dir, &skipped_dirs, &mut files);
-    // Los discos que ya usa un .m3u no son juegos sueltos
-    let in_playlists = m3u_entries(&files);
-
-    let mut found: Vec<NewRom> = files
+    let mut found: Vec<NewRom> = rom_files(system)
         .iter()
-        .filter(|f| !in_gamelist.contains(*f) && !in_playlists.contains(*f))
+        .filter(|f| !in_gamelist.contains(*f))
         .filter_map(|file| {
             let ext = file.extension()?.to_str()?.to_lowercase();
-            if NOT_ROM_EXTENSIONS.contains(&ext.as_str()) || ext.starts_with("state") {
-                return None;
-            }
             let rel = file.strip_prefix(&system.rom_dir).ok()?;
             let stem = file.file_stem()?.to_string_lossy().to_string();
             let cleaned = rules.apply(&stem).trim().to_string();
