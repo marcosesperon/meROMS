@@ -56,11 +56,25 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     setForm(settings);
   }, [settings]);
 
+  // Values this window filled in by itself (scraper policy and region/language order, when
+  // they weren't saved yet). They don't count as changes while they stay as filled in.
+  const filledIn = useRef<Partial<Record<"scrape_fields" | "ss_regions" | "ss_languages", string>>>({});
+  function withoutFilledIn(values: typeof form) {
+    const copy: Record<string, unknown> = { ...values };
+    for (const [key, json] of Object.entries(filledIn.current)) {
+      if (JSON.stringify(copy[key]) === json) delete copy[key];
+    }
+    return copy;
+  }
+
   // Not saved yet: start from what the backend derives (old "media to download" list)
   useEffect(() => {
     if (open && !form.scrape_fields) {
       getScrapePolicy()
-        .then((scrape_fields) => setForm((prev) => (prev.scrape_fields ? prev : { ...prev, scrape_fields })))
+        .then((scrape_fields) => {
+          filledIn.current.scrape_fields = JSON.stringify(scrape_fields);
+          setForm((prev) => (prev.scrape_fields ? prev : { ...prev, scrape_fields }));
+        })
         .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -70,9 +84,11 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   useEffect(() => {
     if (open && (!form.ss_regions || !form.ss_languages)) {
       getScrapeOrder()
-        .then(({ regions, languages }) =>
-          setForm((prev) => ({ ...prev, ss_regions: prev.ss_regions ?? regions, ss_languages: prev.ss_languages ?? languages }))
-        )
+        .then(({ regions, languages }) => {
+          filledIn.current.ss_regions = JSON.stringify(regions);
+          filledIn.current.ss_languages = JSON.stringify(languages);
+          setForm((prev) => ({ ...prev, ss_regions: prev.ss_regions ?? regions, ss_languages: prev.ss_languages ?? languages }));
+        })
         .catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,7 +110,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   // La migración trabaja con los ajustes guardados (y al acabar puede crear y activar un
   // perfil), así que lo pendiente del formulario se guarda antes o no se abre
   async function handleMigrate(profile: Profile) {
-    const dirty = JSON.stringify(form) !== JSON.stringify(settings);
+    const dirty = JSON.stringify(withoutFilledIn(form)) !== JSON.stringify(withoutFilledIn(settings));
     if (dirty) {
       if (!(await askConfirm(t("profiles.migrateUnsaved")))) return;
       await handleSave();
