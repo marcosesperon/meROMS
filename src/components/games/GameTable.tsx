@@ -222,7 +222,7 @@ export function GameTable({ games }: GameTableProps) {
   return (
     <div ref={scrollRef} className="overflow-auto flex-1">
       <table
-        className="text-sm border-collapse"
+        className="text-sm border-collapse table-fixed"
         style={{ width: table.getCenterTotalSize() }}
       >
         <thead className="sticky top-0 bg-zinc-800 z-10">
@@ -290,19 +290,29 @@ export function GameTable({ games }: GameTableProps) {
                 (multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path)
                   ? "bg-indigo-600/15"
                   : "hover:bg-zinc-800/50"
-              } ${missingRomPaths.has(row.original.path) ? "opacity-50 line-through decoration-red-500/60" : ""}`}
+              } ${missingRomPaths.has(row.original.path) ? "line-through decoration-red-500/60" : ""}`}
               title={missingRomPaths.has(row.original.path) ? t("missingRoms.badge") : undefined}
             >
               {row.getVisibleCells().map((cell) => {
                 const frozen = FROZEN.has(cell.column.id);
                 const rowSelected = multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path;
+                // Juego sin ROM: atenuado. En las celdas congeladas solo el contenido, para que
+                // su fondo siga siendo opaco y no se vea lo que pasa por debajo
+                const dim = missingRomPaths.has(row.original.path) ? (frozen ? "[&>*]:opacity-50" : "opacity-50") : "";
                 return (
                 <td
                   key={cell.id}
                   className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate ${
                     frozen ? `sticky z-10 ${rowSelected ? FROZEN_BG.selected : FROZEN_BG.normal}` : ""
-                  } ${cell.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-800)]" : ""}`}
-                  style={{ width: cell.column.getSize(), left: frozen ? cell.column.getStart() : undefined }}
+                  } ${cell.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-800)]" : ""} ${dim}`}
+                  // Ancho exacto (tabla de anchos fijos): si no, la miniatura podía quedar más
+                  // estrecha que su hueco y entre ella y el nombre se veía el texto de debajo
+                  style={{
+                    width: cell.column.getSize(),
+                    minWidth: cell.column.getSize(),
+                    maxWidth: cell.column.getSize(),
+                    left: frozen ? cell.column.getStart() : undefined,
+                  }}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
