@@ -143,6 +143,9 @@ export interface AppSettings {
   ss_media_types?: string[];
   /** What the scraper may update (missing = derived from ss_media_types by the backend) */
   scrape_fields?: ScrapePolicy;
+  /** ScreenScraper region / language order (missing = defaults from the app language) */
+  ss_regions?: string[];
+  ss_languages?: string[];
   tgdb_apikey?: string;
   media_paths?: MediaPathConfig[];
   grid_media_field?: string;

@@ -15,7 +15,8 @@ import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
-import { getScrapePolicy } from "../../commands";
+import { getScrapeOrder, getScrapePolicy } from "../../commands";
+import { ScrapeOrderEditor } from "./ScrapeOrderEditor";
 import { MigrationModal } from "../common/MigrationModal";
 import type { Profile } from "../../types";
 
@@ -64,6 +65,18 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, form.scrape_fields]);
+
+  // Same for the region/language order
+  useEffect(() => {
+    if (open && (!form.ss_regions || !form.ss_languages)) {
+      getScrapeOrder()
+        .then(({ regions, languages }) =>
+          setForm((prev) => ({ ...prev, ss_regions: prev.ss_regions ?? regions, ss_languages: prev.ss_languages ?? languages }))
+        )
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, form.ss_regions, form.ss_languages]);
 
   const mediaPaths: MediaPathConfig[] =
     form.media_paths ?? [...DEFAULT_MEDIA_PATHS];
@@ -314,6 +327,18 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     {t("settings.tgdbHelp")}
                   </p>
                 </div>
+              </section>
+
+              {/* Region / language order of the scraper */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapeOrder.title")}</h3>
+                {form.ss_regions && form.ss_languages && (
+                  <ScrapeOrderEditor
+                    regions={form.ss_regions}
+                    languages={form.ss_languages}
+                    onChange={(ss_regions, ss_languages) => setForm({ ...form, ss_regions, ss_languages })}
+                  />
+                )}
               </section>
 
               {/* What the scraper may update (replaces the old "media to download" list) */}

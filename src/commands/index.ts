@@ -81,6 +81,11 @@ export async function scrapeSystem(systemPath: string, gamePaths?: string[], pol
   return invoke("scrape_system", { systemPath, gamePaths, policy });
 }
 
+/** Region and language order the scraper uses (saved, or defaults from the app language) */
+export async function getScrapeOrder(): Promise<{ regions: string[]; languages: string[] }> {
+  return invoke("get_scrape_order");
+}
+
 /** What the scraper may update (saved, or derived from the old "media to download" list) */
 export async function getScrapePolicy(): Promise<ScrapePolicy> {
   return invoke("get_scrape_policy");
