@@ -250,7 +250,21 @@ export interface MediaFileInfo {
   height: number;
 }
 
-/** A game whose cover and screenshot look swapped (by image shape) */
+/** Usual size of covers / screenshots in a system */
+export interface MediaProfile {
+  width: number;
+  height: number;
+}
+
+export interface DetectResult {
+  cover_profile: MediaProfile | null;
+  screenshot_profile: MediaProfile | null;
+  /** The whole system looks the other way round (use "Swap media types") */
+  looks_swapped: boolean;
+  proposals: SwapProposal[];
+}
+
+/** A game whose cover and screenshot look swapped (compared with the system's usual sizes) */
 export interface SwapProposal {
   game_path: string;
   game_name: string;

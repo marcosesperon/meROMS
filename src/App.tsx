@@ -225,6 +225,7 @@ function App() {
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowMediaReview(false)}
         onDone={reloadAfterMediaChange}
+        onOpenSwap={() => setShowMediaSwap(true)}
       />
 
       <MediaSwapModal

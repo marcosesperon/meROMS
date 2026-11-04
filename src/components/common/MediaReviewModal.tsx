@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { detectSwappedMedia, swapMedia } from "../../commands";
-import type { MediaFileInfo, SwapProposal } from "../../types";
+import type { DetectResult, MediaFileInfo, MediaProfile, SwapProposal } from "../../types";
 import { resolveImageSrc } from "../../utils/images";
 import { showMessage } from "../../utils/dialogs";
 
@@ -11,15 +11,19 @@ interface MediaReviewModalProps {
   onClose: () => void;
   /** Tras aplicar (para recargar la lista de juegos) */
   onDone: () => void;
+  /** Open "Swap media types" (when the whole system looks the other way round) */
+  onOpenSwap: () => void;
 }
 
 /**
- * «Revisar carátulas y capturas»: juegos cuya carátula y captura parecen estar al revés
- * (por la forma de la imagen). Se ven las dos miniaturas y se intercambian las marcadas.
+ * «Revisar carátulas y capturas»: juegos cuya carátula y captura parecen estar al revés,
+ * comparadas con lo habitual del sistema (el tamaño que más se repite en cada carpeta).
+ * Se ven las dos miniaturas y se intercambian las marcadas.
  */
-export function MediaReviewModal({ open, systemPath, onClose, onDone }: MediaReviewModalProps) {
+export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap }: MediaReviewModalProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<SwapProposal[]>([]);
+  const [result, setResult] = useState<DetectResult | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -27,14 +31,16 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone }: MediaRev
   useEffect(() => {
     if (!open) {
       setItems([]);
+      setResult(null);
       setSelected(new Set());
       return;
     }
     setScanning(true);
     detectSwappedMedia(systemPath)
-      .then((found) => {
-        setItems(found);
-        setSelected(new Set(found.map((i) => i.game_path)));
+      .then((detected) => {
+        setResult(detected);
+        setItems(detected.proposals);
+        setSelected(new Set(detected.proposals.map((i) => i.game_path)));
       })
       .catch((e) => showMessage(t("mediaKinds.failed", { error: String(e) }), "error"))
       .finally(() => setScanning(false));
@@ -69,6 +75,8 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone }: MediaRev
     }
   }
 
+  const sizeText = (p: MediaProfile | null) => (p ? `${p.width}×${p.height}` : t("mediaKinds.unknown"));
+
   // Miniatura con su tamaño debajo (o «no hay»)
   const thumb = (label: string, media: MediaFileInfo | null) => (
     <div className="w-28 shrink-0">
@@ -92,6 +100,27 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone }: MediaRev
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("mediaKinds.reviewTitle")}</h3>
           <p className="text-sm text-zinc-400 mt-1">{t("mediaKinds.reviewDescription")}</p>
+          {/* Lo habitual del sistema, que es con lo que se compara */}
+          {result && (
+            <p className="text-xs text-zinc-500 mt-2">
+              {t("mediaKinds.usualCover")}: {sizeText(result.cover_profile)} · {t("mediaKinds.usualScreenshot")}:{" "}
+              {sizeText(result.screenshot_profile)}
+            </p>
+          )}
+          {result?.looks_swapped && (
+            <div className="mt-3 px-3 py-2 rounded border border-amber-700/50 bg-amber-600/10 flex items-center justify-between gap-3">
+              <p className="text-xs text-amber-300">{t("mediaKinds.looksSwapped")}</p>
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenSwap();
+                }}
+                className="shrink-0 px-3 py-1 text-xs bg-amber-600/30 text-amber-200 rounded hover:bg-amber-600/40"
+              >
+                {t("mediaKinds.swapButton")}
+              </button>
+            </div>
+          )}
           {!scanning && items.length > 0 && (
             <div className="flex items-center gap-4 mt-2 text-xs">
               <span className="text-zinc-500">{t("mediaKinds.found", { count: items.length })}</span>

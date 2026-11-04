@@ -14,10 +14,14 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MediaKind};
 use crate::models::Game;
 
-/// Ancho/alto a partir del cual una imagen es claramente apaisada (una captura).
-const LANDSCAPE_RATIO: f64 = 1.2;
-/// Ancho/alto por debajo del cual es vertical o casi cuadrada (una carátula, también de CD).
-const COVER_RATIO: f64 = 1.1;
+/// Dos imágenes son «del mismo tipo» si su forma (ancho/alto) difiere menos de esto…
+const SAME_SHAPE: f64 = 0.06;
+/// …y una no tiene más de este múltiplo del área de la otra.
+const SAME_AREA: f64 = 2.25;
+/// Un grupo es «lo habitual» de una carpeta si tiene al menos estas imágenes…
+const PROFILE_MIN_COUNT: usize = 3;
+/// …y al menos esta parte de la carpeta.
+const PROFILE_MIN_SHARE: f64 = 0.3;
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct SwapResult {
@@ -30,6 +34,23 @@ pub struct MediaFileInfo {
     pub path: String,
     pub width: u32,
     pub height: u32,
+}
+
+/// Tamaño habitual de un tipo de imagen en el sistema (el grupo más grande de su carpeta)
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct MediaProfile {
+    pub width: u32,
+    pub height: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DetectResult {
+    pub cover_profile: Option<MediaProfile>,
+    pub screenshot_profile: Option<MediaProfile>,
+    /// Lo habitual de covers/ parece una captura y lo de screenshots/ una carátula:
+    /// el sistema entero está al revés (mejor «Intercambiar tipos de medio»)
+    pub looks_swapped: bool,
+    pub proposals: Vec<SwapProposal>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -64,7 +85,7 @@ pub fn swap_media(
 }
 
 #[tauri::command]
-pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String) -> Result<Vec<SwapProposal>, String> {
+pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String) -> Result<DetectResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;
     Ok(detect(&layout, &system, &games))
@@ -166,33 +187,119 @@ fn swap_one(layout: &Layout, system: &SystemRef, index: &MediaIndex, game: &mut 
     Ok(true)
 }
 
-fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> Vec<SwapProposal> {
+/// Qué parece una imagen comparada con lo habitual del sistema
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Looks {
+    Cover,
+    Screenshot,
+    Unknown,
+}
+
+fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> DetectResult {
     let (Some(cover_kind), Some(shot_kind)) = (media::kind_for_field("image"), media::kind_for_field("thumbnail")) else {
-        return Vec::new();
+        return DetectResult { cover_profile: None, screenshot_profile: None, looks_swapped: false, proposals: Vec::new() };
     };
     let index = MediaIndex::build(layout, system);
-    let mut out = Vec::new();
 
-    for game in games {
-        let cover = current_file(layout, system, &index, game, cover_kind).and_then(|p| info(&p));
-        let shot = current_file(layout, system, &index, game, shot_kind).and_then(|p| info(&p));
-        let ratio = |i: &MediaFileInfo| i.width as f64 / i.height.max(1) as f64;
-        let cover_wrong = cover.as_ref().is_some_and(|c| ratio(c) >= LANDSCAPE_RATIO);
-        let shot_wrong = shot.as_ref().is_some_and(|s| ratio(s) <= COVER_RATIO);
+    // Carátula y captura de cada juego, con su tamaño
+    let pairs: Vec<(&Game, Option<MediaFileInfo>, Option<MediaFileInfo>)> = games
+        .iter()
+        .map(|g| {
+            let cover = current_file(layout, system, &index, g, cover_kind).and_then(|p| info(&p));
+            let shot = current_file(layout, system, &index, g, shot_kind).and_then(|p| info(&p));
+            (g, cover, shot)
+        })
+        .collect();
 
-        // Solo si lo que hay está al revés y lo otro no está bien: si la captura es una
-        // captura correcta, no se convierte en carátula
-        let propose = (cover_wrong && (shot.is_none() || shot_wrong)) || (shot_wrong && (cover.is_none() || cover_wrong));
-        if propose {
-            out.push(SwapProposal {
-                game_path: game.path.clone(),
-                game_name: game.name.clone().unwrap_or_else(|| game.path.clone()),
-                cover,
-                screenshot: shot,
-            });
+    // Lo habitual de cada carpeta en este sistema
+    let cover_profile = profile(pairs.iter().filter_map(|(_, c, _)| c.as_ref()));
+    let shot_profile = profile(pairs.iter().filter_map(|(_, _, s)| s.as_ref()));
+    // Si las dos carpetas tienen lo mismo, no hay forma de distinguir nada
+    let distinguishable = match (cover_profile, shot_profile) {
+        (Some(c), Some(s)) => !same_type(c.width, c.height, s.width, s.height),
+        _ => true,
+    };
+
+    let classify = |i: &MediaFileInfo| {
+        let is_cover = cover_profile.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
+        let is_shot = shot_profile.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
+        match (is_cover, is_shot) {
+            (true, false) => Looks::Cover,
+            (false, true) => Looks::Screenshot,
+            _ => Looks::Unknown,
+        }
+    };
+
+    let mut proposals = Vec::new();
+    if distinguishable {
+        for (game, cover, shot) in pairs {
+            let c = cover.as_ref().map(&classify);
+            let s = shot.as_ref().map(&classify);
+            // Lo que hay está al revés y lo otro también (o no existe). Lo dudoso, nunca.
+            let propose = (c == Some(Looks::Screenshot) && matches!(s, None | Some(Looks::Cover)))
+                || (s == Some(Looks::Cover) && matches!(c, None | Some(Looks::Screenshot)));
+            if propose {
+                proposals.push(SwapProposal {
+                    game_path: game.path.clone(),
+                    game_name: game.name.clone().unwrap_or_else(|| game.path.clone()),
+                    cover,
+                    screenshot: shot,
+                });
+            }
         }
     }
-    out
+
+    DetectResult {
+        looks_swapped: whole_system_swapped(cover_profile, shot_profile),
+        cover_profile,
+        screenshot_profile: shot_profile,
+        proposals,
+    }
+}
+
+/// ¿Dos tamaños son del mismo tipo de imagen? (misma forma y área parecida)
+fn same_type(w1: u32, h1: u32, w2: u32, h2: u32) -> bool {
+    let ratio = |w: u32, h: u32| w as f64 / h.max(1) as f64;
+    let shape = (ratio(w1, h1) / ratio(w2, h2) - 1.0).abs() <= SAME_SHAPE;
+    let (a1, a2) = ((w1 as f64) * (h1 as f64), (w2 as f64) * (h2 as f64));
+    let area = a1.max(a2) / a1.min(a2).max(1.0) <= SAME_AREA;
+    shape && area
+}
+
+/// Lo habitual de una carpeta: se agrupan los tamaños parecidos y gana el grupo más grande
+/// (si es lo bastante grande). Su representante es el tamaño exacto más repetido del grupo.
+fn profile<'a>(images: impl Iterator<Item = &'a MediaFileInfo>) -> Option<MediaProfile> {
+    // Tamaños exactos y cuántas veces salen, de más a menos repetidos
+    let mut sizes: Vec<((u32, u32), usize)> = Vec::new();
+    let mut total = 0;
+    for img in images {
+        total += 1;
+        match sizes.iter_mut().find(|(s, _)| *s == (img.width, img.height)) {
+            Some((_, n)) => *n += 1,
+            None => sizes.push(((img.width, img.height), 1)),
+        }
+    }
+    sizes.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // Grupos: cada tamaño se une al primer grupo cuyo representante sea del mismo tipo
+    let mut groups: Vec<((u32, u32), usize)> = Vec::new();
+    for ((w, h), n) in sizes {
+        match groups.iter_mut().find(|((gw, gh), _)| same_type(w, h, *gw, *gh)) {
+            Some((_, count)) => *count += n,
+            None => groups.push(((w, h), n)),
+        }
+    }
+    let ((width, height), count) = groups.into_iter().max_by_key(|(_, n)| *n)?;
+    (count >= PROFILE_MIN_COUNT && count as f64 >= total as f64 * PROFILE_MIN_SHARE).then_some(MediaProfile { width, height })
+}
+
+/// El sistema entero parece al revés: lo habitual de covers/ es bastante más pequeño que lo
+/// de screenshots/ y tiene forma de pantalla (apaisada, entre 1,1 y 1,5).
+fn whole_system_swapped(cover: Option<MediaProfile>, shot: Option<MediaProfile>) -> bool {
+    let (Some(c), Some(s)) = (cover, shot) else { return false };
+    let area = |p: MediaProfile| p.width as f64 * p.height as f64;
+    let ratio = c.width as f64 / c.height.max(1) as f64;
+    area(c) * 2.0 <= area(s) && (1.1..=1.5).contains(&ratio)
 }
 
 /// Tamaño de una imagen leyendo solo su cabecera. None si no se puede leer.
@@ -232,27 +339,94 @@ mod tests {
         (media::kind_for_field("image").unwrap(), media::kind_for_field("thumbnail").unwrap())
     }
 
+    fn found(result: &DetectResult) -> Vec<&str> {
+        result.proposals.iter().map(|p| p.game_path.as_str()).collect()
+    }
+
     #[test]
-    fn detecta_caratula_y_captura_al_reves() {
+    fn snes_con_caratulas_apaisadas_solo_propone_el_cambiado() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/snes"));
+        let media = tmp.path().join("ES-DE/downloaded_media/snes");
+        let mut games = Vec::new();
+        for name in ["A", "B", "C", "D"] {
+            png(&media.join(format!("covers/{name}.png")), 640, 468);
+            png(&media.join(format!("screenshots/{name}.png")), 256, 224);
+            games.push(game(&format!("./{name}.sfc")));
+        }
+        // Carátula sin captura: está bien, no se toca (antes se proponía)
+        png(&media.join("covers/Sola.png"), 640, 471);
+        games.push(game("./Sola.sfc"));
+        // Este sí está al revés
+        png(&media.join("covers/Mal.png"), 256, 224);
+        png(&media.join("screenshots/Mal.png"), 640, 468);
+        games.push(game("./Mal.sfc"));
+        // Captura enorme: dudosa, no se propone
+        png(&media.join("covers/Grande.png"), 640, 468);
+        png(&media.join("screenshots/Grande.png"), 2100, 1551);
+        games.push(game("./Grande.sfc"));
+
+        let result = detect(&layout, &system, &games);
+        assert_eq!(result.cover_profile, Some(MediaProfile { width: 640, height: 468 }));
+        assert_eq!(result.screenshot_profile, Some(MediaProfile { width: 256, height: 224 }));
+        assert!(!result.looks_swapped);
+        assert_eq!(found(&result), vec!["./Mal.sfc"]);
+    }
+
+    #[test]
+    fn master_system_con_tamanos_de_captura_parecidos() {
         let tmp = tempfile::tempdir().unwrap();
         let layout = esde(tmp.path());
         let system = SystemRef::from_rom_dir(tmp.path().join("roms/mastersystem"));
         let media = tmp.path().join("ES-DE/downloaded_media/mastersystem");
-        // Cambiadas (como en la biblioteca del usuario)
-        png(&media.join("covers/Alf.png"), 256, 192);
+        let mut games = Vec::new();
+        for (i, shot) in [(256, 192), (248, 192), (256, 192), (248, 192)].into_iter().enumerate() {
+            png(&media.join(format!("covers/J{i}.png")), 484, 680);
+            png(&media.join(format!("screenshots/J{i}.png")), shot.0, shot.1);
+            games.push(game(&format!("./J{i}.sms")));
+        }
+        png(&media.join("covers/Alf.png"), 248, 192);
         png(&media.join("screenshots/Alf.png"), 484, 680);
-        // Correctas
-        png(&media.join("covers/Bien.png"), 484, 680);
-        png(&media.join("screenshots/Bien.png"), 256, 192);
-        // Carátula apaisada pero la captura también es una captura: no se toca
-        png(&media.join("covers/Raro.png"), 256, 192);
-        png(&media.join("screenshots/Raro.png"), 256, 192);
-        // Captura vertical sin carátula: se propone
-        png(&media.join("screenshots/Sola.png"), 484, 680);
+        games.push(game("./Alf.sms"));
+        // Solo captura, pero con forma de carátula: se propone
+        png(&media.join("screenshots/Sola.png"), 456, 640);
+        games.push(game("./Sola.sms"));
 
-        let games = vec![game("./Alf.sms"), game("./Bien.sms"), game("./Raro.sms"), game("./Sola.sms")];
-        let found: Vec<_> = detect(&layout, &system, &games).into_iter().map(|p| p.game_path).collect();
-        assert_eq!(found, vec!["./Alf.sms", "./Sola.sms"]);
+        let result = detect(&layout, &system, &games);
+        assert_eq!(found(&result), vec!["./Alf.sms", "./Sola.sms"]);
+    }
+
+    #[test]
+    fn sistema_entero_al_reves_avisa() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/mastersystem"));
+        let media = tmp.path().join("ES-DE/downloaded_media/mastersystem");
+        let mut games = Vec::new();
+        for name in ["A", "B", "C", "D"] {
+            png(&media.join(format!("covers/{name}.png")), 256, 192);
+            png(&media.join(format!("screenshots/{name}.png")), 484, 680);
+            games.push(game(&format!("./{name}.sms")));
+        }
+        let result = detect(&layout, &system, &games);
+        assert!(result.looks_swapped);
+        assert!(result.proposals.is_empty());
+    }
+
+    #[test]
+    fn mismo_perfil_en_las_dos_carpetas_no_propone_nada() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/psx"));
+        let media = tmp.path().join("ES-DE/downloaded_media/psx");
+        let mut games = Vec::new();
+        for name in ["A", "B", "C"] {
+            png(&media.join(format!("covers/{name}.png")), 640, 480);
+            png(&media.join(format!("screenshots/{name}.png")), 640, 480);
+            games.push(game(&format!("./{name}.cue")));
+        }
+        assert!(detect(&layout, &system, &games).proposals.is_empty());
     }
 
     #[test]
