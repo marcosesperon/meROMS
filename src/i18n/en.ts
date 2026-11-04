@@ -265,6 +265,8 @@ const en = {
   // Profiles
   "settings.tabProfiles": "Profiles",
   "info.edit": "Edit",
+  "info.favorite": "Mark as favorite",
+  "info.unfavorite": "Remove from favorites",
   "info.screenshot": "Screenshot",
   "info.information": "Information",
   "info.collapse": "Hide panel",

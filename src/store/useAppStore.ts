@@ -237,14 +237,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setFolders: (folders: Folder[]) => set({ folders }),
   toggleGameFlag: async (gamePath, field) => {
-    const { games, folders, provider, selectedSystem } = get();
+    const { games, folders, provider, selectedSystem, selectedGame } = get();
     if (!selectedSystem) return;
     const updatedGames = games.map((g) => {
       if (g.path !== gamePath) return g;
       const current = g[field] === "true";
       return { ...g, [field]: current ? undefined : "true" };
     });
-    set({ games: updatedGames });
+    // Keep the selected game (info panel) in step with the list
+    const updatedSelected =
+      selectedGame?.path === gamePath ? updatedGames.find((g) => g.path === gamePath) ?? selectedGame : selectedGame;
+    set({ games: updatedGames, selectedGame: updatedSelected });
     try {
       await commands.saveGamelist(selectedSystem.path, { games: updatedGames, folders, provider });
     } catch (e) {

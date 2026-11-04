@@ -8,7 +8,7 @@ import { formatRating, formatReleaseDate } from "../../utils/format";
 import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
 import { SystemLogo } from "../common/SystemLogo";
-import { PencilIcon, StarIcon, TrashIcon } from "../common/Icons";
+import { PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 
 // Medios que salen en la galería, en este orden (el vídeo va primero si hay)
 const GALLERY: { field: keyof Game; label: TranslationKey }[] = [
@@ -67,6 +67,8 @@ function GameInfo({ game }: { game: Game }) {
   const { t } = useTranslation();
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const openEditor = useAppStore((s) => s.openEditor);
+  const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
+  const isFavorite = game.favorite === "true";
   const { scrape, remove, scraping } = useGameActions();
   const systemPath = selectedSystem?.path || "";
   const src = (value?: string) => resolveImageSrc(value, systemPath);
@@ -140,6 +142,16 @@ function GameInfo({ game }: { game: Game }) {
           className="px-4 py-2 text-sm bg-zinc-800 text-emerald-400 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50"
         >
           {scraping ? t("detail.scraping") : t("detail.scrape")}
+        </button>
+        {/* Favorito: se guarda en el acto */}
+        <button
+          onClick={() => toggleGameFlag(game.path, "favorite")}
+          title={t(isFavorite ? "info.unfavorite" : "info.favorite")}
+          className={`px-3 py-2 text-sm bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors ${
+            isFavorite ? "text-yellow-400" : "text-zinc-400 hover:text-yellow-400"
+          }`}
+        >
+          {isFavorite ? <StarIcon size={14} /> : <StarOutlineIcon size={14} />}
         </button>
         <button
           onClick={() => remove(game)}

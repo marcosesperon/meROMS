@@ -267,6 +267,8 @@ const es: Record<TranslationKeys, string> = {
   // Perfiles
   "settings.tabProfiles": "Perfiles",
   "info.edit": "Editar",
+  "info.favorite": "Marcar como favorito",
+  "info.unfavorite": "Quitar de favoritos",
   "info.screenshot": "Captura",
   "info.information": "Información",
   "info.collapse": "Ocultar panel",
