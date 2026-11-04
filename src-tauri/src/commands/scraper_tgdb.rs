@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -206,18 +207,18 @@ pub async fn scrape_game_tgdb(
         .and_then(|id| id.as_u64())
         .and_then(|id| resolve_tgdb_genre(id));
 
-    // Resolve developers/publishers
-    let developer = jeu["developers"]
-        .as_array()
-        .and_then(|ids| ids.first())
-        .and_then(|id| id.as_u64())
-        .map(|id| id.to_string()); // We'd need another API call for names
-
-    let publisher = jeu["publishers"]
-        .as_array()
-        .and_then(|ids| ids.first())
-        .and_then(|id| id.as_u64())
-        .map(|id| id.to_string());
+    // Developers/publishers come as ids: their names come from TheGamesDB's lists
+    // (fetched once per session). If a name can't be found, the field is left alone
+    // (before, the bare id number was written).
+    let first_id = |key: &str| jeu[key].as_array().and_then(|ids| ids.first()).and_then(|id| id.as_u64());
+    let developer = match first_id("developers") {
+        Some(id) => tgdb_name(client, api_key, NameList::Developers, id).await,
+        None => None,
+    };
+    let publisher = match first_id("publishers") {
+        Some(id) => tgdb_name(client, api_key, NameList::Publishers, id).await,
+        None => None,
+    };
 
     // Extract images from the include.boxart section.
     // Front box art counts as ScreenScraper's "box-2D" and screenshots as "ss",
@@ -293,6 +294,7 @@ pub async fn scrape_game_tgdb(
 
     // Clone existing game and overwrite only fields that TGDB provided
     let mut updated = game.clone();
+    forget_numeric_ids(&mut updated);
     policy.data("name").apply(&mut updated.name, name);
     policy.data("desc").apply(&mut updated.desc, desc);
     policy.data("genre").apply(&mut updated.genre, genre);
@@ -312,6 +314,70 @@ pub async fn scrape_game_tgdb(
         game: updated,
         found: true,
     })
+}
+
+/// Older versions saved TheGamesDB ids («1436») as developer/publisher. A value that is only
+/// digits is treated as empty, so «only if empty» replaces it with the real name.
+pub(crate) fn forget_numeric_ids(game: &mut Game) {
+    for field in [&mut game.developer, &mut game.publisher] {
+        if field.as_deref().is_some_and(|v| !v.trim().is_empty() && v.trim().chars().all(|c| c.is_ascii_digit())) {
+            *field = None;
+        }
+    }
+}
+
+/// TheGamesDB lists that map ids to names
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum NameList {
+    Developers,
+    Publishers,
+}
+
+impl NameList {
+    fn endpoint(self) -> &'static str {
+        match self {
+            NameList::Developers => "Developers",
+            NameList::Publishers => "Publishers",
+        }
+    }
+    fn key(self) -> &'static str {
+        match self {
+            NameList::Developers => "developers",
+            NameList::Publishers => "publishers",
+        }
+    }
+}
+
+/// id → name lists already downloaded in this session (each list is one API call, and it
+/// counts against the monthly allowance, so it's fetched only once)
+static NAME_CACHE: std::sync::OnceLock<std::sync::Mutex<HashMap<NameList, HashMap<u64, String>>>> = std::sync::OnceLock::new();
+
+/// Name of a developer/publisher by its TheGamesDB id (None if it can't be found)
+async fn tgdb_name(client: &Client, api_key: &str, list: NameList, id: u64) -> Option<String> {
+    let cache = NAME_CACHE.get_or_init(Default::default);
+    if let Some(names) = cache.lock().ok()?.get(&list) {
+        return names.get(&id).cloned();
+    }
+    let url = format!("{}/{}?apikey={}", API_BASE, list.endpoint(), api_key);
+    let body: Value = client.get(&url).send().await.ok()?.json().await.ok()?;
+    let names = parse_name_list(&body, list.key());
+    let name = names.get(&id).cloned();
+    cache.lock().ok()?.insert(list, names);
+    name
+}
+
+/// `{"data": {"developers": {"1": {"id": 1, "name": "…"}, …}}}` (or an array) → id → name
+fn parse_name_list(body: &Value, key: &str) -> HashMap<u64, String> {
+    let entries: Vec<&Value> = match &body["data"][key] {
+        Value::Object(map) => map.values().collect(),
+        Value::Array(items) => items.iter().collect(),
+        _ => Vec::new(),
+    };
+    entries
+        .into_iter()
+        .filter_map(|e| Some((e["id"].as_u64()?, e["name"].as_str()?.trim().to_string())))
+        .filter(|(_, name)| !name.is_empty())
+        .collect()
 }
 
 async fn fetch_game_images(client: &Client, api_key: &str, game_id: u64) -> Result<Value, String> {
@@ -384,5 +450,34 @@ fn resolve_tgdb_genre(id: u64) -> Option<String> {
         16 => Some("Sandbox".into()),
         17 => Some("Flight Simulator".into()),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_developer_and_publisher_lists() {
+        let body: Value = serde_json::from_str(
+            r#"{"data": {"count": 2, "developers": {"1": {"id": 1, "name": "Capcom"}, "7": {"id": 7, "name": " Konami "}}}}"#,
+        )
+        .unwrap();
+        let names = parse_name_list(&body, "developers");
+        assert_eq!(names.get(&1).map(String::as_str), Some("Capcom"));
+        assert_eq!(names.get(&7).map(String::as_str), Some("Konami"));
+
+        // Formato en lista, y sin datos
+        let array: Value = serde_json::from_str(r#"{"data": {"publishers": [{"id": 3, "name": "Sega"}]}}"#).unwrap();
+        assert_eq!(parse_name_list(&array, "publishers").get(&3).map(String::as_str), Some("Sega"));
+        assert!(parse_name_list(&serde_json::json!({}), "publishers").is_empty());
+    }
+
+    #[test]
+    fn numeric_developer_and_publisher_count_as_empty() {
+        let mut game = Game { developer: Some("1436".into()), publisher: Some("Capcom".into()), ..Default::default() };
+        forget_numeric_ids(&mut game);
+        assert_eq!(game.developer, None);
+        assert_eq!(game.publisher.as_deref(), Some("Capcom"));
     }
 }

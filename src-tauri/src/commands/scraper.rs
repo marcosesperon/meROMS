@@ -311,6 +311,8 @@ async fn process_scrape_response(
     // Clone the existing game and write what the scraper found, field by field, as the policy
     // says (overwrite / only if empty / leave). Fields the scraper doesn't touch stay as they are.
     let mut game = existing_game.clone();
+    // Ids saved by older versions from TheGamesDB («1436») count as empty
+    crate::commands::scraper_tgdb::forget_numeric_ids(&mut game);
     policy.data("name").apply(&mut game.name, name);
     policy.data("desc").apply(&mut game.desc, desc);
     policy.data("genre").apply(&mut game.genre, genre);
