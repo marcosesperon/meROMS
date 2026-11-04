@@ -151,18 +151,27 @@ pub fn remove_games_with_files(
     }
 
     let mut removed_paths: HashSet<String> = HashSet::new();
-    for (game_path, rom, media_files) in &plan {
-        // The ROM first: if it can't go to the trash, the game stays
-        if let Some(rom) = rom {
-            if let Err(e) = trash::delete(rom) {
-                result.failed.push(format!("{} ({})", rom.display(), e));
-                continue;
+    // Normally everything goes to the trash in one go (one trash sound on macOS)
+    let all: Vec<PathBuf> = plan.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter()).cloned()).collect();
+    if !all.is_empty() && trash::delete_all(&all).is_ok() {
+        removed_paths.extend(plan.iter().map(|(game_path, _, _)| game_path.clone()));
+    } else {
+        // If that fails, one by one so that a game whose ROM can't be trashed stays
+        for (game_path, rom, media_files) in &plan {
+            // The ROM first: if it can't go to the trash, the game stays
+            if let Some(rom) = rom {
+                if !rom.exists() {
+                    // Already sent by the bulk attempt before it failed
+                } else if let Err(e) = trash::delete(rom) {
+                    result.failed.push(format!("{} ({})", rom.display(), e));
+                    continue;
+                }
             }
-        }
-        removed_paths.insert(game_path.clone());
-        for file in media_files {
-            if let Err(e) = trash::delete(file) {
-                result.failed.push(format!("{} ({})", file.display(), e));
+            removed_paths.insert(game_path.clone());
+            for file in media_files.iter().filter(|f| f.exists()) {
+                if let Err(e) = trash::delete(file) {
+                    result.failed.push(format!("{} ({})", file.display(), e));
+                }
             }
         }
     }

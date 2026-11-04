@@ -460,15 +460,11 @@ pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String
     let (layout, system) = super::system_context(&app, &system_path)?;
     let (allowed, mut failed) = allowed_media_paths(&layout, &system, &paths);
 
-    let mut trashed: HashSet<PathBuf> = HashSet::new();
-    for file in allowed {
-        match trash::delete(&file) {
-            Ok(()) => {
-                trashed.insert(file);
-            }
-            Err(e) => failed.push(format!("{} ({})", file.display(), e)),
-        }
-    }
+    // Todos de una vez (un solo sonido de papelera en macOS)
+    let errors = media::trash_files(&allowed);
+    failed.extend(errors.iter().map(|(f, e)| format!("{} ({})", f.display(), e)));
+    let not_trashed: HashSet<&PathBuf> = errors.iter().map(|(f, _)| f).collect();
+    let trashed: HashSet<PathBuf> = allowed.iter().filter(|f| !not_trashed.contains(f)).cloned().collect();
 
     if layout.writes_media_tags() && !trashed.is_empty() {
         let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;

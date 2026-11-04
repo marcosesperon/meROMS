@@ -84,15 +84,10 @@ pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<New
 pub fn trash_files(system_path: String, paths: Vec<String>) -> Result<TrashResult, String> {
     let system = SystemRef::from_rom_dir(&system_path);
     let (inside, mut failed) = split_inside(&system, &paths);
-    let mut result = TrashResult::default();
-    for file in inside {
-        match trash::delete(&file) {
-            Ok(()) => result.trashed += 1,
-            Err(e) => failed.push(format!("{} ({})", file.display(), e)),
-        }
-    }
-    result.failed = failed;
-    Ok(result)
+    // Todos de una vez (un solo sonido de papelera en macOS)
+    let errors = media::trash_files(&inside);
+    failed.extend(errors.iter().map(|(f, e)| format!("{} ({})", f.display(), e)));
+    Ok(TrashResult { trashed: inside.len() - errors.len(), failed })
 }
 
 /// Separa las rutas que son ficheros dentro de la carpeta del sistema de las que no

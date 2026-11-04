@@ -287,6 +287,21 @@ pub fn move_file(from: &Path, to: &Path) -> Result<(), String> {
     fs::remove_file(from).map_err(|e| format!("Failed to remove {}: {}", from.display(), e))
 }
 
+/// Manda varios ficheros a la papelera en una sola operación (en macOS suena una vez, no una
+/// por fichero). Si falla en bloque, prueba uno a uno para saber cuáles no se pudieron.
+/// Devuelve los que fallaron, con el motivo.
+pub fn trash_files(files: &[PathBuf]) -> Vec<(PathBuf, String)> {
+    if files.is_empty() || trash::delete_all(files).is_ok() {
+        return Vec::new();
+    }
+    files
+        .iter()
+        // Puede que el intento en bloque ya mandara alguno antes de fallar
+        .filter(|f| f.exists())
+        .filter_map(|f| trash::delete(f).err().map(|e| (f.clone(), e.to_string())))
+        .collect()
+}
+
 /// Copia un fichero creando las carpetas que falten. Nunca pisa un destino que ya exista.
 pub fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
     if to.exists() {
