@@ -19,6 +19,7 @@ let promptedLocationKey: string | null = null;
 
 // Small UI preferences kept in the browser storage (may be unavailable: never fail because of it)
 const INFO_PANEL_KEY = "meroms.infoPanelCollapsed";
+const ALL_SYSTEMS_KEY = "meroms.showAllSystems";
 function readFlag(key: string): boolean {
   try {
     return localStorage.getItem(key) === "1";
@@ -69,6 +70,9 @@ interface AppState {
   closeEditor: () => void;
   /** Right-hand game info panel folded away (remembered between sessions) */
   infoPanelCollapsed: boolean;
+  /** Sidebar shows only systems with games (default) or every system folder */
+  onlySystemsWithGames: boolean;
+  toggleOnlySystemsWithGames: () => void;
   toggleInfoPanel: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -264,6 +268,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   openEditor: () => set({ editorOpen: true }),
   closeEditor: () => set({ editorOpen: false }),
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
+  // Stored as "show all" so that the default (nothing stored) is "only with games"
+  onlySystemsWithGames: !readFlag(ALL_SYSTEMS_KEY),
+  toggleOnlySystemsWithGames: () => {
+    const only = !get().onlySystemsWithGames;
+    writeFlag(ALL_SYSTEMS_KEY, !only);
+    set({ onlySystemsWithGames: only });
+  },
   toggleInfoPanel: () => {
     const collapsed = !get().infoPanelCollapsed;
     writeFlag(INFO_PANEL_KEY, collapsed);

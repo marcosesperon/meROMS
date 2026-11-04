@@ -11,13 +11,22 @@ export function Sidebar() {
   const loading = useAppStore((s) => s.loading);
   const scanProgress = useAppStore((s) => s.scanProgress);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
+  const onlyWithGames = useAppStore((s) => s.onlySystemsWithGames);
+  const toggleOnlyWithGames = useAppStore((s) => s.toggleOnlySystemsWithGames);
   const { t } = useTranslation();
+
+  // Juegos de un sistema: los de su gamelist o, si no tiene, las ROMs de la carpeta
+  const countOf = (s: (typeof systems)[number]) => (s.has_gamelist ? s.game_count : s.rom_count);
+  // El sistema elegido se queda en la lista aunque se quede sin juegos
+  const visibleSystems = onlyWithGames
+    ? systems.filter((s) => countOf(s) > 0 || s.path === selectedSystem?.path)
+    : systems;
 
   const isScanning = loading && scanProgress !== null;
 
   return (
     <aside className="w-28 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
-      <nav className="flex-1 overflow-y-auto py-3">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
           <div className="px-4 py-6 flex flex-col items-center gap-3">
             {/* Spinner */}
@@ -45,10 +54,10 @@ export function Sidebar() {
               {scanProgress.current} / {scanProgress.total}
             </p>
           </div>
-        ) : systems.length === 0 ? (
+        ) : visibleSystems.length === 0 ? (
           <p className="text-zinc-500 text-sm px-4 py-2">{t("sidebar.noSystems")}</p>
         ) : (
-          systems.map((system) => {
+          visibleSystems.map((system) => {
             const selected = selectedSystem?.path === system.path;
             const count = system.has_gamelist ? system.game_count : system.rom_count;
             return (
@@ -105,7 +114,20 @@ export function Sidebar() {
         )}
       </nav>
 
-      <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center justify-center">
+      <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center justify-center gap-2">
+        {/* Interruptor: solo sistemas con juegos (por defecto) / todos */}
+        <button
+          role="switch"
+          aria-checked={onlyWithGames}
+          onClick={toggleOnlyWithGames}
+          title={t(onlyWithGames ? "sidebar.showAllSystems" : "sidebar.showOnlyWithGames")}
+          aria-label={t("sidebar.onlyWithGames")}
+          className={`relative w-8 h-[18px] rounded-full transition-colors ${onlyWithGames ? "bg-indigo-600" : "bg-zinc-700"}`}
+        >
+          <span
+            className={`absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all ${onlyWithGames ? "left-[17px]" : "left-[3px]"}`}
+          />
+        </button>
         {/* Solo el icono; el texto sale al pasar el ratón */}
         <button
           onClick={() => setCurrentView("settings")}
