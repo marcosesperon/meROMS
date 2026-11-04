@@ -26,6 +26,7 @@ function App() {
   const selectGame = useAppStore((s) => s.selectGame);
   const settings = useAppStore((s) => s.settings);
   const loadSettings = useAppStore((s) => s.loadSettings);
+  const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const loadGames = useAppStore((s) => s.loadGames);
   const setScanProgress = useAppStore((s) => s.setScanProgress);
@@ -78,14 +79,15 @@ function App() {
   const hasCredentials =
     !!(settings.ss_devid && settings.ss_devpassword) || !!settings.tgdb_apikey;
 
-  // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder)
+  // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder).
+  // Only once the saved settings are read: before that they are empty and would always look unusable.
   const activeProfile = getActiveProfile(settings);
   const hasUsableProfile = isProfileComplete(activeProfile);
   useEffect(() => {
-    if (!hasUsableProfile) {
+    if (settingsLoaded && !hasUsableProfile) {
       setShowSettings(true);
     }
-  }, [hasUsableProfile]);
+  }, [settingsLoaded, hasUsableProfile]);
 
   // Open settings modal when currentView changes to "settings"
   useEffect(() => {

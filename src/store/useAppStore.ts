@@ -20,6 +20,8 @@ let promptedLocationKey: string | null = null;
 interface AppState {
   // Settings
   settings: AppSettings;
+  /** True once the saved settings have been read (or failed to): until then `settings` is just empty */
+  settingsLoaded: boolean;
   loadSettings: () => Promise<void>;
   updateSettings: (settings: AppSettings) => Promise<void>;
   setActiveProfile: (profileId: string) => Promise<void>;
@@ -85,10 +87,11 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   // Settings
   settings: {},
+  settingsLoaded: false,
   loadSettings: async () => {
     try {
       const settings = await commands.getSettings();
-      set({ settings });
+      set({ settings, settingsLoaded: true });
       // Sync saved language with i18n store
       if (settings.language === "es" || settings.language === "en") {
         useI18nStore.getState().setLocale(settings.language);
@@ -98,6 +101,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     } catch (e) {
       console.error("Failed to load settings:", e);
+      set({ settingsLoaded: true });
     }
   },
   updateSettings: async (settings: AppSettings) => {
