@@ -107,6 +107,12 @@ function ColumnsMenuSlot() {
   return columnsMenuProps.current ? <ColumnsMenu {...columnsMenuProps.current} /> : null;
 }
 
+// Identificador de una columna: las de texto (accessor con nombre de campo) no traen `id`,
+// lo lleva `accessorKey`; si se mira solo `id` todas salen vacías y se pisan entre sí
+function columnId(c: { id?: string }): string {
+  return c.id ?? (c as { accessorKey?: string }).accessorKey ?? "";
+}
+
 export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
@@ -276,9 +282,10 @@ export function GameTable({ games }: GameTableProps) {
   // Columnas visibles: miniatura y nombre siempre (congeladas), y el resto en el orden guardado
   const savedColumns = useAppStore((s) => s.settings.table_columns);
   const patchSettings = useAppStore((s) => s.patchSettings);
-  const byId = useMemo(() => new Map(allColumns.map((c) => [c.id as string, c])), [allColumns]);
+  const byId = useMemo(() => new Map(allColumns.map((c) => [columnId(c), c])), [allColumns]);
   const visibleIds = useMemo(() => {
-    const saved = savedColumns?.map((c) => c.id).filter((id) => byId.has(id) && !FIXED_COLUMNS.includes(id));
+    // Lo guardado puede traer identificadores vacíos o que ya no existen: se descartan
+    const saved = savedColumns?.map((c) => c.id).filter((id) => id && byId.has(id) && !FIXED_COLUMNS.includes(id));
     return saved && saved.length > 0 ? saved : DEFAULT_COLUMNS;
   }, [savedColumns, byId]);
   const columns = useMemo(
@@ -299,8 +306,8 @@ export function GameTable({ games }: GameTableProps) {
   const optionalColumns = useMemo(
     () =>
       allColumns
-        .filter((c) => !FIXED_COLUMNS.includes(c.id as string))
-        .map((c) => ({ id: c.id as string, label: typeof c.header === "string" ? c.header : t("table.flags") })),
+        .filter((c) => !FIXED_COLUMNS.includes(columnId(c)))
+        .map((c) => ({ id: columnId(c), label: typeof c.header === "string" ? c.header : t("table.flags") })),
     [allColumns, t]
   );
   columnsMenuProps.current = {
@@ -342,7 +349,9 @@ export function GameTable({ games }: GameTableProps) {
     <div ref={scrollRef} className="overflow-auto flex-1">
       <table
         className="text-sm border-collapse table-fixed"
-        style={{ width: table.getCenterTotalSize() }}
+        // Como mínimo todo el ancho: lo que sobra se lo queda una columna de relleno al final
+        // (estirar las de verdad descuadraría las congeladas, que se colocan con sus anchos)
+        style={{ width: table.getCenterTotalSize(), minWidth: "100%" }}
       >
         <thead className="bg-zinc-800">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -393,6 +402,7 @@ export function GameTable({ games }: GameTableProps) {
                   )}
                 </th>
               ))}
+              <th className="sticky top-0 z-20 bg-zinc-800 border-b border-zinc-700" />
             </tr>
           ))}
         </thead>
@@ -440,6 +450,7 @@ export function GameTable({ games }: GameTableProps) {
                 </td>
                 );
               })}
+              <td />
             </tr>
           ))}
         </tbody>
