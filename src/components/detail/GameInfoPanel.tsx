@@ -7,6 +7,7 @@ import { resolveImageSrc } from "../../utils/images";
 import { formatRating, formatReleaseDate } from "../../utils/format";
 import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
+import { getSystemInfo, localize, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
 import { PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 
@@ -216,12 +217,37 @@ function GameInfo({ game }: { game: Game }) {
   );
 }
 
-/** Sin juego seleccionado: unos datos del sistema */
+// Campos de la ficha técnica, en este orden
+const SPECS: { key: keyof SystemInfoEntry; label: TranslationKey }[] = [
+  { key: "cpu", label: "systemInfo.cpu" },
+  { key: "memory", label: "systemInfo.memory" },
+  { key: "resolution", label: "systemInfo.resolution" },
+  { key: "colors", label: "systemInfo.colors" },
+  { key: "sound", label: "systemInfo.sound" },
+  { key: "media", label: "systemInfo.media" },
+  { key: "unitsSold", label: "systemInfo.unitsSold" },
+];
+
+/** Sin juego seleccionado: ficha del sistema (si la hay en src/data/systemInfo.json) y cifras */
 function SystemSummary() {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const games = useAppStore((s) => s.games);
   if (!selectedSystem) return null;
+
+  const info = getSystemInfo(selectedSystem.name);
+  // «Sega · 1985 · Consola · 3.ª generación»
+  const headline = info
+    ? [
+        localize(info.manufacturer, locale),
+        info.year ?? undefined,
+        info.type ? t(`systemInfo.type_${info.type}` as TranslationKey) : undefined,
+        info.generation ? t("systemInfo.generation", { n: info.generation }) : undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
+  const specs = info ? SPECS.map((s) => [s.label, localize(info[s.key] as never, locale)] as const).filter(([, v]) => !!v) : [];
 
   const stats: [TranslationKey, number][] = [
     ["info.games", games.length],
@@ -232,13 +258,33 @@ function SystemSummary() {
   ];
 
   return (
-    <div className="px-6 pt-16 pb-6">
+    <div className="px-6 pt-14 pb-6">
       <div className="flex justify-center">
         <SystemLogo name={selectedSystem.name} width={200} maxHeight={80} />
       </div>
       <h2 className="mt-6 text-xl font-bold text-zinc-100 text-center">{selectedSystem.full_name}</h2>
-      <p className="mt-1 text-xs text-zinc-500 text-center">{t("info.pickGame")}</p>
-      <dl className="mt-8 space-y-2">
+      {headline && <p className="mt-1 text-xs text-indigo-300 text-center">{headline}</p>}
+      {info?.description && (
+        <p className="mt-4 text-sm leading-relaxed text-zinc-400">{locale === "es" ? info.description.es : info.description.en}</p>
+      )}
+
+      {specs.length > 0 && (
+        <>
+          <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.specs")}</h3>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {specs.map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-[11px] text-zinc-500">{t(label)}</dt>
+                <dd className="text-sm text-zinc-200">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </>
+      )}
+
+      <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
+      <p className="text-xs text-zinc-500 mb-2">{t("info.pickGame")}</p>
+      <dl className="space-y-2">
         {stats.map(([label, value]) => (
           <div key={label} className="flex items-center justify-between px-4 py-2.5 rounded-md bg-zinc-900">
             <dt className="text-sm text-zinc-400">{t(label)}</dt>

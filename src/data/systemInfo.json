@@ -1,0 +1,2417 @@
+{
+  "3do": {
+    "manufacturer": {
+      "es": "Panasonic / Goldstar / Sanyo (diseño de The 3DO Company)",
+      "en": "Panasonic / Goldstar / Sanyo (designed by The 3DO Company)"
+    },
+    "year": 1993,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "ARM60 a 12,5 MHz",
+      "en": "ARM60 at 12.5 MHz"
+    },
+    "memory": "2 MB RAM + 1 MB VRAM",
+    "resolution": {
+      "es": "320×240 (hasta 640×480)",
+      "en": "320×240 (up to 640×480)"
+    },
+    "colors": {
+      "es": "16 millones (24 bits)",
+      "en": "16 million (24 bits)"
+    },
+    "sound": {
+      "es": "DSP propio, 16 bits estéreo",
+      "en": "Custom DSP, 16-bit stereo"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~2 millones",
+      "en": "~2 million"
+    },
+    "description": {
+      "es": "Estándar de consola de 32 bits que varias marcas fabricaban bajo licencia. Muy potente para su época, pero su alto precio lastró sus ventas.",
+      "en": "A 32-bit console standard built under licence by several manufacturers. Powerful for its time, but its high price held back sales."
+    }
+  },
+  "ags": {
+    "manufacturer": "Chris Jones (Adventure Game Studio)",
+    "year": 1997,
+    "type": "engine",
+    "description": {
+      "es": "Motor para crear aventuras gráficas al estilo point-and-click. Miles de juegos amateur y comerciales están hechos con él.",
+      "en": "An engine for making point-and-click graphic adventures. Thousands of hobbyist and commercial games were built with it."
+    }
+  },
+  "amiga": {
+    "manufacturer": "Commodore",
+    "year": 1985,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 68000 a 7,16 MHz (A500/A2000)",
+      "en": "Motorola 68000 at 7.16 MHz (A500/A2000)"
+    },
+    "memory": "512 KB – 1 MB (A500)",
+    "resolution": {
+      "es": "320×256 a 640×512 (PAL)",
+      "en": "320×256 to 640×512 (PAL)"
+    },
+    "colors": {
+      "es": "4.096 (32 en pantalla; 4.096 en modo HAM)",
+      "en": "4,096 (32 on screen; 4,096 in HAM mode)"
+    },
+    "sound": {
+      "es": "Paula: 4 canales PCM de 8 bits estéreo",
+      "en": "Paula: 4 8-bit PCM channels stereo"
+    },
+    "media": {
+      "es": "Disquete 3,5\"",
+      "en": "Floppy disk 3.5\""
+    },
+    "unitsSold": {
+      "es": "~4,8 millones",
+      "en": "~4.8 million"
+    },
+    "description": {
+      "es": "Ordenador muy adelantado gracias a sus chips gráficos y de sonido propios. Fue la plataforma de referencia de los juegos europeos de finales de los 80 y principios de los 90.",
+      "en": "A computer far ahead of its time thanks to its custom graphics and sound chips. It was the leading platform for European games in the late 80s and early 90s."
+    }
+  },
+  "amstradcpc": {
+    "manufacturer": "Amstrad",
+    "year": 1984,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80A a 4 MHz",
+      "en": "Zilog Z80A at 4 MHz"
+    },
+    "memory": "64 KB (CPC 464) / 128 KB (CPC 6128)",
+    "resolution": "160×200 (16 col.), 320×200 (4), 640×200 (2)",
+    "colors": "27",
+    "sound": {
+      "es": "AY-3-8912: 3 canales",
+      "en": "AY-3-8912: 3 channels"
+    },
+    "media": {
+      "es": "Casete / disquete 3\"",
+      "en": "Cassette / floppy disk 3\""
+    },
+    "unitsSold": {
+      "es": "~3 millones",
+      "en": "~3 million"
+    },
+    "description": {
+      "es": "Ordenador de 8 bits con monitor incluido, muy popular en España, Francia y Reino Unido. Recibió muchas conversiones de juegos de Spectrum.",
+      "en": "An 8-bit computer sold with its own monitor, very popular in Spain, France and the UK. It got many conversions of Spectrum games."
+    }
+  },
+  "apple2": {
+    "manufacturer": "Apple",
+    "year": 1977,
+    "type": "computer",
+    "cpu": {
+      "es": "MOS 6502 a 1 MHz",
+      "en": "MOS 6502 at 1 MHz"
+    },
+    "memory": {
+      "es": "4 – 64 KB (ampliable)",
+      "en": "4 – 64 KB (expandable)"
+    },
+    "resolution": {
+      "es": "280×192 (alta resolución)",
+      "en": "280×192 (high-res)"
+    },
+    "colors": {
+      "es": "6 (alta res.) / 16 (baja res.)",
+      "en": "6 (high-res) / 16 (low-res)"
+    },
+    "sound": {
+      "es": "Altavoz de 1 bit",
+      "en": "1-bit beeper"
+    },
+    "media": {
+      "es": "Casete / disquete 5,25\"",
+      "en": "Cassette / floppy disk 5.25\""
+    },
+    "unitsSold": {
+      "es": "~5-6 millones (toda la familia)",
+      "en": "~5-6 million (whole family)"
+    },
+    "description": {
+      "es": "Uno de los primeros ordenadores personales de éxito. Su catálogo incluye clásicos como Ultima, Wizardry, Lode Runner o Karateka.",
+      "en": "One of the first successful personal computers. Its library includes classics such as Ultima, Wizardry, Lode Runner and Karateka."
+    }
+  },
+  "arcade": {
+    "manufacturer": {
+      "es": "Varios",
+      "en": "Various"
+    },
+    "year": 1971,
+    "type": "arcade",
+    "media": {
+      "es": "Placas arcade",
+      "en": "Arcade boards"
+    },
+    "description": {
+      "es": "Máquinas recreativas de muchos fabricantes, normalmente emuladas con MAME o FinalBurn. Cada placa tiene su propio hardware.",
+      "en": "Coin-op machines from many manufacturers, usually emulated with MAME or FinalBurn. Each board has its own hardware."
+    }
+  },
+  "astrocade": {
+    "manufacturer": "Bally",
+    "year": 1978,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "Zilog Z80 a 1,789 MHz",
+      "en": "Zilog Z80 at 1.789 MHz"
+    },
+    "memory": "4 KB RAM",
+    "resolution": "160×102",
+    "colors": {
+      "es": "8 en pantalla (de 256)",
+      "en": "8 on screen (of 256)"
+    },
+    "sound": {
+      "es": "3 canales + ruido",
+      "en": "3 channels + noise"
+    },
+    "media": {
+      "es": "Cartucho / casete",
+      "en": "Cartridge / cassette"
+    },
+    "description": {
+      "es": "Consola doméstica de Bally basada en su hardware de recreativas. Incluía un lenguaje BASIC y mandos con pistola y ruleta.",
+      "en": "Bally's home console based on its arcade hardware. It shipped with a BASIC language and pistol-grip controllers with a dial."
+    }
+  },
+  "atari2600": {
+    "manufacturer": "Atari",
+    "year": 1977,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "MOS 6507 a 1,19 MHz",
+      "en": "MOS 6507 at 1.19 MHz"
+    },
+    "memory": "128 bytes RAM",
+    "resolution": "160×192",
+    "colors": "128 (NTSC)",
+    "sound": {
+      "es": "TIA: 2 canales",
+      "en": "TIA: 2 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~30 millones",
+      "en": "~30 million"
+    },
+    "description": {
+      "es": "La consola que popularizó los videojuegos en casa con cartuchos intercambiables. Su catálogo marcó una época, de Pitfall! a Space Invaders.",
+      "en": "The console that popularised home gaming with swappable cartridges. Its library defined an era, from Pitfall! to Space Invaders."
+    }
+  },
+  "atari5200": {
+    "manufacturer": "Atari",
+    "year": 1982,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "MOS 6502C a 1,79 MHz",
+      "en": "MOS 6502C at 1.79 MHz"
+    },
+    "memory": "16 KB RAM",
+    "resolution": "320×192",
+    "colors": {
+      "es": "256 (16 en pantalla)",
+      "en": "256 (16 on screen)"
+    },
+    "sound": {
+      "es": "POKEY: 4 canales",
+      "en": "POKEY: 4 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~1 millón",
+      "en": "~1 million"
+    },
+    "description": {
+      "es": "Sucesora de la 2600 basada en el hardware de los ordenadores Atari de 8 bits. Sus mandos analógicos eran poco fiables.",
+      "en": "The 2600's successor, based on Atari's 8-bit computers. Its analogue controllers were notoriously unreliable."
+    }
+  },
+  "atari7800": {
+    "manufacturer": "Atari",
+    "year": 1986,
+    "type": "console",
+    "generation": 3,
+    "cpu": {
+      "es": "Atari SALLY (6502) a 1,79 MHz",
+      "en": "Atari SALLY (6502) at 1.79 MHz"
+    },
+    "memory": "4 KB RAM",
+    "resolution": "160×240 / 320×240",
+    "colors": {
+      "es": "256 (25 en pantalla)",
+      "en": "256 (25 on screen)"
+    },
+    "sound": {
+      "es": "TIA: 2 canales",
+      "en": "TIA: 2 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~3,8 millones",
+      "en": "~3.8 million"
+    },
+    "description": {
+      "es": "Consola compatible con los cartuchos de la 2600. Llegó tarde frente a la NES y tuvo un catálogo reducido.",
+      "en": "A console backward compatible with 2600 cartridges. It arrived late against the NES and had a small library."
+    }
+  },
+  "atari800": {
+    "manufacturer": "Atari",
+    "year": 1979,
+    "type": "computer",
+    "cpu": {
+      "es": "MOS 6502B a 1,79 MHz",
+      "en": "MOS 6502B at 1.79 MHz"
+    },
+    "memory": "8 – 64 KB",
+    "resolution": "320×192",
+    "colors": {
+      "es": "256 (16 en pantalla)",
+      "en": "256 (16 on screen)"
+    },
+    "sound": {
+      "es": "POKEY: 4 canales",
+      "en": "POKEY: 4 channels"
+    },
+    "media": {
+      "es": "Cartucho / casete / disquete",
+      "en": "Cartridge / cassette / floppy disk"
+    },
+    "unitsSold": {
+      "es": "~4 millones (familia de 8 bits)",
+      "en": "~4 million (8-bit family)"
+    },
+    "description": {
+      "es": "Familia de ordenadores de 8 bits (400, 800, XL, XE) con chips gráficos avanzados. Juegos como Star Raiders o Rescue on Fractalus! nacieron aquí.",
+      "en": "A family of 8-bit computers (400, 800, XL, XE) with advanced graphics chips. Games such as Star Raiders and Rescue on Fractalus! were born here."
+    }
+  },
+  "atarijaguar": {
+    "manufacturer": "Atari",
+    "year": 1993,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "Motorola 68000 + chips Tom y Jerry (RISC de 32 bits)",
+      "en": "Motorola 68000 + Tom and Jerry chips (32-bit RISC)"
+    },
+    "memory": "2 MB RAM",
+    "resolution": {
+      "es": "Hasta 720×576",
+      "en": "Up to 720×576"
+    },
+    "colors": {
+      "es": "16 millones (24 bits)",
+      "en": "16 million (24 bits)"
+    },
+    "sound": {
+      "es": "Jerry: DSP de 16 bits estéreo",
+      "en": "Jerry: 16-bit DSP stereo"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~250.000",
+      "en": "~250,000"
+    },
+    "description": {
+      "es": "Anunciada como la primera consola de 64 bits. Era difícil de programar y su catálogo fue escaso; fue la última consola de Atari.",
+      "en": "Advertised as the first 64-bit console. It was hard to program and had few games; it was Atari's last console."
+    }
+  },
+  "atarijaguarcd": {
+    "manufacturer": "Atari",
+    "year": 1995,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "Igual que Jaguar",
+      "en": "Same as Jaguar"
+    },
+    "memory": {
+      "es": "Igual que Jaguar",
+      "en": "Same as Jaguar"
+    },
+    "resolution": {
+      "es": "Igual que Jaguar",
+      "en": "Same as Jaguar"
+    },
+    "colors": {
+      "es": "16 millones (24 bits)",
+      "en": "16 million (24 bits)"
+    },
+    "sound": {
+      "es": "Igual que Jaguar",
+      "en": "Same as Jaguar"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~20.000",
+      "en": "~20,000"
+    },
+    "description": {
+      "es": "Unidad de CD que se acoplaba encima de la Jaguar. Salieron muy pocos juegos para ella.",
+      "en": "A CD drive that sat on top of the Jaguar. Very few games were released for it."
+    }
+  },
+  "atarilynx": {
+    "manufacturer": "Atari",
+    "year": 1989,
+    "type": "handheld",
+    "generation": 4,
+    "cpu": {
+      "es": "WDC 65SC02 a 4 MHz + coprocesador Suzy de 16 bits",
+      "en": "WDC 65SC02 at 4 MHz + 16-bit Suzy coprocessor"
+    },
+    "memory": "64 KB RAM",
+    "resolution": "160×102",
+    "colors": {
+      "es": "4.096 (16 en pantalla)",
+      "en": "4,096 (16 on screen)"
+    },
+    "sound": {
+      "es": "4 canales",
+      "en": "4 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~3 millones",
+      "en": "~3 million"
+    },
+    "description": {
+      "es": "Primera portátil con pantalla a color retroiluminada. Podía escalar y rotar sprites por hardware, pero era grande y gastaba muchas pilas.",
+      "en": "The first handheld with a backlit colour screen. It could scale and rotate sprites in hardware, but it was bulky and drained batteries."
+    }
+  },
+  "atarist": {
+    "manufacturer": "Atari",
+    "year": 1985,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 68000 a 8 MHz",
+      "en": "Motorola 68000 at 8 MHz"
+    },
+    "memory": "512 KB – 4 MB",
+    "resolution": "320×200 (16 col.), 640×400 (mono)",
+    "colors": {
+      "es": "512 (4.096 en STE)",
+      "en": "512 (4,096 on STE)"
+    },
+    "sound": {
+      "es": "YM2149: 3 canales; MIDI integrado",
+      "en": "YM2149: 3 channels; built-in MIDI"
+    },
+    "media": {
+      "es": "Disquete 3,5\"",
+      "en": "Floppy disk 3.5\""
+    },
+    "unitsSold": {
+      "es": "~2-3 millones",
+      "en": "~2-3 million"
+    },
+    "description": {
+      "es": "Ordenador de 16 bits rival del Amiga, muy usado en música por su puerto MIDI integrado. Compartió muchos juegos con el Amiga.",
+      "en": "A 16-bit computer and rival to the Amiga, widely used for music thanks to its built-in MIDI ports. It shared many games with the Amiga."
+    }
+  },
+  "bbcmicro": {
+    "manufacturer": "Acorn Computers",
+    "year": 1981,
+    "type": "computer",
+    "cpu": {
+      "es": "MOS 6502 a 2 MHz",
+      "en": "MOS 6502 at 2 MHz"
+    },
+    "memory": "16 – 32 KB",
+    "resolution": {
+      "es": "Hasta 640×256",
+      "en": "Up to 640×256"
+    },
+    "colors": "8",
+    "sound": {
+      "es": "SN76489: 3 canales + ruido",
+      "en": "SN76489: 3 channels + noise"
+    },
+    "media": {
+      "es": "Casete / disquete 5,25\"",
+      "en": "Cassette / floppy disk 5.25\""
+    },
+    "unitsSold": {
+      "es": "~1,5 millones",
+      "en": "~1.5 million"
+    },
+    "description": {
+      "es": "Ordenador del programa educativo de la BBC, presente en casi todos los colegios británicos. Allí nació Elite.",
+      "en": "The computer behind the BBC's education programme, found in almost every British school. Elite was born on it."
+    }
+  },
+  "c64": {
+    "manufacturer": "Commodore",
+    "year": 1982,
+    "type": "computer",
+    "cpu": {
+      "es": "MOS 6510 a ~1 MHz",
+      "en": "MOS 6510 at ~1 MHz"
+    },
+    "memory": "64 KB",
+    "resolution": "320×200",
+    "colors": "16",
+    "sound": {
+      "es": "SID 6581: 3 voces con filtros",
+      "en": "SID 6581: 3 voices with filters"
+    },
+    "media": {
+      "es": "Casete / disquete 5,25\" / cartucho",
+      "en": "Cassette / floppy disk 5.25\" / cartridge"
+    },
+    "unitsSold": {
+      "es": "~12-17 millones",
+      "en": "~12-17 million"
+    },
+    "description": {
+      "es": "El ordenador más vendido de la historia en un solo modelo. Su chip de sonido SID es legendario y su catálogo de juegos, enorme.",
+      "en": "The best-selling single computer model ever. Its SID sound chip is legendary and its game library is huge."
+    }
+  },
+  "channelf": {
+    "manufacturer": "Fairchild",
+    "year": 1976,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "Fairchild F8 a 1,79 MHz",
+      "en": "Fairchild F8 at 1.79 MHz"
+    },
+    "memory": "64 bytes RAM + 2 KB VRAM",
+    "resolution": {
+      "es": "128×64 (102×58 visibles)",
+      "en": "128×64 (102×58 visible)"
+    },
+    "colors": {
+      "es": "8 (4 por línea)",
+      "en": "8 (4 per line)"
+    },
+    "sound": {
+      "es": "Tonos simples (altavoz)",
+      "en": "Simple tones (speaker)"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "description": {
+      "es": "Primera consola con cartuchos programables con microprocesador. Abrió el camino a la Atari 2600.",
+      "en": "The first console with microprocessor-based programmable cartridges. It paved the way for the Atari 2600."
+    }
+  },
+  "coco": {
+    "manufacturer": "Tandy / RadioShack",
+    "year": 1980,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 6809E a 0,89 MHz",
+      "en": "Motorola 6809E at 0.89 MHz"
+    },
+    "memory": "4 – 128 KB",
+    "resolution": "256×192",
+    "colors": {
+      "es": "4 (hasta 16 en CoCo 3)",
+      "en": "4 (up to 16 on CoCo 3)"
+    },
+    "sound": {
+      "es": "1 canal DAC de 6 bits",
+      "en": "1 channel 6-bit DAC"
+    },
+    "media": {
+      "es": "Cartucho / casete / disquete",
+      "en": "Cartridge / cassette / floppy disk"
+    },
+    "description": {
+      "es": "El TRS-80 Color Computer, ordenador doméstico de 8 bits con un procesador 6809 muy capaz. Se vendió en las tiendas RadioShack.",
+      "en": "The TRS-80 Color Computer, an 8-bit home computer with a capable 6809 CPU. It was sold in RadioShack stores."
+    }
+  },
+  "colecovision": {
+    "manufacturer": "Coleco",
+    "year": 1982,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "Zilog Z80A a 3,58 MHz",
+      "en": "Zilog Z80A at 3.58 MHz"
+    },
+    "memory": "1 KB RAM + 16 KB VRAM",
+    "resolution": "256×192",
+    "colors": "16",
+    "sound": {
+      "es": "SN76489: 3 canales + ruido",
+      "en": "SN76489: 3 channels + noise"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~2 millones",
+      "en": "~2 million"
+    },
+    "description": {
+      "es": "Consola con gráficos cercanos a las recreativas de la época; venía con Donkey Kong. Un módulo le permitía usar juegos de Atari 2600.",
+      "en": "A console with graphics close to the arcades of its day; it came with Donkey Kong. An add-on let it play Atari 2600 games."
+    }
+  },
+  "cps1": {
+    "manufacturer": "Capcom",
+    "year": 1988,
+    "type": "arcade",
+    "cpu": {
+      "es": "Motorola 68000 a 10 MHz + Z80 (sonido)",
+      "en": "Motorola 68000 at 10 MHz + Z80 (sound)"
+    },
+    "memory": {
+      "es": "64 KB RAM principal",
+      "en": "64 KB main RAM"
+    },
+    "resolution": "384×224",
+    "colors": {
+      "es": "4.096 en pantalla",
+      "en": "4,096 on screen"
+    },
+    "sound": "YM2151 + OKI MSM6295",
+    "media": {
+      "es": "Placa arcade",
+      "en": "Arcade board"
+    },
+    "description": {
+      "es": "Capcom Play System, la placa arcade de Capcom de finales de los 80. Street Fighter II, Final Fight o Ghouls'n Ghosts funcionan en ella.",
+      "en": "Capcom Play System, Capcom's arcade board of the late 80s. Street Fighter II, Final Fight and Ghouls'n Ghosts run on it."
+    }
+  },
+  "cps2": {
+    "manufacturer": "Capcom",
+    "year": 1993,
+    "type": "arcade",
+    "cpu": {
+      "es": "Motorola 68000 a 16 MHz + Z80 (sonido)",
+      "en": "Motorola 68000 at 16 MHz + Z80 (sound)"
+    },
+    "memory": {
+      "es": "64 KB RAM principal",
+      "en": "64 KB main RAM"
+    },
+    "resolution": "384×224",
+    "colors": {
+      "es": "4.096 en pantalla",
+      "en": "4,096 on screen"
+    },
+    "sound": "Q-Sound",
+    "media": {
+      "es": "Placa arcade (cartucho cifrado)",
+      "en": "Arcade board (encrypted cartridge)"
+    },
+    "description": {
+      "es": "Sucesora del CPS1 con cifrado contra la piratería y sonido Q-Sound. Hogar de Street Fighter Alpha, Darkstalkers y Marvel vs. Capcom.",
+      "en": "The CPS1 successor, with anti-piracy encryption and Q-Sound audio. Home to Street Fighter Alpha, Darkstalkers and Marvel vs. Capcom."
+    }
+  },
+  "cps3": {
+    "manufacturer": "Capcom",
+    "year": 1996,
+    "type": "arcade",
+    "cpu": {
+      "es": "Hitachi SH-2 a 25 MHz",
+      "en": "Hitachi SH-2 at 25 MHz"
+    },
+    "memory": "2 MB RAM",
+    "resolution": {
+      "es": "384×224 (y 496×224)",
+      "en": "384×224 (and 496×224)"
+    },
+    "colors": {
+      "es": "32.768",
+      "en": "32,768"
+    },
+    "sound": {
+      "es": "Sonido PCM de 16 canales",
+      "en": "16-channel PCM sound"
+    },
+    "media": {
+      "es": "Placa arcade + CD-ROM",
+      "en": "Arcade board + CD-ROM"
+    },
+    "description": {
+      "es": "Última placa arcade de Capcom de su serie, con juegos cargados desde CD. Solo tuvo seis juegos, entre ellos Street Fighter III.",
+      "en": "Capcom's last arcade board in the series, with games loaded from CD. It had just six games, including Street Fighter III."
+    }
+  },
+  "daphne": {
+    "manufacturer": "Matt Ownby",
+    "year": 1999,
+    "type": "engine",
+    "description": {
+      "es": "Emulador de recreativas con LaserDisc, como Dragon's Lair o Space Ace, que mezclaban vídeo y juego.",
+      "en": "An emulator for LaserDisc arcade games such as Dragon's Lair and Space Ace, which mixed video and gameplay."
+    }
+  },
+  "desktop": {
+    "manufacturer": "—",
+    "year": null,
+    "type": "software",
+    "description": {
+      "es": "Accesos directos a aplicaciones de escritorio lanzadas desde el frontend.",
+      "en": "Shortcuts to desktop applications launched from the frontend."
+    }
+  },
+  "dragon32": {
+    "manufacturer": "Dragon Data",
+    "year": 1982,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 6809E a 0,89 MHz",
+      "en": "Motorola 6809E at 0.89 MHz"
+    },
+    "memory": {
+      "es": "32 KB (64 KB en Dragon 64)",
+      "en": "32 KB (64 KB on Dragon 64)"
+    },
+    "resolution": "256×192",
+    "colors": {
+      "es": "4 (9 en total)",
+      "en": "4 (9 total)"
+    },
+    "sound": {
+      "es": "1 canal DAC de 6 bits",
+      "en": "1 channel 6-bit DAC"
+    },
+    "media": {
+      "es": "Cartucho / casete",
+      "en": "Cartridge / cassette"
+    },
+    "unitsSold": {
+      "es": "~150.000",
+      "en": "~150,000"
+    },
+    "description": {
+      "es": "Ordenador galés muy parecido al TRS-80 Color Computer. Tuvo cierto éxito en Reino Unido y España.",
+      "en": "A Welsh computer very similar to the TRS-80 Color Computer. It had some success in the UK and Spain."
+    }
+  },
+  "dreamcast": {
+    "manufacturer": "Sega",
+    "year": 1998,
+    "type": "console",
+    "generation": 6,
+    "cpu": {
+      "es": "Hitachi SH-4 a 200 MHz",
+      "en": "Hitachi SH-4 at 200 MHz"
+    },
+    "memory": "16 MB RAM + 8 MB VRAM + 2 MB audio",
+    "resolution": "640×480",
+    "colors": {
+      "es": "16 millones (24 bits)",
+      "en": "16 million (24 bits)"
+    },
+    "sound": {
+      "es": "Yamaha AICA (ARM7), 64 canales",
+      "en": "Yamaha AICA (ARM7), 64 channels"
+    },
+    "media": "GD-ROM",
+    "unitsSold": {
+      "es": "~9,1 millones",
+      "en": "~9.1 million"
+    },
+    "description": {
+      "es": "Última consola de Sega, con módem integrado para jugar en línea. Shenmue, Jet Set Radio y Soulcalibur son algunos de sus clásicos.",
+      "en": "Sega's last console, with a built-in modem for online play. Shenmue, Jet Set Radio and Soulcalibur are among its classics."
+    }
+  },
+  "easyrpg": {
+    "manufacturer": "Proyecto EasyRPG",
+    "year": 2007,
+    "type": "engine",
+    "description": {
+      "es": "Intérprete libre para jugar a juegos hechos con RPG Maker 2000 y 2003.",
+      "en": "A free interpreter for playing games made with RPG Maker 2000 and 2003."
+    }
+  },
+  "fba": {
+    "manufacturer": "Equipo FinalBurn",
+    "year": 2000,
+    "type": "engine",
+    "description": {
+      "es": "FinalBurn Alpha / Neo, emulador de recreativas centrado en Capcom, SNK, Sega, Toaplan y otras placas de los 80 y 90.",
+      "en": "FinalBurn Alpha / Neo, an arcade emulator focused on Capcom, SNK, Sega, Toaplan and other boards of the 80s and 90s."
+    }
+  },
+  "fds": {
+    "manufacturer": "Nintendo",
+    "year": 1986,
+    "type": "console",
+    "generation": 3,
+    "cpu": {
+      "es": "Igual que Famicom (Ricoh 2A03)",
+      "en": "Same as Famicom (Ricoh 2A03)"
+    },
+    "memory": {
+      "es": "32 KB RAM extra + 8 KB CHR RAM",
+      "en": "32 KB extra RAM + 8 KB CHR RAM"
+    },
+    "resolution": "256×240",
+    "colors": {
+      "es": "54 (25 en pantalla)",
+      "en": "54 (25 on screen)"
+    },
+    "sound": {
+      "es": "Famicom + canal de síntesis por tabla de ondas",
+      "en": "Famicom + wavetable synthesis channel"
+    },
+    "media": {
+      "es": "Disco Quick Disk",
+      "en": "Quick Disk"
+    },
+    "unitsSold": {
+      "es": "~4,4 millones",
+      "en": "~4.4 million"
+    },
+    "description": {
+      "es": "Famicom Disk System, periférico solo japonés que cargaba juegos desde disquetes regrabables. Aquí debutaron The Legend of Zelda y Metroid.",
+      "en": "Famicom Disk System, a Japan-only add-on that loaded games from rewritable floppy disks. The Legend of Zelda and Metroid debuted here."
+    }
+  },
+  "gameandwatch": {
+    "manufacturer": "Nintendo",
+    "year": 1980,
+    "type": "handheld",
+    "cpu": {
+      "es": "Microcontrolador Sharp SM5 de 4 bits",
+      "en": "Sharp SM5 4-bit microcontroller"
+    },
+    "memory": {
+      "es": "Mínima",
+      "en": "Minimal"
+    },
+    "resolution": {
+      "es": "Pantalla LCD segmentada",
+      "en": "Segmented LCD"
+    },
+    "colors": {
+      "es": "Monocromo (con fondos impresos)",
+      "en": "Monochrome (printed backgrounds)"
+    },
+    "sound": {
+      "es": "Pitidos",
+      "en": "Beeps"
+    },
+    "media": {
+      "es": "Integrado",
+      "en": "Built-in"
+    },
+    "unitsSold": {
+      "es": "~43 millones",
+      "en": "~43 million"
+    },
+    "description": {
+      "es": "Serie de maquinitas LCD con un único juego cada una. Su cruceta inspiró la de la NES y su doble pantalla, la de Nintendo DS.",
+      "en": "A series of LCD handhelds with one game each. Their D-pad inspired the NES controller and their dual screens, the Nintendo DS."
+    }
+  },
+  "gamegear": {
+    "manufacturer": "Sega",
+    "year": 1990,
+    "type": "handheld",
+    "generation": 4,
+    "cpu": {
+      "es": "Zilog Z80 a 3,58 MHz",
+      "en": "Zilog Z80 at 3.58 MHz"
+    },
+    "memory": "8 KB RAM + 16 KB VRAM",
+    "resolution": "160×144",
+    "colors": {
+      "es": "4.096 (32 en pantalla)",
+      "en": "4,096 (32 on screen)"
+    },
+    "sound": {
+      "es": "SN76489: 3 canales + ruido (estéreo)",
+      "en": "SN76489: 3 channels + noise (stereo)"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~10,6 millones",
+      "en": "~10.6 million"
+    },
+    "description": {
+      "es": "Portátil de Sega con pantalla a color retroiluminada, basada en la Master System. Su gran pega era el gasto de pilas.",
+      "en": "Sega's handheld with a backlit colour screen, based on the Master System. Its big drawback was battery life."
+    }
+  },
+  "gb": {
+    "manufacturer": "Nintendo",
+    "year": 1989,
+    "type": "handheld",
+    "generation": 4,
+    "cpu": {
+      "es": "Sharp LR35902 a 4,19 MHz",
+      "en": "Sharp LR35902 at 4.19 MHz"
+    },
+    "memory": "8 KB RAM + 8 KB VRAM",
+    "resolution": "160×144",
+    "colors": {
+      "es": "4 tonos de gris (verde)",
+      "en": "4 shades of grey (green)"
+    },
+    "sound": {
+      "es": "4 canales estéreo",
+      "en": "4 channels stereo"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~119 millones (con Game Boy Color)",
+      "en": "~119 million (with Game Boy Color)"
+    },
+    "description": {
+      "es": "La portátil que conquistó el mundo gracias a Tetris y, después, a Pokémon. Sencilla, resistente y con pilas de larga duración.",
+      "en": "The handheld that conquered the world thanks to Tetris and, later, Pokémon. Simple, tough and easy on batteries."
+    }
+  },
+  "gba": {
+    "manufacturer": "Nintendo",
+    "year": 2001,
+    "type": "handheld",
+    "generation": 6,
+    "cpu": {
+      "es": "ARM7TDMI a 16,78 MHz",
+      "en": "ARM7TDMI at 16.78 MHz"
+    },
+    "memory": "32 KB + 256 KB RAM, 96 KB VRAM",
+    "resolution": "240×160",
+    "colors": {
+      "es": "32.768 (15 bits)",
+      "en": "32,768 (15 bits)"
+    },
+    "sound": {
+      "es": "4 canales GB + 2 canales PCM",
+      "en": "4 channels GB + 2 channels PCM"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~81,5 millones",
+      "en": "~81.5 million"
+    },
+    "description": {
+      "es": "Portátil de 32 bits con un enorme catálogo de juegos 2D, desde Pokémon y Zelda hasta Metroid y Advance Wars.",
+      "en": "A 32-bit handheld with a huge 2D library, from Pokémon and Zelda to Metroid and Advance Wars."
+    }
+  },
+  "gbc": {
+    "manufacturer": "Nintendo",
+    "year": 1998,
+    "type": "handheld",
+    "generation": 5,
+    "cpu": {
+      "es": "Sharp LR35902 a 8,4 MHz (doble velocidad)",
+      "en": "Sharp LR35902 at 8.4 MHz (double speed)"
+    },
+    "memory": "32 KB RAM + 16 KB VRAM",
+    "resolution": "160×144",
+    "colors": {
+      "es": "32.768 (56 en pantalla)",
+      "en": "32,768 (56 on screen)"
+    },
+    "sound": {
+      "es": "4 canales estéreo",
+      "en": "4 channels stereo"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~119 millones (con Game Boy)",
+      "en": "~119 million (with Game Boy)"
+    },
+    "description": {
+      "es": "Game Boy con pantalla a color, compatible con los juegos de la original. Pokémon Oro y Plata fueron su gran éxito.",
+      "en": "A Game Boy with a colour screen, compatible with original Game Boy games. Pokémon Gold and Silver were its big hits."
+    }
+  },
+  "gc": {
+    "manufacturer": "Nintendo",
+    "year": 2001,
+    "type": "console",
+    "generation": 6,
+    "cpu": {
+      "es": "IBM PowerPC Gekko a 486 MHz",
+      "en": "IBM PowerPC Gekko at 486 MHz"
+    },
+    "memory": {
+      "es": "24 MB RAM + 16 MB auxiliar",
+      "en": "24 MB RAM + 16 MB auxiliary"
+    },
+    "resolution": {
+      "es": "640×480 (hasta 480p)",
+      "en": "640×480 (up to 480p)"
+    },
+    "colors": {
+      "es": "16 millones (24 bits)",
+      "en": "16 million (24 bits)"
+    },
+    "sound": {
+      "es": "DSP Macronix, 64 canales",
+      "en": "DSP Macronix, 64 channels"
+    },
+    "media": "Mini-DVD (GameCube Optical Disc)",
+    "unitsSold": {
+      "es": "~21,7 millones",
+      "en": "~21.7 million"
+    },
+    "description": {
+      "es": "GameCube, compacta y con asa, con clásicos como Metroid Prime, Super Smash Bros. Melee y The Wind Waker.",
+      "en": "The compact GameCube with its carry handle, home to Metroid Prime, Super Smash Bros. Melee and The Wind Waker."
+    }
+  },
+  "genesis": {
+    "sameAs": "megadrive"
+  },
+  "imageviewer": {
+    "manufacturer": "—",
+    "year": null,
+    "type": "software",
+    "description": {
+      "es": "Visor de imágenes del frontend (no es un sistema de juego).",
+      "en": "The frontend's image viewer (not a game system)."
+    }
+  },
+  "intellivision": {
+    "manufacturer": "Mattel",
+    "year": 1979,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "General Instrument CP1610 a 0,89 MHz (16 bits)",
+      "en": "General Instrument CP1610 at 0.89 MHz (16 bits)"
+    },
+    "memory": {
+      "es": "1,4 KB RAM",
+      "en": "1.4 KB RAM"
+    },
+    "resolution": "159×96",
+    "colors": "16",
+    "sound": {
+      "es": "AY-3-8914: 3 canales",
+      "en": "AY-3-8914: 3 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~3 millones",
+      "en": "~3 million"
+    },
+    "description": {
+      "es": "Consola de Mattel que competía con la Atari 2600 con mejores gráficos. Sus mandos tenían un disco direccional y teclado numérico.",
+      "en": "Mattel's console that took on the Atari 2600 with better graphics. Its controllers had a direction disc and a keypad."
+    }
+  },
+  "love": {
+    "manufacturer": "Comunidad LÖVE",
+    "year": 2008,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre para hacer juegos 2D en el lenguaje Lua.",
+      "en": "A free framework for making 2D games in Lua."
+    }
+  },
+  "macintosh": {
+    "manufacturer": "Apple",
+    "year": 1984,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 68000 a 7,8 MHz (modelo original)",
+      "en": "Motorola 68000 at 7.8 MHz (original model)"
+    },
+    "memory": {
+      "es": "128 KB (original) – varios MB",
+      "en": "128 KB (original) – several MB"
+    },
+    "resolution": "512×342 (original)",
+    "colors": {
+      "es": "Monocromo (color desde Mac II)",
+      "en": "Monochrome (colour from Mac II)"
+    },
+    "sound": {
+      "es": "Sonido PCM de 8 bits",
+      "en": "8-bit PCM sound"
+    },
+    "media": {
+      "es": "Disquete 3,5\" / disco duro",
+      "en": "Floppy disk 3.5\" / hard disk"
+    },
+    "description": {
+      "es": "El ordenador que popularizó la interfaz gráfica y el ratón. Juegos como Myst, Marathon o Dark Castle salieron primero en Mac.",
+      "en": "The computer that popularised the graphical interface and the mouse. Games such as Myst, Marathon and Dark Castle came out on the Mac first."
+    }
+  },
+  "mame": {
+    "manufacturer": "Equipo MAME",
+    "year": 1997,
+    "type": "engine",
+    "description": {
+      "es": "MAME (Multiple Arcade Machine Emulator), el emulador de referencia para preservar miles de placas arcade.",
+      "en": "MAME (Multiple Arcade Machine Emulator), the reference emulator for preserving thousands of arcade boards."
+    }
+  },
+  "mastersystem": {
+    "manufacturer": "Sega",
+    "year": 1985,
+    "type": "console",
+    "generation": 3,
+    "cpu": {
+      "es": "Zilog Z80A a 3,58 MHz",
+      "en": "Zilog Z80A at 3.58 MHz"
+    },
+    "memory": "8 KB RAM + 16 KB VRAM",
+    "resolution": {
+      "es": "256×192 (y 256×224)",
+      "en": "256×192 (and 256×224)"
+    },
+    "colors": {
+      "es": "64 (32 en pantalla)",
+      "en": "64 (32 on screen)"
+    },
+    "sound": {
+      "es": "SN76489: 3 canales + ruido (FM opcional en Japón)",
+      "en": "SN76489: 3 channels + noise (optional FM in Japan)"
+    },
+    "media": {
+      "es": "Cartucho / Sega Card",
+      "en": "Cartridge / Sega Card"
+    },
+    "unitsSold": {
+      "es": "~13 millones",
+      "en": "~13 million"
+    },
+    "description": {
+      "es": "Consola de 8 bits de Sega, rival de la NES. Fue un gran éxito en Europa y Brasil, con clásicos como Alex Kidd, Wonder Boy o Phantasy Star.",
+      "en": "Sega's 8-bit console and NES rival. It was a big hit in Europe and Brazil, with classics such as Alex Kidd, Wonder Boy and Phantasy Star."
+    }
+  },
+  "megadrive": {
+    "manufacturer": "Sega",
+    "year": 1988,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Motorola 68000 a 7,67 MHz + Zilog Z80 (sonido)",
+      "en": "Motorola 68000 at 7.67 MHz + Zilog Z80 (sound)"
+    },
+    "memory": "64 KB RAM + 64 KB VRAM + 8 KB audio",
+    "resolution": "320×224",
+    "colors": {
+      "es": "512 (61 en pantalla)",
+      "en": "512 (61 on screen)"
+    },
+    "sound": {
+      "es": "Yamaha YM2612 (FM, 6 canales) + SN76489",
+      "en": "Yamaha YM2612 (FM, 6 channels) + SN76489"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~30-35 millones",
+      "en": "~30-35 million"
+    },
+    "description": {
+      "es": "La consola de 16 bits de Sega (Genesis en América). Sonic the Hedgehog la convirtió en la gran rival de la Super Nintendo.",
+      "en": "Sega's 16-bit console (Genesis in North America). Sonic the Hedgehog made it the Super Nintendo's great rival."
+    }
+  },
+  "mess": {
+    "manufacturer": "Equipo MAME",
+    "year": 1998,
+    "type": "engine",
+    "description": {
+      "es": "MESS, la parte de MAME que emula consolas y ordenadores (hoy integrada en MAME).",
+      "en": "MESS, the part of MAME that emulates consoles and computers (now merged into MAME)."
+    }
+  },
+  "msu1": {
+    "manufacturer": "byuu / near",
+    "year": 2012,
+    "type": "software",
+    "description": {
+      "es": "Chip de mejora para Super Nintendo que permite audio en calidad CD y vídeo en juegos modificados.",
+      "en": "An enhancement chip for the Super Nintendo that adds CD-quality audio and video to modified games."
+    }
+  },
+  "msx": {
+    "manufacturer": {
+      "es": "Varios (estándar de ASCII y Microsoft)",
+      "en": "Various (ASCII/Microsoft standard)"
+    },
+    "year": 1983,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80A a 3,58 MHz",
+      "en": "Zilog Z80A at 3.58 MHz"
+    },
+    "memory": "8 – 64 KB RAM + 16 KB VRAM",
+    "resolution": "256×192",
+    "colors": "16",
+    "sound": {
+      "es": "AY-3-8910: 3 canales",
+      "en": "AY-3-8910: 3 channels"
+    },
+    "media": {
+      "es": "Cartucho / casete / disquete",
+      "en": "Cartridge / cassette / floppy disk"
+    },
+    "unitsSold": {
+      "es": "~5 millones",
+      "en": "~5 million"
+    },
+    "description": {
+      "es": "Estándar de ordenadores de 8 bits fabricado por muchas marcas. Konami publicó en él Metal Gear, Nemesis y Vampire Killer.",
+      "en": "An 8-bit computer standard made by many brands. Konami released Metal Gear, Nemesis and Vampire Killer on it."
+    }
+  },
+  "n64": {
+    "manufacturer": "Nintendo",
+    "year": 1996,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "NEC VR4300 a 93,75 MHz (64 bits)",
+      "en": "NEC VR4300 at 93.75 MHz (64 bits)"
+    },
+    "memory": {
+      "es": "4 MB RDRAM (8 MB con Expansion Pak)",
+      "en": "4 MB RDRAM (8 MB with Expansion Pak)"
+    },
+    "resolution": {
+      "es": "256×224 a 640×480",
+      "en": "256×224 to 640×480"
+    },
+    "colors": {
+      "es": "16,8 millones (24 bits)",
+      "en": "16.8 million (24 bits)"
+    },
+    "sound": {
+      "es": "Por software en el RCP, hasta 100 canales PCM",
+      "en": "Software on the RCP, up to 100 PCM channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~32,9 millones",
+      "en": "~32.9 million"
+    },
+    "description": {
+      "es": "Consola de 64 bits que fijó cómo se juega en 3D con Super Mario 64, Ocarina of Time y GoldenEye 007. Popularizó el stick analógico.",
+      "en": "A 64-bit console that set the template for 3D games with Super Mario 64, Ocarina of Time and GoldenEye 007. It popularised the analogue stick."
+    }
+  },
+  "nds": {
+    "manufacturer": "Nintendo",
+    "year": 2004,
+    "type": "handheld",
+    "generation": 7,
+    "cpu": {
+      "es": "ARM946E-S a 67 MHz + ARM7TDMI a 33 MHz",
+      "en": "ARM946E-S at 67 MHz + ARM7TDMI at 33 MHz"
+    },
+    "memory": "4 MB RAM + 656 KB VRAM",
+    "resolution": {
+      "es": "256×192 (dos pantallas, la inferior táctil)",
+      "en": "256×192 (two screens, the lower one touch)"
+    },
+    "colors": {
+      "es": "262.144 (18 bits)",
+      "en": "262,144 (18 bits)"
+    },
+    "sound": {
+      "es": "16 canales estéreo",
+      "en": "16 channels stereo"
+    },
+    "media": {
+      "es": "Cartucho (Game Card)",
+      "en": "Cartridge (Game Card)"
+    },
+    "unitsSold": {
+      "es": "~154 millones",
+      "en": "~154 million"
+    },
+    "description": {
+      "es": "Portátil de doble pantalla con pantalla táctil y micrófono. Una de las consolas más vendidas de la historia.",
+      "en": "A dual-screen handheld with a touch screen and microphone. One of the best-selling consoles of all time."
+    }
+  },
+  "neogeo": {
+    "manufacturer": "SNK",
+    "year": 1990,
+    "type": "arcade",
+    "generation": 4,
+    "cpu": {
+      "es": "Motorola 68000 a 12 MHz + Zilog Z80 (sonido)",
+      "en": "Motorola 68000 at 12 MHz + Zilog Z80 (sound)"
+    },
+    "memory": "64 KB RAM + 84 KB VRAM",
+    "resolution": "320×224",
+    "colors": {
+      "es": "65.536 (4.096 en pantalla)",
+      "en": "65,536 (4,096 on screen)"
+    },
+    "sound": "Yamaha YM2610: FM + ADPCM",
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~1 millón (AES)",
+      "en": "~1 million (AES)"
+    },
+    "description": {
+      "es": "El mismo hardware en recreativas (MVS) y en casa (AES). Hogar de The King of Fighters, Metal Slug y Samurai Shodown.",
+      "en": "The same hardware in arcades (MVS) and at home (AES). Home to The King of Fighters, Metal Slug and Samurai Shodown."
+    }
+  },
+  "neogeocd": {
+    "manufacturer": "SNK",
+    "year": 1994,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Igual que Neo Geo",
+      "en": "Same as Neo Geo"
+    },
+    "memory": {
+      "es": "7 MB RAM en total",
+      "en": "7 MB RAM total"
+    },
+    "resolution": "320×224",
+    "colors": {
+      "es": "65.536 (4.096 en pantalla)",
+      "en": "65,536 (4,096 on screen)"
+    },
+    "sound": {
+      "es": "Yamaha YM2610 + audio CD",
+      "en": "Yamaha YM2610 + CD audio"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~570.000",
+      "en": "~570,000"
+    },
+    "description": {
+      "es": "Versión en CD de la Neo Geo, mucho más barata que los cartuchos AES pero con tiempos de carga largos.",
+      "en": "The CD version of the Neo Geo, much cheaper than AES cartridges but with long loading times."
+    }
+  },
+  "nes": {
+    "manufacturer": "Nintendo",
+    "year": 1983,
+    "type": "console",
+    "generation": 3,
+    "cpu": {
+      "es": "Ricoh 2A03 (6502) a 1,79 MHz",
+      "en": "Ricoh 2A03 (6502) at 1.79 MHz"
+    },
+    "memory": "2 KB RAM + 2 KB VRAM",
+    "resolution": "256×240",
+    "colors": {
+      "es": "54 (25 en pantalla)",
+      "en": "54 (25 on screen)"
+    },
+    "sound": {
+      "es": "2 pulsos, triángulo, ruido y DPCM",
+      "en": "2 pulse, triangle, noise and DPCM"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~61,9 millones",
+      "en": "~61.9 million"
+    },
+    "description": {
+      "es": "Famicom en Japón. Recuperó el mercado tras la crisis de 1983 con Super Mario Bros., The Legend of Zelda y Metroid.",
+      "en": "Famicom in Japan. It revived the market after the 1983 crash with Super Mario Bros., The Legend of Zelda and Metroid."
+    }
+  },
+  "ngpc": {
+    "manufacturer": "SNK",
+    "year": 1999,
+    "type": "handheld",
+    "generation": 5,
+    "cpu": {
+      "es": "Toshiba TLCS-900H a 6,14 MHz + Z80 (sonido)",
+      "en": "Toshiba TLCS-900H at 6.14 MHz + Z80 (sound)"
+    },
+    "memory": "12 KB RAM + 4 KB audio",
+    "resolution": "160×152",
+    "colors": {
+      "es": "4.096 (146 en pantalla)",
+      "en": "4,096 (146 on screen)"
+    },
+    "sound": {
+      "es": "T6W28: 3 canales + ruido + DAC",
+      "en": "T6W28: 3 channels + noise + DAC"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~2 millones (con NGP)",
+      "en": "~2 million (with NGP)"
+    },
+    "description": {
+      "es": "Neo Geo Pocket Color, portátil de SNK con un stick de microinterruptores excelente. Tuvo buenos juegos de lucha y cruces con Capcom.",
+      "en": "Neo Geo Pocket Color, SNK's handheld with an excellent microswitch stick. It had great fighting games and crossovers with Capcom."
+    }
+  },
+  "odyssey2": {
+    "manufacturer": "Magnavox / Philips",
+    "year": 1978,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "Intel 8048 a 1,79 MHz",
+      "en": "Intel 8048 at 1.79 MHz"
+    },
+    "memory": "64 bytes + 128 bytes RAM",
+    "resolution": "160×200",
+    "colors": "16",
+    "sound": {
+      "es": "1 canal",
+      "en": "1 channel"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~2 millones",
+      "en": "~2 million"
+    },
+    "description": {
+      "es": "Consola con teclado de membrana integrado, conocida en Europa como Philips Videopac G7000.",
+      "en": "A console with a built-in membrane keyboard, known in Europe as the Philips Videopac G7000."
+    }
+  },
+  "openbor": {
+    "manufacturer": "Comunidad OpenBOR",
+    "year": 2004,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre para juegos de lucha con desplazamiento (beat 'em up), nacido de Beats of Rage. Hay cientos de juegos hechos por fans.",
+      "en": "A free engine for side-scrolling beat 'em ups, born from Beats of Rage. Fans have made hundreds of games with it."
+    }
+  },
+  "oric": {
+    "manufacturer": "Tangerine Computer Systems",
+    "year": 1983,
+    "type": "computer",
+    "cpu": {
+      "es": "MOS 6502A a 1 MHz",
+      "en": "MOS 6502A at 1 MHz"
+    },
+    "memory": "16 – 48 KB",
+    "resolution": "240×200",
+    "colors": "8",
+    "sound": {
+      "es": "AY-3-8912: 3 canales",
+      "en": "AY-3-8912: 3 channels"
+    },
+    "media": {
+      "es": "Casete / disquete",
+      "en": "Cassette / floppy disk"
+    },
+    "unitsSold": {
+      "es": "~210.000",
+      "en": "~210,000"
+    },
+    "description": {
+      "es": "Ordenador británico de 8 bits que tuvo bastante éxito en Francia.",
+      "en": "A British 8-bit computer that did fairly well in France."
+    }
+  },
+  "pc": {
+    "manufacturer": {
+      "es": "IBM y compatibles",
+      "en": "IBM and compatibles"
+    },
+    "year": 1981,
+    "type": "computer",
+    "cpu": {
+      "es": "Intel x86 (8088 en adelante)",
+      "en": "Intel x86 (8088 onwards)"
+    },
+    "memory": {
+      "es": "Variable",
+      "en": "Varies"
+    },
+    "resolution": {
+      "es": "Variable (CGA, EGA, VGA…)",
+      "en": "Varies (CGA, EGA, VGA…)"
+    },
+    "colors": {
+      "es": "Variable",
+      "en": "Varies"
+    },
+    "sound": {
+      "es": "Altavoz, AdLib, Sound Blaster…",
+      "en": "PC speaker, AdLib, Sound Blaster…"
+    },
+    "media": {
+      "es": "Disquete / CD-ROM / disco duro",
+      "en": "Floppy disk / CD-ROM / hard disk"
+    },
+    "description": {
+      "es": "Los PC compatibles con MS-DOS, normalmente emulados con DOSBox. Doom, Monkey Island o Civilization son de aquí.",
+      "en": "MS-DOS compatible PCs, usually emulated with DOSBox. Doom, Monkey Island and Civilization come from here."
+    }
+  },
+  "pce-cd": {
+    "manufacturer": "NEC",
+    "year": 1988,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Igual que PC Engine",
+      "en": "Same as PC Engine"
+    },
+    "memory": {
+      "es": "64 KB RAM extra (System Card 1.0/2.0)",
+      "en": "64 KB extra RAM (System Card 1.0/2.0)"
+    },
+    "resolution": {
+      "es": "256×224 a 512×240",
+      "en": "256×224 to 512×240"
+    },
+    "colors": {
+      "es": "512 (482 en pantalla)",
+      "en": "512 (482 on screen)"
+    },
+    "sound": {
+      "es": "PC Engine + audio CD + ADPCM",
+      "en": "PC Engine + CD audio + ADPCM"
+    },
+    "media": "CD-ROM",
+    "description": {
+      "es": "CD-ROM² de PC Engine, primera consola con unidad de CD. Juegos como Ys Book I & II o Rondo of Blood aprovecharon su audio CD.",
+      "en": "The PC Engine CD-ROM², the first console with a CD drive. Games such as Ys Book I & II and Rondo of Blood made the most of its CD audio."
+    }
+  },
+  "pcengine": {
+    "manufacturer": "NEC / Hudson Soft",
+    "year": 1987,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Hudson HuC6280 a 7,16 MHz (8 bits)",
+      "en": "Hudson HuC6280 at 7.16 MHz (8 bits)"
+    },
+    "memory": "8 KB RAM + 64 KB VRAM",
+    "resolution": {
+      "es": "256×224 a 512×240",
+      "en": "256×224 to 512×240"
+    },
+    "colors": {
+      "es": "512 (482 en pantalla)",
+      "en": "512 (482 on screen)"
+    },
+    "sound": {
+      "es": "6 canales de tabla de ondas",
+      "en": "6 wavetable channels"
+    },
+    "media": "HuCard",
+    "unitsSold": {
+      "es": "~10 millones (con TurboGrafx-16)",
+      "en": "~10 million (with TurboGrafx-16)"
+    },
+    "description": {
+      "es": "Consola diminuta con gráficos de nivel arcade, muy popular en Japón. En América se llamó TurboGrafx-16.",
+      "en": "A tiny console with arcade-level graphics, very popular in Japan. In North America it was called the TurboGrafx-16."
+    }
+  },
+  "ports": {
+    "manufacturer": {
+      "es": "Varios",
+      "en": "Various"
+    },
+    "year": null,
+    "type": "software",
+    "description": {
+      "es": "Juegos portados de forma nativa (por ejemplo Doom, Quake o Cave Story) que se lanzan sin un emulador de consola.",
+      "en": "Games ported natively (such as Doom, Quake or Cave Story) that run without a console emulator."
+    }
+  },
+  "prboom": {
+    "manufacturer": "Proyecto PrBoom",
+    "year": 1999,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre para jugar a Doom, Doom II y sus mods en sistemas modernos.",
+      "en": "A free engine for playing Doom, Doom II and their mods on modern systems."
+    }
+  },
+  "ps2": {
+    "manufacturer": "Sony",
+    "year": 2000,
+    "type": "console",
+    "generation": 6,
+    "cpu": {
+      "es": "Emotion Engine (MIPS R5900) a 294,9 MHz",
+      "en": "Emotion Engine (MIPS R5900) at 294.9 MHz"
+    },
+    "memory": "32 MB RAM + 4 MB VRAM",
+    "resolution": {
+      "es": "Hasta 1920×1080 (habitual 640×448)",
+      "en": "Up to 1920×1080 (typically 640×448)"
+    },
+    "colors": {
+      "es": "16,8 millones (24 bits)",
+      "en": "16.8 million (24 bits)"
+    },
+    "sound": {
+      "es": "SPU2: 48 canales",
+      "en": "SPU2: 48 channels"
+    },
+    "media": "DVD-ROM / CD-ROM",
+    "unitsSold": {
+      "es": "~155 millones",
+      "en": "~155 million"
+    },
+    "description": {
+      "es": "La consola más vendida de la historia. Compatible con los juegos de PlayStation y reproductora de DVD.",
+      "en": "The best-selling console of all time. Backward compatible with PlayStation games and a DVD player."
+    }
+  },
+  "ps3": {
+    "manufacturer": "Sony",
+    "year": 2006,
+    "type": "console",
+    "generation": 7,
+    "cpu": {
+      "es": "Cell Broadband Engine a 3,2 GHz",
+      "en": "Cell Broadband Engine at 3.2 GHz"
+    },
+    "memory": "256 MB XDR + 256 MB GDDR3",
+    "resolution": {
+      "es": "Hasta 1920×1080",
+      "en": "Up to 1920×1080"
+    },
+    "colors": {
+      "es": "16,8 millones (24 bits)",
+      "en": "16.8 million (24 bits)"
+    },
+    "sound": {
+      "es": "Dolby Digital / DTS, hasta 7.1",
+      "en": "Dolby Digital / DTS, up to 7.1"
+    },
+    "media": {
+      "es": "Blu-ray / descarga",
+      "en": "Blu-ray / download"
+    },
+    "unitsSold": {
+      "es": "~87,4 millones",
+      "en": "~87.4 million"
+    },
+    "description": {
+      "es": "Consola de Sony con lector Blu-ray y el complejo procesador Cell. Uncharted, The Last of Us o Demon's Souls salieron en ella.",
+      "en": "Sony's console with a Blu-ray drive and the complex Cell processor. Uncharted, The Last of Us and Demon's Souls came out on it."
+    }
+  },
+  "psp": {
+    "manufacturer": "Sony",
+    "year": 2004,
+    "type": "handheld",
+    "generation": 7,
+    "cpu": {
+      "es": "MIPS R4000 a 333 MHz",
+      "en": "MIPS R4000 at 333 MHz"
+    },
+    "memory": {
+      "es": "32 MB (64 MB en modelos posteriores)",
+      "en": "32 MB (64 MB on later models)"
+    },
+    "resolution": "480×272",
+    "colors": {
+      "es": "16,7 millones (24 bits)",
+      "en": "16.7 million (24 bits)"
+    },
+    "sound": {
+      "es": "Estéreo, hasta 44,1 kHz",
+      "en": "Stereo, up to 44.1 kHz"
+    },
+    "media": {
+      "es": "UMD / descarga",
+      "en": "UMD / download"
+    },
+    "unitsSold": {
+      "es": "~80 millones",
+      "en": "~80 million"
+    },
+    "description": {
+      "es": "PlayStation Portable, portátil con gráficos cercanos a PS2 y discos UMD. También reproducía música y vídeo.",
+      "en": "PlayStation Portable, a handheld with near-PS2 graphics and UMD discs. It also played music and video."
+    }
+  },
+  "psx": {
+    "manufacturer": "Sony",
+    "year": 1994,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "MIPS R3000A a 33,87 MHz",
+      "en": "MIPS R3000A at 33.87 MHz"
+    },
+    "memory": "2 MB RAM + 1 MB VRAM + 512 KB audio",
+    "resolution": {
+      "es": "256×224 a 640×480",
+      "en": "256×224 to 640×480"
+    },
+    "colors": {
+      "es": "16,7 millones (24 bits)",
+      "en": "16.7 million (24 bits)"
+    },
+    "sound": {
+      "es": "SPU: 24 canales ADPCM",
+      "en": "SPU: 24 channels ADPCM"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~102,5 millones",
+      "en": "~102.5 million"
+    },
+    "description": {
+      "es": "La primera PlayStation. Llevó los juegos en 3D y en CD al gran público con Final Fantasy VII, Metal Gear Solid o Gran Turismo.",
+      "en": "The original PlayStation. It brought 3D, CD-based games to the mainstream with Final Fantasy VII, Metal Gear Solid and Gran Turismo."
+    }
+  },
+  "pygame": {
+    "manufacturer": "Comunidad Pygame",
+    "year": 2000,
+    "type": "engine",
+    "description": {
+      "es": "Biblioteca de Python para crear juegos; aquí se agrupan juegos hechos con ella.",
+      "en": "A Python library for making games; this groups games built with it."
+    }
+  },
+  "residualvm": {
+    "manufacturer": "Equipo ResidualVM",
+    "year": 2003,
+    "type": "engine",
+    "description": {
+      "es": "Motor para aventuras en 3D como Grim Fandango o Myst III. Hoy está integrado en ScummVM.",
+      "en": "An engine for 3D adventures such as Grim Fandango and Myst III. It is now part of ScummVM."
+    }
+  },
+  "retroarch": {
+    "manufacturer": "Libretro",
+    "year": 2010,
+    "type": "software",
+    "description": {
+      "es": "Interfaz común para muchos emuladores («cores») de libretro.",
+      "en": "A common frontend for many libretro emulators (cores)."
+    }
+  },
+  "retropie": {
+    "manufacturer": "Proyecto RetroPie",
+    "year": 2012,
+    "type": "software",
+    "description": {
+      "es": "Menú de configuración de RetroPie (no es un sistema de juego).",
+      "en": "RetroPie's setup menu (not a game system)."
+    }
+  },
+  "samcoupe": {
+    "manufacturer": "Miles Gordon Technology",
+    "year": 1989,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80B a 6 MHz",
+      "en": "Zilog Z80B at 6 MHz"
+    },
+    "memory": "256 – 512 KB",
+    "resolution": "256×192 (16 col.) / 512×192 (4)",
+    "colors": {
+      "es": "128 (16 en pantalla)",
+      "en": "128 (16 on screen)"
+    },
+    "sound": {
+      "es": "Philips SAA1099: 6 canales estéreo",
+      "en": "Philips SAA1099: 6 channels stereo"
+    },
+    "media": {
+      "es": "Casete / disquete 3,5\"",
+      "en": "Cassette / floppy disk 3.5\""
+    },
+    "unitsSold": {
+      "es": "~12.000",
+      "en": "~12,000"
+    },
+    "description": {
+      "es": "Ordenador británico pensado como sucesor del ZX Spectrum y compatible con muchos de sus juegos.",
+      "en": "A British computer designed as a successor to the ZX Spectrum and compatible with many of its games."
+    }
+  },
+  "saturn": {
+    "manufacturer": "Sega",
+    "year": 1994,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "2 × Hitachi SH-2 a 28,6 MHz",
+      "en": "2 × Hitachi SH-2 at 28.6 MHz"
+    },
+    "memory": {
+      "es": "2 MB RAM + 1,5 MB VRAM + 512 KB audio",
+      "en": "2 MB RAM + 1.5 MB VRAM + 512 KB audio"
+    },
+    "resolution": {
+      "es": "320×224 a 704×512",
+      "en": "320×224 to 704×512"
+    },
+    "colors": {
+      "es": "16,7 millones (24 bits)",
+      "en": "16.7 million (24 bits)"
+    },
+    "sound": {
+      "es": "Yamaha SCSP: 32 canales",
+      "en": "Yamaha SCSP: 32 channels"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~9,3 millones",
+      "en": "~9.3 million"
+    },
+    "description": {
+      "es": "Consola de 32 bits de Sega con dos procesadores, difícil de programar. Brilló en Japón con Panzer Dragoon, NiGHTS y la lucha 2D.",
+      "en": "Sega's 32-bit console with two CPUs, hard to program. It shone in Japan with Panzer Dragoon, NiGHTS and 2D fighters."
+    }
+  },
+  "scummvm": {
+    "manufacturer": "Equipo ScummVM",
+    "year": 2001,
+    "type": "engine",
+    "description": {
+      "es": "Motor que permite jugar a aventuras gráficas clásicas (LucasArts, Sierra, Revolution…) sustituyendo su ejecutable original.",
+      "en": "An engine for classic graphic adventures (LucasArts, Sierra, Revolution…) that replaces their original executables."
+    }
+  },
+  "sega32x": {
+    "manufacturer": "Sega",
+    "year": 1994,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "2 × Hitachi SH-2 a 23 MHz (más la Mega Drive)",
+      "en": "2 × Hitachi SH-2 at 23 MHz (plus the Mega Drive)"
+    },
+    "memory": "256 KB RAM + 256 KB VRAM",
+    "resolution": "320×224",
+    "colors": {
+      "es": "32.768",
+      "en": "32,768"
+    },
+    "sound": {
+      "es": "2 canales PWM + los de Mega Drive",
+      "en": "2 channels PWM + Mega Drive's"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~665.000",
+      "en": "~665,000"
+    },
+    "description": {
+      "es": "Periférico que se conectaba a la Mega Drive para darle potencia de 32 bits. Tuvo vida muy corta.",
+      "en": "An add-on that plugged into the Mega Drive to give it 32-bit power. It was very short-lived."
+    }
+  },
+  "segacd": {
+    "manufacturer": "Sega",
+    "year": 1991,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Motorola 68000 a 12,5 MHz (más la Mega Drive)",
+      "en": "Motorola 68000 at 12.5 MHz (plus the Mega Drive)"
+    },
+    "memory": "768 KB RAM",
+    "resolution": "320×224",
+    "colors": {
+      "es": "512 (64 en pantalla)",
+      "en": "512 (64 on screen)"
+    },
+    "sound": {
+      "es": "Ricoh RF5C164: 8 canales PCM + audio CD",
+      "en": "Ricoh RF5C164: 8 channels PCM + CD audio"
+    },
+    "media": "CD-ROM",
+    "unitsSold": {
+      "es": "~2,2 millones",
+      "en": "~2.2 million"
+    },
+    "description": {
+      "es": "Mega-CD, la unidad de CD para Mega Drive. Permitió juegos con vídeo y audio CD, como Snatcher o Sonic CD.",
+      "en": "Mega-CD, the CD drive for the Mega Drive. It allowed games with video and CD audio, such as Snatcher and Sonic CD."
+    }
+  },
+  "sg-1000": {
+    "manufacturer": "Sega",
+    "year": 1983,
+    "type": "console",
+    "generation": 3,
+    "cpu": {
+      "es": "Zilog Z80A a 3,58 MHz",
+      "en": "Zilog Z80A at 3.58 MHz"
+    },
+    "memory": "1 KB RAM + 16 KB VRAM",
+    "resolution": "256×192",
+    "colors": "16",
+    "sound": {
+      "es": "SN76489: 3 canales + ruido",
+      "en": "SN76489: 3 channels + noise"
+    },
+    "media": {
+      "es": "Cartucho / Sega Card",
+      "en": "Cartridge / Sega Card"
+    },
+    "description": {
+      "es": "Primera consola de Sega, lanzada en Japón el mismo día que la Famicom.",
+      "en": "Sega's first console, released in Japan on the same day as the Famicom."
+    }
+  },
+  "snes": {
+    "manufacturer": "Nintendo",
+    "year": 1990,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Ricoh 5A22 (65C816) a 3,58 MHz",
+      "en": "Ricoh 5A22 (65C816) at 3.58 MHz"
+    },
+    "memory": "128 KB RAM + 64 KB VRAM",
+    "resolution": {
+      "es": "256×224 (hasta 512×448)",
+      "en": "256×224 (up to 512×448)"
+    },
+    "colors": {
+      "es": "32.768 (256 en pantalla)",
+      "en": "32,768 (256 on screen)"
+    },
+    "sound": {
+      "es": "Sony SPC700 + DSP: 8 canales",
+      "en": "Sony SPC700 + DSP: 8 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~49 millones",
+      "en": "~49 million"
+    },
+    "description": {
+      "es": "Super Nintendo (Super Famicom en Japón), con efectos como el Modo 7. Super Mario World, A Link to the Past y Super Metroid la definen.",
+      "en": "Super Nintendo (Super Famicom in Japan), with effects such as Mode 7. Super Mario World, A Link to the Past and Super Metroid define it."
+    }
+  },
+  "solarus": {
+    "manufacturer": "Proyecto Solarus",
+    "year": 2006,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre para juegos de acción y aventura al estilo Zelda en 2D.",
+      "en": "A free engine for 2D Zelda-style action-adventure games."
+    }
+  },
+  "steam": {
+    "manufacturer": "Valve",
+    "year": 2003,
+    "type": "software",
+    "description": {
+      "es": "Juegos de la tienda Steam lanzados desde el frontend.",
+      "en": "Steam store games launched from the frontend."
+    }
+  },
+  "stratagus": {
+    "manufacturer": "Proyecto Stratagus",
+    "year": 2002,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre de estrategia en tiempo real, usado por ejemplo por Wargus para jugar a Warcraft II.",
+      "en": "A free real-time strategy engine, used for example by Wargus to play Warcraft II."
+    }
+  },
+  "supergrafx": {
+    "manufacturer": "NEC",
+    "year": 1989,
+    "type": "console",
+    "generation": 4,
+    "cpu": {
+      "es": "Hudson HuC6280 a 7,16 MHz",
+      "en": "Hudson HuC6280 at 7.16 MHz"
+    },
+    "memory": "32 KB RAM + 128 KB VRAM",
+    "resolution": {
+      "es": "256×224 a 512×240",
+      "en": "256×224 to 512×240"
+    },
+    "colors": "512",
+    "sound": {
+      "es": "6 canales de tabla de ondas",
+      "en": "6 wavetable channels"
+    },
+    "media": "HuCard",
+    "unitsSold": {
+      "es": "~75.000",
+      "en": "~75,000"
+    },
+    "description": {
+      "es": "Versión mejorada de la PC Engine con el doble de memoria y capas gráficas. Solo tuvo cinco juegos exclusivos.",
+      "en": "An enhanced PC Engine with double the memory and graphics layers. It only had five exclusive games."
+    }
+  },
+  "tg-cd": {
+    "sameAs": "pce-cd"
+  },
+  "tg16": {
+    "sameAs": "pcengine"
+  },
+  "ti99": {
+    "manufacturer": "Texas Instruments",
+    "year": 1981,
+    "type": "computer",
+    "cpu": {
+      "es": "TMS9900 a 3 MHz (16 bits)",
+      "en": "TMS9900 at 3 MHz (16 bits)"
+    },
+    "memory": "256 bytes + 16 KB VRAM",
+    "resolution": "256×192",
+    "colors": "16",
+    "sound": {
+      "es": "TMS9919: 3 canales + ruido",
+      "en": "TMS9919: 3 channels + noise"
+    },
+    "media": {
+      "es": "Cartucho / casete / disquete",
+      "en": "Cartridge / cassette / floppy disk"
+    },
+    "unitsSold": {
+      "es": "~2,8 millones",
+      "en": "~2.8 million"
+    },
+    "description": {
+      "es": "TI-99/4A, uno de los primeros ordenadores domésticos con procesador de 16 bits.",
+      "en": "The TI-99/4A, one of the first home computers with a 16-bit processor."
+    }
+  },
+  "trs-80": {
+    "manufacturer": "Tandy / RadioShack",
+    "year": 1977,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80 a 1,77 MHz",
+      "en": "Zilog Z80 at 1.77 MHz"
+    },
+    "memory": "4 – 48 KB",
+    "resolution": {
+      "es": "128×48 (semigráficos)",
+      "en": "128×48 (semigraphics)"
+    },
+    "colors": {
+      "es": "Monocromo",
+      "en": "Monochrome"
+    },
+    "sound": {
+      "es": "Ninguno (casete como truco)",
+      "en": "None (cassette como truco)"
+    },
+    "media": {
+      "es": "Casete / disquete",
+      "en": "Cassette / floppy disk"
+    },
+    "unitsSold": {
+      "es": "~250.000 (Model I)",
+      "en": "~250,000 (Model I)"
+    },
+    "description": {
+      "es": "Uno de los primeros ordenadores personales de éxito, vendido en las tiendas RadioShack.",
+      "en": "One of the first successful personal computers, sold in RadioShack stores."
+    }
+  },
+  "tyrquake": {
+    "manufacturer": "Kevin Shanahan",
+    "year": 2001,
+    "type": "engine",
+    "description": {
+      "es": "Motor libre basado en el código de Quake para jugar al original y sus mods.",
+      "en": "A free engine based on the Quake source code for playing the original and its mods."
+    }
+  },
+  "vectrex": {
+    "manufacturer": "GCE / Milton Bradley",
+    "year": 1982,
+    "type": "console",
+    "generation": 2,
+    "cpu": {
+      "es": "Motorola 6809 a 1,5 MHz",
+      "en": "Motorola 6809 at 1.5 MHz"
+    },
+    "memory": "1 KB RAM",
+    "resolution": {
+      "es": "Pantalla vectorial de 9\"",
+      "en": "Vector display, 9\""
+    },
+    "colors": {
+      "es": "Monocromo (color con láminas)",
+      "en": "Monochrome (colour via overlays)"
+    },
+    "sound": {
+      "es": "AY-3-8912: 3 canales",
+      "en": "AY-3-8912: 3 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "description": {
+      "es": "Única consola con pantalla vectorial integrada. Las láminas de plástico sobre la pantalla añadían el color.",
+      "en": "The only console with a built-in vector display. Plastic overlays on the screen added colour."
+    }
+  },
+  "videopac": {
+    "sameAs": "odyssey2"
+  },
+  "virtualboy": {
+    "manufacturer": "Nintendo",
+    "year": 1995,
+    "type": "console",
+    "generation": 5,
+    "cpu": {
+      "es": "NEC V810 a 20 MHz (32 bits)",
+      "en": "NEC V810 at 20 MHz (32 bits)"
+    },
+    "memory": "64 KB RAM + 128 KB VRAM",
+    "resolution": {
+      "es": "384×224 por ojo",
+      "en": "384×224 per eye"
+    },
+    "colors": {
+      "es": "Rojo sobre negro (4 tonos)",
+      "en": "Red on black (4 shades)"
+    },
+    "sound": {
+      "es": "Tabla de ondas, 6 canales",
+      "en": "Wavetable, 6 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~770.000",
+      "en": "~770,000"
+    },
+    "description": {
+      "es": "Consola de sobremesa con imagen estereoscópica en rojo y negro. Un fracaso comercial que solo duró unos meses.",
+      "en": "A tabletop console with stereoscopic red-and-black graphics. A commercial flop that lasted only a few months."
+    }
+  },
+  "wii": {
+    "manufacturer": "Nintendo",
+    "year": 2006,
+    "type": "console",
+    "generation": 7,
+    "cpu": {
+      "es": "IBM PowerPC Broadway a 729 MHz",
+      "en": "IBM PowerPC Broadway at 729 MHz"
+    },
+    "memory": "88 MB (24 + 64) RAM",
+    "resolution": {
+      "es": "Hasta 480p",
+      "en": "Up to 480p"
+    },
+    "colors": {
+      "es": "16,8 millones (24 bits)",
+      "en": "16.8 million (24 bits)"
+    },
+    "sound": {
+      "es": "Estéreo, Dolby Pro Logic II",
+      "en": "Stereo, Dolby Pro Logic II"
+    },
+    "media": {
+      "es": "Disco óptico Wii / descarga",
+      "en": "Wii optical disc / download"
+    },
+    "unitsSold": {
+      "es": "~101,6 millones",
+      "en": "~101.6 million"
+    },
+    "description": {
+      "es": "Consola de Nintendo con mando de detección de movimiento, que atrajo a todo tipo de público con Wii Sports.",
+      "en": "Nintendo's console with a motion-sensing remote, which drew in all kinds of players with Wii Sports."
+    }
+  },
+  "wiiu": {
+    "manufacturer": "Nintendo",
+    "year": 2012,
+    "type": "console",
+    "generation": 8,
+    "cpu": {
+      "es": "IBM PowerPC Espresso (3 núcleos) a 1,24 GHz",
+      "en": "IBM PowerPC Espresso (3 cores) at 1.24 GHz"
+    },
+    "memory": "2 GB RAM",
+    "resolution": {
+      "es": "Hasta 1920×1080",
+      "en": "Up to 1920×1080"
+    },
+    "colors": {
+      "es": "16,8 millones (24 bits)",
+      "en": "16.8 million (24 bits)"
+    },
+    "sound": {
+      "es": "Hasta 5.1 PCM",
+      "en": "Up to 5.1 PCM"
+    },
+    "media": {
+      "es": "Disco óptico Wii U / descarga",
+      "en": "Wii U optical disc / download"
+    },
+    "unitsSold": {
+      "es": "~13,6 millones",
+      "en": "~13.6 million"
+    },
+    "description": {
+      "es": "Consola con un mando con pantalla táctil integrada. Vendió poco, pero muchos de sus juegos pasaron después a Switch.",
+      "en": "A console with a gamepad that has its own touch screen. It sold poorly, but many of its games later moved to the Switch."
+    }
+  },
+  "windows": {
+    "manufacturer": "Microsoft",
+    "year": 1985,
+    "type": "computer",
+    "description": {
+      "es": "Juegos de PC para Windows lanzados desde el frontend.",
+      "en": "Windows PC games launched from the frontend."
+    }
+  },
+  "wonderswan": {
+    "manufacturer": "Bandai",
+    "year": 1999,
+    "type": "handheld",
+    "generation": 5,
+    "cpu": {
+      "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
+      "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
+    },
+    "memory": "16 KB RAM",
+    "resolution": "224×144",
+    "colors": {
+      "es": "8 tonos de gris",
+      "en": "8 shades of grey"
+    },
+    "sound": {
+      "es": "4 canales",
+      "en": "4 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~3,5 millones (toda la familia)",
+      "en": "~3.5 million (whole family)"
+    },
+    "description": {
+      "es": "Portátil japonesa de Bandai, diseñada por Gunpei Yokoi. Podía jugarse en horizontal o en vertical.",
+      "en": "Bandai's Japanese handheld, designed by Gunpei Yokoi. It could be played horizontally or vertically."
+    }
+  },
+  "wonderswancolor": {
+    "manufacturer": "Bandai",
+    "year": 2000,
+    "type": "handheld",
+    "generation": 5,
+    "cpu": {
+      "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
+      "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
+    },
+    "memory": "64 KB RAM",
+    "resolution": "224×144",
+    "colors": {
+      "es": "4.096 (241 en pantalla)",
+      "en": "4,096 (241 on screen)"
+    },
+    "sound": {
+      "es": "4 canales",
+      "en": "4 channels"
+    },
+    "media": {
+      "es": "Cartucho",
+      "en": "Cartridge"
+    },
+    "unitsSold": {
+      "es": "~3,5 millones (toda la familia)",
+      "en": "~3.5 million (whole family)"
+    },
+    "description": {
+      "es": "Versión a color de la WonderSwan, con remakes de Final Fantasy y varios juegos de Gunpey.",
+      "en": "The colour version of the WonderSwan, with Final Fantasy remakes and several Gunpey games."
+    }
+  },
+  "x68000": {
+    "manufacturer": "Sharp",
+    "year": 1987,
+    "type": "computer",
+    "cpu": {
+      "es": "Motorola 68000 a 10 MHz",
+      "en": "Motorola 68000 at 10 MHz"
+    },
+    "memory": "1 – 12 MB",
+    "resolution": {
+      "es": "Hasta 768×512",
+      "en": "Up to 768×512"
+    },
+    "colors": {
+      "es": "65.536",
+      "en": "65,536"
+    },
+    "sound": "Yamaha YM2151 (FM) + OKI ADPCM",
+    "media": {
+      "es": "Disquete 5,25\" / disco duro",
+      "en": "Floppy disk 5.25\" / hard disk"
+    },
+    "description": {
+      "es": "Ordenador japonés de gama alta con hardware muy cercano a las recreativas, famoso por sus conversiones casi perfectas.",
+      "en": "A high-end Japanese computer with hardware close to arcade boards, famous for its near-perfect conversions."
+    }
+  },
+  "zmachine": {
+    "manufacturer": "Infocom",
+    "year": 1979,
+    "type": "engine",
+    "description": {
+      "es": "Máquina virtual de Infocom para aventuras conversacionales como Zork.",
+      "en": "Infocom's virtual machine for text adventures such as Zork."
+    }
+  },
+  "zx81": {
+    "manufacturer": "Sinclair Research",
+    "year": 1981,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80A a 3,25 MHz",
+      "en": "Zilog Z80A at 3.25 MHz"
+    },
+    "memory": {
+      "es": "1 KB (ampliable a 16 KB)",
+      "en": "1 KB (expandable to 16 KB)"
+    },
+    "resolution": {
+      "es": "32×24 caracteres (64×48 semigráficos)",
+      "en": "32×24 characters (64×48 semigraphics)"
+    },
+    "colors": {
+      "es": "Monocromo",
+      "en": "Monochrome"
+    },
+    "sound": {
+      "es": "Ninguno",
+      "en": "None"
+    },
+    "media": {
+      "es": "Casete",
+      "en": "Cassette"
+    },
+    "unitsSold": {
+      "es": "~1,5 millones",
+      "en": "~1.5 million"
+    },
+    "description": {
+      "es": "Ordenador muy barato de Sinclair que acercó la informática a muchos hogares británicos antes del Spectrum.",
+      "en": "A very cheap Sinclair computer that brought computing to many British homes before the Spectrum."
+    }
+  },
+  "zxspectrum": {
+    "manufacturer": "Sinclair Research",
+    "year": 1982,
+    "type": "computer",
+    "cpu": {
+      "es": "Zilog Z80A a 3,5 MHz",
+      "en": "Zilog Z80A at 3.5 MHz"
+    },
+    "memory": "16 – 128 KB",
+    "resolution": "256×192",
+    "colors": {
+      "es": "15 (8 colores con brillo)",
+      "en": "15 (8 colours with bright)"
+    },
+    "sound": {
+      "es": "Altavoz de 1 bit (AY-3-8912 en 128K)",
+      "en": "1-bit beeper (AY-3-8912 on 128K)"
+    },
+    "media": {
+      "es": "Casete / disquete (+3)",
+      "en": "Cassette / floppy disk (+3)"
+    },
+    "unitsSold": {
+      "es": "~5 millones",
+      "en": "~5 million"
+    },
+    "description": {
+      "es": "El ordenador de 8 bits que impulsó la edad de oro del software español y británico, con Dinamic, Ultimate u Ocean.",
+      "en": "The 8-bit computer behind the golden age of Spanish and British software, with Dinamic, Ultimate and Ocean."
+    }
+  }
+}
