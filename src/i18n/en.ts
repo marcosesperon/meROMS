@@ -264,6 +264,7 @@ const en = {
   "collections.selectGames": "Select games for the collection",
   // Profiles
   "settings.tabProfiles": "Profiles",
+  "sidebar.systems": "Systems",
   "sidebar.profile": "Profile",
   "profiles.description": "Each profile is a ROM library and the folder structure it follows.",
   "profiles.none": "No profiles yet.",

@@ -22,9 +22,9 @@ export function Sidebar() {
   const isScanning = loading && scanProgress !== null;
 
   return (
-    <aside className="w-64 bg-zinc-900 border-r border-zinc-700 flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-700">
-        <h1 className="text-lg font-bold text-zinc-100">{t("sidebar.title")}</h1>
+    <aside className="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
+      <div className="p-4 border-b border-zinc-800">
+        <h1 className="text-lg font-bold tracking-tight text-zinc-100">{t("sidebar.title")}</h1>
         <p className="text-xs text-zinc-500">{t("sidebar.subtitle")}</p>
         {profiles.length > 0 && (
           <label className="block mt-3">
@@ -33,7 +33,7 @@ export function Sidebar() {
               value={activeProfile?.id ?? ""}
               onChange={(e) => setActiveProfile(e.target.value)}
               disabled={loading}
-              className="mt-1 w-full bg-zinc-800 border border-zinc-600 rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
             >
               {profiles.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -45,7 +45,10 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2">
+      <p className="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        {t("sidebar.systems")}
+      </p>
+      <nav className="flex-1 overflow-y-auto pb-2">
         {isScanning ? (
           <div className="px-4 py-6 flex flex-col items-center gap-3">
             {/* Spinner */}
@@ -76,44 +79,53 @@ export function Sidebar() {
         ) : systems.length === 0 ? (
           <p className="text-zinc-500 text-sm px-4 py-2">{t("sidebar.noSystems")}</p>
         ) : (
-          systems.map((system) => (
-            <button
-              key={system.path}
-              onClick={() => {
-                selectSystem(system);
-                setCurrentView("browser");
-              }}
-              className={`relative w-full text-left px-3 py-2 flex flex-col items-center gap-1 transition-colors ${
-                selectedSystem?.path === system.path
-                  ? "bg-indigo-600/20 text-indigo-400 border-r-2 border-indigo-500"
-                  : "text-zinc-300 hover:bg-zinc-800"
-              }`}
-            >
-              {/* Marca: este sistema está en la otra estructura y se puede migrar */}
-              {pendingStructure?.systems.includes(system.name) && (
-                <span
-                  className="absolute top-2 left-2 w-2 h-2 rounded-full bg-amber-400"
-                  title={t("structure.mark", {
-                    kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
-                  })}
-                />
-              )}
-              {/* Badge con número de juegos/roms */}
-              {(system.has_gamelist ? system.game_count > 0 : system.rom_count > 0) && (
-                <span className="absolute top-1.5 right-2 text-[10px] text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">
-                  {system.has_gamelist ? system.game_count : system.rom_count}
+          systems.map((system) => {
+            const selected = selectedSystem?.path === system.path;
+            const count = system.has_gamelist ? system.game_count : system.rom_count;
+            return (
+              <button
+                key={system.path}
+                onClick={() => {
+                  selectSystem(system);
+                  setCurrentView("browser");
+                }}
+                title={system.full_name}
+                className={`relative w-full text-left pl-4 pr-3 py-1.5 flex items-center gap-3 transition-colors ${
+                  selected ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                }`}
+              >
+                {/* Franja violeta a la izquierda del sistema elegido (como GOG) */}
+                {selected && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-indigo-500" />}
+                {/* Los logos son anchos: caja fija para que los nombres queden alineados */}
+                <span className="w-12 h-6 shrink-0 flex items-center justify-center">
+                  <SystemLogo name={system.name} width={48} maxHeight={22} />
                 </span>
-              )}
-              <SystemLogo name={system.name} width={94} maxHeight={40} className="shrink-0 py-1" />
-              <span className="text-xs block truncate w-full text-center pb-3" title={system.full_name}>
-                {system.full_name}
-              </span>
-            </button>
-          ))
+                <span className="flex-1 min-w-0 text-[13px] truncate">{system.full_name}</span>
+                {/* Marca: este sistema está en la otra estructura y se puede migrar */}
+                {pendingStructure?.systems.includes(system.name) && (
+                  <span
+                    className="w-2 h-2 shrink-0 rounded-full bg-amber-400"
+                    title={t("structure.mark", {
+                      kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
+                    })}
+                  />
+                )}
+                {count > 0 && (
+                  <span
+                    className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded-full ${
+                      selected ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-500"
+                    }`}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })
         )}
       </nav>
 
-      <div className="border-t border-zinc-700 h-12 shrink-0 flex items-center px-3">
+      <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center px-3">
         <button
           onClick={() => setCurrentView("settings")}
           className="w-full text-left px-3 py-1 text-sm text-zinc-400 hover:bg-zinc-800 rounded transition-colors flex items-center gap-2"

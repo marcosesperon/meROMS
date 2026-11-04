@@ -266,6 +266,7 @@ const es: Record<TranslationKeys, string> = {
   "collections.selectGames": "Selecciona juegos para la colección",
   // Perfiles
   "settings.tabProfiles": "Perfiles",
+  "sidebar.systems": "Sistemas",
   "sidebar.profile": "Perfil",
   "profiles.description": "Cada perfil es una biblioteca de ROMs y la estructura de carpetas que sigue.",
   "profiles.none": "Todavía no hay perfiles.",
