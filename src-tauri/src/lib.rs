@@ -5,7 +5,7 @@ mod models;
 mod parser;
 mod rename_rules;
 
-use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, migrate, new_roms, normalize, profiles, rename, rules, scraper, settings, systems};
+use commands::{backup, cleanup, collections, duplicates, export, gamelist, images, media_kinds, migrate, new_roms, normalize, profiles, rename, rules, scraper, settings, systems};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -88,6 +88,8 @@ pub fn run() {
             normalize::apply_media_normalization,
             new_roms::list_new_roms,
             new_roms::add_new_roms,
+            media_kinds::swap_media,
+            media_kinds::detect_swapped_media,
             migrate::plan_migration,
             migrate::run_migration,
             duplicates::find_duplicates,
