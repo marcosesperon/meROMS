@@ -13,6 +13,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Media** — unified naming `<ES-DE folder>/<ROM name>.<ext>` in both structures; preview and set images/videos per game
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
+- **New ROMs** — ROM files in the system folder (and subfolders) that the gamelist doesn't have: add them with editable names (proposed with the cleanup rules) and optionally scrape just those
 - **Cleanup** — find unused media files and duplicate games, then delete them
 - **Media normalizer** — Classic: move legacy-named media (suffixes, `images/`…) to the unified naming (optional before migrating: the migrator does it on the fly); ES-DE: recover Classic-structure media left in the ROM folder into the ES-DE media folder
 - **Migration** — Classic ↔ ES-DE, copy or move; gamelists, media and collections (ROMs never touched); systems found in the other structure are offered for migration when entering a profile and per system
@@ -68,7 +69,8 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - `systems.rs` — `scan_systems` (reads ROM root subdirs, checks for the gamelist where the layout keeps it)
   - `gamelist.rs` — `load_gamelist`, `save_gamelist`, `add_game`, `remove_game`, `generate_gamelist`, `add_folder`, `remove_folder`; `read_gamelist`/`write_gamelist`/`write_gamelist_with_original` helpers
   - `images.rs` — `set_game_media` (copies a picked file with unified naming), `scan_game_media`, `switch_image_type` (Classic only)
-  - `scraper.rs` — `scrape_game` (ScreenScraper if configured, else TheGamesDB), `scrape_system` (per game: ScreenScraper, then TheGamesDB; emits `scrape-progress`)
+  - `scraper.rs` — `scrape_game` (ScreenScraper if configured, else TheGamesDB), `scrape_system` (per game: ScreenScraper, then TheGamesDB; optional `game_paths` subset; emits `scrape-progress`)
+  - `new_roms.rs` — `list_new_roms` (files not in the gamelist; skips hidden/media folders, non-ROM extensions and discs used by a `.m3u`; flags unknown extensions; name proposed with the rename rules), `add_new_roms` (Classic: links existing media)
   - `scraper_tgdb.rs` — TheGamesDB client helpers (no commands of its own)
   - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `find_game_leftover_media` (one game: files named after its ROM it doesn't use), `delete_files`
   - `duplicates.rs` — `find_duplicates`
@@ -93,7 +95,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab` ("Migrate structure…" for the selected profile; unsaved settings are saved first), General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
   - `StructurePromptModal` — "systems in the other structure, migrate?" prompt shown when entering a profile
-  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`; `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
+  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`, `NewRomsModal` (button with a count, shown only when the system has ROMs outside the gamelist); `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/dialogs.ts` — `askConfirm` / `showMessage` (native dialogs from `@tauri-apps/plugin-dialog`). Never use the browser's `alert()`/`confirm()`: inside the Tauri window on macOS they can hang with no way to close them
