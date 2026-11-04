@@ -179,8 +179,9 @@ function GameInfo({ game }: { game: Game }) {
                   key={m.field}
                   onClick={() => setCurrent(i)}
                   title={t(m.label)}
-                  className={`w-16 h-11 shrink-0 rounded-md overflow-hidden bg-zinc-800 ring-2 transition-colors ${
-                    m === shown ? "ring-indigo-500" : "ring-transparent hover:ring-zinc-600"
+                  // Sin borde: la elegida se ve entera y el resto algo apagadas
+                  className={`w-16 h-11 shrink-0 rounded-md overflow-hidden bg-zinc-800 transition-opacity ${
+                    m === shown ? "opacity-100" : "opacity-50 hover:opacity-80"
                   }`}
                 >
                   {m.field === "video" ? (
