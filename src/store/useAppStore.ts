@@ -195,7 +195,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedGame: null,
   loadGames: async (systemPath: string) => {
     try {
-      set({ loading: true });
+      // Spinner only when there's nothing on screen yet (a system just picked). A reload after
+      // scraping, renaming, etc. keeps the list mounted, so the scroll position isn't lost.
+      if (get().games.length === 0) set({ loading: true });
       const gamelist = await commands.loadGamelist(systemPath);
       const { systems, selectedSystem } = get();
       const count = gamelist.games.length;
