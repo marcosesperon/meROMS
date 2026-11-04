@@ -2,6 +2,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
 import { SettingsIcon } from "../common/Icons";
+import { Tooltip } from "../common/Tooltip";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -116,20 +117,21 @@ export function Sidebar() {
 
       <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center justify-center gap-2">
         {/* Solo el icono; el texto sale al pasar el ratón */}
+        <Tooltip text={t("sidebar.settings")}>
         <button
           onClick={() => setCurrentView("settings")}
-          title={t("sidebar.settings")}
           aria-label={t("sidebar.settings")}
           className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
         >
           <SettingsIcon size={18} />
         </button>
+        </Tooltip>
         {/* Interruptor: solo sistemas con juegos (por defecto) / todos */}
+        <Tooltip text={t(onlyWithGames ? "sidebar.showAllSystems" : "sidebar.showOnlyWithGames")}>
         <button
           role="switch"
           aria-checked={onlyWithGames}
           onClick={toggleOnlyWithGames}
-          title={t(onlyWithGames ? "sidebar.showAllSystems" : "sidebar.showOnlyWithGames")}
           aria-label={t("sidebar.onlyWithGames")}
           className={`relative w-8 h-[18px] rounded-full transition-colors ${onlyWithGames ? "bg-indigo-600" : "bg-zinc-700"}`}
         >
@@ -137,6 +139,7 @@ export function Sidebar() {
             className={`absolute top-[3px] w-3 h-3 rounded-full bg-white transition-all ${onlyWithGames ? "left-[17px]" : "left-[3px]"}`}
           />
         </button>
+        </Tooltip>
       </div>
     </aside>
   );
