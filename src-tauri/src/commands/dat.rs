@@ -15,7 +15,6 @@ use serde::{Deserialize, Serialize};
 use tauri::Manager;
 
 use crate::layout::SystemRef;
-use crate::media;
 use crate::models::Game;
 
 /// Un juego del DAT, solo con lo que usa la app
