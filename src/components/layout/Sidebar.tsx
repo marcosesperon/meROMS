@@ -17,10 +17,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-48 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
-      <p className="px-4 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-        {t("sidebar.systems")}
-      </p>
-      <nav className="flex-1 overflow-y-auto pb-2">
+      <nav className="flex-1 overflow-y-auto py-3">
         {isScanning ? (
           <div className="px-4 py-6 flex flex-col items-center gap-3">
             {/* Spinner */}
@@ -62,45 +59,46 @@ export function Sidebar() {
                   setCurrentView("browser");
                 }}
                 title={system.full_name}
-                className={`group relative w-full text-left pl-4 pr-3 py-1.5 flex items-center gap-3 transition-colors ${
+                className={`group relative w-full px-4 py-3 flex justify-center transition-colors ${
                   selected ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
                 }`}
               >
                 {/* Franja violeta a la izquierda del sistema elegido (como GOG) */}
                 {selected && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-indigo-500" />}
-                {/* Solo el logo (el nombre completo sale al pasar el ratón); si no hay logo,
-                    el nombre corto del sistema (el de su carpeta) */}
-                <span className="flex-1 min-w-0 h-7 flex items-center">
+                {/* Logo centrado (el nombre completo sale al pasar el ratón); si no hay logo,
+                    el nombre corto del sistema (el de su carpeta). Las marcas van pegadas al logo. */}
+                <span className="relative h-7 flex items-center">
                   {hasSystemLogo(system.name) ? (
                     <SystemLogo
                       name={system.name}
                       width={56}
                       maxHeight={22}
-                      // Los no elegidos, algo apagados (como el texto gris de antes)
+                      // Los no elegidos, algo apagados
                       className={selected ? "" : "opacity-60 group-hover:opacity-100 transition-opacity"}
                     />
                   ) : (
-                    <span className="text-sm font-semibold uppercase tracking-wide truncate">{system.name}</span>
+                    <span className="text-sm font-semibold uppercase tracking-wide">{system.name}</span>
+                  )}
+                  {/* Número de juegos: insignia pequeña en la esquina superior derecha */}
+                  {count > 0 && (
+                    <span
+                      className={`absolute -top-2 -right-4 min-w-[18px] text-center text-[9px] leading-none font-semibold px-1 py-0.5 rounded-full ${
+                        selected ? "bg-indigo-600 text-white" : "bg-zinc-700 text-zinc-300"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                  {/* Marca: este sistema está en la otra estructura y se puede migrar */}
+                  {pendingStructure?.systems.includes(system.name) && (
+                    <span
+                      className="absolute -top-1.5 -left-3 w-2 h-2 rounded-full bg-amber-400"
+                      title={t("structure.mark", {
+                        kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
+                      })}
+                    />
                   )}
                 </span>
-                {/* Marca: este sistema está en la otra estructura y se puede migrar */}
-                {pendingStructure?.systems.includes(system.name) && (
-                  <span
-                    className="w-2 h-2 shrink-0 rounded-full bg-amber-400"
-                    title={t("structure.mark", {
-                      kind: pendingStructure.source.kind === "esde" ? "ES-DE" : t("profiles.kindClassic"),
-                    })}
-                  />
-                )}
-                {count > 0 && (
-                  <span
-                    className={`text-[10px] shrink-0 px-1.5 py-0.5 rounded-full ${
-                      selected ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-500"
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
               </button>
             );
           })

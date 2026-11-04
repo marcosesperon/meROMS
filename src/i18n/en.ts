@@ -275,7 +275,6 @@ const en = {
   "info.withDescription": "With description",
   "info.withVideo": "With video",
   "info.favorites": "Favorites",
-  "sidebar.systems": "Systems",
   "sidebar.profile": "Profile",
   "profiles.description": "Each profile is a ROM library and the folder structure it follows.",
   "profiles.none": "No profiles yet.",

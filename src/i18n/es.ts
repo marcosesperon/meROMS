@@ -277,7 +277,6 @@ const es: Record<TranslationKeys, string> = {
   "info.withDescription": "Con descripción",
   "info.withVideo": "Con vídeo",
   "info.favorites": "Favoritos",
-  "sidebar.systems": "Sistemas",
   "sidebar.profile": "Perfil",
   "profiles.description": "Cada perfil es una biblioteca de ROMs y la estructura de carpetas que sigue.",
   "profiles.none": "Todavía no hay perfiles.",
