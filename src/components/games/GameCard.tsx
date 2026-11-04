@@ -14,6 +14,7 @@ export function GameCard({ game }: GameCardProps) {
   const selectGame = useAppStore((s) => s.selectGame);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
+  const openEditor = useAppStore((s) => s.openEditor);
   const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
 
   // Use configured media field, with fallback chain
@@ -30,17 +31,24 @@ export function GameCard({ game }: GameCardProps) {
   const systemConfigs = useAppStore((s) => s.settings.system_configs);
   const aspectRatio = getSystemAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
 
+  const selected = selectedGame?.path === game.path;
+  const year = game.releasedate?.slice(0, 4);
+  const subtitle = [game.developer, year].filter(Boolean).join(" · ");
+
   return (
     <div
       onClick={() => selectGame(game)}
-      className={`rounded-lg overflow-hidden cursor-pointer transition-all border ${
-        selectedGame?.path === game.path
-          ? "border-indigo-500 ring-1 ring-indigo-500/50"
-          : "border-zinc-700 hover:border-zinc-500"
+      // Doble clic: abrir directamente el editor de ese juego
+      onDoubleClick={() => {
+        selectGame(game);
+        openEditor();
+      }}
+      className={`group rounded-lg p-2 cursor-pointer transition-colors ${
+        selected ? "bg-zinc-800 ring-2 ring-indigo-500" : "hover:bg-zinc-800/70"
       }`}
     >
       <div
-        className="relative bg-zinc-800 flex items-center justify-center overflow-hidden"
+        className="relative bg-zinc-800 rounded-md flex items-center justify-center overflow-hidden shadow-lg shadow-black/40"
         style={{ aspectRatio }}
       >
         {game.favorite === "true" && (
@@ -52,7 +60,8 @@ export function GameCard({ game }: GameCardProps) {
           <img
             src={imageSrc}
             alt={game.name || game.path}
-            className="w-full h-full object-cover"
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
             }}
@@ -66,20 +75,18 @@ export function GameCard({ game }: GameCardProps) {
           </svg>
         )}
       </div>
-      <div className="p-3 bg-zinc-850">
-        <p className="text-sm font-medium text-zinc-200 truncate">
+      <div className="pt-2 px-0.5">
+        <p className="text-[13px] font-medium text-zinc-100 truncate" title={game.name || game.path}>
           {game.name || game.path}
         </p>
-        <div className="flex items-center justify-between mt-1">
-          <span className="text-xs text-zinc-500 truncate">
-            {game.genre || ""}
-          </span>
-          <span className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-2 mt-0.5">
+          <span className="text-[11px] text-zinc-500 truncate">{subtitle || game.genre || ""}</span>
+          <span className="flex items-center gap-1 shrink-0">
             {getFlag(game.lang) && (
               <span className="text-xs" title={game.lang}>{getFlag(game.lang)}</span>
             )}
             {game.rating && (
-              <span className="text-xs text-yellow-500">
+              <span className="text-[11px] text-yellow-500">
                 {formatRating(game.rating)}
               </span>
             )}

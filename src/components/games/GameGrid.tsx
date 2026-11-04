@@ -13,9 +13,9 @@ export function GameGrid({ games }: GameGridProps) {
   const cardWidth = getSystemCardWidth(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
 
   return (
-    <div className="overflow-auto flex-1 p-4">
+    <div className="overflow-auto flex-1 p-5">
       <div
-        className="grid gap-4"
+        className="grid gap-x-3 gap-y-4"
         style={{
           gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
         }}

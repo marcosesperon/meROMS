@@ -17,6 +17,23 @@ import { getActiveProfile, isProfileComplete, profileLocationKey } from "../util
 // once per profile activation and not on every rescan
 let promptedLocationKey: string | null = null;
 
+// Small UI preferences kept in the browser storage (may be unavailable: never fail because of it)
+const INFO_PANEL_KEY = "meroms.infoPanelCollapsed";
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+function writeFlag(key: string, value: boolean) {
+  try {
+    localStorage.setItem(key, value ? "1" : "0");
+  } catch {
+    // nothing: it's just a preference
+  }
+}
+
 interface AppState {
   // Settings
   settings: AppSettings;
@@ -46,6 +63,13 @@ interface AppState {
   // UI
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  /** The game editor (slide-over) is open for the selected game */
+  editorOpen: boolean;
+  openEditor: () => void;
+  closeEditor: () => void;
+  /** Right-hand game info panel folded away (remembered between sessions) */
+  infoPanelCollapsed: boolean;
+  toggleInfoPanel: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   currentView: CurrentView;
@@ -229,8 +253,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // UI
-  viewMode: "table",
+  viewMode: "grid",
   setViewMode: (mode: ViewMode) => set({ viewMode: mode }),
+  editorOpen: false,
+  openEditor: () => set({ editorOpen: true }),
+  closeEditor: () => set({ editorOpen: false }),
+  infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
+  toggleInfoPanel: () => {
+    const collapsed = !get().infoPanelCollapsed;
+    writeFlag(INFO_PANEL_KEY, collapsed);
+    set({ infoPanelCollapsed: collapsed });
+  },
   searchQuery: "",
   setSearchQuery: (query: string) => set({ searchQuery: query }),
   currentView: "browser",

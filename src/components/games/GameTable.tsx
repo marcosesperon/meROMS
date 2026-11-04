@@ -60,6 +60,7 @@ export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
   const selectGame = useAppStore((s) => s.selectGame);
+  const openEditor = useAppStore((s) => s.openEditor);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const { t } = useTranslation();
 
@@ -218,6 +219,10 @@ export function GameTable({ games }: GameTableProps) {
             <tr
               key={row.id}
               onClick={() => selectGame(row.original)}
+              onDoubleClick={() => {
+                selectGame(row.original);
+                openEditor();
+              }}
               className={`cursor-pointer border-b border-zinc-800 transition-colors ${
                 selectedGame?.path === row.original.path
                   ? "bg-indigo-600/15"
