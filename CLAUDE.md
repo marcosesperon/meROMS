@@ -13,6 +13,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Media** — unified naming `<ES-DE folder>/<ROM name>.<ext>` in both structures; preview and set images/videos per game
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
+- **Media types** — detect covers/screenshots saved the other way round (by image shape), swap two media types for a whole system, or re-type one media file in the editor ("This is...")
 - **New ROMs** — ROM files in the system folder (and subfolders) that the gamelist doesn't have: add them with editable names (proposed with the cleanup rules) and optionally scrape just those
 - **Cleanup** — find unused media files and duplicate games, then delete them
 - **Media normalizer** — Classic: move legacy-named media (suffixes, `images/`…) to the unified naming (optional before migrating: the migrator does it on the fly); ES-DE: recover Classic-structure media left in the ROM folder into the ES-DE media folder
@@ -70,6 +71,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - `gamelist.rs` — `load_gamelist`, `save_gamelist`, `add_game`, `remove_game`, `generate_gamelist`, `add_folder`, `remove_folder`; `read_gamelist`/`write_gamelist`/`write_gamelist_with_original` helpers
   - `images.rs` — `set_game_media` (copies a picked file with unified naming), `scan_game_media`, `switch_image_type` (Classic only)
   - `scraper.rs` — `scrape_game` (ScreenScraper if configured, else TheGamesDB), `scrape_system` (per game: ScreenScraper, then TheGamesDB; optional `game_paths` subset; emits `scrape-progress`)
+  - `media_kinds.rs` — `swap_media` (swap two media types — by gamelist field — in some games: files moved between type folders with the ROM name, via a temp name; Classic also rewrites the paths; a third file in the way ⇒ skipped), `detect_swapped_media` (cover landscape ≥1.2 / screenshot ≤1.1 by `imagesize`, only when the other one isn't right)
   - `new_roms.rs` — `list_new_roms` (files not in the gamelist; skips hidden/media folders, non-ROM extensions and discs used by a `.m3u`; flags unknown extensions; name proposed with the rename rules), `add_new_roms` (Classic: links existing media)
   - `scraper_tgdb.rs` — TheGamesDB client helpers (no commands of its own)
   - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `find_game_leftover_media` (one game: files named after its ROM it doesn't use), `delete_files`
@@ -97,11 +99,11 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
   - `ToolsMenu` — drop-up menu of the toolbar's secondary tools (closes on pick, outside click, Esc)
   - `StructurePromptModal` — "systems in the other structure, migrate?" prompt shown when entering a profile
-  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`, `NewRomsModal` (button with a count, shown only when the system has ROMs outside the gamelist); `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
+  - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`, `NewRomsModal` (button with a count, shown only when the system has ROMs outside the gamelist), `MediaReviewModal` (swapped covers/screenshots with thumbnails), `MediaSwapModal` (two types, whole system); `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`, `useGameActions` (scrape — saved at once — and delete from the info panel)
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/dialogs.ts` — `askConfirm` / `showMessage` (native dialogs from `@tauri-apps/plugin-dialog`). Never use the browser's `alert()`/`confirm()`: inside the Tauri window on macOS they can hang with no way to close them
-- `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs
+- `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs; `bumpMediaVersion()` adds a `?v=` so swapped files with the same name aren't served from cache
 - `utils/format.ts` — EmulationStation date format (YYYYMMDDTHHMMSS) ↔ readable date
 - `utils/cartridgeSizes.ts` — Box art / cartridge aspect ratios per system
 - `utils/flags.ts` — Language/region codes → flag emoji
