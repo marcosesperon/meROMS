@@ -16,23 +16,25 @@ interface MigrationModalProps {
    * el destino es el perfil activo y solo se migran esos sistemas. No se elige destino.
    */
   preset?: PendingStructure | null;
+  /** Modo normal: perfil a migrar (desde Ajustes → Perfiles). Sin él, el activo. */
+  sourceProfile?: Profile | null;
 }
 
 type Step = "config" | "preview" | "running" | "done";
 
 /**
- * Migrador de estructura para el perfil activo (clásica ↔ ES-DE), en cuatro pasos:
+ * Migrador de estructura de un perfil (clásica ↔ ES-DE), en cuatro pasos:
  * configurar destino → vista previa → ejecución con progreso → informe.
  * Al acabar ofrece crear (o activar) el perfil de destino.
  */
-export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
+export function MigrationModal({ open, onClose, preset, sourceProfile }: MigrationModalProps) {
   const { t } = useTranslation();
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
   const reloadLibrary = useAppStore((s) => s.reloadLibrary);
   const activeProfile = getActiveProfile(settings);
-  // Normal: del perfil activo a otro. Rellenado: de lo detectado al perfil activo.
-  const source = preset ? preset.source : activeProfile;
+  // Normal: del perfil elegido (o el activo) a otro. Rellenado: de lo detectado al perfil activo.
+  const source = preset ? preset.source : sourceProfile ?? activeProfile;
   const targetKind = source?.kind === "esde" ? "classic" : "esde";
   const kindLabel = (kind: Profile["kind"]) => (kind === "esde" ? "ES-DE" : t("profiles.kindClassic"));
 
@@ -147,7 +149,7 @@ export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
       <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[860px] max-h-[85vh] flex flex-col mx-4">
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("migration.title")}</h3>

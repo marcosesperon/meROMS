@@ -15,7 +15,9 @@ import { ProfilesTab } from "./ProfilesTab";
 import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
-import { showMessage } from "../../utils/dialogs";
+import { askConfirm, showMessage } from "../../utils/dialogs";
+import { MigrationModal } from "../common/MigrationModal";
+import type { Profile } from "../../types";
 
 type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems";
 
@@ -35,6 +37,8 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   const [form, setForm] = useState(settings);
   const [activeTab, setActiveTab] = useState<SettingsTab>("profiles");
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Perfil que se está migrando (la ventana de migración está abierta mientras no sea null)
+  const [migrating, setMigrating] = useState<Profile | null>(null);
 
   useEffect(() => {
     setForm(settings);
@@ -46,6 +50,17 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
 
   async function handleSave() {
     await updateSettings(form);
+  }
+
+  // La migración trabaja con los ajustes guardados (y al acabar puede crear y activar un
+  // perfil), así que lo pendiente del formulario se guarda antes o no se abre
+  async function handleMigrate(profile: Profile) {
+    const dirty = JSON.stringify(form) !== JSON.stringify(settings);
+    if (dirty) {
+      if (!(await askConfirm(t("profiles.migrateUnsaved")))) return;
+      await handleSave();
+    }
+    setMigrating(profile);
   }
 
   async function handleExport() {
@@ -108,6 +123,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   if (!open) return null;
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-8 bg-black/60" onClick={onClose}>
       <div
         className="bg-zinc-900 border border-zinc-700 rounded-lg shadow-2xl w-full max-w-4xl max-h-full flex flex-col overflow-hidden"
@@ -326,6 +342,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
               onChange={(profiles, activeProfileId) =>
                 setForm({ ...form, profiles, active_profile_id: activeProfileId })
               }
+              onMigrate={handleMigrate}
             />
           )}
 
@@ -393,5 +410,8 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
       </div>
       </div>
     </div>
+    {/* Fuera del fondo de Ajustes: si no, un clic en la migración también cerraría los Ajustes */}
+    <MigrationModal open={!!migrating} sourceProfile={migrating} onClose={() => setMigrating(null)} />
+    </>
   );
 }

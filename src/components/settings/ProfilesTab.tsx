@@ -11,11 +11,13 @@ interface ProfilesTabProps {
   profiles: Profile[];
   activeProfileId?: string;
   onChange: (profiles: Profile[], activeProfileId?: string) => void;
+  /** Abrir la migración de estructura con este perfil como origen */
+  onMigrate: (profile: Profile) => void;
 }
 
 // Pestaña de perfiles: a la izquierda la lista, a la derecha el perfil que se está editando.
 // Los cambios van al formulario de ajustes y se guardan con el botón «Guardar» general.
-export function ProfilesTab({ profiles, activeProfileId, onChange }: ProfilesTabProps) {
+export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate }: ProfilesTabProps) {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | undefined>(activeProfileId ?? profiles[0]?.id);
   const [detected, setDetected] = useState<EsdeDetectedPaths | null>(null);
@@ -213,6 +215,14 @@ export function ProfilesTab({ profiles, activeProfileId, onChange }: ProfilesTab
                 {t("profiles.activate")}
               </button>
             )}
+            {/* Sin carpetas no hay nada que migrar */}
+            <button
+              onClick={() => onMigrate(editing)}
+              disabled={!isProfileComplete(editing)}
+              className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {t("migration.button")}
+            </button>
             <div className="flex-1" />
             <button
               onClick={handleDelete}
