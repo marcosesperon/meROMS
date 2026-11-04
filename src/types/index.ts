@@ -108,6 +108,8 @@ export interface Profile {
   media_dir?: string;
   /** "Don't ask again": no prompt when systems are found in the other structure */
   skip_structure_prompt?: boolean;
+  /** Last system opened with this profile (folder name), reopened on start */
+  last_system?: string;
 }
 
 /** Systems of the active profile that are in the other structure, and where to migrate them from */
@@ -145,6 +147,10 @@ export interface AppSettings {
   scrape_fields?: ScrapePolicy;
   /** ScreenScraper region / language order (missing = defaults from the app language) */
   ss_regions?: string[];
+  /** Table view: visible columns in order with their widths (same for every system) */
+  table_columns?: { id: string; width?: number }[];
+  /** Last list view */
+  last_view?: "grid" | "table";
   ss_languages?: string[];
   tgdb_apikey?: string;
   media_paths?: MediaPathConfig[];

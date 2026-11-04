@@ -6,8 +6,9 @@ import {
   useReactTable,
   type SortingState,
   type ColumnResizeMode,
+  type ColumnSizingState,
 } from "@tanstack/react-table";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useListKeyboard } from "../../hooks/useListKeyboard";
 import type { Game } from "../../types";
 import { formatRating, formatReleaseDate } from "../../utils/format";
@@ -17,6 +18,7 @@ import { StarIcon, StarOutlineIcon, EyeSlashIcon, ChildIcon } from "../common/Ic
 import { getFlag } from "../../utils/flags";
 import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
+import { ColumnsMenu } from "./ColumnsMenu";
 
 const columnHelper = createColumnHelper<Game>();
 
@@ -75,6 +77,20 @@ function RowThumb({ game }: { game: Game }) {
   );
 }
 
+// Siempre visibles y al principio (congeladas); el resto se elige en el menú de columnas
+const FIXED_COLUMNS = ["thumb", "name"];
+// Las de siempre, si no se ha guardado otra elección
+const DEFAULT_COLUMNS = ["genre", "developer", "publisher", "players", "rating", "releasedate", "flags"];
+
+/** Segundos de juego → «1 h 25 min» / «12 min» */
+function formatPlayTime(seconds?: string): string {
+  const s = Number(seconds ?? 0);
+  if (!s) return "";
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  return h > 0 ? `${h} h ${m} min` : `${m} min`;
+}
+
 // Columnas «congeladas» en el scroll horizontal: la miniatura y el nombre
 const FROZEN = new Set(["thumb", "name"]);
 // Fondo opaco de las celdas congeladas (si fuera transparente, se verían las columnas que
@@ -83,6 +99,13 @@ const FROZEN_BG = {
   normal: "bg-zinc-900 group-hover:bg-[color-mix(in_srgb,var(--color-zinc-800)_50%,var(--color-zinc-900))]",
   selected: "bg-[color-mix(in_srgb,var(--color-indigo-600)_15%,var(--color-zinc-900))]",
 };
+
+// Lo que necesita el menú de columnas (se rellena en cada render de la tabla; la cabecera de la
+// miniatura se define una sola vez y lo lee de aquí)
+const columnsMenuProps: { current: Parameters<typeof ColumnsMenu>[0] | null } = { current: null };
+function ColumnsMenuSlot() {
+  return columnsMenuProps.current ? <ColumnsMenu {...columnsMenuProps.current} /> : null;
+}
 
 export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -96,12 +119,14 @@ export function GameTable({ games }: GameTableProps) {
   const selectedGame = useAppStore((s) => s.selectedGame);
   const { t } = useTranslation();
 
-  const columns = useMemo(
+  // Todas las columnas posibles; las que se ven (y en qué orden) salen de Ajustes
+  const allColumns = useMemo(
     () => [
       // Miniatura: el mismo medio que la cuadrícula (Ajustes → General), en pequeño
       columnHelper.display({
         id: "thumb",
-        header: "",
+        // El botón del menú de columnas va en la cabecera de la miniatura
+        header: () => <ColumnsMenuSlot />,
         cell: (info) => <RowThumb game={info.row.original} />,
         size: 56,
         minSize: 56,
@@ -198,15 +223,107 @@ export function GameTable({ games }: GameTableProps) {
           );
         },
       }),
+      // Columnas extra (ocultas por defecto; se activan en el menú de columnas)
+      columnHelper.accessor("region", { header: t("table.region"), cell: (i) => i.getValue() || "", size: 90, minSize: 60 }),
+      columnHelper.accessor("lang", {
+        header: t("table.lang"),
+        cell: (i) => [getFlag(i.getValue()), i.getValue()].filter(Boolean).join(" "),
+        size: 90,
+        minSize: 60,
+      }),
+      columnHelper.accessor("family", { header: t("table.family"), cell: (i) => i.getValue() || "", size: 150, minSize: 80 }),
+      columnHelper.accessor("playcount", {
+        header: t("table.playcount"),
+        cell: (i) => i.getValue() || "",
+        size: 90,
+        minSize: 60,
+        sortingFn: (a, b) => Number(a.original.playcount ?? 0) - Number(b.original.playcount ?? 0),
+      }),
+      columnHelper.accessor("lastplayed", { header: t("table.lastplayed"), cell: (i) => formatReleaseDate(i.getValue()), size: 120, minSize: 80 }),
+      columnHelper.accessor("gametime", {
+        header: t("table.gametime"),
+        cell: (i) => formatPlayTime(i.getValue()),
+        size: 100,
+        minSize: 70,
+        sortingFn: (a, b) => Number(a.original.gametime ?? 0) - Number(b.original.gametime ?? 0),
+      }),
+      columnHelper.accessor("arcadesystemname", { header: t("table.arcadesystem"), cell: (i) => i.getValue() || "", size: 110, minSize: 70 }),
+      columnHelper.accessor("sortname", { header: t("form.sortname"), cell: (i) => i.getValue() || "", size: 180, minSize: 80 }),
+      columnHelper.accessor("path", {
+        header: t("table.path"),
+        cell: (i) => <span className="font-mono text-xs text-zinc-400">{i.getValue()}</span>,
+        size: 220,
+        minSize: 100,
+      }),
+      columnHelper.accessor((g) => (g.video ? 1 : 0), {
+        id: "hasvideo",
+        header: t("table.hasVideo"),
+        cell: (i) => (i.getValue() ? "✓" : ""),
+        size: 70,
+        minSize: 50,
+      }),
+      columnHelper.accessor((g) => (g.manual ? 1 : 0), {
+        id: "hasmanual",
+        header: t("table.hasManual"),
+        cell: (i) => (i.getValue() ? "✓" : ""),
+        size: 70,
+        minSize: 50,
+      }),
     ],
     [t]
   );
 
+  // Columnas visibles: miniatura y nombre siempre (congeladas), y el resto en el orden guardado
+  const savedColumns = useAppStore((s) => s.settings.table_columns);
+  const patchSettings = useAppStore((s) => s.patchSettings);
+  const byId = useMemo(() => new Map(allColumns.map((c) => [c.id as string, c])), [allColumns]);
+  const visibleIds = useMemo(() => {
+    const saved = savedColumns?.map((c) => c.id).filter((id) => byId.has(id) && !FIXED_COLUMNS.includes(id));
+    return saved && saved.length > 0 ? saved : DEFAULT_COLUMNS;
+  }, [savedColumns, byId]);
+  const columns = useMemo(
+    () => [...FIXED_COLUMNS, ...visibleIds].map((id) => byId.get(id)!).filter(Boolean),
+    [visibleIds, byId]
+  );
+
+  // Anchos: los guardados al empezar; al cambiarlos se guardan (con un pequeño retraso)
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>(() =>
+    Object.fromEntries((savedColumns ?? []).filter((c) => c.width).map((c) => [c.id, c.width!]))
+  );
+  function saveColumns(ids: string[], sizing: ColumnSizingState) {
+    patchSettings({
+      table_columns: ["name", ...ids].map((id) => ({ id, width: sizing[id] ? Math.round(sizing[id]) : undefined })),
+    });
+  }
+  // Menú de columnas: todas menos las fijas, con su título
+  const optionalColumns = useMemo(
+    () =>
+      allColumns
+        .filter((c) => !FIXED_COLUMNS.includes(c.id as string))
+        .map((c) => ({ id: c.id as string, label: typeof c.header === "string" ? c.header : t("table.flags") })),
+    [allColumns, t]
+  );
+  columnsMenuProps.current = {
+    all: optionalColumns,
+    visible: visibleIds,
+    onChange: (ids) => saveColumns(ids, columnSizing),
+    onReset: () => {
+      setColumnSizing({});
+      patchSettings({ table_columns: undefined });
+    },
+  };
+
+  useEffect(() => {
+    if (Object.keys(columnSizing).length > 0) saveColumns(visibleIds, columnSizing);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnSizing]);
+
   const table = useReactTable({
     data: games,
     columns,
-    state: { sorting },
+    state: { sorting, columnSizing },
     onSortingChange: setSorting,
+    onColumnSizingChange: setColumnSizing,
     columnResizeMode,
     enableColumnResizing: true,
     getCoreRowModel: getCoreRowModel(),

@@ -19,6 +19,9 @@ import { getActiveProfile, isProfileComplete, profileLocationKey } from "../util
 let promptedLocationKey: string | null = null;
 
 // Small UI preferences kept in the browser storage (may be unavailable: never fail because of it)
+// Pending save of small UI preferences (see patchSettings)
+let patchTimer: ReturnType<typeof setTimeout> | null = null;
+
 const INFO_PANEL_KEY = "meroms.infoPanelCollapsed";
 const ALL_SYSTEMS_KEY = "meroms.showAllSystems";
 function readFlag(key: string): boolean {
@@ -45,6 +48,8 @@ interface AppState {
   scraperStatus: commands.ScraperStatus;
   loadSettings: () => Promise<void>;
   updateSettings: (settings: AppSettings) => Promise<void>;
+  /** Small UI preferences (view, columns, last system): applied now, saved a moment later */
+  patchSettings: (patch: Partial<AppSettings>) => void;
   setActiveProfile: (profileId: string) => Promise<void>;
 
   // Systems
@@ -140,7 +145,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadSettings: async () => {
     try {
       const settings = await commands.getSettings();
-      set({ settings, settingsLoaded: true });
+      set({ settings, settingsLoaded: true, viewMode: settings.last_view ?? "grid" });
       commands.scraperStatus().then((scraperStatus) => set({ scraperStatus })).catch(() => {});
       // Sync saved language with i18n store
       if (settings.language === "es" || settings.language === "en") {
@@ -153,6 +158,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Failed to load settings:", e);
       set({ settingsLoaded: true });
     }
+  },
+  patchSettings: (patch: Partial<AppSettings>) => {
+    set({ settings: { ...get().settings, ...patch } });
+    // Several quick changes (dragging a column width) end up in a single save
+    if (patchTimer) clearTimeout(patchTimer);
+    patchTimer = setTimeout(() => {
+      patchTimer = null;
+      commands.saveSettings(get().settings).catch((e) => console.error("Failed to save preferences:", e));
+    }, 600);
   },
   updateSettings: async (settings: AppSettings) => {
     const previousKey = profileLocationKey(getActiveProfile(get().settings));
@@ -195,6 +209,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ loading: true, scanProgress: null });
       const systems = await commands.scanSystems(profile.rom_root_path);
       set({ systems, loading: false, scanProgress: null });
+      // Reopen the last system of this profile (if nothing is open and it still exists)
+      const last = profile.last_system && systems.find((s) => s.name === profile.last_system);
+      if (last && !get().selectedSystem) get().selectSystem(last);
       get().checkPendingStructure();
     } catch (e) {
       console.error("Failed to scan systems:", e);
@@ -202,6 +219,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   selectSystem: (system: SystemInfo) => {
+    // Remember it for this profile (reopened next time)
+    const { settings, patchSettings } = get();
+    const active = getActiveProfile(settings);
+    if (active && active.last_system !== system.name) {
+      patchSettings({
+        profiles: (settings.profiles ?? []).map((p) => (p.id === active.id ? { ...p, last_system: system.name } : p)),
+      });
+    }
     set({
       selectedSystem: system,
       selectedGame: null,
@@ -291,7 +316,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // UI
   viewMode: "grid",
-  setViewMode: (mode: ViewMode) => set({ viewMode: mode }),
+  setViewMode: (mode: ViewMode) => {
+    set({ viewMode: mode });
+    get().patchSettings({ last_view: mode });
+  },
   editorOpen: false,
   openEditor: () => set({ editorOpen: true }),
   closeEditor: () => set({ editorOpen: false }),
