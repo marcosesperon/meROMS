@@ -25,11 +25,12 @@ export function Header() {
 
   return (
     <div>
-      <header className="flex items-center justify-between gap-4 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
-        <div className="flex items-center gap-4">
+      {/* Si no cabe en una línea, los controles bajan a una segunda fila (el nombre no se parte) */}
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+        <div className="flex items-center gap-4 min-w-0 max-w-full">
           <SystemLogo name={selectedSystem.name} width={110} maxHeight={34} />
-          <div>
-            <h2 className="text-lg font-bold tracking-tight text-zinc-100">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-100 whitespace-nowrap truncate">
               {selectedSystem.full_name}
             </h2>
             <p className="text-xs text-zinc-500">
@@ -37,7 +38,7 @@ export function Header() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <SearchBar />
           <button
             onClick={() => setShowFilters((v) => !v)}
