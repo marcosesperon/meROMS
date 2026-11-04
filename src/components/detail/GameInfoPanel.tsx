@@ -361,19 +361,20 @@ function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
         {label}
         {note && <span className="ml-1 text-amber-400">· {note}</span>}
       </dt>
-      <dd className="text-xs text-zinc-300 font-mono break-all select-text">{path}</dd>
+      <dd className="text-[11px] leading-snug text-zinc-300 font-mono break-all select-text">{path}</dd>
     </div>
   );
 
   return (
-    <>
-      <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">
-        {t("systemInfo.locations")} ·{" "}
-        <span className="normal-case tracking-normal">
+    // Agrupado en una tarjeta, como una sección aparte de la ficha
+    <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+      <h3 className="px-4 py-2.5 flex items-center justify-between border-b border-zinc-800 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">
+        {t("systemInfo.locations")}
+        <span className="px-1.5 py-0.5 rounded bg-zinc-800 normal-case tracking-normal text-zinc-300">
           {loc.structure === "esde" ? "ES-DE" : t("profiles.kindClassic")}
         </span>
       </h3>
-      <dl className="space-y-3">
+      <dl className="px-4 py-3 space-y-3">
         {row(t("systemInfo.romFolder"), loc.rom_dir)}
         {row(t("systemInfo.gamelist"), loc.gamelist_path, loc.gamelist_exists ? undefined : t("systemInfo.notCreated"))}
         {row(t("systemInfo.mediaFolder"), loc.media_dir)}
@@ -382,7 +383,7 @@ function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
             <dt className="text-[11px] text-zinc-500">{t("systemInfo.mediaFolders")}</dt>
             <dd className="mt-1 flex flex-wrap gap-1.5">
               {loc.media_folders.map((f) => (
-                <span key={f.folder} title={f.path} className="px-2 py-0.5 rounded bg-zinc-900 text-xs text-zinc-300">
+                <span key={f.folder} title={f.path} className="px-2 py-0.5 rounded bg-zinc-800 text-xs text-zinc-300">
                   {f.folder} <span className="text-zinc-500">{f.files}</span>
                 </span>
               ))}
@@ -392,6 +393,6 @@ function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
         {row(t("systemInfo.backups"), loc.backups_dir)}
         {row(t("systemInfo.collections"), loc.collections_dir)}
       </dl>
-    </>
+    </section>
   );
 }
