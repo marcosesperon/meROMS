@@ -22,7 +22,7 @@ export function Sidebar() {
   const isScanning = loading && scanProgress !== null;
 
   return (
-    <aside className="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
+    <aside className="w-48 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
       <div className="p-4 border-b border-zinc-800">
         <h1 className="text-lg font-bold tracking-tight text-zinc-100">{t("sidebar.title")}</h1>
         <p className="text-xs text-zinc-500">{t("sidebar.subtitle")}</p>
@@ -98,12 +98,12 @@ export function Sidebar() {
                 {selected && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-indigo-500" />}
                 {/* Solo el logo (el nombre completo sale al pasar el ratón); si no hay logo,
                     el nombre corto del sistema (el de su carpeta) */}
-                <span className="flex-1 min-w-0 h-8 flex items-center">
+                <span className="flex-1 min-w-0 h-7 flex items-center">
                   {hasSystemLogo(system.name) ? (
                     <SystemLogo
                       name={system.name}
-                      width={110}
-                      maxHeight={30}
+                      width={56}
+                      maxHeight={22}
                       // Los no elegidos, algo apagados (como el texto gris de antes)
                       className={selected ? "" : "opacity-60 group-hover:opacity-100 transition-opacity"}
                     />
