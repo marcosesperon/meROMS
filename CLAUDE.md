@@ -104,7 +104,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `data/systemInfo.json` + `utils/systemInfo.ts` — per-system info (manufacturer, year, type, generation, specs, es/en description) for the 97 systems with a logo, keyed by folder name; `sameAs` for aliases (genesis → megadrive); technical values are a string or `{es, en}`. Shown in the info panel's system summary
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/dialogs.ts` — `askConfirm` / `showMessage` (native dialogs from `@tauri-apps/plugin-dialog`). Never use the browser's `alert()`/`confirm()`: inside the Tauri window on macOS they can hang with no way to close them
-- `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs; `bumpMediaVersion()` adds a `?v=` so swapped files with the same name aren't served from cache
+- `utils/images.ts` — Resolves gamelist media paths (relative or absolute — also `C:\\…` on Windows, `isAbsolutePath`/`absoluteMediaPath`) to media-protocol URLs with `convertFileSrc(path, "media")` (`media://localhost/…` on macOS/Linux, `http://media.localhost/…` on Windows — never build them by hand); `bumpMediaVersion()` adds a `?v=` so swapped files with the same name aren't served from cache
 - `utils/format.ts` — EmulationStation date format (YYYYMMDDTHHMMSS) ↔ readable date
 - `utils/cartridgeSizes.ts` — Box art / cartridge aspect ratios per system
 - `utils/flags.ts` — Language/region codes → flag emoji

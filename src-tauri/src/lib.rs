@@ -14,20 +14,17 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .register_uri_scheme_protocol("media", |_ctx, request| {
+            // The frontend builds the URL with convertFileSrc: the whole file path, percent-encoded,
+            // after the first "/" (media://localhost/<path>, or http://media.localhost/<path> on
+            // Windows). Decoded, it is the absolute path as is: "/Users/..." or "C:\\...".
             let uri_path = request.uri().path();
-            // Decode percent-encoded path, keep leading '/' for absolute paths
-            let decoded = percent_encoding::percent_decode_str(uri_path)
+            let decoded = percent_encoding::percent_decode_str(uri_path.trim_start_matches('/'))
                 .decode_utf8_lossy()
                 .to_string();
-            // On macOS/Linux paths are absolute (/Users/...), on Windows they start with drive letter
-            let path = if decoded.starts_with('/') {
-                decoded
-            } else {
-                format!("/{}", decoded)
-            };
+            let path = media_request_path(&decoded);
             match std::fs::read(&path) {
                 Ok(data) => {
-                    let mime = match path.rsplit('.').next().unwrap_or("") {
+                    let mime = match path.rsplit('.').next().unwrap_or("").to_lowercase().as_str() {
                         "jpg" | "jpeg" => "image/jpeg",
                         "png" => "image/png",
                         "gif" => "image/gif",
@@ -105,4 +102,30 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+/// Absolute path asked through the media protocol. Old-style URLs (media://localhost/Users/...)
+/// arrive without the leading "/", so it is put back unless it's a Windows path (C:\\, \\\\server).
+fn media_request_path(decoded: &str) -> String {
+    let is_windows_absolute = decoded.get(1..3).is_some_and(|s| s == ":\\" || s == ":/") || decoded.starts_with("\\\\");
+    if decoded.starts_with('/') || is_windows_absolute {
+        decoded.to_string()
+    } else {
+        format!("/{}", decoded)
+    }
+}
+
+#[cfg(test)]
+mod media_protocol_tests {
+    use super::media_request_path;
+
+    #[test]
+    fn keeps_unix_windows_and_old_style_paths() {
+        assert_eq!(media_request_path("/Users/yo/a.png"), "/Users/yo/a.png");
+        assert_eq!(media_request_path("C:\\RetroBat\\roms/cps3/images/a.png"), "C:\\RetroBat\\roms/cps3/images/a.png");
+        assert_eq!(media_request_path("C:/ES-DE/a.png"), "C:/ES-DE/a.png");
+        assert_eq!(media_request_path("\\\\nas\\roms\\a.png"), "\\\\nas\\roms\\a.png");
+        // Antiguo: media://localhost/Users/yo/a.png llegaba sin la barra inicial
+        assert_eq!(media_request_path("Users/yo/a.png"), "/Users/yo/a.png");
+    }
 }

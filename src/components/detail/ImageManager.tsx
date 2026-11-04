@@ -4,7 +4,7 @@ import { SWAPPABLE_MEDIA, type Game } from "../../types";
 import { useTranslation } from "../../i18n";
 import { ImagePreview } from "./ImagePreview";
 import { scanGameMedia, setGameMedia, trashMedia } from "../../commands";
-import { resolveImageSrc } from "../../utils/images";
+import { absoluteMediaPath, resolveImageSrc } from "../../utils/images";
 import { ExpandIcon, PencilIcon, TrashIcon, CloseIcon, SearchIcon } from "../common/Icons";
 import type { TranslationKeys } from "../../i18n/en";
 import { askConfirm } from "../../utils/dialogs";
@@ -95,12 +95,8 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean,
 
     if (!(await askConfirm(t("images.deleteMediaConfirm")))) return;
 
-    // Resolve to absolute path
-    const absolutePath = mediaPath.startsWith("/")
-      ? mediaPath
-      : mediaPath.startsWith("./")
-        ? `${systemPath}/${mediaPath.slice(2)}`
-        : `${systemPath}/${mediaPath}`;
+    // Resolve to absolute path (also "C:\..." on Windows)
+    const absolutePath = absoluteMediaPath(mediaPath, systemPath);
 
     try {
       // To the trash (recoverable), like every other delete in the app
