@@ -5,6 +5,7 @@ import { detectEsdePaths } from "../../commands";
 import type { EsdeDetectedPaths, Profile, StructureKind } from "../../types";
 import { createProfile, isProfileComplete } from "../../utils/profiles";
 import { TrashIcon } from "../common/Icons";
+import { askConfirm } from "../../utils/dialogs";
 
 interface ProfilesTabProps {
   profiles: Profile[];
@@ -38,8 +39,8 @@ export function ProfilesTab({ profiles, activeProfileId, onChange }: ProfilesTab
     setDetected(null);
   }
 
-  function handleDelete() {
-    if (!editing || !confirm(t("profiles.deleteConfirm", { name: editing.name }))) return;
+  async function handleDelete() {
+    if (!editing || !(await askConfirm(t("profiles.deleteConfirm", { name: editing.name })))) return;
     const remaining = profiles.filter((p) => p.id !== editing.id);
     const nextActive = activeProfileId === editing.id ? remaining[0]?.id : activeProfileId;
     onChange(remaining, nextActive);

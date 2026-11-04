@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
+import { showMessage } from "../../utils/dialogs";
 
 interface RenameModalProps {
   open: boolean;
@@ -96,10 +97,10 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       if (result.skipped.length > 0) {
         message += "\n\n" + t("rename.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      alert(message);
+      await showMessage(message);
       onClose();
     } catch (e) {
-      alert(t("rename.failed", { error: String(e) }));
+      await showMessage(t("rename.failed", { error: String(e) }), "error");
     } finally {
       setRenaming(false);
     }

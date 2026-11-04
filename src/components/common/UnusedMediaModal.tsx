@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { findUnusedMedia, findGameLeftoverMedia, deleteFiles } from "../../commands";
 import type { UnusedMediaFile } from "../../types";
+import { showMessage } from "../../utils/dialogs";
 
 interface UnusedMediaModalProps {
   open: boolean;
@@ -81,10 +82,10 @@ export function UnusedMediaModal({
       setFiles((prev) => prev.filter((f) => !selected.has(f.path)));
       setSelected(new Set());
       if (count > 0) {
-        alert(t("cleanup.deleted", { count }));
+        await showMessage(t("cleanup.deleted", { count }));
       }
     } catch (e) {
-      alert(t("cleanup.deleteFailed", { error: String(e) }));
+      await showMessage(t("cleanup.deleteFailed", { error: String(e) }), "error");
     } finally {
       setDeleting(false);
     }

@@ -15,6 +15,7 @@ import { ProfilesTab } from "./ProfilesTab";
 import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
+import { showMessage } from "../../utils/dialogs";
 
 type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems";
 
@@ -55,7 +56,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     if (dest) {
       try {
         await exportSettings(dest);
-        alert(t("settings.exportSuccess"));
+        await showMessage(t("settings.exportSuccess"));
       } catch (e) {
         console.error("Export failed:", e);
       }
@@ -74,9 +75,9 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
         if (imported.language === "es" || imported.language === "en") {
           setLocale(imported.language);
         }
-        alert(t("settings.importSuccess"));
+        await showMessage(t("settings.importSuccess"));
       } catch {
-        alert(t("settings.importError"));
+        await showMessage(t("settings.importError"), "error");
       }
     }
   }

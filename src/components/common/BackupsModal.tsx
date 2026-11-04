@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { listBackups, restoreBackup, deleteBackup } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import type { BackupEntry } from "../../types";
+import { askConfirm, showMessage } from "../../utils/dialogs";
 
 interface BackupsModalProps {
   open: boolean;
@@ -43,14 +44,14 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
   }
 
   async function handleRestore(filename: string) {
-    if (!confirm(t("backup.confirmRestore"))) return;
+    if (!(await askConfirm(t("backup.confirmRestore")))) return;
     try {
       await restoreBackup(systemPath, filename);
       loadGames(systemPath);
-      alert(t("backup.restored"));
+      await showMessage(t("backup.restored"));
       onClose();
     } catch (e) {
-      alert(t("backup.restoreFailed", { error: String(e) }));
+      await showMessage(t("backup.restoreFailed", { error: String(e) }), "error");
     }
   }
 

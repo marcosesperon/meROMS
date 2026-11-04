@@ -4,6 +4,7 @@ import { applyMediaNormalization, planMediaNormalization } from "../../commands"
 import type { NormalizeItem } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
+import { showMessage } from "../../utils/dialogs";
 
 interface NormalizeMediaModalProps {
   open: boolean;
@@ -86,10 +87,10 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
       if (result.skipped.length > 0) {
         message += "\n\n" + t("normalize.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      alert(message);
+      await showMessage(message);
       onClose();
     } catch (e) {
-      alert(t("normalize.failed", { error: String(e) }));
+      await showMessage(t("normalize.failed", { error: String(e) }), "error");
     } finally {
       setApplying(false);
     }

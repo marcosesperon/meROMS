@@ -96,6 +96,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`; `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
 - `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
+- `utils/dialogs.ts` — `askConfirm` / `showMessage` (native dialogs from `@tauri-apps/plugin-dialog`). Never use the browser's `alert()`/`confirm()`: inside the Tauri window on macOS they can hang with no way to close them
 - `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs
 - `utils/format.ts` — EmulationStation date format (YYYYMMDDTHHMMSS) ↔ readable date
 - `utils/cartridgeSizes.ts` — Box art / cartridge aspect ratios per system

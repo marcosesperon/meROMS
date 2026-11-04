@@ -10,6 +10,7 @@ import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
+import { showMessage } from "../../utils/dialogs";
 
 // Per-game tools (the same ones the system toolbar has, limited to this game)
 type GameTool = "rename" | "normalize" | "clean";
@@ -97,7 +98,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
       return true;
     } catch (e) {
       console.error("Failed to save:", e);
-      alert(t("detail.saveFailed", { error: String(e) }));
+      await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
       return false;
     } finally {
       setSaving(false);
@@ -136,11 +137,11 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
       if (result.found) {
         setEditedGame(result.game);
       } else {
-        alert(t("detail.scrapeNotFound"));
+        await showMessage(t("detail.scrapeNotFound"));
       }
     } catch (e) {
       console.error("Scrape failed:", e);
-      alert(t("detail.scrapeFailed", { error: String(e) }));
+      await showMessage(t("detail.scrapeFailed", { error: String(e) }), "error");
     } finally {
       setScraping(false);
     }
@@ -155,7 +156,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
       onClose();
     } catch (e) {
       console.error("Failed to delete:", e);
-      alert(t("detail.deleteFailed", { error: String(e) }));
+      await showMessage(t("detail.deleteFailed", { error: String(e) }), "error");
     }
   }
 

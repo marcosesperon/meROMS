@@ -7,6 +7,7 @@ import { deleteFiles, scanGameMedia, setGameMedia } from "../../commands";
 import { resolveImageSrc } from "../../utils/images";
 import { ExpandIcon, PencilIcon, TrashIcon, CloseIcon, SearchIcon } from "../common/Icons";
 import type { TranslationKeys } from "../../i18n/en";
+import { askConfirm } from "../../utils/dialogs";
 
 interface ImageManagerProps {
   game: Game;
@@ -82,7 +83,7 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean 
     const mediaPath = game[field] as string | undefined;
     if (!mediaPath) return;
 
-    if (!confirm(t("images.deleteMediaConfirm"))) return;
+    if (!(await askConfirm(t("images.deleteMediaConfirm")))) return;
 
     // Resolve to absolute path
     const absolutePath = mediaPath.startsWith("/")

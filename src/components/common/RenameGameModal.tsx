@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { checkRenameTarget, listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
 import { useDebounce } from "../../hooks/useDebounce";
+import { showMessage } from "../../utils/dialogs";
 
 interface RenameGameModalProps {
   open: boolean;
@@ -52,7 +53,7 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
         setName(found?.proposed_name ?? "");
         setConflict((found?.conflict as Conflict) ?? null);
       })
-      .catch((e) => alert(t("rename.failed", { error: String(e) })));
+      .catch((e) => showMessage(t("rename.failed", { error: String(e) }), "error"));
   }, [open, systemPath, gamePath, source]);
 
   // Comprobación del nombre según se escribe (con una pequeña espera)
@@ -88,13 +89,13 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
     try {
       const result = await renameRoms(systemPath, [{ current_path: entry.current_path, new_name: name }]);
       if (result.renamed === 0) {
-        alert(t("gameTools.renameSkipped"));
+        await showMessage(t("gameTools.renameSkipped"));
         return;
       }
       onDone(pathWithName(entry, name));
       onClose();
     } catch (e) {
-      alert(t("rename.failed", { error: String(e) }));
+      await showMessage(t("rename.failed", { error: String(e) }), "error");
     } finally {
       setRenaming(false);
     }

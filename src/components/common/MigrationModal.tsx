@@ -6,6 +6,7 @@ import { detectEsdePaths, planMigration, runMigration } from "../../commands";
 import type { MigrationMode, MigrationProgress, MigrationReport, PendingStructure, Profile } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { createProfile, getActiveProfile } from "../../utils/profiles";
+import { askConfirm } from "../../utils/dialogs";
 
 interface MigrationModalProps {
   open: boolean;
@@ -104,7 +105,7 @@ export function MigrationModal({ open, onClose, preset }: MigrationModalProps) {
 
   async function handleRun() {
     if (!source || !target) return;
-    if (mode === "move" && !confirm(t("migration.moveConfirm"))) return;
+    if (mode === "move" && !(await askConfirm(t("migration.moveConfirm")))) return;
     setStep("running");
     setProgress(null);
     setError(null);

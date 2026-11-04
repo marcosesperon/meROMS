@@ -5,6 +5,7 @@ import { exportRenameRules, getDefaultRenameRules, importRenameRules, testRename
 import type { RenameRule, RuleTestResult } from "../../types";
 import { useDebounce } from "../../hooks/useDebounce";
 import { TrashIcon } from "../common/Icons";
+import { askConfirm, showMessage } from "../../utils/dialogs";
 
 interface RenameRulesTabProps {
   /** undefined = el usuario no ha tocado nada y se usan las de serie */
@@ -65,7 +66,7 @@ export function RenameRulesTab({ rules, onChange }: RenameRulesTabProps) {
     try {
       onChange(await importRenameRules(String(file)));
     } catch (e) {
-      alert(t("rules.importError", { error: String(e) }));
+      await showMessage(t("rules.importError", { error: String(e) }), "error");
     }
   }
 
@@ -74,9 +75,9 @@ export function RenameRulesTab({ rules, onChange }: RenameRulesTabProps) {
     if (!dest) return;
     try {
       await exportRenameRules(current, dest);
-      alert(t("rules.exportSuccess"));
+      await showMessage(t("rules.exportSuccess"));
     } catch (e) {
-      alert(String(e));
+      await showMessage(String(e), "error");
     }
   }
 
@@ -117,7 +118,7 @@ export function RenameRulesTab({ rules, onChange }: RenameRulesTabProps) {
         </button>
         <div className="flex-1" />
         <button
-          onClick={() => confirm(t("rules.resetConfirm")) && onChange(undefined)}
+          onClick={async () => (await askConfirm(t("rules.resetConfirm"))) && onChange(undefined)}
           disabled={!rules}
           className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-40"
         >

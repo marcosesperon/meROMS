@@ -9,6 +9,7 @@ import { GameGrid } from "./GameGrid";
 import { EmptyState } from "../common/EmptyState";
 import { Header } from "../layout/Header";
 import { FolderIcon } from "../common/Icons";
+import { showMessage } from "../../utils/dialogs";
 
 export function GameListView() {
   const viewMode = useAppStore((s) => s.viewMode);
@@ -44,7 +45,7 @@ export function GameListView() {
       loadSystems();
     } catch (e) {
       console.error("Failed to generate gamelist:", e);
-      alert(t("generate.failed", { error: String(e) }));
+      await showMessage(t("generate.failed", { error: String(e) }), "error");
     } finally {
       setGenerating(false);
     }
