@@ -407,6 +407,10 @@ async fn download_as(
 ) -> Option<String> {
     let target = media::scraped_media_target(layout, system, settings, media_type, rom_path, ext)?;
     download_image(client, url, &target.dest).await.ok()?;
+    // «Overwrite»: the old one with another extension (x.jpg vs the new x.png) goes away
+    if settings.scrape_policy().media(media_type) == crate::models::settings::FieldPolicy::Overwrite {
+        media::trash_replaced_extensions(layout, system, media_type, rom_path, &target.dest);
+    }
     Some(target.value)
 }
 

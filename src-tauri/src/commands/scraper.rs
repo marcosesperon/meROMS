@@ -245,6 +245,10 @@ async fn process_scrape_response(
             };
 
             if download_media(client, &url, &target.dest).await.is_ok() {
+                // «Overwrite»: the old one with another extension (x.jpg vs the new x.png) goes away
+                if policy.media(media_type) == crate::models::settings::FieldPolicy::Overwrite {
+                    media::trash_replaced_extensions(layout, system, media_type, &existing_game.path, &target.dest);
+                }
                 downloaded.push((target.field, target.value));
             }
         }

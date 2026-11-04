@@ -127,6 +127,24 @@ pub fn has_scraped_media(layout: &Layout, system: &SystemRef, settings: &AppSett
         })
 }
 
+/// Other files of the same media type and ROM with a different extension than `keep`
+/// (e.g. `covers/Game.jpg` when `covers/Game.png` was just downloaded).
+pub fn other_extension_files(layout: &Layout, system: &SystemRef, media_type: &str, rom_path: &str, keep: &Path) -> Vec<PathBuf> {
+    let Some(kind) = kind_for_scraper_type(media_type) else { return Vec::new() };
+    kind.extensions()
+        .iter()
+        .map(|ext| layout.media_file_path(system, kind.folder, rom_path, ext))
+        .filter(|p| p.as_path() != keep && p.is_file())
+        .collect()
+}
+
+/// After overwriting a media file: the same media with another extension would stay next to
+/// it (ES-DE shows only one of them), so it goes to the trash.
+pub fn trash_replaced_extensions(layout: &Layout, system: &SystemRef, media_type: &str, rom_path: &str, keep: &Path) {
+    let others = other_extension_files(layout, system, media_type, rom_path, keep);
+    let _ = trash_files(&others);
+}
+
 pub fn get_field<'a>(game: &'a Game, field: &str) -> Option<&'a String> {
     match field {
         "image" => game.image.as_ref(),
@@ -379,6 +397,18 @@ mod tests {
         });
         let system = SystemRef::from_rom_dir(tmp.path().join("ROMs/snes"));
         (tmp, layout, system)
+    }
+
+    #[test]
+    fn encuentra_el_mismo_medio_con_otra_extension() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        touch(&system.rom_dir.join("covers/Juego.png"));
+        touch(&system.rom_dir.join("covers/Juego.jpg"));
+        touch(&system.rom_dir.join("covers/Otro.jpg"));
+        let keep = system.rom_dir.join("covers/Juego.png");
+        let others = other_extension_files(&Layout::Classic, &system, "box-2D", "./Juego.sfc", &keep);
+        assert_eq!(others, vec![system.rom_dir.join("covers/Juego.jpg")]);
     }
 
     #[test]
