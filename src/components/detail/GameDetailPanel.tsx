@@ -211,13 +211,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
           />
         </div>
 
+        {/* Sin «Cancelar»: para salir sin guardar ya está la X de arriba */}
         <div className="border-t border-zinc-700 h-12 shrink-0 px-4 flex items-center justify-end gap-3">
-          <button
-            onClick={handleClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("detail.cancel")}
-          </button>
           <button
             onClick={handleSave}
             disabled={saving || !editedGame.path}
