@@ -34,7 +34,9 @@ pub struct PendingStructure {
 pub fn detect_pending_structure(app: tauri::AppHandle) -> Result<Option<PendingStructure>, String> {
     let settings = super::settings::get_settings(app)?;
     let Some(active) = settings.active_profile() else { return Ok(None) };
-    let default_esde_home = std::env::var_os("HOME").map(|h| PathBuf::from(h).join("ES-DE"));
+    // ~/ES-DE (HOME en macOS/Linux, USERPROFILE en Windows)
+    let home = crate::layout::esde_settings::home_dir();
+    let default_esde_home = (!home.as_os_str().is_empty()).then(|| home.join("ES-DE"));
     Ok(find_pending(active, &settings.profiles, default_esde_home.as_deref()))
 }
 

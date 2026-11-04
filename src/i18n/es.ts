@@ -314,6 +314,7 @@ const es: Record<TranslationKeys, string> = {
   "profiles.incomplete": "incompleto",
   "profiles.activate": "Usar este perfil",
   "profiles.delete": "Borrar perfil",
+  "profiles.portableDetected": "Instalación portable de ES-DE: datos en {path}",
   "profiles.migrateUnsaved": "Hay ajustes sin guardar. ¿Guardarlos y continuar?",
   "profiles.deleteConfirm": "¿Borrar el perfil «{name}»? No se borra ningún fichero.",
   "profiles.name": "Nombre",

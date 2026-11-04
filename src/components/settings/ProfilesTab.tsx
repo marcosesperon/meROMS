@@ -3,7 +3,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
 import { detectEsdePaths } from "../../commands";
 import type { EsdeDetectedPaths, Profile, StructureKind } from "../../types";
-import { createProfile, isProfileComplete } from "../../utils/profiles";
+import { createProfile, isDefaultEsdeMedia, isProfileComplete } from "../../utils/profiles";
 import { TrashIcon } from "../common/Icons";
 import { askConfirm } from "../../utils/dialogs";
 
@@ -67,12 +67,12 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate }: 
     try {
       const paths = await detectEsdePaths(folder);
       setDetected(paths);
-      // Solo guardamos la carpeta de medios si no es la de por defecto de ES-DE
-      const defaultMedia = `${folder}/downloaded_media`;
+      // La carpeta de datos detectada (en portable no es la elegida); la de medios solo si
+      // no es la de por defecto de ES-DE
       updateProfile({
-        esde_home_path: folder,
+        esde_home_path: paths.esde_home,
         rom_root_path: paths.rom_root_path,
-        media_dir: paths.media_dir === defaultMedia ? undefined : paths.media_dir,
+        media_dir: isDefaultEsdeMedia(paths) ? undefined : paths.media_dir,
       });
     } catch (e) {
       setDetected(null);
@@ -168,6 +168,9 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate }: 
               onBrowse={handlePickEsdeHome}
             >
               {detectError && <p className="text-xs text-red-400 mt-2">{detectError}</p>}
+              {detected?.portable && (
+                <p className="text-xs text-emerald-400 mt-2">{t("profiles.portableDetected", { path: detected.esde_home })}</p>
+              )}
               {detected && !detected.settings_found && (
                 <p className="text-xs text-amber-400 mt-2">{t("profiles.settingsNotFound")}</p>
               )}

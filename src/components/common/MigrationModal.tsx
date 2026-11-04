@@ -5,7 +5,7 @@ import { useTranslation } from "../../i18n";
 import { detectEsdePaths, planMigration, runMigration } from "../../commands";
 import type { MigrationMode, MigrationProgress, MigrationReport, PendingStructure, Profile } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
-import { createProfile, getActiveProfile } from "../../utils/profiles";
+import { createProfile, getActiveProfile, isDefaultEsdeMedia } from "../../utils/profiles";
 import { askConfirm } from "../../utils/dialogs";
 
 interface MigrationModalProps {
@@ -84,8 +84,8 @@ export function MigrationModal({ open, onClose, preset, sourceProfile }: Migrati
     const folder = String(selected);
     try {
       const paths = await detectEsdePaths(folder);
-      const defaultMedia = `${folder}/downloaded_media`;
-      setTarget({ ...target, esde_home_path: folder, media_dir: paths.media_dir === defaultMedia ? undefined : paths.media_dir });
+      // La carpeta de datos detectada (en ES-DE portable, la subcarpeta «ES-DE» de la elegida)
+      setTarget({ ...target, esde_home_path: paths.esde_home, media_dir: isDefaultEsdeMedia(paths) ? undefined : paths.media_dir });
     } catch {
       setTarget({ ...target, esde_home_path: folder });
     }

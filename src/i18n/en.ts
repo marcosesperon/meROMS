@@ -312,6 +312,7 @@ const en = {
   "profiles.incomplete": "incomplete",
   "profiles.activate": "Use this profile",
   "profiles.delete": "Delete profile",
+  "profiles.portableDetected": "Portable ES-DE install: data in {path}",
   "profiles.migrateUnsaved": "There are unsaved settings. Save them and continue?",
   "profiles.deleteConfirm": "Delete profile \"{name}\"? No files are deleted.",
   "profiles.name": "Name",

@@ -54,7 +54,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 
 - `lib.rs` — App builder: registers plugins (dialog, fs, opener), the custom `media://` URI protocol (serves local images/videos from absolute paths with the right MIME type) and all Tauri commands
 - `main.rs` — Desktop entry point
-- `layout/` — `Layout`, `SystemRef`, `EsdePaths`, media stem rules, `is_own_folder` (ES-DE's own folders are never systems when ES-DE lives inside the ROM folder); `esde_settings.rs` reads `ROMDirectory`/`MediaDirectory`/`LegacyGamelistFileLocation` from `es_settings.xml`
+- `layout/` — `Layout`, `SystemRef`, `EsdePaths`, media stem rules, `is_own_folder` (ES-DE's own folders are never systems when ES-DE lives inside the ROM folder); `esde_settings.rs` reads `ROMDirectory`/`MediaDirectory`/`LegacyGamelistFileLocation` from `es_settings.xml`; portable ES-DE: picking the executable folder uses its `ES-DE` data subfolder (returned as `esde_home`), `%ESPATH%` = folder with `ES-DE.exe`/`portable.txt`, default ROMs `<ESPATH>/ROMs`
 - `media.rs` — Single table of media kinds (ES-DE folder ↔ gamelist field ↔ scraper types), `MediaIndex` (one directory walk per system), hydration, scraped-media targets, rename/move/copy helpers (never overwrite)
 - `rename_rules/` — Regex cleanup rules engine (`CompiledRules`) and built-in `default_rules.json` (from ES-DE-Roms-Renamer, MIT; "(Disc x) → .partx" disabled)
 - `models/` — Data structs (all serde Serialize/Deserialize):

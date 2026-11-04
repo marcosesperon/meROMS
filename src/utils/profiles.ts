@@ -34,3 +34,12 @@ export function profileLocationKey(profile: Profile | undefined): string {
   if (!profile) return "";
   return [profile.id, profile.kind, profile.rom_root_path, profile.esde_home_path ?? "", profile.media_dir ?? ""].join("|");
 }
+
+/**
+ * Si la carpeta de medios detectada es la de por defecto de ES-DE (<ES-DE>/downloaded_media),
+ * el perfil no necesita guardarla. Se compara con «/» para que las rutas de Windows («\») también.
+ */
+export function isDefaultEsdeMedia(paths: { esde_home: string; media_dir: string }): boolean {
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
+  return norm(paths.media_dir) === `${norm(paths.esde_home)}/downloaded_media`;
+}

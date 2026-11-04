@@ -119,6 +119,10 @@ export interface PendingStructure {
 
 /** Paths read from an ES-DE folder's es_settings.xml */
 export interface EsdeDetectedPaths {
+  /** ES-DE data folder to use (portable: the "ES-DE" subfolder of the one picked) */
+  esde_home: string;
+  /** Portable install (ES-DE.exe or portable.txt next to the data folder) */
+  portable: boolean;
   rom_root_path: string;
   media_dir: string;
   settings_found: boolean;
