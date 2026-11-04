@@ -3,6 +3,17 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { StarIcon, EyeSlashIcon, ChildIcon } from "./Icons";
 
+// Los selectores, con el mismo aspecto que los botones de al lado (alto, borde, fondo).
+// El aspecto nativo de macOS no deja cambiar el alto, así que se quita y se pinta la flecha.
+const SELECT_CLASS =
+  "appearance-none h-8 bg-zinc-700 text-zinc-200 text-xs rounded border border-zinc-600 pl-2.5 pr-7 cursor-pointer hover:text-zinc-100 focus:outline-none focus:border-indigo-500 transition-colors";
+const SELECT_ARROW = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23a59c96' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 0.6rem center",
+};
+
 export function FilterBar() {
   const games = useAppStore((s) => s.games);
   const filters = useAppStore((s) => s.filters);
@@ -41,7 +52,8 @@ export function FilterBar() {
         onChange={(e) =>
           setFilters({ genre: e.target.value || undefined })
         }
-        className="bg-zinc-700 text-zinc-200 text-xs rounded px-2 py-1.5 border border-zinc-600 focus:outline-none focus:border-indigo-500"
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
       >
         <option value="">{t("filter.genre")}: {t("filter.all")}</option>
         {uniqueGenres.map((g) => (
@@ -57,7 +69,8 @@ export function FilterBar() {
         onChange={(e) =>
           setFilters({ developer: e.target.value || undefined })
         }
-        className="bg-zinc-700 text-zinc-200 text-xs rounded px-2 py-1.5 border border-zinc-600 focus:outline-none focus:border-indigo-500"
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
       >
         <option value="">{t("filter.developer")}: {t("filter.all")}</option>
         {uniqueDevelopers.map((d) => (
@@ -70,7 +83,7 @@ export function FilterBar() {
       {/* Toggle buttons */}
       <button
         onClick={() => setFilters({ favorite: !filters.favorite })}
-        className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border transition-colors ${
+        className={`flex items-center gap-1 h-8 text-xs px-2.5 rounded border transition-colors ${
           filters.favorite
             ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300"
             : "bg-zinc-700 border-zinc-600 text-zinc-400 hover:text-zinc-200"
@@ -82,7 +95,7 @@ export function FilterBar() {
 
       <button
         onClick={() => setFilters({ hidden: !filters.hidden })}
-        className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border transition-colors ${
+        className={`flex items-center gap-1 h-8 text-xs px-2.5 rounded border transition-colors ${
           filters.hidden
             ? "bg-red-500/20 border-red-500/50 text-red-300"
             : "bg-zinc-700 border-zinc-600 text-zinc-400 hover:text-zinc-200"
@@ -94,7 +107,7 @@ export function FilterBar() {
 
       <button
         onClick={() => setFilters({ kidgame: !filters.kidgame })}
-        className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border transition-colors ${
+        className={`flex items-center gap-1 h-8 text-xs px-2.5 rounded border transition-colors ${
           filters.kidgame
             ? "bg-green-500/20 border-green-500/50 text-green-300"
             : "bg-zinc-700 border-zinc-600 text-zinc-400 hover:text-zinc-200"
