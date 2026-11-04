@@ -47,16 +47,31 @@ pub struct RenameResult {
     pub skipped: Vec<String>,
 }
 
-/// Characters not allowed in filenames.
+/// Characters not allowed in filenames (on any of the usual systems).
+fn is_forbidden(c: char) -> bool {
+    matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|')
+}
+
+/// Characters not allowed in filenames are replaced by a hyphen. A title separator like
+/// "Contra III: The Alien Wars" becomes "Contra III - The Alien Wars" (not "Contra III_ The…").
 fn sanitize_filename(name: &str) -> String {
-    name.chars()
-        .map(|c| match c {
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
-            _ => c,
-        })
-        .collect::<String>()
-        .trim()
-        .to_string()
+    let chars: Vec<char> = name.chars().collect();
+    let mut out = String::with_capacity(name.len());
+    for (i, &c) in chars.iter().enumerate() {
+        if !is_forbidden(c) {
+            out.push(c);
+            continue;
+        }
+        // "palabra: siguiente" → "palabra - siguiente" (espacio antes del guion si falta)
+        let followed_by_space = chars.get(i + 1).is_some_and(|n| n.is_whitespace());
+        if followed_by_space && !out.ends_with(' ') && !out.is_empty() {
+            out.push(' ');
+        }
+        out.push('-');
+    }
+    // Sin espacios dobles ni guiones colgando al principio o al final
+    let collapsed = out.split_whitespace().collect::<Vec<_>>().join(" ");
+    collapsed.trim_matches(|c: char| c == '-' || c.is_whitespace()).to_string()
 }
 
 /// List ROMs with a proposed new name, from the gamelist title or the cleanup rules.
@@ -164,7 +179,8 @@ pub fn check_rename_target(
 }
 
 fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<String> {
-    if new_name.is_empty() || sanitize_filename(new_name) != new_name {
+    // Vacío, con caracteres prohibidos o con espacios al principio/final
+    if new_name.trim().is_empty() || new_name.trim() != new_name || new_name.chars().any(is_forbidden) {
         return Some("invalid".into());
     }
     let mut entry = [RenameEntry {
@@ -437,6 +453,15 @@ mod tests {
         assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "").as_deref(), Some("invalid"));
         // Keeping the same name is not a clash with itself
         assert_eq!(target_conflict(tmp.path(), "./Juego.sfc", "Juego"), None);
+    }
+
+    #[test]
+    fn forbidden_characters_become_hyphens() {
+        assert_eq!(sanitize_filename("Contra III: The Alien Wars"), "Contra III - The Alien Wars");
+        assert_eq!(sanitize_filename("Donkey Kong Country 2: Diddy's Kong Quest"), "Donkey Kong Country 2 - Diddy's Kong Quest");
+        assert_eq!(sanitize_filename("AC/DC"), "AC-DC");
+        assert_eq!(sanitize_filename("Who? Me"), "Who - Me");
+        assert_eq!(sanitize_filename("Juego Normal"), "Juego Normal");
     }
 
     #[test]
