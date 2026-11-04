@@ -209,6 +209,29 @@ and its structure: Classic or ES-DE).
 
 ---
 
+## Automated builds (GitHub Actions)
+
+Instead of building on each operating system yourself, GitHub can build all the installers on
+its own Windows, macOS and Linux machines. The workflow is in `.github/workflows/build.yml`.
+
+1. (Optional) Bump the version in `src-tauri/tauri.conf.json` (`"version"`), commit and push.
+   The Release is named after that version, so with the same version the same Release is reused.
+2. On GitHub, open the **Actions** tab > **Build installers** > **Run workflow** (branch `main`).
+3. Wait for the three jobs (macOS, Windows, Linux) to finish. The first run takes about
+   15-25 minutes; later runs are faster thanks to the build cache.
+4. Open **Releases**: there is a **draft** called `meROMS v<version>` with every installer
+   attached:
+   - macOS: one universal `.dmg` (Intel and Apple Silicon)
+   - Windows: `-setup.exe` and `.msi`
+   - Linux: `.deb`, `.rpm` and `.AppImage`
+5. Check it and press **Publish release** to make it public. Until then only you can see it.
+
+The installers are not signed, so the notes in "Install and run" above apply. Actions minutes are
+free for public repositories; for private ones they count against your plan (macOS minutes x10,
+Windows x2).
+
+---
+
 ## Development
 
 ```bash

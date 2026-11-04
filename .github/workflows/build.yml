@@ -1,0 +1,81 @@
+# Builds the meROMS installers for macOS, Windows and Linux on GitHub's machines and
+# attaches them to a draft Release ("meROMS v<version>", version from tauri.conf.json).
+# Run it by hand: Actions tab > "Build installers" > Run workflow.
+name: Build installers
+
+on:
+  workflow_dispatch:
+
+# Needed to create the Release and upload the installers to it
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      # One platform failing shouldn't cancel the others
+      fail-fast: false
+      matrix:
+        include:
+          # One .dmg for both Intel and Apple Silicon Macs
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          - platform: windows-latest
+            args: ""
+          # 22.04 (not the newest) so the Linux builds also run on older distributions
+          - platform: ubuntu-22.04
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Install Linux system libraries
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # The universal macOS app needs both Mac architectures
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Cache the Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and upload to the draft Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: meROMS v__VERSION__
+          releaseBody: |
+            Installers for meROMS v__VERSION__.
+            - macOS (Intel and Apple Silicon): .dmg
+            - Windows: -setup.exe (recommended) or .msi
+            - Linux: .deb, .rpm or .AppImage
+            The builds are not signed: see the README for how to open them the first time.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
