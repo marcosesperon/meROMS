@@ -41,6 +41,8 @@ interface AppState {
   settings: AppSettings;
   /** True once the saved settings have been read (or failed to): until then `settings` is just empty */
   settingsLoaded: boolean;
+  /** Which scrapers are available (refreshed whenever the settings are loaded or saved) */
+  scraperStatus: commands.ScraperStatus;
   loadSettings: () => Promise<void>;
   updateSettings: (settings: AppSettings) => Promise<void>;
   setActiveProfile: (profileId: string) => Promise<void>;
@@ -117,10 +119,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Settings
   settings: {},
   settingsLoaded: false,
+  scraperStatus: { built_in_dev: false, screenscraper: false, tgdb: false },
   loadSettings: async () => {
     try {
       const settings = await commands.getSettings();
       set({ settings, settingsLoaded: true });
+      commands.scraperStatus().then((scraperStatus) => set({ scraperStatus })).catch(() => {});
       // Sync saved language with i18n store
       if (settings.language === "es" || settings.language === "en") {
         useI18nStore.getState().setLocale(settings.language);
@@ -137,6 +141,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const previousKey = profileLocationKey(getActiveProfile(get().settings));
     await commands.saveSettings(settings);
     set({ settings });
+    commands.scraperStatus().then((scraperStatus) => set({ scraperStatus })).catch(() => {});
 
     const active = getActiveProfile(settings);
     // Another library (or the same one with other folders/structure): start from scratch

@@ -24,7 +24,7 @@ fn build_http_client() -> Result<Client, String> {
     let mut headers = HeaderMap::new();
     headers.insert(
         USER_AGENT,
-        format!("{}/{}", SOFTWARE_NAME, "0.1.0")
+        format!("{}/{}", SOFTWARE_NAME, env!("CARGO_PKG_VERSION"))
             .parse()
             .unwrap(),
     );
@@ -47,21 +47,17 @@ fn build_api_url(
     settings: &AppSettings,
     extra_params: &[(&str, &str)],
 ) -> Result<String, String> {
-    let devid = settings
-        .ss_devid
-        .as_deref()
-        .ok_or("ScreenScraper devid not configured")?;
-    let devpassword = settings
-        .ss_devpassword
-        .as_deref()
-        .ok_or("ScreenScraper devpassword not configured")?;
+    // The user's developer credentials, or the ones built into the app
+    let (devid, devpassword) = settings
+        .ss_dev_credentials()
+        .ok_or("ScreenScraper developer credentials not configured")?;
 
     let mut url = format!(
         "{}/{}?devid={}&devpassword={}&softname={}&output=json",
         API_BASE,
         endpoint,
-        urlencoding::encode(devid),
-        urlencoding::encode(devpassword),
+        urlencoding::encode(&devid),
+        urlencoding::encode(&devpassword),
         SOFTWARE_NAME
     );
 
@@ -412,6 +408,28 @@ async fn scrape_game_screenscraper(
 }
 
 /// Scrape a single game — dispatches to ScreenScraper or TheGamesDB based on settings.
+#[derive(serde::Serialize)]
+pub struct ScraperStatus {
+    /// This copy of the app carries ScreenScraper developer credentials
+    pub built_in_dev: bool,
+    /// ScreenScraper can be used (developer credentials from the app or the user)
+    pub screenscraper: bool,
+    /// TheGamesDB key configured
+    pub tgdb: bool,
+}
+
+/// What scrapers are available (the UI shows the ScreenScraper account fields and the scrape
+/// buttons from this, since the built-in credentials aren't visible in the settings).
+#[tauri::command]
+pub fn scraper_status(app: tauri::AppHandle) -> Result<ScraperStatus, String> {
+    let settings = crate::commands::settings::get_settings(app)?;
+    Ok(ScraperStatus {
+        built_in_dev: crate::models::settings::built_in_ss_credentials().is_some(),
+        screenscraper: settings.has_screenscraper(),
+        tgdb: settings.has_tgdb(),
+    })
+}
+
 #[tauri::command]
 pub async fn scrape_game(
     app: tauri::AppHandle,

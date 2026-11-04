@@ -25,3 +25,6 @@ dist-ssr
 
 # Local docs (decisions, notes)
 docs/
+
+# ScreenScraper developer credentials (built into the app, never committed)
+src-tauri/screenscraper.env

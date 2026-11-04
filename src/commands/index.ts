@@ -57,6 +57,17 @@ export async function generateGamelist(
   return invoke("generate_gamelist", { systemPath });
 }
 
+/** Which scrapers can be used (ScreenScraper developer credentials may be built into the app) */
+export interface ScraperStatus {
+  built_in_dev: boolean;
+  screenscraper: boolean;
+  tgdb: boolean;
+}
+
+export async function scraperStatus(): Promise<ScraperStatus> {
+  return invoke("scraper_status");
+}
+
 export async function scrapeGame(
   systemPath: string,
   gamePath: string

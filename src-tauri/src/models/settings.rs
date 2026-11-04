@@ -115,8 +115,17 @@ impl AppSettings {
     }
 
     pub fn has_screenscraper(&self) -> bool {
-        self.ss_devid.as_ref().is_some_and(|s| !s.is_empty())
-            && self.ss_devpassword.as_ref().is_some_and(|s| !s.is_empty())
+        self.ss_dev_credentials().is_some()
+    }
+
+    /// Developer credentials for ScreenScraper: the user's (Settings → Advanced) if both are
+    /// set, otherwise the ones built into the app (see build.rs), if any.
+    pub fn ss_dev_credentials(&self) -> Option<(String, String)> {
+        let filled = |v: &Option<String>| v.as_deref().map(str::trim).filter(|s| !s.is_empty()).map(String::from);
+        match (filled(&self.ss_devid), filled(&self.ss_devpassword)) {
+            (Some(id), Some(password)) => Some((id, password)),
+            _ => built_in_ss_credentials(),
+        }
     }
 
     pub fn has_tgdb(&self) -> bool {
@@ -146,6 +155,17 @@ impl AppSettings {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn user_developer_credentials_win_and_need_both_fields() {
+        let mut s = super::AppSettings::default();
+        s.ss_devid = Some("mio".into());
+        s.ss_devpassword = Some("clave".into());
+        assert_eq!(s.ss_dev_credentials(), Some(("mio".into(), "clave".into())));
+        // Solo uno de los dos: se usan los de la app (si los lleva)
+        s.ss_devpassword = Some("  ".into());
+        assert_eq!(s.ss_dev_credentials(), super::built_in_ss_credentials());
+    }
+
     use super::*;
     use crate::models::StructureKind;
 
@@ -208,5 +228,14 @@ mod tests {
         assert!(settings.profiles.is_empty());
         settings.migrate_legacy();
         assert_eq!(settings.profiles.len(), 1);
+    }
+}
+
+/// ScreenScraper developer credentials built into this copy of the app (None if it was
+/// compiled without them).
+pub fn built_in_ss_credentials() -> Option<(String, String)> {
+    match (option_env!("MEROMS_SS_DEVID"), option_env!("MEROMS_SS_DEVPASSWORD")) {
+        (Some(id), Some(password)) if !id.is_empty() && !password.is_empty() => Some((id.to_string(), password.to_string())),
+        _ => None,
     }
 }

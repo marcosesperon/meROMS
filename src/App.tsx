@@ -114,8 +114,9 @@ function App() {
     }
   }
 
-  const hasCredentials =
-    !!(settings.ss_devid && settings.ss_devpassword) || !!settings.tgdb_apikey;
+  // Developer credentials may be built into the app, so ask the backend instead of the settings
+  const scraperStatus = useAppStore((s) => s.scraperStatus);
+  const hasCredentials = scraperStatus.screenscraper || scraperStatus.tgdb;
 
   // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder).
   // Only once the saved settings are read: before that they are empty and would always look unusable.

@@ -107,6 +107,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # meROMS' ScreenScraper developer credentials, built into the app (see src-tauri/build.rs).
+          # Repository secrets; if they don't exist the app builds without them.
+          MEROMS_SS_DEVID: ${{ secrets.SS_DEVID }}
+          MEROMS_SS_DEVPASSWORD: ${{ secrets.SS_DEVPASSWORD }}
         with:
           # The draft created by the first job (all builds upload to it)
           releaseId: ${{ needs.create-release.outputs.release_id }}

@@ -35,6 +35,17 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
   const setLocale = useI18nStore((s) => s.setLocale);
 
   const [form, setForm] = useState(settings);
+  const builtInDev = useAppStore((s) => s.scraperStatus.built_in_dev);
+  // The ScreenScraper account only makes sense with developer credentials (built-in or typed)
+  const showSsAccount = builtInDev || (!!form.ss_devid?.trim() && !!form.ss_devpassword?.trim());
+  // «Avanzado» starts open only when there's nothing else to show; then the user decides
+  // (not tied to showSsAccount, or it would fold while typing the developer fields)
+  const [advancedOpen, setAdvancedOpen] = useState(!showSsAccount);
+  useEffect(() => {
+    if (open) setAdvancedOpen(!showSsAccount);
+    // Only when the settings window opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const [activeTab, setActiveTab] = useState<SettingsTab>("profiles");
   const scrollRef = useRef<HTMLDivElement>(null);
   // Perfil que se está migrando (la ventana de migración está abierta mientras no sea null)
@@ -195,79 +206,89 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </div>
               </section>
 
-              {/* ScreenScraper Credentials */}
+              {/* ScreenScraper: usuario y contraseña solo si hay credenciales de desarrollador
+                  (las que lleva la app o las de «Avanzado»); estas, plegadas en «Avanzado» */}
               <section>
                 <h3 className="text-sm font-medium text-zinc-300 mb-3">
                   {t("settings.ssCredentials")}
                 </h3>
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-zinc-400 mb-1 block">
-                        {t("settings.devId")}
-                      </label>
-                      <input
-                        type="text"
-                        value={form.ss_devid || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, ss_devid: e.target.value || undefined })
-                        }
-                        placeholder="devid"
-                        className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                      />
+                  {showSsAccount && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-zinc-400 mb-1 block">
+                            {t("settings.username")}
+                          </label>
+                          <input
+                            type="text"
+                            value={form.ss_user || ""}
+                            onChange={(e) =>
+                              setForm({ ...form, ss_user: e.target.value || undefined })
+                            }
+                            placeholder="screenscraper username"
+                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-400 mb-1 block">
+                            {t("settings.password")}
+                          </label>
+                          <input
+                            type="password"
+                            value={form.ss_password || ""}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                ss_password: e.target.value || undefined,
+                              })
+                            }
+                            placeholder="screenscraper password"
+                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-500">{t("settings.ssHelp")}</p>
+                    </>
+                  )}
+                  <details open={advancedOpen} onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}>
+                    <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-200 select-none">
+                      {t("settings.advanced")}
+                    </summary>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">
+                          {t("settings.devId")}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.ss_devid || ""}
+                          onChange={(e) =>
+                            setForm({ ...form, ss_devid: e.target.value || undefined })
+                          }
+                          placeholder="devid"
+                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">
+                          {t("settings.devPassword")}
+                        </label>
+                        <input
+                          type="password"
+                          value={form.ss_devpassword || ""}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              ss_devpassword: e.target.value || undefined,
+                            })
+                          }
+                          placeholder="devpassword"
+                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-zinc-400 mb-1 block">
-                        {t("settings.devPassword")}
-                      </label>
-                      <input
-                        type="password"
-                        value={form.ss_devpassword || ""}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            ss_devpassword: e.target.value || undefined,
-                          })
-                        }
-                        placeholder="devpassword"
-                        className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-zinc-400 mb-1 block">
-                        {t("settings.username")}
-                      </label>
-                      <input
-                        type="text"
-                        value={form.ss_user || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, ss_user: e.target.value || undefined })
-                        }
-                        placeholder="screenscraper username"
-                        className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-zinc-400 mb-1 block">
-                        {t("settings.password")}
-                      </label>
-                      <input
-                        type="password"
-                        value={form.ss_password || ""}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            ss_password: e.target.value || undefined,
-                          })
-                        }
-                        placeholder="screenscraper password"
-                        className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-zinc-500">{t("settings.ssHelp")}</p>
+                  </details>
                 </div>
               </section>
 

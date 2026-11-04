@@ -66,6 +66,7 @@ pub fn run() {
             images::set_game_media,
             images::scan_game_media,
             scraper::scrape_game,
+            scraper::scraper_status,
             scraper::scrape_system,
             cleanup::find_unused_media,
             cleanup::find_game_leftover_media,

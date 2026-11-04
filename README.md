@@ -140,6 +140,20 @@ pnpm install
 This installs the JavaScript packages (including the Tauri CLI). The Rust crates are downloaded
 automatically during the first build.
 
+### 3b. (Optional) ScreenScraper developer credentials
+
+meROMS can carry its own ScreenScraper developer credentials, so users only need their
+ScreenScraper username and password. They are never stored in the repository. To build them in:
+
+```bash
+cp src-tauri/screenscraper.env.example src-tauri/screenscraper.env
+# edit src-tauri/screenscraper.env and fill in MEROMS_SS_DEVID and MEROMS_SS_DEVPASSWORD
+```
+
+(or set the environment variables `MEROMS_SS_DEVID` and `MEROMS_SS_DEVPASSWORD` before building).
+`screenscraper.env` is ignored by git. Without it the app still builds: users then enter developer
+credentials in Settings > General > ScreenScraper > Advanced.
+
 ### 4. Build the app
 
 ```bash
@@ -215,6 +229,9 @@ Instead of building on each operating system yourself, GitHub can build all the 
 its own Windows, macOS and Linux machines. The workflow is in `.github/workflows/build.yml`.
 
 1. (Optional) Bump the version in `src-tauri/tauri.conf.json` (`"version"`), commit and push.
+   To build meROMS' ScreenScraper developer credentials into the installers, create the
+   repository secrets `SS_DEVID` and `SS_DEVPASSWORD` (Settings > Secrets and variables >
+   Actions). Without them the installers are built without credentials.
    The Release is named after that version, so with the same version the same Release is reused.
 2. On GitHub, open the **Actions** tab > **Build installers** > **Run workflow** (branch `main`).
 3. Wait for the three jobs (macOS, Windows, Linux) to finish. The first run takes about
