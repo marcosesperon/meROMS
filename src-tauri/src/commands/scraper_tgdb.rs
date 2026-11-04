@@ -222,13 +222,15 @@ pub async fn scrape_game_tgdb(
     // Extract images from the include.boxart section.
     // Front box art counts as ScreenScraper's "box-2D" and screenshots as "ss",
     // so they land in the same unified folders (covers/, screenshots/).
-    // Only download what the game doesn't have yet (in the field each type maps to)
-    let has_media = |media_type: &str| {
-        media::field_for_scraper_type(layout, settings, media_type)
-            .is_some_and(|field| media::get_field(game, &field).is_some())
+    // Whether to download each type, as the policy says (overwrite / only if missing / leave)
+    let policy = settings.scrape_policy();
+    let wanted = |media_type: &str| match policy.media(media_type) {
+        crate::models::settings::FieldPolicy::Overwrite => true,
+        crate::models::settings::FieldPolicy::IfEmpty => !media::has_scraped_media(layout, system, settings, game, media_type),
+        crate::models::settings::FieldPolicy::Keep => false,
     };
-    let need_image = !has_media("box-2D");
-    let need_thumbnail = !has_media("ss");
+    let need_image = wanted("box-2D");
+    let need_thumbnail = wanted("ss");
     let mut image: Option<String> = None;
     let mut thumbnail: Option<String> = None;
 
@@ -291,14 +293,14 @@ pub async fn scrape_game_tgdb(
 
     // Clone existing game and overwrite only fields that TGDB provided
     let mut updated = game.clone();
-    if name.is_some() { updated.name = name; }
-    if desc.is_some() { updated.desc = desc; }
-    if genre.is_some() { updated.genre = genre; }
-    if developer.is_some() { updated.developer = developer; }
-    if publisher.is_some() { updated.publisher = publisher; }
-    if players.is_some() { updated.players = players; }
-    if rating.is_some() { updated.rating = rating; }
-    if releasedate.is_some() { updated.releasedate = releasedate; }
+    policy.data("name").apply(&mut updated.name, name);
+    policy.data("desc").apply(&mut updated.desc, desc);
+    policy.data("genre").apply(&mut updated.genre, genre);
+    policy.data("developer").apply(&mut updated.developer, developer);
+    policy.data("publisher").apply(&mut updated.publisher, publisher);
+    policy.data("players").apply(&mut updated.players, players);
+    policy.data("rating").apply(&mut updated.rating, rating);
+    policy.data("releasedate").apply(&mut updated.releasedate, releasedate);
     // Classic may map these media types to other fields; write each one where configured
     for (media_type, value) in [("box-2D", image), ("ss", thumbnail)] {
         if let (Some(value), Some(field)) = (value, media::field_for_scraper_type(layout, settings, media_type)) {

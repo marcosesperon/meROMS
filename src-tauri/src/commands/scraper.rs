@@ -253,12 +253,25 @@ async fn process_scrape_response(
 
     let releasedate = extract_regional(&jeu["dates"], "dates");
 
+    // What may be updated (Settings, or the choice made when launching «Scrape all»)
+    let policy = settings.scrape_policy();
+
     // Download media
     let medias = &jeu["medias"];
     // (game field, value) of each media file actually downloaded
     let mut downloaded: Vec<(String, String)> = Vec::new();
 
     for media_type in media_types {
+        // «Only if missing»: don't even ask for it if the game already has one (saves quota)
+        match policy.media(media_type) {
+            crate::models::settings::FieldPolicy::Keep => continue,
+            crate::models::settings::FieldPolicy::IfEmpty
+                if media::has_scraped_media(layout, system, settings, existing_game, media_type) =>
+            {
+                continue
+            }
+            _ => {}
+        }
         // ScreenScraper uses "video" and "video-normalized" as media type names
         let search_type = if media_type == "video" {
             "video-normalized"
@@ -295,17 +308,17 @@ async fn process_scrape_response(
         }
     }
 
-    // Clone existing game and overwrite only the fields that the scraper found.
-    // This preserves all fields the scraper doesn't touch (favorite, hidden, etc.)
+    // Clone the existing game and write what the scraper found, field by field, as the policy
+    // says (overwrite / only if empty / leave). Fields the scraper doesn't touch stay as they are.
     let mut game = existing_game.clone();
-    if name.is_some() { game.name = name; }
-    if desc.is_some() { game.desc = desc; }
-    if genre.is_some() { game.genre = genre; }
-    if developer.is_some() { game.developer = developer; }
-    if publisher.is_some() { game.publisher = publisher; }
-    if players.is_some() { game.players = players; }
-    if rating.is_some() { game.rating = rating; }
-    if releasedate.is_some() { game.releasedate = releasedate; }
+    policy.data("name").apply(&mut game.name, name);
+    policy.data("desc").apply(&mut game.desc, desc);
+    policy.data("genre").apply(&mut game.genre, genre);
+    policy.data("developer").apply(&mut game.developer, developer);
+    policy.data("publisher").apply(&mut game.publisher, publisher);
+    policy.data("players").apply(&mut game.players, players);
+    policy.data("rating").apply(&mut game.rating, rating);
+    policy.data("releasedate").apply(&mut game.releasedate, releasedate);
     for (field, value) in downloaded {
         media::set_field(&mut game, &field, Some(value));
     }
@@ -408,6 +421,12 @@ async fn scrape_game_screenscraper(
 }
 
 /// Scrape a single game — dispatches to ScreenScraper or TheGamesDB based on settings.
+/// What the scraper may update right now (saved, or derived from the old media list)
+#[tauri::command]
+pub fn get_scrape_policy(app: tauri::AppHandle) -> Result<crate::models::settings::ScrapePolicy, String> {
+    Ok(crate::commands::settings::get_settings(app)?.scrape_policy())
+}
+
 #[derive(serde::Serialize)]
 pub struct ScraperStatus {
     /// This copy of the app carries ScreenScraper developer credentials
@@ -513,6 +532,8 @@ pub async fn scrape_system(
     app: tauri::AppHandle,
     system_path: String,
     game_paths: Option<Vec<String>>,
+    // What may be updated this time (chosen when launching); None = what's in Settings
+    policy: Option<crate::models::settings::ScrapePolicy>,
 ) -> Result<(), String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
@@ -525,7 +546,10 @@ pub async fn scrape_system(
         return Err("No games to scrape".to_string());
     }
 
-    let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    let mut settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    if let Some(policy) = policy {
+        settings.scrape_fields = Some(policy);
+    }
 
     if !settings.has_screenscraper() && !settings.has_tgdb() {
         return Err(

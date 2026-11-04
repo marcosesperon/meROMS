@@ -115,6 +115,18 @@ pub fn scraped_media_target(
     Some(ScrapedMediaTarget { dest, field, value })
 }
 
+/// Whether a game already has a media file of a scraper type: the file its field points to,
+/// or the unified `<folder>/<ROM name>` with any extension of that kind.
+pub fn has_scraped_media(layout: &Layout, system: &SystemRef, settings: &AppSettings, game: &Game, media_type: &str) -> bool {
+    let by_field = field_for_scraper_type(layout, settings, media_type)
+        .and_then(|field| get_field(game, &field).map(|v| resolve_media_path(system, v)))
+        .is_some_and(|p| p.is_file());
+    by_field
+        || kind_for_scraper_type(media_type).is_some_and(|kind| {
+            kind.extensions().iter().any(|ext| layout.media_file_path(system, kind.folder, &game.path, ext).is_file())
+        })
+}
+
 pub fn get_field<'a>(game: &'a Game, field: &str) -> Option<&'a String> {
     match field {
         "image" => game.image.as_ref(),
@@ -367,6 +379,23 @@ mod tests {
         });
         let system = SystemRef::from_rom_dir(tmp.path().join("ROMs/snes"));
         (tmp, layout, system)
+    }
+
+    #[test]
+    fn sabe_si_un_juego_ya_tiene_un_medio_del_scraper() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        let settings = AppSettings::default();
+        let mut game = Game { path: "./Juego.sfc".into(), ..Default::default() };
+        assert!(!has_scraped_media(&Layout::Classic, &system, &settings, &game, "box-2D"));
+        // Nombrado unificado, con cualquier extensión del tipo
+        touch(&system.rom_dir.join("covers/Juego.jpg"));
+        assert!(has_scraped_media(&Layout::Classic, &system, &settings, &game, "box-2D"));
+        // O el fichero al que apunta su campo (nombre antiguo)
+        touch(&system.rom_dir.join("images/Juego-thumb.png"));
+        game.thumbnail = Some("./images/Juego-thumb.png".into());
+        assert!(has_scraped_media(&Layout::Classic, &system, &settings, &game, "ss"));
+        assert!(!has_scraped_media(&Layout::Classic, &system, &settings, &game, "video"));
     }
 
     #[test]

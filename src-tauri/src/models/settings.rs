@@ -34,8 +34,12 @@ pub struct AppSettings {
     pub ss_devpassword: Option<String>,
     pub ss_user: Option<String>,
     pub ss_password: Option<String>,
-    // Media types to download (e.g., ["box-2D", "ss", "marquee"])
+    // Media types to download (e.g., ["box-2D", "ss", "marquee"]). Legacy: superseded by
+    // `scrape_fields` (still read when that one isn't saved yet)
     pub ss_media_types: Option<Vec<String>>,
+    // What the scraper may update, per data field and per media type
+    #[serde(default)]
+    pub scrape_fields: Option<ScrapePolicy>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration
@@ -49,6 +53,56 @@ pub struct AppSettings {
     // ROM name cleanup rules (None = built-in defaults)
     #[serde(default)]
     pub rename_rules: Option<Vec<RenameRule>>,
+}
+
+/// What the scraper does with one data field or media type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FieldPolicy {
+    /// Always write what the scraper found
+    Overwrite,
+    /// Only if the game doesn't have it yet (media: only if the file is missing)
+    IfEmpty,
+    /// Leave it alone (media: don't download)
+    Keep,
+}
+
+impl FieldPolicy {
+    /// Apply a value found by the scraper to a field, following the policy
+    pub fn apply(self, current: &mut Option<String>, found: Option<String>) {
+        let Some(found) = found.filter(|v| !v.trim().is_empty()) else { return };
+        let empty = current.as_deref().is_none_or(|v| v.trim().is_empty());
+        if self == FieldPolicy::Overwrite || (self == FieldPolicy::IfEmpty && empty) {
+            *current = Some(found);
+        }
+    }
+}
+
+/// Data fields the scraper fills
+pub const SCRAPE_DATA_FIELDS: &[&str] = &["name", "desc", "genre", "developer", "publisher", "players", "rating", "releasedate"];
+/// Media types the scraper can download (ScreenScraper ids; mirrors AVAILABLE_MEDIA_TYPES in the UI)
+pub const SCRAPE_MEDIA_TYPES: &[&str] = &[
+    "box-2D", "box-3D", "ss", "sstitle", "marquee", "wheel", "wheel-hd", "fanart", "screenmarquee", "mixrbv1", "mixrbv2", "video",
+];
+
+/// Per data field and per media type, what the scraper may update
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ScrapePolicy {
+    #[serde(default)]
+    pub data: std::collections::BTreeMap<String, FieldPolicy>,
+    #[serde(default)]
+    pub media: std::collections::BTreeMap<String, FieldPolicy>,
+}
+
+impl ScrapePolicy {
+    /// Data field: if not set, only when empty
+    pub fn data(&self, field: &str) -> FieldPolicy {
+        self.data.get(field).copied().unwrap_or(FieldPolicy::IfEmpty)
+    }
+    /// Media type: if not set, not downloaded
+    pub fn media(&self, media_type: &str) -> FieldPolicy {
+        self.media.get(media_type).copied().unwrap_or(FieldPolicy::Keep)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -108,10 +162,33 @@ impl AppSettings {
         ]
     }
 
+    /// Media types to download: those whose policy isn't «don't touch»
     pub fn media_types(&self) -> Vec<String> {
-        self.ss_media_types
-            .clone()
-            .unwrap_or_else(Self::default_media_types)
+        let policy = self.scrape_policy();
+        SCRAPE_MEDIA_TYPES
+            .iter()
+            .filter(|t| policy.media(t) != FieldPolicy::Keep)
+            .map(|t| t.to_string())
+            .collect()
+    }
+
+    /// What the scraper may update. Until it's saved, it comes from the old «media to
+    /// download» list (checked → only if missing, unchecked → don't touch) and data «only if empty».
+    pub fn scrape_policy(&self) -> ScrapePolicy {
+        if let Some(saved) = &self.scrape_fields {
+            return saved.clone();
+        }
+        let legacy = self.ss_media_types.clone().unwrap_or_else(Self::default_media_types);
+        ScrapePolicy {
+            data: SCRAPE_DATA_FIELDS.iter().map(|f| (f.to_string(), FieldPolicy::IfEmpty)).collect(),
+            media: SCRAPE_MEDIA_TYPES
+                .iter()
+                .map(|t| {
+                    let policy = if legacy.iter().any(|l| l == t) { FieldPolicy::IfEmpty } else { FieldPolicy::Keep };
+                    (t.to_string(), policy)
+                })
+                .collect(),
+        }
     }
 
     pub fn has_screenscraper(&self) -> bool {
@@ -155,6 +232,43 @@ impl AppSettings {
 
 #[cfg(test)]
 mod tests {
+    use super::{FieldPolicy, ScrapePolicy};
+
+    #[test]
+    fn field_policies() {
+        let mut v = Some("Mío".to_string());
+        FieldPolicy::IfEmpty.apply(&mut v, Some("Scraper".into()));
+        assert_eq!(v.as_deref(), Some("Mío"));
+        FieldPolicy::Overwrite.apply(&mut v, Some("Scraper".into()));
+        assert_eq!(v.as_deref(), Some("Scraper"));
+        FieldPolicy::Keep.apply(&mut v, Some("Otro".into()));
+        assert_eq!(v.as_deref(), Some("Scraper"));
+        // Nada encontrado: no se borra
+        FieldPolicy::Overwrite.apply(&mut v, None);
+        assert_eq!(v.as_deref(), Some("Scraper"));
+        let mut empty: Option<String> = Some("  ".into());
+        FieldPolicy::IfEmpty.apply(&mut empty, Some("Nuevo".into()));
+        assert_eq!(empty.as_deref(), Some("Nuevo"));
+    }
+
+    #[test]
+    fn policy_comes_from_the_old_media_list_until_saved() {
+        let mut s = super::AppSettings::default();
+        s.ss_media_types = Some(vec!["box-2D".into(), "video".into()]);
+        let p = s.scrape_policy();
+        assert_eq!(p.media("box-2D"), FieldPolicy::IfEmpty);
+        assert_eq!(p.media("video"), FieldPolicy::IfEmpty);
+        assert_eq!(p.media("ss"), FieldPolicy::Keep);
+        assert_eq!(p.data("name"), FieldPolicy::IfEmpty);
+        assert_eq!(s.media_types(), vec!["box-2D".to_string(), "video".to_string()]);
+
+        // Guardada: manda la nueva
+        let mut saved = ScrapePolicy::default();
+        saved.media.insert("ss".into(), FieldPolicy::Overwrite);
+        s.scrape_fields = Some(saved);
+        assert_eq!(s.media_types(), vec!["ss".to_string()]);
+    }
+
     #[test]
     fn user_developer_credentials_win_and_need_both_fields() {
         let mut s = super::AppSettings::default();
