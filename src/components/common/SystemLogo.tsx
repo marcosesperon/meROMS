@@ -13,6 +13,11 @@ for (const [path, url] of Object.entries(logoModules)) {
   }
 }
 
+/** Whether there is a logo file for this system (otherwise SystemLogo shows a placeholder) */
+export function hasSystemLogo(name: string): boolean {
+  return !!logoMap[name.toLowerCase()];
+}
+
 interface SystemLogoProps {
   name: string;
   size?: number;

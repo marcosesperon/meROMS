@@ -1,6 +1,6 @@
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
-import { SystemLogo } from "../common/SystemLogo";
+import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
 import { SettingsIcon } from "../common/Icons";
 import { getActiveProfile } from "../../utils/profiles";
 
@@ -90,17 +90,27 @@ export function Sidebar() {
                   setCurrentView("browser");
                 }}
                 title={system.full_name}
-                className={`relative w-full text-left pl-4 pr-3 py-1.5 flex items-center gap-3 transition-colors ${
+                className={`group relative w-full text-left pl-4 pr-3 py-1.5 flex items-center gap-3 transition-colors ${
                   selected ? "bg-zinc-800 text-zinc-100" : "text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
                 }`}
               >
                 {/* Franja violeta a la izquierda del sistema elegido (como GOG) */}
                 {selected && <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-r bg-indigo-500" />}
-                {/* Los logos son anchos: caja fija para que los nombres queden alineados */}
-                <span className="w-12 h-6 shrink-0 flex items-center justify-center">
-                  <SystemLogo name={system.name} width={48} maxHeight={22} />
+                {/* Solo el logo (el nombre completo sale al pasar el ratón); si no hay logo,
+                    el nombre corto del sistema (el de su carpeta) */}
+                <span className="flex-1 min-w-0 h-8 flex items-center">
+                  {hasSystemLogo(system.name) ? (
+                    <SystemLogo
+                      name={system.name}
+                      width={110}
+                      maxHeight={30}
+                      // Los no elegidos, algo apagados (como el texto gris de antes)
+                      className={selected ? "" : "opacity-60 group-hover:opacity-100 transition-opacity"}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold uppercase tracking-wide truncate">{system.name}</span>
+                  )}
                 </span>
-                <span className="flex-1 min-w-0 text-[13px] truncate">{system.full_name}</span>
                 {/* Marca: este sistema está en la otra estructura y se puede migrar */}
                 {pendingStructure?.systems.includes(system.name) && (
                   <span
