@@ -14,7 +14,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
 - **Cleanup** — find unused media files and duplicate games, then delete them
-- **Media normalizer** (Classic) — move legacy-named media (suffixes, `images/`…) to the unified naming (optional before migrating: the migrator does it on the fly)
+- **Media normalizer** — Classic: move legacy-named media (suffixes, `images/`…) to the unified naming (optional before migrating: the migrator does it on the fly); ES-DE: recover Classic-structure media left in the ROM folder into the ES-DE media folder
 - **Migration** — Classic ↔ ES-DE, copy or move; gamelists, media and collections (ROMs never touched); systems found in the other structure are offered for migration when entering a profile and per system
 - **Per-game tools** — Rename, Normalize media and Clean up leftover media from the game detail panel
 - **Rename** — batch-rename ROM files from the gamelist title or with regex cleanup rules (ES-DE-Roms-Renamer style); updates media, gamelist, collections and `.m3u`
@@ -72,7 +72,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
   - `scraper_tgdb.rs` — TheGamesDB client helpers (no commands of its own)
   - `cleanup.rs` — `find_unused_media` (Classic: not referenced by any media field; ES-DE: no ROM with that name), `find_game_leftover_media` (one game: files named after its ROM it doesn't use), `delete_files`
   - `duplicates.rs` — `find_duplicates`
-  - `normalize.rs` — `plan_media_normalization` (optional `game_path`), `apply_media_normalization` (Classic only)
+  - `normalize.rs` — `plan_media_normalization` (optional `game_path`), `apply_media_normalization` (both structures; ES-DE moves Classic leftovers from the ROM folder into the media folder and doesn't rewrite the gamelist; a file found by name goes to one destination only)
   - `migrate.rs` — `plan_migration`, `run_migration` (take the source `Profile` itself — it may be a detected, unsaved one — and an optional `systems` subset; Classic → ES-DE renames legacy-named media on the fly using `normalize::plan`; same code path with `dry_run`; async + `spawn_blocking`; emits `migration-progress`)
   - `rename.rs` — `list_rename_candidates` (source `title` | `rules`, optional `game_path`, flags `duplicate`/`exists` conflicts), `check_rename_target` (a hand-typed name: `invalid`/`exists`), `rename_roms` (returns renamed/skipped; updates collections and `.m3u`)
   - `rules.rs` — `get_default_rename_rules`, `test_rename_rules`, `import_rename_rules`, `export_rename_rules`
