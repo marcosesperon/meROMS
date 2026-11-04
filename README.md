@@ -143,6 +143,11 @@ meROMS is free. If it saves you time, you can
 [buy me a coffee](https://buymeacoffee.com/marcosesperon). Bugs and ideas are welcome in
 [Issues](https://github.com/marcosesperon/meROMS/issues).
 
+## License
+
+meROMS is open source under the [MIT License](LICENSE). The built-in rename rules come from
+[ES-DE-Roms-Renamer](https://github.com/mirai-toto/ES-DE-Roms-Renamer) (also MIT).
+
 ---
 
 ## For developers
