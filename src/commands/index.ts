@@ -278,6 +278,42 @@ export async function systemLocations(systemPath: string): Promise<SystemLocatio
   return invoke("system_locations", { systemPath });
 }
 
+// DAT files (per system)
+export interface DatSummary {
+  name: string;
+  games: number;
+  clones: number;
+  bios: number;
+}
+
+export interface DatMark {
+  game_path: string;
+  /** "clone" | "bios" | "device" */
+  kind: string;
+  parent: string | null;
+}
+
+export interface DatReport {
+  summary: DatSummary;
+  missing: { name: string; description: string; cloneof: string | null; year: string; manufacturer: string }[];
+  unknown_files: string[];
+  marks: DatMark[];
+  names: { game_path: string; current: string | null; proposed: string }[];
+}
+
+export async function setSystemDat(systemPath: string, datPath: string): Promise<DatSummary> {
+  return invoke("set_system_dat", { systemPath, datPath });
+}
+
+export async function clearSystemDat(systemPath: string): Promise<void> {
+  return invoke("clear_system_dat", { systemPath });
+}
+
+/** null when the system has no DAT */
+export async function datReport(systemPath: string): Promise<DatReport | null> {
+  return invoke("dat_report", { systemPath });
+}
+
 // Duplicates
 export interface DuplicateGroup {
   /** "screenscraper_id" | "hash" | "similar_name" */

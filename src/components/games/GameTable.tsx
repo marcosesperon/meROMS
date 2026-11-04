@@ -15,6 +15,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { StarIcon, StarOutlineIcon, EyeSlashIcon, ChildIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
+import { DatTag } from "../common/DatTag";
 
 const columnHelper = createColumnHelper<Game>();
 
@@ -73,7 +74,12 @@ export function GameTable({ games }: GameTableProps) {
     () => [
       columnHelper.accessor("name", {
         header: t("table.name"),
-        cell: (info) => info.getValue() || info.row.original.path,
+        cell: (info) => (
+          <span className="flex items-center gap-2 min-w-0">
+            <span className="truncate">{info.getValue() || info.row.original.path}</span>
+            <DatTag path={info.row.original.path} className="shrink-0" />
+          </span>
+        ),
         size: 250,
         minSize: 100,
       }),

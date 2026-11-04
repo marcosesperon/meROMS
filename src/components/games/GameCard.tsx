@@ -6,6 +6,7 @@ import { formatRating } from "../../utils/format";
 import { getSystemAspectRatio, extractCustomRatios } from "../../utils/cartridgeSizes";
 import { StarIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
+import { DatTag } from "../common/DatTag";
 
 interface GameCardProps {
   game: Game;
@@ -70,6 +71,8 @@ export function GameCard({ game }: GameCardProps) {
             {checked ? "✓" : ""}
           </div>
         )}
+        {/* Clon / BIOS según el DAT del sistema */}
+        <DatTag path={game.path} className="absolute bottom-1.5 left-1.5 z-10" />
         {romMissing && (
           <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-red-600/90 text-[10px] font-semibold text-white">
             {t("missingRoms.badge")}

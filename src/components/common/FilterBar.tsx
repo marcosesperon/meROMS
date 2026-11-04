@@ -25,6 +25,7 @@ export function FilterBar() {
   const selectedCount = useAppStore((s) => s.selectedPaths.size);
   const setSelectedPaths = useAppStore((s) => s.setSelectedPaths);
   const visibleGames = useFilteredGames();
+  const hasDat = useAppStore((s) => s.datMarks !== null);
   const { t } = useTranslation();
 
   const uniqueGenres = useMemo(() => {
@@ -48,7 +49,8 @@ export function FilterBar() {
     filters.developer ||
     filters.favorite ||
     filters.hidden ||
-    filters.kidgame;
+    filters.kidgame ||
+    filters.hideClones;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -122,6 +124,20 @@ export function FilterBar() {
         <ChildIcon size={12} />
         {t("filter.kidgames")}
       </button>
+
+      {/* Solo si el sistema tiene DAT: ocultar clones (y BIOS/dispositivos) */}
+      {hasDat && (
+        <button
+          onClick={() => setFilters({ hideClones: !filters.hideClones })}
+          className={`flex items-center gap-1 h-8 text-xs px-2.5 rounded border transition-colors ${
+            filters.hideClones
+              ? "bg-sky-500/20 border-sky-500/50 text-sky-300"
+              : "bg-zinc-700 border-zinc-600 text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          {t("dat.hideClones")}
+        </button>
+      )}
 
       {/* Selección múltiple: el clic marca juegos y el panel derecho pasa a la edición en bloque */}
       <div className="flex items-center gap-2 h-8 pl-3 border-l border-zinc-700">

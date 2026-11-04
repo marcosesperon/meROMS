@@ -23,7 +23,8 @@ export function Header() {
     filters.developer ||
     filters.favorite ||
     filters.hidden ||
-    filters.kidgame;
+    filters.kidgame ||
+    filters.hideClones;
 
   return (
     <div>

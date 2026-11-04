@@ -7,6 +7,7 @@ export function useFilteredGames(): Game[] {
   const searchQuery = useAppStore((s) => s.searchQuery);
   const filters = useAppStore((s) => s.filters);
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
+  const datMarks = useAppStore((s) => s.datMarks);
 
   return useMemo(() => {
     let result = games;
@@ -51,7 +52,11 @@ export function useFilteredGames(): Game[] {
     if (filters.kidgame) {
       result = result.filter((g) => g.kidgame === "true");
     }
+    // DAT: hide clones (BIOS and devices too: they aren't games)
+    if (filters.hideClones && datMarks) {
+      result = result.filter((g) => !datMarks.has(g.path));
+    }
 
     return result;
-  }, [games, searchQuery, filters, activeFolderPath]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks]);
 }

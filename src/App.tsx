@@ -20,7 +20,8 @@ import { MediaReviewModal } from "./components/common/MediaReviewModal";
 import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
-import { listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
+import { datReport, listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
+import { DatModal } from "./components/common/DatModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
 import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
@@ -62,6 +63,10 @@ function App() {
   const [newRomsCount, setNewRomsCount] = useState(0);
   const [showMissingRoms, setShowMissingRoms] = useState(false);
   const [showScrapeAll, setShowScrapeAll] = useState(false);
+  const [showDat, setShowDat] = useState(false);
+  const setDatMarks = useAppStore((s) => s.setDatMarks);
+  // Bumped when the DAT changes, so the marks are reloaded
+  const [datVersion, setDatVersion] = useState(0);
   const multiSelect = useAppStore((s) => s.multiSelect);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
@@ -106,6 +111,21 @@ function App() {
       cancelled = true;
     };
   }, [selectedSystem?.path, games]);
+
+  // Clone/BIOS marks from the system's DAT (null = no DAT): on system change, DAT change or games change
+  useEffect(() => {
+    if (!selectedSystem) {
+      setDatMarks(null);
+      return;
+    }
+    let cancelled = false;
+    datReport(selectedSystem.path)
+      .then((r) => !cancelled && setDatMarks(r ? new Map(r.marks.map((m) => [m.game_path, m])) : null))
+      .catch(() => !cancelled && setDatMarks(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedSystem?.path, datVersion, games.length]);
 
   // After media files moved between types: drop cached images, reload and refresh the selection
   async function reloadAfterMediaChange() {
@@ -206,7 +226,8 @@ function App() {
                   { label: t("mediaKinds.reviewButton"), onClick: () => setShowMediaReview(true) },
                   { label: t("mediaKinds.swapButton"), onClick: () => setShowMediaSwap(true) },
                   { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
-                  { label: t("collections.button"), onClick: () => setShowCollectionsModal(true), separatorBefore: true },
+                  { label: t("dat.button"), onClick: () => setShowDat(true), separatorBefore: true },
+                  { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
                 ]}
@@ -245,6 +266,19 @@ function App() {
           }}
         />
       )}
+
+      <DatModal
+        open={showDat}
+        systemPath={selectedSystem?.path || ""}
+        onClose={() => setShowDat(false)}
+        onChanged={() => {
+          setDatVersion((v) => v + 1);
+          if (selectedSystem) {
+            // New ROMs / no-ROM counters and the list (files may have gone to the trash)
+            listNewRoms(selectedSystem.path).then((r) => setNewRomsCount(r.length)).catch(() => {});
+          }
+        }}
+      />
 
       <ScrapeAllModal
         open={showScrapeAll}

@@ -78,6 +78,9 @@ interface AppState {
   setMultiSelect: (on: boolean) => void;
   toggleSelected: (path: string) => void;
   setSelectedPaths: (paths: Set<string>) => void;
+  /** Clone/BIOS marks from the system's DAT (null = the system has no DAT) */
+  datMarks: Map<string, commands.DatMark> | null;
+  setDatMarks: (marks: Map<string, commands.DatMark> | null) => void;
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
   setMissingRomPaths: (paths: Set<string>) => void;
@@ -104,6 +107,8 @@ interface AppState {
     favorite?: boolean;
     hidden?: boolean;
     kidgame?: boolean;
+    /** Hide the games the system's DAT marks as clones */
+    hideClones?: boolean;
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;
@@ -298,6 +303,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ selectedPaths: next });
   },
   setSelectedPaths: (paths) => set({ selectedPaths: paths }),
+  datMarks: null,
+  setDatMarks: (marks) => set({ datMarks: marks }),
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
