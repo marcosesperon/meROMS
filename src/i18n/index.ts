@@ -16,6 +16,12 @@ export const useI18nStore = create<I18nState>((set) => ({
   setLocale: (locale: Locale) => set({ locale }),
 }));
 
+/** Texto suelto en el idioma actual, para usar fuera de los componentes (sin parámetros). */
+export function translate(key: TranslationKeys): string {
+  const dict = translations[useI18nStore.getState().locale];
+  return dict[key] || translations.en[key] || key;
+}
+
 export function useTranslation() {
   const locale = useI18nStore((s) => s.locale);
   const dict = translations[locale];
