@@ -330,6 +330,54 @@ fn update_references(layout: &Layout, system: &SystemRef, renamed: &[(String, St
     }
 }
 
+/// After removing games (Duplicates, Games without ROM): drop the lines that pointed to their
+/// ROMs from the custom collections and from the .m3u playlists of the system folder.
+/// A playlist left without discs stays (empty), it isn't deleted.
+pub(super) fn remove_references(layout: &Layout, system: &SystemRef, removed: &[String]) {
+    if removed.is_empty() {
+        return;
+    }
+
+    let entries: std::collections::HashSet<String> = removed.iter().map(|p| layout.collection_entry(system, p)).collect();
+    if let Ok(files) = fs::read_dir(layout.collections_dir(system)) {
+        for path in files.flatten().map(|e| e.path()) {
+            let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+            if name.starts_with("custom-") && name.ends_with(".cfg") {
+                remove_lines(&path, |line| entries.contains(line.trim()));
+            }
+        }
+    }
+
+    let removed_abs: std::collections::HashSet<std::path::PathBuf> =
+        removed.iter().map(|p| system.rom_dir.join(crate::layout::strip_dot_slash(p))).collect();
+    for m3u in media::list_files_recursive(&system.rom_dir)
+        .into_iter()
+        .filter(|p| media::extension_lower(p).as_deref() == Some("m3u"))
+    {
+        let Some(dir) = m3u.parent().map(Path::to_path_buf) else { continue };
+        remove_lines(&m3u, |line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.starts_with('#') && removed_abs.contains(&dir.join(trimmed))
+        });
+    }
+}
+
+/// Remove the lines of a text file for which `drop` is true (keeping its line endings).
+/// Only writes if something was removed.
+fn remove_lines(path: &Path, drop: impl Fn(&str) -> bool) {
+    let Ok(content) = fs::read_to_string(path) else { return };
+    let newline = if content.contains("\r\n") { "\r\n" } else { "\n" };
+    let kept: Vec<&str> = content.lines().filter(|l| !drop(l)).collect();
+    if kept.len() == content.lines().count() {
+        return;
+    }
+    let mut out = kept.join(newline);
+    if !kept.is_empty() && content.ends_with('\n') {
+        out.push_str(newline);
+    }
+    let _ = fs::write(path, out);
+}
+
 /// Rewrite a text file line by line (keeping its line endings); `change` returns the
 /// new content for a line, or None to leave it as is. Only writes if something changed.
 fn rewrite_lines(path: &Path, change: impl Fn(&str) -> Option<String>) {
@@ -488,6 +536,19 @@ mod tests {
         assert_eq!(entries[1].conflict.as_deref(), Some("duplicate"));
         assert_eq!(entries[2].conflict.as_deref(), Some("exists"));
         assert_eq!(entries[3].conflict, None);
+    }
+
+    #[test]
+    fn removed_roms_leave_collections_and_m3u() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("psx"));
+        fs::create_dir_all(&system.rom_dir).unwrap();
+        fs::write(system.rom_dir.join("custom-Favoritos.cfg"), "./Uno.cue\r\n./Dos.cue\r\n").unwrap();
+        fs::write(system.rom_dir.join("Juego.m3u"), "Juego (Disc 1).cue\nJuego (Disc 2).cue\n").unwrap();
+
+        remove_references(&Layout::Classic, &system, &["./Uno.cue".into(), "./Juego (Disc 2).cue".into()]);
+        assert_eq!(fs::read_to_string(system.rom_dir.join("custom-Favoritos.cfg")).unwrap(), "./Dos.cue\r\n");
+        assert_eq!(fs::read_to_string(system.rom_dir.join("Juego.m3u")).unwrap(), "Juego (Disc 1).cue\n");
     }
 
     #[test]

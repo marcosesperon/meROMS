@@ -180,6 +180,9 @@ pub fn remove_games_with_files(
         gamelist.games.retain(|g| !removed_paths.contains(&g.path));
         // write_gamelist() backs up the gamelist first
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+        // And out of the custom collections and .m3u playlists that listed them
+        let removed: Vec<String> = removed_paths.iter().cloned().collect();
+        super::rename::remove_references(&layout, &system, &removed);
     }
     result.removed = removed_paths.len();
     Ok(result)
