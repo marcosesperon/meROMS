@@ -75,6 +75,15 @@ function RowThumb({ game }: { game: Game }) {
   );
 }
 
+// Columnas «congeladas» en el scroll horizontal: la miniatura y el nombre
+const FROZEN = new Set(["thumb", "name"]);
+// Fondo opaco de las celdas congeladas (si fuera transparente, se verían las columnas que
+// pasan por debajo): el mismo color que la fila, ya mezclado con el fondo
+const FROZEN_BG = {
+  normal: "bg-zinc-900 group-hover:bg-[color-mix(in_srgb,var(--color-zinc-800)_50%,var(--color-zinc-900))]",
+  selected: "bg-[color-mix(in_srgb,var(--color-indigo-600)_15%,var(--color-zinc-900))]",
+};
+
 export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
@@ -222,8 +231,13 @@ export function GameTable({ games }: GameTableProps) {
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="relative text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none"
-                  style={{ width: header.getSize() }}
+                  className={`text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none ${
+                    FROZEN.has(header.column.id) ? "sticky z-20 bg-zinc-800" : "relative"
+                  } ${header.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-700)]" : ""}`}
+                  style={{
+                    width: header.getSize(),
+                    left: FROZEN.has(header.column.id) ? header.column.getStart() : undefined,
+                  }}
                 >
                   <div
                     className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition-colors"
@@ -272,22 +286,28 @@ export function GameTable({ games }: GameTableProps) {
                 openEditor();
               }}
               // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
-              className={`cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
+              className={`group cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
                 (multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path)
                   ? "bg-indigo-600/15"
                   : "hover:bg-zinc-800/50"
               } ${missingRomPaths.has(row.original.path) ? "opacity-50 line-through decoration-red-500/60" : ""}`}
               title={missingRomPaths.has(row.original.path) ? t("missingRoms.badge") : undefined}
             >
-              {row.getVisibleCells().map((cell) => (
+              {row.getVisibleCells().map((cell) => {
+                const frozen = FROZEN.has(cell.column.id);
+                const rowSelected = multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path;
+                return (
                 <td
                   key={cell.id}
-                  className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate`}
-                  style={{ width: cell.column.getSize() }}
+                  className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate ${
+                    frozen ? `sticky z-10 ${rowSelected ? FROZEN_BG.selected : FROZEN_BG.normal}` : ""
+                  } ${cell.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-800)]" : ""}`}
+                  style={{ width: cell.column.getSize(), left: frozen ? cell.column.getStart() : undefined }}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
-              ))}
+                );
+              })}
             </tr>
           ))}
         </tbody>
