@@ -1,5 +1,7 @@
 # meROMS
 
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/marcosesperon)
+
 Desktop ROM manager for EmulationStation `gamelist.xml` files. Browse your systems, edit game
 metadata, manage media, scrape from online databases and keep your library tidy. It supports the
 classic EmulationStation folder structure and ES-DE, and can migrate a library between them.
@@ -7,10 +9,10 @@ classic EmulationStation folder structure and ES-DE, and can migrate a library b
 Built with [Tauri v2](https://tauri.app/) (Rust) + React 19 + TypeScript + Tailwind CSS.
 The UI is available in English and Spanish.
 
----
-
 Website: <https://marcosesperon.github.io/meROMS/> (source in `site/`, published by
 `.github/workflows/pages.yml`).
+
+---
 
 ## Building the app from source
 
@@ -245,6 +247,20 @@ its own Windows, macOS and Linux machines. The workflow is in `.github/workflows
    - Windows: `-setup.exe` and `.msi`
    - Linux: `.deb`, `.rpm` and `.AppImage`
 5. Check it and press **Publish release** to make it public. Until then only you can see it.
+
+### Self-update
+
+From 0.1.4 on, meROMS checks GitHub for a newer version (at start and once a day; it can be turned
+off in Settings > About) and can download, install and restart by itself. For that:
+
+- The update files are signed with meROMS' own updater key. The build workflow reads it from the
+  repository secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`; the
+  public key is in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). **Keep the private key
+  safe**: without it, installed copies will not accept new versions.
+- When you **publish** a Release, `.github/workflows/updater.yml` builds its `latest.json` (what the
+  app reads) from the signed files and the Release notes. Write the notes before publishing, or
+  run that workflow by hand afterwards (Actions > Update manifest).
+- Drafts are never offered: the app only looks at the latest published Release.
 
 The installers are not signed, so the notes in "Install and run" above apply. Actions minutes are
 free for public repositories; for private ones they count against your plan (macOS minutes x10,

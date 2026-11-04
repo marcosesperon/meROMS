@@ -52,6 +52,12 @@ pub struct AppSettings {
     // Last list view ("grid" | "table")
     #[serde(default)]
     pub last_view: Option<String>,
+    // Donation prompt: unix seconds of the first launch, then of the last time it was shown
+    #[serde(default)]
+    pub donation_prompt_at: Option<i64>,
+    // Look for a new version at start and once a day (None = yes)
+    #[serde(default)]
+    pub check_updates: Option<bool>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration

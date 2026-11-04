@@ -151,6 +151,10 @@ export interface AppSettings {
   table_columns?: { id: string; width?: number }[];
   /** Last list view */
   last_view?: "grid" | "table";
+  /** Donation prompt: unix seconds of the first launch, then of the last time it was shown */
+  donation_prompt_at?: number;
+  /** Look for a new version at start and once a day (missing = yes) */
+  check_updates?: boolean;
   ss_languages?: string[];
   tgdb_apikey?: string;
   media_paths?: MediaPathConfig[];

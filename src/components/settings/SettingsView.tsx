@@ -12,6 +12,7 @@ import { MediaConfigTab } from "./MediaConfigTab";
 import { ProfilesTab } from "./ProfilesTab";
 import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
+import { AboutTab } from "./AboutTab";
 import { exportSettings, importSettings } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
@@ -20,7 +21,7 @@ import { ScrapeOrderEditor } from "./ScrapeOrderEditor";
 import { MigrationModal } from "../common/MigrationModal";
 import type { Profile } from "../../types";
 
-type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems";
+type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems" | "about";
 
 interface SettingsViewProps {
   open: boolean;
@@ -159,6 +160,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     { id: "media", label: t("settings.tabMedia") },
     { id: "rules", label: t("settings.tabRules") },
     { id: "systems", label: t("settings.tabSystems") },
+    { id: "about", label: t("settings.tabAbout") },
   ];
 
   function handleTabChange(tab: SettingsTab) {
@@ -427,6 +429,13 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                   system_configs: Object.keys(configs).length > 0 ? configs : undefined,
                 })
               }
+            />
+          )}
+
+          {activeTab === "about" && (
+            <AboutTab
+              checkUpdates={form.check_updates !== false}
+              onCheckUpdatesChange={(on) => setForm({ ...form, check_updates: on ? undefined : false })}
             />
           )}
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "./store/useAppStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
@@ -29,6 +29,11 @@ import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
+import { donationPromptDue } from "./utils/links";
+import { DonationModal } from "./components/common/DonationModal";
+import { UpdateBanner } from "./components/common/UpdateBanner";
+import { UpdateModal } from "./components/common/UpdateModal";
+import { useUpdateStore } from "./store/useUpdateStore";
 import "./App.css";
 
 function App() {
@@ -162,6 +167,41 @@ function App() {
     }
   }, [settingsLoaded, hasUsableProfile]);
 
+  // Donation prompt: checked once per session, a moment after start, and only with a usable
+  // profile and nothing else open (no settings window over the first profile, no editor...).
+  // If something is open then, it waits for the next launch. Nothing is saved while another
+  // window is open either: the settings window would overwrite it with its own copy.
+  const [showDonation, setShowDonation] = useState(false);
+  const donationChecked = useRef(false);
+  useEffect(() => {
+    if (!settingsLoaded || !hasUsableProfile || donationChecked.current) return;
+    // The "checked" mark goes inside the timer: in development React runs effects twice
+    // (the first timer is cancelled), and marking it here would skip the check for good
+    const timer = setTimeout(() => {
+      donationChecked.current = true;
+      if (document.querySelector(".fixed.inset-0")) return;
+      const { settings: current, patchSettings } = useAppStore.getState();
+      const due = donationPromptDue(current.donation_prompt_at, Math.floor(Date.now() / 1000));
+      if (due.saveAt) patchSettings({ donation_prompt_at: due.saveAt });
+      if (due.show) setShowDonation(true);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [settingsLoaded, hasUsableProfile]);
+
+  // New versions: look at start and then once a day while the app stays open, unless turned
+  // off in Settings > About. Automatic checks fail silently (offline, dev build...)
+  const checkUpdates = settings.check_updates !== false;
+  useEffect(() => {
+    if (!settingsLoaded || !checkUpdates) return;
+    const run = () => useUpdateStore.getState().checkNow();
+    const first = setTimeout(run, 3000);
+    const daily = setInterval(run, 24 * 3600 * 1000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(daily);
+    };
+  }, [settingsLoaded, checkUpdates]);
+
   // Open settings modal when currentView changes to "settings"
   useEffect(() => {
     if (currentView === "settings") {
@@ -174,6 +214,7 @@ function App() {
   return (
     <MainLayout>
         <div className="flex-1 flex flex-col overflow-hidden">
+          <UpdateBanner />
           {/* This system's data is in the other structure: offer to migrate just this one */}
           {selectedSystem && pendingStructure?.systems.includes(selectedSystem.name) && (
             <div className="px-6 py-2 shrink-0 border-b border-amber-700/40 bg-amber-600/10 flex items-center justify-between gap-3">
@@ -398,6 +439,10 @@ function App() {
         open={showSettings}
         onClose={() => setShowSettings(false)}
       />
+
+      <DonationModal open={showDonation} onClose={() => setShowDonation(false)} />
+
+      <UpdateModal />
     </MainLayout>
   );
 }

@@ -111,7 +111,13 @@ jobs:
           # Repository secrets; if they don't exist the app builds without them.
           MEROMS_SS_DEVID: ${{ secrets.SS_DEVID }}
           MEROMS_SS_DEVPASSWORD: ${{ secrets.SS_DEVPASSWORD }}
+          # Updater signing key (tauri signer generate): signs the update files (.sig)
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           # The draft created by the first job (all builds upload to it)
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+          # latest.json is built when the Release is published (updater.yml): the three jobs
+          # run in parallel and would overwrite each other's, and the notes are final by then
+          includeUpdaterJson: false

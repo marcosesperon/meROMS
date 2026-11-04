@@ -13,6 +13,9 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        // Self-update (signed releases on GitHub, see tauri.conf.json) and relaunch afterwards
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .register_uri_scheme_protocol("media", |_ctx, request| {
             // The frontend builds the URL with convertFileSrc: the whole file path, percent-encoded,
             // after the first "/" (media://localhost/<path>, or http://media.localhost/<path> on
