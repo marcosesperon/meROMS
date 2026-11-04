@@ -8,7 +8,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 
 ## Features
 
-- **Profiles** — several saved libraries (ROM folder + structure: Classic or ES-DE), switchable from the sidebar; ES-DE paths read from `es_settings.xml`
+- **Profiles** — several saved libraries (ROM folder + structure: Classic or ES-DE), switched in Settings → Profiles; ES-DE paths read from `es_settings.xml`
 - **Browse & edit** — LaunchBox-style layout: compact systems sidebar, cover grid (default) or table, fixed read-only game info panel on the right (hero, media gallery, details; system summary when nothing is selected), slide-over editor opened with Edit / double click; dark warm theme with violet accent
 - **Media** — unified naming `<ES-DE folder>/<ROM name>.<ext>` in both structures; preview and set images/videos per game
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress
@@ -90,7 +90,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `i18n/` — `en.ts` (keep it ASCII-only), `es.ts` translation dictionaries; `index.ts` exposes `useI18nStore` (locale) and `useTranslation()`
 - `App.css` — Tailwind v4 `@theme` that **redefines the `zinc` (warm near-black) and `indigo` (violet) palettes**: the whole UI uses those classes, so the theme is changed here, not per component; thin dark scrollbars
 - `App.tsx` — Root: lays out list column + `GameInfoPanel`; renders the per-system toolbar (New ROMs on the left; `ToolsMenu` "Tools ▾" with the secondary tools, Scrape All and Add Game on the right — keep it from wrapping) and owns the open/close state of every tool modal and the settings view
-- `components/layout/` — `MainLayout`, `Sidebar` (profile selector, compact system rows — logo only (folder name if there's no logo; full name as tooltip) and count — with an amber dot on systems pending migration), `Header` (search + filters toggle + view toggle)
+- `components/layout/` — `MainLayout`, `Sidebar` (no title or profile selector — profiles are switched in Settings; compact system rows — logo only (folder name if there's no logo; full name as tooltip) and count — with an amber dot on systems pending migration; icon-only Settings button), `Header` (search + filters toggle + view toggle)
 - `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard` (cover card: title, developer · year; double click opens the editor, also on table rows)
 - `components/detail/` — `GameInfoPanel` (fixed right panel, read-only: hero from fanart or blurred screenshot, Edit/Scrape/Delete, video + images gallery, details; collapsible), `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab` ("Migrate structure…" for the selected profile; unsaved settings are saved first), General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`

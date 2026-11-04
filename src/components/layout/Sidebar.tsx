@@ -2,7 +2,6 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
 import { SettingsIcon } from "../common/Icons";
-import { getActiveProfile } from "../../utils/profiles";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -11,41 +10,14 @@ export function Sidebar() {
   const setCurrentView = useAppStore((s) => s.setCurrentView);
   const loading = useAppStore((s) => s.loading);
   const scanProgress = useAppStore((s) => s.scanProgress);
-  const settings = useAppStore((s) => s.settings);
-  const setActiveProfile = useAppStore((s) => s.setActiveProfile);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
   const { t } = useTranslation();
-
-  const profiles = settings.profiles ?? [];
-  const activeProfile = getActiveProfile(settings);
 
   const isScanning = loading && scanProgress !== null;
 
   return (
     <aside className="w-48 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-800">
-        <h1 className="text-lg font-bold tracking-tight text-zinc-100">{t("sidebar.title")}</h1>
-        <p className="text-xs text-zinc-500">{t("sidebar.subtitle")}</p>
-        {profiles.length > 0 && (
-          <label className="block mt-3">
-            <span className="text-[10px] uppercase tracking-wide text-zinc-500">{t("sidebar.profile")}</span>
-            <select
-              value={activeProfile?.id ?? ""}
-              onChange={(e) => setActiveProfile(e.target.value)}
-              disabled={loading}
-              className="mt-1 w-full bg-zinc-800 border border-zinc-700 rounded-md px-2 py-1.5 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-            >
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.kind === "esde" ? "ES-DE" : t("profiles.kindClassic")})
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
-
-      <p className="px-4 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+      <p className="px-4 pt-5 pb-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
         {t("sidebar.systems")}
       </p>
       <nav className="flex-1 overflow-y-auto pb-2">
@@ -136,12 +108,14 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-zinc-800 h-12 shrink-0 flex items-center px-3">
+        {/* Solo el icono; el texto sale al pasar el ratón */}
         <button
           onClick={() => setCurrentView("settings")}
-          className="w-full text-left px-3 py-1 text-sm text-zinc-400 hover:bg-zinc-800 rounded transition-colors flex items-center gap-2"
+          title={t("sidebar.settings")}
+          aria-label={t("sidebar.settings")}
+          className="p-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
         >
-          <SettingsIcon size={16} />
-          {t("sidebar.settings")}
+          <SettingsIcon size={18} />
         </button>
       </div>
     </aside>
