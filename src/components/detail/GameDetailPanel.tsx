@@ -183,9 +183,11 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={handleClose} />
-      <div className="fixed top-0 right-0 bottom-0 w-[480px] bg-zinc-900 border-l border-zinc-700 flex flex-col overflow-hidden z-50 shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700">
+      {/* Ventana centrada y grande (antes era un panel lateral estrecho) */}
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={handleClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-6 pointer-events-none">
+      <div className="pointer-events-auto w-full max-w-6xl h-full max-h-[900px] bg-zinc-900 border border-zinc-700 rounded-xl flex flex-col overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-700">
           <h3 className="text-sm font-semibold text-zinc-200">
             {isNewGame ? t("detail.addGame") : t("detail.editGame")}
           </h3>
@@ -216,7 +218,10 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        {/* Dos columnas en pantallas anchas: medios a la izquierda, datos a la derecha.
+            Cada una con su propio scroll. En ventanas estrechas, una debajo de otra. */}
+        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden lg:grid lg:grid-cols-2">
+          <div className="p-5 space-y-6 lg:overflow-y-auto lg:border-r lg:border-zinc-800">
           {selectedSystem && (
             <ImageManager
               game={editedGame}
@@ -227,15 +232,18 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               onChangeKind={!isNewGame ? handleChangeKind : undefined}
             />
           )}
+          </div>
+          <div className="p-5 lg:overflow-y-auto">
           <GameForm
             game={editedGame}
             onChange={handleFieldChange}
             onRenameRom={!isNewGame ? () => runTool("rename") : undefined}
           />
+          </div>
         </div>
 
         {/* Sin «Cancelar»: para salir sin guardar ya está la X de arriba */}
-        <div className="border-t border-zinc-700 h-12 shrink-0 px-4 flex items-center justify-end gap-3">
+        <div className="border-t border-zinc-700 h-14 shrink-0 px-5 flex items-center justify-end gap-3">
           <button
             onClick={handleSave}
             disabled={saving || !editedGame.path}
@@ -244,6 +252,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             {saving ? t("detail.saving") : t("detail.save")}
           </button>
         </div>
+      </div>
       </div>
 
       <ConfirmDialog
