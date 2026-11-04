@@ -319,9 +319,7 @@ function SystemSummary() {
         </>
       )}
 
-      <SystemLocationsBlock systemPath={selectedSystem.path} />
-
-      {/* Cifras de la biblioteca: al final y compactas, una fila de casillas */}
+      {/* Cifras de la biblioteca: compactas, una fila de casillas */}
       <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
       <dl className="grid grid-cols-5 gap-1.5">
         {stats.map(([label, value]) => (
@@ -331,6 +329,8 @@ function SystemSummary() {
           </div>
         ))}
       </dl>
+
+      <SystemLocationsBlock systemPath={selectedSystem.path} />
     </div>
   );
 }
