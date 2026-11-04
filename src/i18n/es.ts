@@ -289,6 +289,8 @@ const es: Record<TranslationKeys, string> = {
   "normalize.button": "Normalizar medios",
   "normalize.title": "Normalizar nombres de medios",
   "normalize.description": "Mueve los medios de este sistema a <carpeta>/<nombre de la ROM>.<ext> (nombres de carpeta de ES-DE) y actualiza la gamelist, para que después la biblioteca se pueda migrar simplemente moviendo carpetas.",
+  "normalize.descriptionEsde": "Busca en la carpeta de ROMs los medios que se quedaron con la estructura clásica (images/, -boxart, -screenshot...) y los mueve a la carpeta de medios de ES-DE con el nombre de la ROM.",
+  "normalize.nothingEsde": "No quedan medios con estructura clásica en la carpeta de ROMs.",
   "normalize.scanning": "Buscando medios...",
   "normalize.nothing": "Todos los medios siguen ya el nombrado unificado.",
   "normalize.found": "{count} cambios propuestos",

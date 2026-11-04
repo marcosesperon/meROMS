@@ -10,7 +10,6 @@ import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
-import { getActiveProfile } from "../../utils/profiles";
 
 // Per-game tools (the same ones the system toolbar has, limited to this game)
 type GameTool = "rename" | "normalize" | "clean";
@@ -29,8 +28,6 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
   const setGames = useAppStore((s) => s.setGames);
   const selectGame = useAppStore((s) => s.selectGame);
   const loadGames = useAppStore((s) => s.loadGames);
-  const settings = useAppStore((s) => s.settings);
-  const isClassic = getActiveProfile(settings)?.kind === "classic";
   const { t } = useTranslation();
 
   const initialGame = useMemo(
@@ -203,7 +200,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               game={editedGame}
               systemPath={selectedSystem.path}
               onUpdate={handleFieldChange}
-              onNormalize={!isNewGame && isClassic ? () => runTool("normalize") : undefined}
+              onNormalize={!isNewGame ? () => runTool("normalize") : undefined}
               onClean={!isNewGame ? () => runTool("clean") : undefined}
             />
           )}

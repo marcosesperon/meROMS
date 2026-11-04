@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { applyMediaNormalization, planMediaNormalization } from "../../commands";
 import type { NormalizeItem } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
+import { getActiveProfile } from "../../utils/profiles";
 
 interface NormalizeMediaModalProps {
   open: boolean;
@@ -19,13 +20,15 @@ interface NormalizeMediaModalProps {
 const itemKey = (item: NormalizeItem) => `${item.game_path}|${item.field}`;
 
 /**
- * Normalizador de medios (perfiles clásicos): enseña qué ficheros se van a mover a
- * `<carpeta>/<nombre ROM>.<ext>` y deja elegir cuáles aplicar. Los conflictos
- * (destino ocupado por otro fichero) se enseñan pero no se pueden marcar.
+ * Normalizador de medios: enseña qué ficheros se van a mover a `<carpeta>/<nombre ROM>.<ext>`
+ * y deja elegir cuáles aplicar. Los conflictos (destino ocupado por otro fichero) se enseñan
+ * pero no se pueden marcar. Con perfil ES-DE sirve para recuperar los medios que se quedaron
+ * en la carpeta de ROMs con la estructura clásica.
  */
 export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameName, onDone }: NormalizeMediaModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
+  const isEsde = useAppStore((s) => getActiveProfile(s.settings)?.kind === "esde");
   const [items, setItems] = useState<NormalizeItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
@@ -107,7 +110,7 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
           <h3 className="text-base font-semibold text-zinc-100">
             {gamePath ? t("gameTools.normalizeTitle", { name: gameName || gamePath }) : t("normalize.title")}
           </h3>
-          <p className="text-sm text-zinc-400 mt-1">{t("normalize.description")}</p>
+          <p className="text-sm text-zinc-400 mt-1">{t(isEsde ? "normalize.descriptionEsde" : "normalize.description")}</p>
           {!scanning && items.length > 0 && (
             <p className="text-xs text-zinc-500 mt-2">
               {t("normalize.found", { count: applicable.length })}
@@ -122,7 +125,7 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
           ) : error ? (
             <div className="py-12 px-8 text-center text-sm text-red-400">{error}</div>
           ) : items.length === 0 ? (
-            <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("normalize.nothing")}</div>
+            <div className="py-12 px-8 text-center text-sm text-zinc-500">{t(isEsde ? "normalize.nothingEsde" : "normalize.nothing")}</div>
           ) : (
             <>
               <div className="px-5 py-2 border-b border-zinc-700/50">

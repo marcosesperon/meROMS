@@ -148,15 +148,13 @@ function App() {
               >
                 {t("rename.button")}
               </button>
-              {activeProfile?.kind === "classic" && (
-                <button
-                  onClick={() => setShowNormalizeModal(true)}
-                  className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-                  title={t("normalize.description")}
-                >
-                  {t("normalize.button")}
-                </button>
-              )}
+              <button
+                onClick={() => setShowNormalizeModal(true)}
+                className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+                title={t(activeProfile?.kind === "esde" ? "normalize.descriptionEsde" : "normalize.description")}
+              >
+                {t("normalize.button")}
+              </button>
               <button
                 onClick={() => setShowCleanupModal(true)}
                 className="px-3 py-1.5 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"

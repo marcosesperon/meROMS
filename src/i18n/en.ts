@@ -287,6 +287,8 @@ const en = {
   "normalize.button": "Normalize Media",
   "normalize.title": "Normalize media names",
   "normalize.description": "Moves this system's media to <folder>/<ROM name>.<ext> (ES-DE folder names) and updates the gamelist, so the library can later be migrated just by moving folders.",
+  "normalize.descriptionEsde": "Looks in the ROM folder for media left with the Classic structure (images/, -boxart, -screenshot...) and moves it to the ES-DE media folder, named after the ROM.",
+  "normalize.nothingEsde": "No Classic-structure media left in the ROM folder.",
   "normalize.scanning": "Looking for media...",
   "normalize.nothing": "All media already follow the unified naming.",
   "normalize.found": "{count} changes proposed",
