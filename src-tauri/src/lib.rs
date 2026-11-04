@@ -94,6 +94,7 @@ pub fn run() {
             migrate::plan_migration,
             migrate::run_migration,
             duplicates::find_duplicates,
+            duplicates::remove_games_with_files,
             collections::detect_multidisc_games,
             collections::generate_m3u_playlists,
             collections::generate_collection,

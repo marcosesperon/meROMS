@@ -247,9 +247,13 @@ const en = {
   "duplicates.title": "Duplicate Games",
   "duplicates.scanning": "Scanning for duplicates...",
   "duplicates.noDuplicates": "No duplicates found",
-  "duplicates.reason": "Reason",
   "duplicates.removeSelected": "Remove Selected ({count})",
-  "duplicates.group": "{count} duplicate games",
+  "duplicates.summary": "{groups} groups - {games} games",
+  "duplicates.reason_screenscraper_id": "Same ScreenScraper ID: {id}",
+  "duplicates.reason_hash": "Same file (hash)",
+  "duplicates.reason_similar_name": "Similar name",
+  "duplicates.removeConfirm": "Remove {games} games from the gamelist and send {files} files (ROMs and media) to the trash?",
+  "duplicates.removeFailed": "{count} could not be sent to the trash:",
 
   // Collections
   "collections.button": "Collections",

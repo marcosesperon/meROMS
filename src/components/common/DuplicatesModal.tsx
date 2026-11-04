@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { findDuplicates, removeGame } from "../../commands";
+import { findDuplicates, removeGamesWithFiles } from "../../commands";
+import { askConfirm, showMessage } from "../../utils/dialogs";
 import type { DuplicateGroup } from "../../commands";
 import type { Game } from "../../types";
+import type { TranslationKeys } from "../../i18n/en";
 
 interface DuplicatesModalProps {
   open: boolean;
@@ -58,8 +60,17 @@ export function DuplicatesModal({
     if (selected.size === 0) return;
     setRemoving(true);
     try {
-      for (const gamePath of selected) {
-        await removeGame(systemPath, gamePath);
+      const paths = [...selected];
+      // First the list of files, to say what will go to the trash
+      const plan = await removeGamesWithFiles(systemPath, paths, true);
+      const ok = await askConfirm(t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length }));
+      if (!ok) return;
+      const removal = await removeGamesWithFiles(systemPath, paths, false);
+      if (removal.failed.length > 0) {
+        await showMessage(
+          t("duplicates.removeFailed", { count: removal.failed.length }) + "\n" + removal.failed.join("\n"),
+          "error"
+        );
       }
       // Re-scan after removal
       const result = await findDuplicates(systemPath);
@@ -68,6 +79,7 @@ export function DuplicatesModal({
       onGamesChanged?.();
     } catch (e) {
       console.error("Remove failed:", e);
+      await showMessage(String(e), "error");
     } finally {
       setRemoving(false);
     }
@@ -87,7 +99,7 @@ export function DuplicatesModal({
           </h3>
           {!scanning && groups.length > 0 && (
             <p className="text-sm text-zinc-400 mt-1">
-              {groups.length} {t("duplicates.group", { count: totalDuplicates })}
+              {t("duplicates.summary", { groups: groups.length, games: totalDuplicates })}
             </p>
           )}
         </div>
@@ -108,7 +120,7 @@ export function DuplicatesModal({
                 <div key={gi} className="px-5 py-3">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs font-medium text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">
-                      {t("duplicates.reason")}: {group.reason}
+                      {t(`duplicates.reason_${group.reason}` as TranslationKeys, { id: group.detail ?? "" })}
                     </span>
                     <span className="text-xs text-zinc-500">
                       {group.games.length} {t("header.games")}

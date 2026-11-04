@@ -1,9 +1,26 @@
+use std::collections::HashSet;
+use std::path::PathBuf;
+
+use crate::layout::{Layout, SystemRef};
+use crate::media::{self, MEDIA_KINDS};
 use crate::models::game::Game;
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct DuplicateGroup {
+    /// Why they are grouped: "screenscraper_id" | "hash" | "similar_name" (translated in the UI)
     pub reason: String,
+    /// Extra detail for the reason (the ScreenScraper ID)
+    pub detail: Option<String>,
     pub games: Vec<Game>,
+}
+
+#[derive(Debug, Clone, Default, serde::Serialize)]
+pub struct RemoveResult {
+    /// Games taken out of the gamelist
+    pub removed: usize,
+    /// Files sent (or, in a dry run, to be sent) to the trash
+    pub files: Vec<String>,
+    pub failed: Vec<String>,
 }
 
 /// Normalize a game name for fuzzy comparison:
@@ -48,7 +65,8 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec
     for (id, indices) in &id_map {
         if indices.len() > 1 {
             groups.push(DuplicateGroup {
-                reason: format!("Same ScreenScraper ID: {}", id),
+                reason: "screenscraper_id".to_string(),
+                detail: Some(id.clone()),
                 games: indices.iter().map(|&i| games[i].clone()).collect(),
             });
             for &i in indices {
@@ -74,7 +92,8 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec
     for (_hash, indices) in &hash_map {
         if indices.len() > 1 {
             groups.push(DuplicateGroup {
-                reason: "Same file hash".to_string(),
+                reason: "hash".to_string(),
+                detail: None,
                 games: indices.iter().map(|&i| games[i].clone()).collect(),
             });
             for &i in indices {
@@ -99,11 +118,181 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec
     for (_name, indices) in &name_map {
         if indices.len() > 1 {
             groups.push(DuplicateGroup {
-                reason: "Similar name".to_string(),
+                reason: "similar_name".to_string(),
+                detail: None,
                 games: indices.iter().map(|&i| games[i].clone()).collect(),
             });
         }
     }
 
     Ok(groups)
+}
+
+/// Remove duplicates for good: take the games out of the gamelist and send their ROM file and
+/// all their media to the trash. With `dry_run` nothing is touched: it only lists the files
+/// (the UI shows the count before asking for confirmation).
+/// A game whose ROM can't be trashed stays in the gamelist, so no ROM is left without entry.
+#[tauri::command]
+pub fn remove_games_with_files(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_paths: Vec<String>,
+    dry_run: bool,
+) -> Result<RemoveResult, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let plan = files_to_remove(&layout, &system, &gamelist.games, &game_paths);
+
+    let mut result = RemoveResult::default();
+    result.files = plan.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter())).map(|p| p.to_string_lossy().to_string()).collect();
+    if dry_run {
+        result.removed = plan.len();
+        return Ok(result);
+    }
+
+    let mut removed_paths: HashSet<String> = HashSet::new();
+    for (game_path, rom, media_files) in &plan {
+        // The ROM first: if it can't go to the trash, the game stays
+        if let Some(rom) = rom {
+            if let Err(e) = trash::delete(rom) {
+                result.failed.push(format!("{} ({})", rom.display(), e));
+                continue;
+            }
+        }
+        removed_paths.insert(game_path.clone());
+        for file in media_files {
+            if let Err(e) = trash::delete(file) {
+                result.failed.push(format!("{} ({})", file.display(), e));
+            }
+        }
+    }
+
+    if !removed_paths.is_empty() {
+        gamelist.games.retain(|g| !removed_paths.contains(&g.path));
+        // write_gamelist() backs up the gamelist first
+        super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+    }
+    result.removed = removed_paths.len();
+    Ok(result)
+}
+
+/// For each game to remove: its path, its ROM (file or folder, if it exists) and its media files.
+/// Media = every file named after the ROM in each media folder (any extension) and, in Classic,
+/// the files its media fields point to, unless a game that stays also uses them.
+fn files_to_remove(
+    layout: &Layout,
+    system: &SystemRef,
+    games: &[Game],
+    game_paths: &[String],
+) -> Vec<(String, Option<PathBuf>, Vec<PathBuf>)> {
+    // Media used by the games that stay (Classic): never trash those
+    let kept_media: HashSet<PathBuf> = if layout.writes_media_tags() {
+        games
+            .iter()
+            .filter(|g| !game_paths.contains(&g.path))
+            .flat_map(|g| media::media_fields().filter_map(move |f| media::get_field(g, f)))
+            .map(|v| media::resolve_media_path(system, v))
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
+    let mut seen: HashSet<PathBuf> = HashSet::new();
+    let mut out = Vec::new();
+    for game in games.iter().filter(|g| game_paths.contains(&g.path)) {
+        let rom = media::resolve_media_path(system, &game.path);
+        let rom = rom.exists().then_some(rom);
+
+        let mut media_files = Vec::new();
+        let mut add = |file: PathBuf, media_files: &mut Vec<PathBuf>| {
+            if file.is_file() && !kept_media.contains(&file) && seen.insert(file.clone()) {
+                media_files.push(file);
+            }
+        };
+        for kind in MEDIA_KINDS {
+            for ext in kind.extensions() {
+                add(layout.media_file_path(system, kind.folder, &game.path, ext), &mut media_files);
+            }
+        }
+        if layout.writes_media_tags() {
+            for field in media::media_fields() {
+                if let Some(value) = media::get_field(game, field) {
+                    add(media::resolve_media_path(system, value), &mut media_files);
+                }
+            }
+        }
+        out.push((game.path.clone(), rom, media_files));
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::path::Path;
+
+    fn touch(path: &Path) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, b"x").unwrap();
+    }
+
+    fn game(path: &str) -> Game {
+        Game { path: path.into(), name: Some(path.into()), ..Default::default() }
+    }
+
+    fn names(files: &[PathBuf], base: &Path) -> Vec<String> {
+        let mut v: Vec<String> = files.iter().map(|f| f.strip_prefix(base).unwrap().to_string_lossy().replace('\\', "/")).collect();
+        v.sort();
+        v
+    }
+
+    #[test]
+    fn esde_collects_the_rom_and_every_media_named_after_it() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = Layout::Esde(crate::layout::EsdePaths {
+            home: tmp.path().join("ES-DE"),
+            media_root: tmp.path().join("ES-DE/downloaded_media"),
+        });
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/mastersystem"));
+        let media_dir = tmp.path().join("ES-DE/downloaded_media/mastersystem");
+        touch(&system.rom_dir.join("SDI.sms"));
+        touch(&media_dir.join("covers/SDI.png"));
+        touch(&media_dir.join("covers/SDI.jpg"));
+        touch(&media_dir.join("videos/SDI.mp4"));
+        touch(&media_dir.join("covers/Otro.png"));
+
+        let plan = files_to_remove(&layout, &system, &[game("./SDI.sms"), game("./Otro.sms")], &["./SDI.sms".into()]);
+        assert_eq!(plan.len(), 1);
+        assert_eq!(plan[0].1.as_deref(), Some(system.rom_dir.join("SDI.sms").as_path()));
+        assert_eq!(names(&plan[0].2, &media_dir), vec!["covers/SDI.jpg", "covers/SDI.png", "videos/SDI.mp4"]);
+    }
+
+    #[test]
+    fn classic_keeps_media_shared_with_a_game_that_stays() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("mastersystem"));
+        touch(&system.rom_dir.join("Global Defense.sms"));
+        touch(&system.rom_dir.join("SDI.sms"));
+        touch(&system.rom_dir.join("images/SDI-image.png"));
+        touch(&system.rom_dir.join("images/compartida.png"));
+        touch(&system.rom_dir.join("covers/SDI.png"));
+        let mut to_remove = game("./SDI.sms");
+        to_remove.image = Some("./images/SDI-image.png".into());
+        to_remove.thumbnail = Some("./images/compartida.png".into());
+        let mut stays = game("./Global Defense.sms");
+        stays.thumbnail = Some("./images/compartida.png".into());
+
+        let plan = files_to_remove(&Layout::Classic, &system, &[to_remove, stays], &["./SDI.sms".into()]);
+        assert_eq!(names(&plan[0].2, &system.rom_dir), vec!["covers/SDI.png", "images/SDI-image.png"]);
+    }
+
+    #[test]
+    fn a_missing_rom_is_none() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("mastersystem"));
+        let plan = files_to_remove(&Layout::Classic, &system, &[game("./Nada.sms")], &["./Nada.sms".into()]);
+        assert!(plan[0].1.is_none());
+        assert!(plan[0].2.is_empty());
+    }
 }

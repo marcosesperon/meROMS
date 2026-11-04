@@ -215,12 +215,26 @@ export async function switchImageType(
 
 // Duplicates
 export interface DuplicateGroup {
+  /** "screenscraper_id" | "hash" | "similar_name" */
   reason: string;
+  /** Extra detail (the ScreenScraper ID) */
+  detail: string | null;
   games: Game[];
 }
 
 export async function findDuplicates(systemPath: string): Promise<DuplicateGroup[]> {
   return invoke("find_duplicates", { systemPath });
+}
+
+export interface RemoveResult {
+  removed: number;
+  files: string[];
+  failed: string[];
+}
+
+/** Remove games from the gamelist and send their ROM + media to the trash (dryRun: only list) */
+export async function removeGamesWithFiles(systemPath: string, gamePaths: string[], dryRun: boolean): Promise<RemoveResult> {
+  return invoke("remove_games_with_files", { systemPath, gamePaths, dryRun });
 }
 
 // Collections

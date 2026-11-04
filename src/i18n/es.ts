@@ -249,9 +249,13 @@ const es: Record<TranslationKeys, string> = {
   "duplicates.title": "Juegos Duplicados",
   "duplicates.scanning": "Buscando duplicados...",
   "duplicates.noDuplicates": "No se encontraron duplicados",
-  "duplicates.reason": "Razón",
   "duplicates.removeSelected": "Eliminar Seleccionados ({count})",
-  "duplicates.group": "{count} juegos duplicados",
+  "duplicates.summary": "{groups} grupos · {games} juegos",
+  "duplicates.reason_screenscraper_id": "Mismo ID de ScreenScraper: {id}",
+  "duplicates.reason_hash": "Mismo fichero (hash)",
+  "duplicates.reason_similar_name": "Nombre parecido",
+  "duplicates.removeConfirm": "¿Quitar {games} juegos de la gamelist y mandar {files} ficheros (ROMs y medios) a la papelera?",
+  "duplicates.removeFailed": "{count} no se han podido mandar a la papelera:",
 
   // Collections
   "collections.button": "Colecciones",
