@@ -20,6 +20,7 @@ const es: Record<TranslationKeys, string> = {
   "gameList.selectSystem": "Selecciona un sistema",
   "gameList.selectSystemDesc": "Elige un sistema de la barra lateral para explorar sus juegos.",
   "gameList.generating": "Generando gamelist...",
+  "gameList.loadFailed": "No se ha podido leer la gamelist: {error}",
   "gameList.loading": "Cargando...",
   "gameList.noGamelist": "No se encontró gamelist.xml",
   "gameList.noGamelistDesc": "Se encontraron {count} archivos ROM en esta carpeta. ¿Generar un gamelist.xml a partir de los archivos existentes?",

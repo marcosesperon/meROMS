@@ -10,7 +10,8 @@ import type {
   ViewMode,
 } from "../types";
 import * as commands from "../commands";
-import { useI18nStore } from "../i18n";
+import { translate, useI18nStore } from "../i18n";
+import { showMessage } from "../utils/dialogs";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
@@ -223,6 +224,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (e) {
       console.error("Failed to load gamelist:", e);
       set({ loading: false });
+      // Before, a gamelist that couldn't be read just looked like an empty system
+      showMessage(translate("gameList.loadFailed").replace("{error}", String(e)), "error");
     }
   },
   selectGame: (game: Game | null) => set({ selectedGame: game }),

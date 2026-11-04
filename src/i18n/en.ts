@@ -18,6 +18,7 @@ const en = {
   "gameList.selectSystem": "Select a system",
   "gameList.selectSystemDesc": "Choose a system from the sidebar to browse its games.",
   "gameList.generating": "Generating gamelist...",
+  "gameList.loadFailed": "The gamelist could not be read: {error}",
   "gameList.loading": "Loading...",
   "gameList.noGamelist": "No gamelist.xml found",
   "gameList.noGamelistDesc": "Found {count} ROM files in this folder. Generate a gamelist.xml from the existing files?",

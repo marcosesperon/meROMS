@@ -101,7 +101,7 @@ fn read_setting(xml: &str, element: &str, name: &str) -> Result<Option<String>, 
 
 /// La carpeta de datos de ES-DE a partir de la elegida: ella misma si tiene settings/ o
 /// gamelists/; si no, su subcarpeta «ES-DE» si la tiene (versión portable); si no, la elegida.
-fn data_folder(picked: &Path) -> PathBuf {
+pub fn data_folder(picked: &Path) -> PathBuf {
     let looks_like_data = |dir: &Path| dir.join("settings").is_dir() || dir.join("gamelists").is_dir();
     if looks_like_data(picked) {
         return picked.to_path_buf();

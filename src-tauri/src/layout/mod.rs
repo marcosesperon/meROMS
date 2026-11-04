@@ -77,6 +77,9 @@ impl Layout {
                     .filter(|p| !p.is_empty())
                     .map(PathBuf::from)
                     .ok_or_else(|| format!("Profile '{}' has no ES-DE folder configured", profile.name))?;
+                // ES-DE portable: si el perfil guarda la carpeta del ejecutable (C:\ES-DE), los
+                // datos están en su subcarpeta ES-DE (perfiles creados antes de detectarlo)
+                let home = esde_settings::data_folder(&home);
                 let media_root = profile
                     .media_dir
                     .as_deref()
@@ -204,6 +207,17 @@ mod tests {
             media_dir: media.map(String::from),
             skip_structure_prompt: false,
         }
+    }
+
+    #[test]
+    fn perfil_portable_guardado_con_la_carpeta_del_ejecutable() {
+        // Perfil creado antes de detectar la versión portable: guarda C:\\ES-DE en vez de C:\\ES-DE\\ES-DE
+        let tmp = tempfile::tempdir().unwrap();
+        let exe_dir = tmp.path().join("ES-DE");
+        fs::create_dir_all(exe_dir.join("ES-DE/gamelists/cps2")).unwrap();
+        let layout = Layout::for_profile(&esde_profile(&exe_dir.to_string_lossy(), None)).unwrap();
+        let system = SystemRef::from_rom_dir(exe_dir.join("ROMs/cps2"));
+        assert_eq!(layout.gamelist_path(&system), exe_dir.join("ES-DE/gamelists/cps2/gamelist.xml"));
     }
 
     #[test]
