@@ -328,6 +328,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             gamePath={selectedGame.path}
             gameName={selectedGame.name}
             onClose={() => setActiveTool(null)}
+            onDone={() => refreshGame(selectedGame.path)}
           />
         </>
       )}

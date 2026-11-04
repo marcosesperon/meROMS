@@ -342,17 +342,177 @@ fn unused_file(path: &Path, base: &Path) -> UnusedMediaFile {
     }
 }
 
-/// Delete a list of files by their absolute paths.
+/// Un medio que sobra porque es idéntico a otro tipo del mismo juego
+#[derive(Debug, Clone, Serialize)]
+pub struct RepeatedFile {
+    pub path: String,
+    /// Campo de la gamelist del tipo (image, thumbnail…)
+    pub field: String,
+    pub size: u64,
+}
+
+/// Un juego con la misma imagen en varios tipos: cuál se queda y cuáles sobran
+#[derive(Debug, Clone, Serialize)]
+pub struct RepeatedMedia {
+    pub game_path: String,
+    pub game_name: String,
+    pub keep_path: String,
+    pub keep_field: String,
+    pub remove: Vec<RepeatedFile>,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct TrashMediaResult {
+    pub trashed: usize,
+    pub failed: Vec<String>,
+}
+
+/// Orden fijo para decidir qué tipo se queda cuando no se sabe por el tamaño de la imagen.
+/// Solo imágenes: vídeos y manuales nunca coinciden con una imagen.
+const KEEP_ORDER: &[&str] = &["image", "boxart", "boxback", "titleshot", "thumbnail", "marquee", "wheel", "fanart", "mix", "cartridge"];
+
+/// Juegos que tienen exactamente el mismo fichero (byte a byte) en más de un tipo de medio.
+/// Con `game_path`, solo ese juego (desde el detalle).
 #[tauri::command]
-pub fn delete_files(paths: Vec<String>) -> Result<usize, String> {
-    let mut deleted = 0;
-    for path in &paths {
-        match fs::remove_file(path) {
-            Ok(_) => deleted += 1,
-            Err(e) => eprintln!("Failed to delete {}: {}", path, e),
+pub fn find_repeated_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    Ok(find_repeated(&layout, &system, &games, game_path.as_deref()))
+}
+
+fn find_repeated(layout: &Layout, system: &SystemRef, games: &[crate::models::Game], only: Option<&str>) -> Vec<RepeatedMedia> {
+    let index = MediaIndex::build(layout, system);
+    // Lo habitual del sistema (siempre con todos los juegos, aunque se mire uno solo)
+    let (cover_profile, shot_profile) = super::media_kinds::usual_sizes(layout, system, games);
+    let mut out = Vec::new();
+
+    for game in games.iter().filter(|g| only.is_none_or(|p| p == g.path)) {
+        // Fichero actual de cada tipo de imagen, agrupando por tamaño en bytes (barato) y,
+        // solo si coincide, por la huella MD5 del contenido
+        let mut files: Vec<(&'static str, PathBuf, u64)> = Vec::new();
+        for field in KEEP_ORDER {
+            let Some(kind) = media::kind_for_field(field) else { continue };
+            if let Some(path) = super::media_kinds::current_file(layout, system, &index, game, kind) {
+                let size = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+                if size > 0 && !files.iter().any(|(_, p, _)| *p == path) {
+                    files.push((kind.field, path, size));
+                }
+            }
+        }
+        let mut groups: Vec<Vec<(&'static str, PathBuf, u64)>> = Vec::new();
+        for (i, (_, _, size)) in files.iter().enumerate() {
+            if files[..i].iter().any(|(_, _, s)| s == size) || files.iter().filter(|(_, _, s)| s == size).count() < 2 {
+                continue; // ya agrupado, o sin pareja posible
+            }
+            let same_size: Vec<_> = files.iter().filter(|(_, _, s)| s == size).cloned().collect();
+            let mut by_hash: Vec<(String, Vec<(&'static str, PathBuf, u64)>)> = Vec::new();
+            for f in same_size {
+                let Some(hash) = file_md5(&f.1) else { continue };
+                match by_hash.iter_mut().find(|(h, _)| *h == hash) {
+                    Some((_, list)) => list.push(f),
+                    None => by_hash.push((hash, vec![f])),
+                }
+            }
+            groups.extend(by_hash.into_iter().map(|(_, list)| list).filter(|l| l.len() > 1));
+        }
+
+        for group in groups {
+            // Cuál se queda: si la imagen parece carátula (o captura) según lo habitual del
+            // sistema y ese tipo está en el grupo, ese; si no, el primero del orden fijo
+            let looks = super::media_kinds::info(&group[0].1)
+                .map(|i| super::media_kinds::looks_like(&i, cover_profile, shot_profile));
+            let preferred = match looks {
+                Some(super::media_kinds::Looks::Cover) => Some("image"),
+                Some(super::media_kinds::Looks::Screenshot) => Some("thumbnail"),
+                _ => None,
+            };
+            let keep = preferred
+                .and_then(|f| group.iter().find(|(field, _, _)| *field == f))
+                .unwrap_or(&group[0]) // el grupo ya va en el orden fijo
+                .clone();
+            out.push(RepeatedMedia {
+                game_path: game.path.clone(),
+                game_name: game.name.clone().unwrap_or_else(|| game.path.clone()),
+                keep_path: keep.1.to_string_lossy().to_string(),
+                keep_field: keep.0.to_string(),
+                remove: group
+                    .iter()
+                    .filter(|(field, _, _)| *field != keep.0)
+                    .map(|(field, path, size)| RepeatedFile { path: path.to_string_lossy().to_string(), field: field.to_string(), size: *size })
+                    .collect(),
+            });
         }
     }
-    Ok(deleted)
+    out
+}
+
+fn file_md5(path: &Path) -> Option<String> {
+    use md5::{Digest, Md5};
+    let bytes = fs::read(path).ok()?;
+    Some(format!("{:x}", Md5::digest(&bytes)))
+}
+
+/// Manda medios a la papelera (no usados o repetidos). Solo acepta ficheros de la carpeta del
+/// sistema o de su carpeta de medios. En clásica vacía los campos de la gamelist que apuntaban
+/// a ellos (con copia de seguridad).
+#[tauri::command]
+pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String>) -> Result<TrashMediaResult, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let (allowed, mut failed) = allowed_media_paths(&layout, &system, &paths);
+
+    let mut trashed: HashSet<PathBuf> = HashSet::new();
+    for file in allowed {
+        match trash::delete(&file) {
+            Ok(()) => {
+                trashed.insert(file);
+            }
+            Err(e) => failed.push(format!("{} ({})", file.display(), e)),
+        }
+    }
+
+    if layout.writes_media_tags() && !trashed.is_empty() {
+        let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+        if clear_fields_pointing_to(&system, &mut gamelist, &trashed) {
+            super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+        }
+    }
+    Ok(TrashMediaResult { trashed: trashed.len(), failed })
+}
+
+/// Rutas que son ficheros dentro de la carpeta del sistema o de su carpeta de medios (ya
+/// resueltas, así `../` o enlaces no se escapan); el resto, como fallo con el motivo.
+fn allowed_media_paths(layout: &Layout, system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<String>) {
+    let roots: Vec<PathBuf> = [system.rom_dir.clone(), layout.media_type_dir(system, "")]
+        .into_iter()
+        .filter_map(|r| r.canonicalize().ok())
+        .collect();
+    let mut ok = Vec::new();
+    let mut rejected = Vec::new();
+    for path in paths {
+        match Path::new(path).canonicalize() {
+            Ok(real) if real.is_file() && roots.iter().any(|r| real.starts_with(r)) => ok.push(real),
+            _ => rejected.push(format!("{} (not a media file of this system)", path)),
+        }
+    }
+    (ok, rejected)
+}
+
+/// Vacía los campos de medios que apuntan a ficheros quitados. Devuelve si cambió algo.
+fn clear_fields_pointing_to(system: &SystemRef, gamelist: &mut GameList, removed: &HashSet<PathBuf>) -> bool {
+    let mut changed = false;
+    for game in &mut gamelist.games {
+        for field in media::media_fields() {
+            let points_to_removed = media::get_field(game, field)
+                .map(|v| media::resolve_media_path(system, v))
+                .and_then(|p| p.canonicalize().ok().or(Some(p)))
+                .is_some_and(|p| removed.contains(&p));
+            if points_to_removed {
+                media::set_field(game, field, None);
+                changed = true;
+            }
+        }
+    }
+    changed
 }
 
 #[cfg(test)]
@@ -453,5 +613,103 @@ mod tests {
 
         let unused = find_unused_classic(&Layout::Classic, &system, system.rom_dir.to_str().unwrap()).unwrap();
         assert!(unused.is_empty(), "fanart is referenced, so it is not unused: {:?}", unused);
+    }
+
+    fn png(path: &Path, width: u32, height: u32, extra: u8) {
+        let mut bytes = b"\x89PNG\r\n\x1a\n\0\0\0\x0dIHDR".to_vec();
+        bytes.extend_from_slice(&width.to_be_bytes());
+        bytes.extend_from_slice(&height.to_be_bytes());
+        bytes.extend_from_slice(&[8, 6, 0, 0, 0, 0, 0, 0, extra]);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, bytes).unwrap();
+    }
+
+    fn esde(root: &Path) -> Layout {
+        Layout::Esde(EsdePaths { home: root.join("ES-DE"), media_root: root.join("ES-DE/downloaded_media") })
+    }
+
+    fn game(path: &str) -> crate::models::Game {
+        crate::models::Game { path: path.into(), name: Some(path.into()), ..Default::default() }
+    }
+
+    #[test]
+    fn identical_cover_and_screenshot_keeps_the_cover_when_it_cannot_tell() {
+        // Como cps1: el flyer está en covers/ y también en screenshots/ (idéntico)
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/cps1"));
+        let media_dir = tmp.path().join("ES-DE/downloaded_media/cps1");
+        let mut games = Vec::new();
+        for name in ["a", "b", "c", "d"] {
+            png(&media_dir.join(format!("covers/{name}.png")), 300, 420, 1);
+            png(&media_dir.join(format!("screenshots/{name}.png")), 300, 420, 1);
+            games.push(game(&format!("./{name}.zip")));
+        }
+        // Distinto contenido aunque mismo tamaño en bytes: no es repetido
+        png(&media_dir.join("covers/e.png"), 300, 420, 1);
+        png(&media_dir.join("screenshots/e.png"), 300, 420, 2);
+        games.push(game("./e.zip"));
+
+        let found = find_repeated(&layout, &system, &games, None);
+        assert_eq!(found.len(), 4);
+        assert!(found.iter().all(|r| r.keep_field == "image" && r.remove.len() == 1 && r.remove[0].field == "thumbnail"));
+    }
+
+    #[test]
+    fn keeps_the_type_the_image_looks_like() {
+        // Capturas habituales 256x224 y carátulas 640x468: una captura repetida como carátula
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/snes"));
+        let media_dir = tmp.path().join("ES-DE/downloaded_media/snes");
+        let mut games = Vec::new();
+        for name in ["a", "b", "c"] {
+            png(&media_dir.join(format!("covers/{name}.png")), 640, 468, 1);
+            png(&media_dir.join(format!("screenshots/{name}.png")), 256, 224, 1);
+            games.push(game(&format!("./{name}.sfc")));
+        }
+        png(&media_dir.join("covers/x.png"), 256, 224, 9);
+        png(&media_dir.join("screenshots/x.png"), 256, 224, 9);
+        games.push(game("./x.sfc"));
+
+        let found = find_repeated(&layout, &system, &games, Some("./x.sfc"));
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].keep_field, "thumbnail");
+        assert_eq!(found[0].remove[0].field, "image");
+    }
+
+    #[test]
+    fn trash_only_accepts_media_of_this_system() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/snes"));
+        touch(&tmp.path().join("ES-DE/downloaded_media/snes/covers/a.png"));
+        touch(&system.rom_dir.join("images/b.png"));
+        touch(&tmp.path().join("ES-DE/downloaded_media/nes/covers/c.png"));
+        let p = |rel: &str| tmp.path().join(rel).to_string_lossy().to_string();
+
+        let (ok, rejected) = allowed_media_paths(
+            &layout,
+            &system,
+            &[p("ES-DE/downloaded_media/snes/covers/a.png"), p("roms/snes/images/b.png"), p("ES-DE/downloaded_media/nes/covers/c.png"), p("nope.png")],
+        );
+        assert_eq!(ok.len(), 2);
+        assert_eq!(rejected.len(), 2);
+    }
+
+    #[test]
+    fn classic_clears_the_fields_of_removed_media() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("cps1"));
+        touch(&system.rom_dir.join("screenshots/a.png"));
+        let removed: HashSet<PathBuf> = [system.rom_dir.join("screenshots/a.png").canonicalize().unwrap()].into();
+        let mut g = game("./a.zip");
+        g.image = Some("./covers/a.png".into());
+        g.thumbnail = Some("./screenshots/a.png".into());
+        let mut gamelist = GameList { games: vec![g], ..Default::default() };
+
+        assert!(clear_fields_pointing_to(&system, &mut gamelist, &removed));
+        assert_eq!(gamelist.games[0].thumbnail, None);
+        assert_eq!(gamelist.games[0].image.as_deref(), Some("./covers/a.png"));
     }
 }

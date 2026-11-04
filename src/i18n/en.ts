@@ -178,9 +178,15 @@ const en = {
   "cleanup.size": "Size",
   "cleanup.selectAll": "Select all",
   "cleanup.deselectAll": "Deselect all",
-  "cleanup.delete": "Delete Selected ({count})",
+  "cleanup.delete": "Send to trash ({count})",
   "cleanup.close": "Close",
-  "cleanup.deleted": "Deleted {count} files",
+  "cleanup.unusedSection": "Not used",
+  "cleanup.repeatedSection": "Repeated across media types",
+  "cleanup.repeatedHelp": "The same file (identical) saved as several media types of one game. Only one is kept.",
+  "cleanup.repeatedRow": "{kind} - same as \"{keep}\", which is kept",
+  "cleanup.trashConfirm": "Send {count} files to the trash?",
+  "cleanup.trashFailed": "{count} could not be sent to the trash:",
+  "cleanup.deleted": "{count} files sent to the trash",
   "cleanup.deleteFailed": "Failed to delete: {error}",
 
   // Rename

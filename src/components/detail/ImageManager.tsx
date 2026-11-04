@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { SWAPPABLE_MEDIA, type Game } from "../../types";
 import { useTranslation } from "../../i18n";
 import { ImagePreview } from "./ImagePreview";
-import { deleteFiles, scanGameMedia, setGameMedia } from "../../commands";
+import { scanGameMedia, setGameMedia, trashMedia } from "../../commands";
 import { resolveImageSrc } from "../../utils/images";
 import { ExpandIcon, PencilIcon, TrashIcon, CloseIcon, SearchIcon } from "../common/Icons";
 import type { TranslationKeys } from "../../i18n/en";
@@ -103,7 +103,8 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean,
         : `${systemPath}/${mediaPath}`;
 
     try {
-      await deleteFiles([absolutePath]);
+      // To the trash (recoverable), like every other delete in the app
+      await trashMedia(systemPath, [absolutePath]);
       onUpdate(field, "");
     } catch (e) {
       console.error("Failed to delete media:", e);

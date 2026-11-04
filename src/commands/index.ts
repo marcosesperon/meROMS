@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, RepeatedMedia, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -108,8 +108,14 @@ export async function findGameLeftoverMedia(
   return invoke("find_game_leftover_media", { systemPath, gamePath });
 }
 
-export async function deleteFiles(paths: string[]): Promise<number> {
-  return invoke("delete_files", { paths });
+/** Same file in more than one media type (optionally only one game) */
+export async function findRepeatedMedia(systemPath: string, gamePath?: string): Promise<RepeatedMedia[]> {
+  return invoke("find_repeated_media", { systemPath, gamePath });
+}
+
+/** Send media files of the system to the trash (Classic: clears the gamelist fields using them) */
+export async function trashMedia(systemPath: string, paths: string[]): Promise<TrashResult> {
+  return invoke("trash_media", { systemPath, paths });
 }
 
 /** With gamePath, only that game is proposed (game detail panel). */

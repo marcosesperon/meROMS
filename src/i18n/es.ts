@@ -180,9 +180,15 @@ const es: Record<TranslationKeys, string> = {
   "cleanup.size": "Tamaño",
   "cleanup.selectAll": "Seleccionar todo",
   "cleanup.deselectAll": "Deseleccionar todo",
-  "cleanup.delete": "Eliminar Seleccionados ({count})",
+  "cleanup.delete": "Mandar a la papelera ({count})",
   "cleanup.close": "Cerrar",
-  "cleanup.deleted": "{count} archivos eliminados",
+  "cleanup.unusedSection": "No usados",
+  "cleanup.repeatedSection": "Repetidos entre tipos",
+  "cleanup.repeatedHelp": "El mismo fichero (idéntico) guardado como varios tipos de medio de un juego. Se deja solo uno.",
+  "cleanup.repeatedRow": "{kind} · igual que «{keep}», que se queda",
+  "cleanup.trashConfirm": "¿Mandar {count} ficheros a la papelera?",
+  "cleanup.trashFailed": "{count} no se han podido mandar a la papelera:",
+  "cleanup.deleted": "{count} archivos enviados a la papelera",
   "cleanup.deleteFailed": "Error al eliminar: {error}",
 
   // Rename

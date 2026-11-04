@@ -281,6 +281,15 @@ export interface NewRom {
   known_extension: boolean;
 }
 
+/** A game with the same file in more than one media type */
+export interface RepeatedMedia {
+  game_path: string;
+  game_name: string;
+  keep_path: string;
+  keep_field: string;
+  remove: { path: string; field: string; size: number }[];
+}
+
 export interface TrashResult {
   trashed: number;
   failed: string[];

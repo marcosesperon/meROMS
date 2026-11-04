@@ -262,6 +262,7 @@ function App() {
         open={showCleanupModal}
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowCleanupModal(false)}
+        onDone={reloadAfterMediaChange}
       />
 
       <RenameModal

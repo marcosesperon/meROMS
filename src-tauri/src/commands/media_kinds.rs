@@ -106,7 +106,7 @@ fn swap_in(layout: &Layout, system: &SystemRef, games: &mut [Game], game_paths: 
 
 /// Fichero actual de un tipo para un juego: en clásica, el que apunta su campo (si existe);
 /// si no, el que tiene el nombre unificado en la carpeta del tipo.
-fn current_file(layout: &Layout, system: &SystemRef, index: &MediaIndex, game: &Game, kind: &MediaKind) -> Option<PathBuf> {
+pub(super) fn current_file(layout: &Layout, system: &SystemRef, index: &MediaIndex, game: &Game, kind: &MediaKind) -> Option<PathBuf> {
     if layout.writes_media_tags() {
         if let Some(path) = media::get_field(game, kind.field).map(|v| media::resolve_media_path(system, v)) {
             if path.is_file() {
@@ -189,7 +189,7 @@ fn swap_one(layout: &Layout, system: &SystemRef, index: &MediaIndex, game: &mut 
 
 /// Qué parece una imagen comparada con lo habitual del sistema
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum Looks {
+pub(super) enum Looks {
     Cover,
     Screenshot,
     Unknown,
@@ -220,15 +220,7 @@ fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> DetectResult {
         _ => true,
     };
 
-    let classify = |i: &MediaFileInfo| {
-        let is_cover = cover_profile.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
-        let is_shot = shot_profile.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
-        match (is_cover, is_shot) {
-            (true, false) => Looks::Cover,
-            (false, true) => Looks::Screenshot,
-            _ => Looks::Unknown,
-        }
-    };
+    let classify = |i: &MediaFileInfo| looks_like(i, cover_profile, shot_profile);
 
     let mut proposals = Vec::new();
     if distinguishable {
@@ -254,6 +246,30 @@ fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> DetectResult {
         cover_profile,
         screenshot_profile: shot_profile,
         proposals,
+    }
+}
+
+/// Tamaños habituales de carátula y de captura en un sistema (también lo usa «Limpiar Media»
+/// para decidir cuál de dos ficheros idénticos se queda).
+pub(super) fn usual_sizes(layout: &Layout, system: &SystemRef, games: &[Game]) -> (Option<MediaProfile>, Option<MediaProfile>) {
+    let (Some(cover_kind), Some(shot_kind)) = (media::kind_for_field("image"), media::kind_for_field("thumbnail")) else {
+        return (None, None);
+    };
+    let index = MediaIndex::build(layout, system);
+    let covers: Vec<MediaFileInfo> = games.iter().filter_map(|g| current_file(layout, system, &index, g, cover_kind).and_then(|p| info(&p))).collect();
+    let shots: Vec<MediaFileInfo> = games.iter().filter_map(|g| current_file(layout, system, &index, g, shot_kind).and_then(|p| info(&p))).collect();
+    (profile(covers.iter()), profile(shots.iter()))
+}
+
+/// Qué parece una imagen comparada con los tamaños habituales («no se sabe» si encaja con
+/// los dos o con ninguno)
+pub(super) fn looks_like(i: &MediaFileInfo, cover: Option<MediaProfile>, shot: Option<MediaProfile>) -> Looks {
+    let is_cover = cover.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
+    let is_shot = shot.is_some_and(|p| same_type(i.width, i.height, p.width, p.height));
+    match (is_cover, is_shot) {
+        (true, false) => Looks::Cover,
+        (false, true) => Looks::Screenshot,
+        _ => Looks::Unknown,
     }
 }
 
@@ -303,7 +319,7 @@ fn whole_system_swapped(cover: Option<MediaProfile>, shot: Option<MediaProfile>)
 }
 
 /// Tamaño de una imagen leyendo solo su cabecera. None si no se puede leer.
-fn info(path: &Path) -> Option<MediaFileInfo> {
+pub(super) fn info(path: &Path) -> Option<MediaFileInfo> {
     let size = imagesize::size(path).ok()?;
     Some(MediaFileInfo {
         path: path.to_string_lossy().to_string(),
