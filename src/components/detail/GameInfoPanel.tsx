@@ -84,9 +84,10 @@ function GameInfo({ game }: { game: Game }) {
   useEffect(() => setCurrent(0), [game.path]);
   const shown = media[current] ?? media[0];
 
-  // Cabecera: fanart; si no hay, una captura (desenfocada para que no compita con el título)
-  const hero = src(game.fanart) ?? src(game.thumbnail) ?? src(game.titleshot) ?? src(game.image);
+  // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante)
+  const hero = src(game.fanart) ?? src(game.thumbnail) ?? src(game.titleshot);
   const heroIsFanart = !!game.fanart;
+  const cover = src(game.image) ?? src(game.boxart);
 
   const details: [TranslationKey, string | undefined][] = [
     ["form.releaseDate", formatReleaseDate(game.releasedate)],
@@ -106,10 +107,11 @@ function GameInfo({ game }: { game: Game }) {
           <img
             src={hero}
             alt=""
-            className={`absolute inset-0 w-full h-full object-cover ${heroIsFanart ? "" : "blur-sm scale-110 opacity-60"}`}
+            // Las capturas son de baja resolución: se amplían sin suavizar (píxeles nítidos)
+            className={`absolute inset-0 w-full h-full object-cover ${heroIsFanart ? "" : "[image-rendering:pixelated]"}`}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent" />
         <div className="absolute top-3 right-3 flex items-center gap-2">
           {game.rating && (
             <span className="px-2 py-1 rounded-md bg-black/60 text-xs text-yellow-400 font-semibold">
@@ -122,9 +124,21 @@ function GameInfo({ game }: { game: Game }) {
             </span>
           )}
         </div>
-        <div className="absolute bottom-3 left-5 right-5">
+      </div>
+
+      {/* Carátula montada sobre la cabecera (como una caja apoyada en la escena) y el título al lado */}
+      <div className="relative px-5 flex items-end gap-4">
+        {cover && (
+          <img
+            src={cover}
+            alt=""
+            // Tamaño según su forma: alta (Master System) o apaisada (SNES PAL) sin deformarse
+            className="-mt-24 w-auto h-auto max-h-44 max-w-[180px] shrink-0 rounded-sm shadow-2xl shadow-black/70 ring-1 ring-black/50"
+          />
+        )}
+        <div className={`min-w-0 pb-1 ${cover ? "" : "-mt-14"}`}>
           <p className="text-[11px] uppercase tracking-wider text-indigo-300 font-semibold">{selectedSystem?.full_name}</p>
-          <h2 className="text-2xl font-bold text-white leading-tight line-clamp-2 drop-shadow">{game.name || game.path}</h2>
+          <h2 className="text-xl font-bold text-white leading-tight line-clamp-3 drop-shadow">{game.name || game.path}</h2>
         </div>
       </div>
 
