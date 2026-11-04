@@ -52,6 +52,12 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     await updateSettings(form);
   }
 
+  // «Usar este perfil»: se guarda todo lo del formulario y ese perfil pasa a ser el activo
+  // (los sistemas se vuelven a cargar en el momento)
+  async function handleActivate(profileId: string) {
+    await updateSettings({ ...form, active_profile_id: profileId });
+  }
+
   // La migración trabaja con los ajustes guardados (y al acabar puede crear y activar un
   // perfil), así que lo pendiente del formulario se guarda antes o no se abre
   async function handleMigrate(profile: Profile) {
@@ -343,6 +349,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 setForm({ ...form, profiles, active_profile_id: activeProfileId })
               }
               onMigrate={handleMigrate}
+              onActivate={handleActivate}
             />
           )}
 

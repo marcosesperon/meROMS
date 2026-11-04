@@ -13,11 +13,13 @@ interface ProfilesTabProps {
   onChange: (profiles: Profile[], activeProfileId?: string) => void;
   /** Abrir la migración de estructura con este perfil como origen */
   onMigrate: (profile: Profile) => void;
+  /** Usar este perfil ya: se guardan los ajustes y pasa a ser el activo */
+  onActivate: (profileId: string) => void;
 }
 
 // Pestaña de perfiles: a la izquierda la lista, a la derecha el perfil que se está editando.
 // Los cambios van al formulario de ajustes y se guardan con el botón «Guardar» general.
-export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate }: ProfilesTabProps) {
+export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, onActivate }: ProfilesTabProps) {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | undefined>(activeProfileId ?? profiles[0]?.id);
   const [detected, setDetected] = useState<EsdeDetectedPaths | null>(null);
@@ -211,9 +213,12 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate }: 
 
           <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
             {editing.id !== activeProfileId && (
+              // Se aplica al momento (antes solo cambiaba el formulario y había que pulsar
+              // «Guardar Ajustes»). Sin carpetas no se puede usar.
               <button
-                onClick={() => onChange(profiles, editing.id)}
-                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
+                onClick={() => onActivate(editing.id)}
+                disabled={!isProfileComplete(editing)}
+                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t("profiles.activate")}
               </button>
