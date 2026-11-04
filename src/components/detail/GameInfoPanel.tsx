@@ -300,6 +300,7 @@ function SystemSummary() {
       </div>
       <h2 className="mt-6 text-xl font-bold text-zinc-100 text-center">{selectedSystem.full_name}</h2>
       {headline && <p className="mt-1 text-xs text-indigo-300 text-center">{headline}</p>}
+      <p className="mt-1 text-[11px] text-zinc-500 text-center">{t("info.pickGame")}</p>
       {info?.description && (
         <p className="mt-4 text-sm leading-relaxed text-zinc-400">{locale === "es" ? info.description.es : info.description.en}</p>
       )}
@@ -318,18 +319,18 @@ function SystemSummary() {
         </>
       )}
 
+      <SystemLocationsBlock systemPath={selectedSystem.path} />
+
+      {/* Cifras de la biblioteca: al final y compactas, una fila de casillas */}
       <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
-      <p className="text-xs text-zinc-500 mb-2">{t("info.pickGame")}</p>
-      <dl className="space-y-2">
+      <dl className="grid grid-cols-5 gap-1.5">
         {stats.map(([label, value]) => (
-          <div key={label} className="flex items-center justify-between px-4 py-2.5 rounded-md bg-zinc-900">
-            <dt className="text-sm text-zinc-400">{t(label)}</dt>
-            <dd className="text-sm font-semibold text-zinc-100">{value}</dd>
+          <div key={label} className="flex flex-col-reverse items-center justify-end gap-0.5 px-1 py-2 rounded-md bg-zinc-900 text-center">
+            <dt className="text-[10px] leading-tight text-zinc-500">{t(label)}</dt>
+            <dd className="text-base font-semibold text-zinc-100">{value}</dd>
           </div>
         ))}
       </dl>
-
-      <SystemLocationsBlock systemPath={selectedSystem.path} />
     </div>
   );
 }
