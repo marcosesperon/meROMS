@@ -1,6 +1,9 @@
-//! Normalizador de medios (solo estructura clásica): deja todos los medios de un sistema
-//! con el nombrado unificado `<carpeta>/<nombre ROM>.<ext>` y actualiza las rutas del XML.
-//! Así, después, migrar a ES-DE es solo mover carpetas.
+//! Normalizador de medios: deja todos los medios de un sistema con el nombrado unificado
+//! `<carpeta>/<nombre ROM>.<ext>`.
+//! - Clásica: los coloca dentro de la carpeta del sistema y actualiza las rutas del XML.
+//! - ES-DE: «recupera» los que se quedaron en la carpeta de ROMs con la estructura clásica
+//!   (images/, -boxart…) y los mueve a la carpeta de medios de ES-DE. La gamelist no se toca,
+//!   porque en ES-DE no guarda rutas de medios.
 //!
 //! Funciona en dos pasos para que el usuario vea antes lo que va a pasar:
 //! 1. `plan_media_normalization` → lista de cambios propuestos (no toca nada).
@@ -56,7 +59,6 @@ pub fn plan_media_normalization(
 ) -> Result<Vec<NormalizeItem>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    ensure_classic(&layout)?;
     let mut games = super::gamelist::read_gamelist(&layout, &system)?.games;
     if let Some(only) = &game_path {
         games.retain(|g| &g.path == only);
@@ -71,21 +73,15 @@ pub fn apply_media_normalization(
     items: Vec<NormalizeItem>,
 ) -> Result<NormalizeResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    ensure_classic(&layout)?;
     let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
     let result = apply(&layout, &system, &mut gamelist.games, &items);
-    // write_gamelist() hace la copia de seguridad antes de escribir
-    super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
-    Ok(result)
-}
-
-fn ensure_classic(layout: &Layout) -> Result<(), String> {
+    // En ES-DE la gamelist no guarda rutas de medios: reescribirla solo dejaría una copia
+    // de seguridad que no sirve para nada
     if layout.writes_media_tags() {
-        Ok(())
-    } else {
-        // ES-DE solo lee el nombrado unificado: no hay nada que normalizar
-        Err("Media normalization is only available for Classic profiles".into())
+        // write_gamelist() hace la copia de seguridad antes de escribir
+        super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     }
+    Ok(result)
 }
 
 /// Calcula los cambios para todos los juegos. No toca el disco.
@@ -94,6 +90,9 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
     let mut items = Vec::new();
     // destino → origen que lo ocupa, para detectar dos ficheros distintos que irían al mismo sitio
     let mut claimed: HashMap<PathBuf, PathBuf> = HashMap::new();
+    // origen → destino ya decidido: un mismo fichero no se reparte a dos sitios distintos
+    // (p. ej. «images/Juego.png» sin sufijo sirve para cualquier campo; gana el primero)
+    let mut sources: HashMap<PathBuf, PathBuf> = HashMap::new();
 
     for game in games {
         for field in media::media_fields() {
@@ -110,7 +109,12 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
                 _ => match index.find(system, field_kind, &game.path) {
                     Some(found) => (found.clone(), field_kind),
                     None => match legacy_file_for(settings, system, &game.path, field) {
-                        Some(found) => (found, field_kind),
+                        // Si por su sufijo es de otro tipo (un «-boxart» buscado para la caja 3D
+                        // es una portada), no es para este campo
+                        Some(found) => match guess_kind(system, &found, &game.path) {
+                            Some(kind) if kind.folder != field_kind.folder => continue,
+                            _ => (found, field_kind),
+                        },
                         None => continue,
                     },
                 },
@@ -123,6 +127,12 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
                 continue; // ya está bien
             }
 
+            match sources.get(&from) {
+                Some(previous) if *previous != to => continue,
+                _ => {
+                    sources.insert(from.clone(), to.clone());
+                }
+            }
             let status = if from == to {
                 NormalizeStatus::Link
             } else if let Some(owner) = claimed.get(&to) {
@@ -138,8 +148,8 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
                 game_path: game.path.clone(),
                 game_name: game.name.clone().unwrap_or_else(|| game.path.clone()),
                 field: field.to_string(),
-                from_relative: relative_to(system, &from),
-                to_relative: relative_to(system, &to),
+                from_relative: relative_to(layout, system, &from),
+                to_relative: relative_to(layout, system, &to),
                 from: from.to_string_lossy().to_string(),
                 to: to.to_string_lossy().to_string(),
                 status,
@@ -234,10 +244,17 @@ fn legacy_file_for(settings: &AppSettings, system: &SystemRef, rom_path: &str, f
     found.get(field).map(|rel| media::resolve_media_path(system, rel))
 }
 
-fn relative_to(system: &SystemRef, path: &Path) -> String {
+/// Ruta corta para enseñar: dentro de la carpeta del sistema, o (ES-DE) dentro de la de medios.
+fn relative_to(layout: &Layout, system: &SystemRef, path: &Path) -> String {
+    let media_root = match layout {
+        Layout::Esde(paths) => Some(paths.media_root.as_path()),
+        Layout::Classic => None,
+    };
     path.strip_prefix(&system.rom_dir)
+        .ok()
+        .or_else(|| media_root.and_then(|root| path.strip_prefix(root).ok()))
         .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|_| path.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.to_string_lossy().to_string())
 }
 
 #[cfg(test)]
@@ -349,5 +366,64 @@ mod tests {
         let result = apply(&Layout::Classic, &system, &mut games, &items);
         assert_eq!((result.moved, result.linked), (1, 1));
         assert_eq!(games[0].boxart.as_deref(), Some("./covers/Juego.png"));
+    }
+
+    fn esde(root: &Path) -> Layout {
+        Layout::Esde(crate::layout::EsdePaths {
+            home: root.join("ES-DE"),
+            media_root: root.join("ES-DE/downloaded_media"),
+        })
+    }
+
+    #[test]
+    fn el_sufijo_boxart_va_solo_a_portada() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        touch(&system.rom_dir.join("images/Juego-boxart.jpg"), b"c");
+        let games = vec![game("./Juego.sfc")];
+
+        let items = plan(&Layout::Classic, &system, &AppSettings::default(), &games);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].field, "image");
+        assert_eq!(items[0].to_relative, "covers/Juego.jpg");
+    }
+
+    #[test]
+    fn en_es_de_recupera_los_medios_clasicos_de_la_carpeta_de_roms() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/cps1"));
+        touch(&system.rom_dir.join("pang3.zip"), b"rom");
+        touch(&system.rom_dir.join("images/pang3-boxart.jpg"), b"caja");
+        touch(&system.rom_dir.join("images/pang3-screenshot.jpg"), b"captura");
+        let mut games = vec![game("./pang3.zip")];
+
+        let items = plan(&layout, &system, &AppSettings::default(), &games);
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|i| i.status == NormalizeStatus::Move));
+        assert!(items.iter().any(|i| i.to_relative == "cps1/covers/pang3.jpg"));
+
+        let result = apply(&layout, &system, &mut games, &items);
+        assert_eq!(result.moved, 2);
+        let media = tmp.path().join("ES-DE/downloaded_media/cps1");
+        assert_eq!(fs::read(media.join("covers/pang3.jpg")).unwrap(), b"caja");
+        assert_eq!(fs::read(media.join("screenshots/pang3.jpg")).unwrap(), b"captura");
+        assert!(!system.rom_dir.join("images").exists(), "images/ queda vacía y se borra");
+        assert!(system.rom_dir.join("pang3.zip").exists());
+    }
+
+    #[test]
+    fn en_es_de_no_propone_nada_si_el_medio_ya_esta() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/cps1"));
+        touch(&system.rom_dir.join("images/pang3-boxart.jpg"), b"vieja");
+        let existing = tmp.path().join("ES-DE/downloaded_media/cps1/covers/pang3.png");
+        touch(&existing, b"buena");
+        // Así llega el juego en ES-DE: read_gamelist rellena los medios que encuentra
+        let mut g = game("./pang3.zip");
+        g.image = Some(existing.to_string_lossy().to_string());
+
+        assert!(plan(&layout, &system, &AppSettings::default(), &[g]).is_empty());
     }
 }
