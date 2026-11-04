@@ -122,6 +122,17 @@
     .card h3 { font-size: 16px; margin: 0 0 6px; }
     .card p { font-size: 14px; color: var(--text-dim); margin: 0; }
 
+    /* Menú Herramientas: lista de opciones en dos columnas */
+    .tools { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; }
+    .tool { display: grid; grid-template-columns: 210px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--card-hi); }
+    .tool b { color: var(--text); font-size: 15px; font-weight: 600; }
+    .tool p { margin: 0; font-size: 14px; color: var(--text-dim); }
+    .tools-sub { margin: 44px 0 14px; font-size: 17px; }
+    .tag {
+      display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+      padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-soft);
+    }
+
     /* Estructuras */
     .structures { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .structures .card h3 { font-size: 18px; }
@@ -162,7 +173,8 @@
     @media (max-width: 860px) {
       .tour-item, .tour-item:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
       .tour-item:nth-child(even) .tour-text { order: 0; }
-      .structures, .downloads { grid-template-columns: 1fr; }
+      .structures, .downloads, .tools { grid-template-columns: 1fr; }
+      .tool { grid-template-columns: 1fr; gap: 4px; }
       .top nav a:not(.chip-coffee) { display: none; }
       .chip-coffee .chip-text { display: none; }
       .hero { padding-top: 48px; }
@@ -178,6 +190,7 @@
       <nav>
         <a href="#tour"><span lang="en">Tour</span><span lang="es">Recorrido</span></a>
         <a href="#features"><span lang="en">Features</span><span lang="es">Funciones</span></a>
+        <a href="#tools"><span lang="en">Tools</span><span lang="es">Herramientas</span></a>
         <a href="#download"><span lang="en">Download</span><span lang="es">Descargar</span></a>
         <a href="https://github.com/marcosesperon/meROMS">GitHub</a>
         <a class="chip-coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span class="chip-text"><span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></span></a>
@@ -324,8 +337,98 @@
       </div>
     </section>
 
+    <!-- Menú Herramientas: cada opción con lo que hace -->
+    <section id="tools" class="alt">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Tools</span><span lang="es">Herramientas</span></p>
+        <h2><span lang="en">The Tools menu</span><span lang="es">El menú Herramientas</span></h2>
+        <p class="intro">
+          <span lang="en">At the bottom of every system, the <b>Tools</b> menu works on the whole system. Each tool shows what it will do and asks before changing anything.</span>
+          <span lang="es">Abajo, en cada sistema, el menú <b>Herramientas</b> trabaja sobre el sistema entero. Cada herramienta enseña lo que va a hacer y pregunta antes de cambiar nada.</span>
+        </p>
+        <div class="tools">
+          <div class="tool">
+            <div><b><span lang="en">Rename</span><span lang="es">Renombrar</span></b></div>
+            <p><span lang="en">Rename the system's ROM files from their title or with the cleanup rules, with a preview and conflict check. Media, gamelist, collections and <code>.m3u</code> playlists are updated too.</span><span lang="es">Renombra los ficheros de ROM del sistema a partir del título o con las reglas de limpieza, con vista previa y aviso de choques. Se actualizan también medios, gamelist, colecciones y listas <code>.m3u</code>.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Normalize Media</span><span lang="es">Normalizar medios</span></b></div>
+            <p><span lang="en">Classic: moves media with old-style names (suffixes, <code>images/</code>...) to <code>&lt;folder&gt;/&lt;ROM name&gt;.&lt;ext&gt;</code>. ES-DE: recovers classic-style media left in the ROM folder into ES-DE's media folder.</span><span lang="es">Clásica: pasa los medios con nombres antiguos (sufijos, <code>images/</code>...) a <code>&lt;carpeta&gt;/&lt;nombre de la ROM&gt;.&lt;ext&gt;</code>. ES-DE: recupera los medios con estructura clásica que quedaron en la carpeta de ROMs y los lleva a la de medios de ES-DE.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Clean Media</span><span lang="es">Limpiar Media</span></b></div>
+            <p><span lang="en">Three checks in one: media files no game uses, the same image saved as several types of one game, and media links in the gamelist pointing to files that don't exist.</span><span lang="es">Tres revisiones en una: ficheros de medios que no usa ningún juego, la misma imagen guardada como varios tipos de un juego, y enlaces del gamelist a ficheros que no existen.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Review covers &amp; screenshots</span><span lang="es">Revisar carátulas y capturas</span></b></div>
+            <p><span lang="en">Compares each image with the usual shape of the system's covers and screenshots and lists the ones saved the other way round, with thumbnails, to swap them.</span><span lang="es">Compara cada imagen con la forma habitual de las carátulas y capturas del sistema y lista las guardadas al revés, con miniaturas, para intercambiarlas.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Swap media types...</span><span lang="es">Intercambiar tipos de medio...</span></b></div>
+            <p><span lang="en">Swaps two media types for the whole system (for example covers and screenshots), when a scraper saved them all the wrong way.</span><span lang="es">Intercambia dos tipos de medio en todo el sistema (por ejemplo carátulas y capturas), cuando un scraper los guardó todos al revés.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Duplicates</span><span lang="es">Duplicados</span></b></div>
+            <p><span lang="en">Groups games that look the same (same ScreenScraper ID, same file hash or a similar name). The ones you mark are removed, with their ROM and media sent to the trash.</span><span lang="es">Agrupa los juegos que parecen el mismo (mismo ID de ScreenScraper, mismo hash del fichero o nombre parecido). Los que marques se quitan, y su ROM y sus medios van a la papelera.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">DAT...</span><span lang="es">DAT...</span></b></div>
+            <p><span lang="en">Load a MAME, Logiqx or No-Intro DAT for the system: games you're missing, files the DAT doesn't know, clone and BIOS tags, and names taken from the DAT.</span><span lang="es">Carga un DAT de MAME, Logiqx o No-Intro para el sistema: juegos que te faltan, ficheros que el DAT no conoce, marcas de clon y BIOS, y nombres sacados del DAT.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Collections</span><span lang="es">Colecciones</span></b></div>
+            <p><span lang="en">Detects multi-disc games and generates their <code>.m3u</code> playlists, and builds custom collections from the games you choose.</span><span lang="es">Detecta los juegos de varios discos y genera sus listas <code>.m3u</code>, y crea colecciones personalizadas con los juegos que elijas.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Backups</span><span lang="es">Backups</span></b></div>
+            <p><span lang="en">Every save keeps a copy of the gamelist first (the last 20). See them by date, restore one or delete it.</span><span lang="es">Cada vez que se guarda se hace antes una copia del gamelist (se guardan las 20 últimas). Míralas por fecha, restaura una o bórrala.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Export</span><span lang="es">Exportar</span></b></div>
+            <p><span lang="en">Exports the system as a RetroArch playlist (<code>.lpl</code>).</span><span lang="es">Exporta el sistema como lista de reproducción de RetroArch (<code>.lpl</code>).</span></p>
+          </div>
+        </div>
+
+        <h3 class="tools-sub"><span lang="en">Also in the bottom bar</span><span lang="es">También en la barra de abajo</span></h3>
+        <div class="tools">
+          <div class="tool">
+            <div><b><span lang="en">New ROMs (N)</span><span lang="es">ROMs nuevas (N)</span></b></div>
+            <p><span lang="en">Only shown when the system folder has ROM files the gamelist doesn't have. Add them with clean names (and scrape just those), or send junk files to the trash.</span><span lang="es">Solo aparece si en la carpeta del sistema hay ROMs que el gamelist no tiene. Añádelas con nombres limpios (y scrapea solo esas), o manda a la papelera lo que no son ROMs.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">No ROM (N)</span><span lang="es">Sin ROM (N)</span></b></div>
+            <p><span lang="en">Games in the gamelist whose ROM is gone: remove them and send their media to the trash.</span><span lang="es">Juegos del gamelist cuya ROM ya no está: quítalos y manda sus medios a la papelera.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Scrape All</span><span lang="es">Scrapear Todo</span></b></div>
+            <p><span lang="en">Scrape the whole system, or just the games you pick, choosing for this run what may be overwritten.</span><span lang="es">Scrapea el sistema entero, o solo los juegos que elijas, decidiendo para esta vez qué se puede sobrescribir.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">+ Add Game</span><span lang="es">+ Agregar Juego</span></b></div>
+            <p><span lang="en">Add an entry by hand.</span><span lang="es">Añade una entrada a mano.</span></p>
+          </div>
+        </div>
+
+        <h3 class="tools-sub"><span lang="en">For one game, in the editor</span><span lang="es">Para un solo juego, en el editor</span></h3>
+        <div class="tools">
+          <div class="tool">
+            <div><b><span lang="en">Rename...</span><span lang="es">Renombrar...</span></b></div>
+            <p><span lang="en">Rename this ROM (and its media) to a name you type or the one the rules propose.</span><span lang="es">Renombra esta ROM (y sus medios) con el nombre que escribas o el que proponen las reglas.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Normalize / Clean up</span><span lang="es">Normalizar / Limpiar</span></b></div>
+            <p><span lang="en">The same media tools, for this game only.</span><span lang="es">Las mismas herramientas de medios, solo para este juego.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">This is...</span><span lang="es">Esto es...</span></b></div>
+            <p><span lang="en">Tell meROMS that an image is really another type (a cover saved as a screenshot...) and it moves it to its place.</span><span lang="es">Dile a meROMS que una imagen es de otro tipo (una carátula guardada como captura...) y la lleva a su sitio.</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Estructuras -->
-    <section class="alt">
+    <section>
       <div class="wrap">
         <p class="kicker"><span lang="en">Profiles</span><span lang="es">Perfiles</span></p>
         <h2><span lang="en">Classic EmulationStation or ES-DE</span><span lang="es">EmulationStation clásico o ES-DE</span></h2>
@@ -353,7 +456,7 @@ ROMs/snes/Aladdin.zip</code>
     </section>
 
     <!-- Descargas -->
-    <section id="download">
+    <section id="download" class="alt">
       <div class="wrap">
         <p class="kicker"><span lang="en">Download</span><span lang="es">Descargar</span></p>
         <h2><span lang="en">Get meROMS</span><span lang="es">Consigue meROMS</span></h2>
