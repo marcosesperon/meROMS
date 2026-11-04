@@ -225,14 +225,17 @@ export function GameTable({ games }: GameTableProps) {
         className="text-sm border-collapse table-fixed"
         style={{ width: table.getCenterTotalSize() }}
       >
-        <thead className="sticky top-0 bg-zinc-800 z-10">
+        <thead className="bg-zinc-800">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className={`text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none ${
-                    FROZEN.has(header.column.id) ? "sticky z-20 bg-zinc-800" : "relative"
+                  // Cada cabecera se queda arriba al bajar (top-0); las congeladas además a la
+                  // izquierda y por encima de todo (esquina): si no, las celdas congeladas del
+                  // cuerpo las tapaban al hacer scroll vertical
+                  className={`sticky top-0 bg-zinc-800 text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none ${
+                    FROZEN.has(header.column.id) ? "z-30" : "z-20"
                   } ${header.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-700)]" : ""}`}
                   style={{
                     width: header.getSize(),
