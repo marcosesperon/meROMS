@@ -23,10 +23,16 @@ const NOT_ROM_EXTENSIONS: &[&str] = &[
     "png", "jpg", "jpeg", "gif", "webp", "bmp", "svg",
     "mp4", "mkv", "avi", "mov", "webm", "mp3", "ogg", "wav",
     "srm", "sav", "state", "auto", "bak", "tmp",
+    // Lo que guardan los emuladores: memoria, récords, tarjetas, trucos…
+    "nv", "fs", "hi", "eep", "nvram", "rtc", "mcr", "cht",
 ];
 
 /// Carpetas que nunca tienen ROMs: las de medios (nombres nuevos y antiguos) y alguna más.
-const EXTRA_SKIPPED_DIRS: &[&str] = &["media", "downloaded_media", "snaps", "boxart"];
+const EXTRA_SKIPPED_DIRS: &[&str] = &[
+    "media", "downloaded_media", "snaps", "boxart",
+    // Carpetas donde guardan cosas los emuladores (FinalBurn Neo, MAME, RetroArch…)
+    "fbneo", "nvram", "hiscore", "saves", "states", "cheats", "memcards",
+];
 
 #[derive(Debug, Clone, Serialize)]
 pub struct NewRom {
@@ -36,6 +42,12 @@ pub struct NewRom {
     pub proposed_name: String,
     /// false = la extensión no está en la lista del sistema (se ofrece desmarcada)
     pub known_extension: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct TrashResult {
+    pub trashed: usize,
+    pub failed: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -64,6 +76,39 @@ pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<New
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     }
     Ok(added)
+}
+
+/// Manda a la papelera ficheros de la carpeta del sistema (los que no son ROMs válidas).
+/// Por seguridad solo acepta rutas que estén dentro de esa carpeta.
+#[tauri::command]
+pub fn trash_files(system_path: String, paths: Vec<String>) -> Result<TrashResult, String> {
+    let system = SystemRef::from_rom_dir(&system_path);
+    let (inside, mut failed) = split_inside(&system, &paths);
+    let mut result = TrashResult::default();
+    for file in inside {
+        match trash::delete(&file) {
+            Ok(()) => result.trashed += 1,
+            Err(e) => failed.push(format!("{} ({})", file.display(), e)),
+        }
+    }
+    result.failed = failed;
+    Ok(result)
+}
+
+/// Separa las rutas que son ficheros dentro de la carpeta del sistema de las que no
+/// (esas se devuelven ya como fallo, con el motivo).
+fn split_inside(system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<String>) {
+    let root = system.rom_dir.canonicalize().unwrap_or_else(|_| system.rom_dir.clone());
+    let mut inside = Vec::new();
+    let mut rejected = Vec::new();
+    for path in paths {
+        let file = media::resolve_media_path(system, path);
+        match file.canonicalize() {
+            Ok(real) if real.starts_with(&root) && real != root && real.is_file() => inside.push(real),
+            _ => rejected.push(format!("{} (not a file inside the system folder)", path)),
+        }
+    }
+    (inside, rejected)
 }
 
 /// Busca las ROMs de la carpeta del sistema que no tiene ningún juego de la gamelist.
@@ -223,6 +268,43 @@ mod tests {
         touch(&system.rom_dir.join("LEEME"), "");
 
         assert!(find_new_roms(&system, &[], &rules()).is_empty());
+    }
+
+    #[test]
+    fn no_ofrece_lo_que_guardan_los_emuladores() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("cps1"));
+        touch(&system.rom_dir.join("fbneo/avsp.nv"), "");
+        touch(&system.rom_dir.join("fbneo/aliensyn.fs"), "");
+        touch(&system.rom_dir.join("dino.nv"), "");
+        touch(&system.rom_dir.join("dino.hi"), "");
+        touch(&system.rom_dir.join("dino.zip"), "");
+
+        let paths: Vec<_> = find_new_roms(&system, &[], &rules()).into_iter().map(|r| r.path).collect();
+        assert_eq!(paths, vec!["./dino.zip"]);
+    }
+
+    #[test]
+    fn solo_se_eliminan_ficheros_de_dentro_del_sistema() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("cps1"));
+        touch(&system.rom_dir.join("basura.txt"), "");
+        touch(&system.rom_dir.join("sub/otra.bin"), "");
+        touch(&tmp.path().join("fuera.txt"), "");
+
+        let (inside, rejected) = split_inside(
+            &system,
+            &[
+                "./basura.txt".into(),
+                "./sub/otra.bin".into(),
+                "../fuera.txt".into(),
+                tmp.path().join("fuera.txt").to_string_lossy().to_string(),
+                "./no-existe.zip".into(),
+                "./sub".into(),
+            ],
+        );
+        assert_eq!(inside.len(), 2);
+        assert_eq!(rejected.len(), 4);
     }
 
     #[test]

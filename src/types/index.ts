@@ -281,6 +281,11 @@ export interface NewRom {
   known_extension: boolean;
 }
 
+export interface TrashResult {
+  trashed: number;
+  failed: string[];
+}
+
 export interface NewRomEntry {
   path: string;
   name: string;

@@ -237,6 +237,10 @@ function App() {
       />
 
       <NewRomsModal
+        onTrashed={() => {
+          // Deleting files doesn't change the games, so recount by hand
+          if (selectedSystem) listNewRoms(selectedSystem.path).then((r) => setNewRomsCount(r.length)).catch(() => {});
+        }}
         open={showNewRomsModal}
         systemPath={selectedSystem?.path || ""}
         canScrape={hasCredentials}

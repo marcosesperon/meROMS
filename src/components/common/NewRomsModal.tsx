@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { addNewRoms, listNewRoms } from "../../commands";
+import { addNewRoms, listNewRoms, trashFiles } from "../../commands";
 import type { NewRom } from "../../types";
-import { showMessage } from "../../utils/dialogs";
+import { askConfirm, showMessage } from "../../utils/dialogs";
 
 interface NewRomsModalProps {
   open: boolean;
@@ -12,6 +12,8 @@ interface NewRomsModalProps {
   onClose: () => void;
   /** Se llama tras añadir, con las rutas añadidas y si hay que scrapearlas */
   onAdded: (paths: string[], scrape: boolean) => void;
+  /** Files were sent to the trash (so the "New ROMs (N)" count can be refreshed) */
+  onTrashed: () => void;
 }
 
 /**
@@ -19,7 +21,7 @@ interface NewRomsModalProps {
  * Las de extensión conocida salen marcadas; las de otras extensiones, aparte y desmarcadas.
  * El nombre de cada una se puede cambiar antes de añadirla.
  */
-export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded }: NewRomsModalProps) {
+export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, onTrashed }: NewRomsModalProps) {
   const { t } = useTranslation();
   const [roms, setRoms] = useState<NewRom[]>([]);
   // ruta → nombre escrito (empieza con el propuesto)
@@ -28,15 +30,9 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded }: 
   const [scrape, setScrape] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [trashing, setTrashing] = useState(false);
 
-  useEffect(() => {
-    if (!open) {
-      setRoms([]);
-      setNames({});
-      setSelected(new Set());
-      return;
-    }
-    setScrape(true);
+  function scan() {
     setScanning(true);
     listNewRoms(systemPath)
       .then((found) => {
@@ -46,6 +42,17 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded }: 
       })
       .catch((e) => showMessage(t("newRoms.failed", { error: String(e) }), "error"))
       .finally(() => setScanning(false));
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setRoms([]);
+      setNames({});
+      setSelected(new Set());
+      return;
+    }
+    setScrape(true);
+    scan();
   }, [open, systemPath]);
 
   const known = useMemo(() => roms.filter((r) => r.known_extension), [roms]);
@@ -75,6 +82,28 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded }: 
       await showMessage(t("newRoms.failed", { error: String(e) }), "error");
     } finally {
       setAdding(false);
+    }
+  }
+
+  // Lo que no es una ROM válida se limpia de la carpeta: a la papelera (se puede recuperar)
+  async function handleTrash() {
+    const paths = roms.filter((r) => selected.has(r.path)).map((r) => r.path);
+    if (!(await askConfirm(t("newRoms.trashConfirm", { count: paths.length })))) return;
+    setTrashing(true);
+    try {
+      const result = await trashFiles(systemPath, paths);
+      if (result.failed.length > 0) {
+        await showMessage(
+          t("newRoms.trashDone", { count: result.trashed }) + "\n\n" + t("newRoms.trashFailed", { count: result.failed.length }) + "\n" + result.failed.join("\n"),
+          "error"
+        );
+      }
+      onTrashed();
+      scan();
+    } catch (e) {
+      await showMessage(t("newRoms.failed", { error: String(e) }), "error");
+    } finally {
+      setTrashing(false);
     }
   }
 
@@ -162,8 +191,18 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded }: 
           )}
           {roms.length > 0 && (
             <button
+              onClick={handleTrash}
+              disabled={selected.size === 0 || adding || trashing}
+              className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={t("newRoms.trashHelp")}
+            >
+              {trashing ? "..." : t("newRoms.trash", { count: selected.size })}
+            </button>
+          )}
+          {roms.length > 0 && (
+            <button
               onClick={handleAdd}
-              disabled={selected.size === 0 || adding}
+              disabled={selected.size === 0 || adding || trashing}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {adding ? "..." : t("newRoms.add", { count: selected.size })}

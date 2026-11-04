@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -82,6 +82,11 @@ export async function detectSwappedMedia(systemPath: string): Promise<DetectResu
 /** ROM files in the system folder that the gamelist doesn't have */
 export async function listNewRoms(systemPath: string): Promise<NewRom[]> {
   return invoke("list_new_roms", { systemPath });
+}
+
+/** Move files of the system folder to the system trash (only paths inside that folder) */
+export async function trashFiles(systemPath: string, paths: string[]): Promise<TrashResult> {
+  return invoke("trash_files", { systemPath, paths });
 }
 
 /** Add ROMs to the gamelist with the given names; returns how many were added */
