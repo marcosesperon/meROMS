@@ -158,8 +158,10 @@ export function GameTable({ games }: GameTableProps) {
       columnHelper.display({
         id: "flags",
         header: () => <span className="text-center block">★</span>,
-        size: 100,
-        minSize: 80,
+        // Favorito, oculto, para niños y la bandera: con los anchos fijos de la tabla ya no
+        // se ensancha sola, así que el ancho tiene que dar para los cuatro
+        size: 140,
+        minSize: 140,
         enableResizing: false,
         cell: (info) => {
           const game = info.row.original;
