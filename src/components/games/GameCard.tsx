@@ -37,6 +37,7 @@ export function GameCard({ game }: GameCardProps) {
 
   return (
     <div
+      data-game-path={game.path}
       onClick={() => selectGame(game)}
       // Doble clic: abrir directamente el editor de ese juego
       onDoubleClick={() => {

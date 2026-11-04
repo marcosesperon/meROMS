@@ -7,7 +7,8 @@ import {
   type SortingState,
   type ColumnResizeMode,
 } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useListKeyboard } from "../../hooks/useListKeyboard";
 import type { Game } from "../../types";
 import { formatRating, formatReleaseDate } from "../../utils/format";
 import { useAppStore } from "../../store/useAppStore";
@@ -164,8 +165,16 @@ export function GameTable({ games }: GameTableProps) {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  // Teclado: las filas en el orden en que se ven (con la columna de orden elegida)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useListKeyboard({
+    items: table.getRowModel().rows.map((r) => r.original),
+    containerRef: scrollRef,
+    getColumns: () => 1,
+  });
+
   return (
-    <div className="overflow-auto flex-1">
+    <div ref={scrollRef} className="overflow-auto flex-1">
       <table
         className="text-sm border-collapse"
         style={{ width: table.getCenterTotalSize() }}
@@ -218,12 +227,14 @@ export function GameTable({ games }: GameTableProps) {
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
+              data-game-path={row.original.path}
               onClick={() => selectGame(row.original)}
               onDoubleClick={() => {
                 selectGame(row.original);
                 openEditor();
               }}
-              className={`cursor-pointer border-b border-zinc-800 transition-colors ${
+              // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
+              className={`cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
                 selectedGame?.path === row.original.path
                   ? "bg-indigo-600/15"
                   : "hover:bg-zinc-800/50"
