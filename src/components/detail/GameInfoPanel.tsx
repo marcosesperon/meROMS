@@ -144,7 +144,6 @@ function GameInfo({ game }: { game: Game }) {
           />
         )}
         <div className={`min-w-0 pb-1 ${cover ? "" : "-mt-14"}`}>
-          <p className="text-[11px] uppercase tracking-wider text-indigo-300 font-semibold">{selectedSystem?.full_name}</p>
           <h2 className="text-xl font-bold text-white leading-tight line-clamp-3 drop-shadow">{game.name || game.path}</h2>
         </div>
       </div>
