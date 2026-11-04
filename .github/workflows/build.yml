@@ -11,7 +11,47 @@ permissions:
   contents: write
 
 jobs:
+  # One draft Release first, so the three builds upload to the same one. If each build
+  # created it on its own, two finishing at the same time would create two drafts.
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.result }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Create (or reuse) the draft Release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const version = JSON.parse(fs.readFileSync("src-tauri/tauri.conf.json", "utf8")).version;
+            const tag = `v${version}`;
+            // Re-running with the same version: reuse its draft instead of making another one
+            const releases = await github.paginate(github.rest.repos.listReleases, context.repo);
+            const existing = releases.find((r) => r.draft && r.tag_name === tag);
+            if (existing) return existing.id;
+            const { data } = await github.rest.repos.createRelease({
+              ...context.repo,
+              tag_name: tag,
+              target_commitish: context.sha,
+              name: `meROMS ${tag}`,
+              body: [
+                `Installers for meROMS ${tag}.`,
+                "- macOS (Intel and Apple Silicon): .dmg",
+                "- Windows: -setup.exe (recommended) or .msi",
+                "- Linux: .deb, .rpm or .AppImage",
+                "The builds are not signed: see the README for how to open them the first time.",
+              ].join("\n"),
+              draft: true,
+              prerelease: false,
+            });
+            return data.id;
+
   build:
+    needs: create-release
     strategy:
       # One platform failing shouldn't cancel the others
       fail-fast: false
@@ -68,14 +108,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v__VERSION__
-          releaseName: meROMS v__VERSION__
-          releaseBody: |
-            Installers for meROMS v__VERSION__.
-            - macOS (Intel and Apple Silicon): .dmg
-            - Windows: -setup.exe (recommended) or .msi
-            - Linux: .deb, .rpm or .AppImage
-            The builds are not signed: see the README for how to open them the first time.
-          releaseDraft: true
-          prerelease: false
+          # The draft created by the first job (all builds upload to it)
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
