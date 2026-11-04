@@ -9,7 +9,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 ## Features
 
 - **Profiles** — several saved libraries (ROM folder + structure: Classic or ES-DE), switchable from the sidebar; ES-DE paths read from `es_settings.xml`
-- **Browse & edit** — systems sidebar with logos, table/grid views, search + filters, slide-over metadata editor
+- **Browse & edit** — LaunchBox-style layout: compact systems sidebar, cover grid (default) or table, fixed read-only game info panel on the right (hero, media gallery, details; system summary when nothing is selected), slide-over editor opened with Edit / double click; dark warm theme with violet accent
 - **Media** — unified naming `<ES-DE folder>/<ROM name>.<ext>` in both structures; preview and set images/videos per game
 - **Scraping** — ScreenScraper with TheGamesDB fallback (batch), single game or whole system with progress
 - **Gamelist generation** — build a gamelist.xml from the ROM files in a system folder; manage `<folder>` entries
@@ -84,20 +84,21 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 
 ### React Frontend (`src/`)
 
-- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; switching profile resets selection and rescans; every scan runs `checkPendingStructure` (`pendingStructure`, prompt once per profile activation unless `skip_structure_prompt`, `migrationPreset` for the pre-filled migration window)
+- `store/useAppStore.ts` — Zustand store: settings (+ `setActiveProfile`), systems, games, selection, view mode, filters; `editorOpen` (selecting a game only shows it in the info panel), `infoPanelCollapsed` (localStorage); switching profile resets selection and rescans; every scan runs `checkPendingStructure` (`pendingStructure`, prompt once per profile activation unless `skip_structure_prompt`, `migrationPreset` for the pre-filled migration window)
 - `commands/index.ts` — Typed wrappers around `invoke()` for all Rust commands
 - `types/index.ts` — TypeScript interfaces mirroring Rust structs; `MEDIA_TYPE_FOLDERS` mirrors `media::kind_for_scraper_type`
 - `i18n/` — `en.ts` (keep it ASCII-only), `es.ts` translation dictionaries; `index.ts` exposes `useI18nStore` (locale) and `useTranslation()`
-- `App.tsx` — Root: renders the per-system toolbar (New ROMs on the left; `ToolsMenu` "Tools ▾" with the secondary tools, Scrape All and Add Game on the right — keep it from wrapping) and owns the open/close state of every tool modal and the settings view
-- `components/layout/` — `MainLayout`, `Sidebar` (profile selector, system list with an amber dot on systems pending migration), `Header` (search + filters toggle + view toggle)
-- `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard`
-- `components/detail/` — `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
+- `App.css` — Tailwind v4 `@theme` that **redefines the `zinc` (warm near-black) and `indigo` (violet) palettes**: the whole UI uses those classes, so the theme is changed here, not per component; thin dark scrollbars
+- `App.tsx` — Root: lays out list column + `GameInfoPanel`; renders the per-system toolbar (New ROMs on the left; `ToolsMenu` "Tools ▾" with the secondary tools, Scrape All and Add Game on the right — keep it from wrapping) and owns the open/close state of every tool modal and the settings view
+- `components/layout/` — `MainLayout`, `Sidebar` (profile selector, compact system rows — small logo, name, count — with an amber dot on systems pending migration), `Header` (search + filters toggle + view toggle)
+- `components/games/` — `GameListView` (switches table/grid), `GameTable` (@tanstack/react-table), `GameGrid`/`GameCard` (cover card: title, developer · year; double click opens the editor, also on table rows)
+- `components/detail/` — `GameInfoPanel` (fixed right panel, read-only: hero from fanart or blurred screenshot, Edit/Scrape/Delete, video + images gallery, details; collapsible), `GameDetailPanel` (slide-over editor; per-game tools Rename/Normalize/Clean up behind a "save first" guard), `GameForm` ("Rename..." next to the ROM path), `ImageManager`/`ImagePreview` (Normalize/Clean up in the media header)
 - `components/settings/` — `SettingsView` with tabs: `ProfilesTab` ("Migrate structure…" for the selected profile; unsaved settings are saved first), General (scraper credentials, media to download, grid media), `MediaConfigTab` (fixed folders, gamelist field per media type), `RenameRulesTab` (rules + live test + rules.json import/export), `SystemsConfigTab`
 - `components/common/` — `ViewToggle`, `SearchBar`, `FilterBar`, `ConfirmDialog`, `EmptyState`, `Icons`, `SystemLogo` (SVGs in `assets/logos/`)
   - `ToolsMenu` — drop-up menu of the toolbar's secondary tools (closes on pick, outside click, Esc)
   - `StructurePromptModal` — "systems in the other structure, migrate?" prompt shown when entering a profile
   - Tool modals: `ScrapeProgressModal`, `DuplicatesModal`, `UnusedMediaModal`, `RenameModal`, `RenameGameModal` (one ROM), `NormalizeMediaModal`, `MigrationModal` (normal — source = `sourceProfile` or the active one —, or pre-filled with `preset` = detected source + systems), `BackupsModal`, `CollectionsModal`, `ExportModal`, `NewRomsModal` (button with a count, shown only when the system has ROMs outside the gamelist); `UnusedMediaModal` and `NormalizeMediaModal` take an optional `gamePath` to work on one game
-- `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`
+- `hooks/` — `useGames` (loads games on system selection), `useFilteredGames` (search + filters applied to the store's games), `useDebounce`, `useGameActions` (scrape — saved at once — and delete from the info panel)
 - `utils/profiles.ts` — `getActiveProfile`, `isProfileComplete`, `profileLocationKey`, `createProfile`
 - `utils/dialogs.ts` — `askConfirm` / `showMessage` (native dialogs from `@tauri-apps/plugin-dialog`). Never use the browser's `alert()`/`confirm()`: inside the Tauri window on macOS they can hang with no way to close them
 - `utils/images.ts` — Resolves gamelist media paths (relative or absolute) to `media://localhost/...` URLs
