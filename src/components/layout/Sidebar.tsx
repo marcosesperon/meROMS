@@ -25,7 +25,7 @@ export function Sidebar() {
   const isScanning = loading && scanProgress !== null;
 
   return (
-    <aside className="w-28 bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
+    <aside className="w-28 shrink-0 overflow-hidden bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
           <div className="px-4 py-6 flex flex-col items-center gap-3">
