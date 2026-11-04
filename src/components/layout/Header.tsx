@@ -21,6 +21,7 @@ export function Header() {
     multiSelect ||
     filters.genre ||
     filters.developer ||
+    filters.region ||
     filters.favorite ||
     filters.hidden ||
     filters.kidgame ||

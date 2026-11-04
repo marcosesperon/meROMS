@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { useFilteredGames } from "../../hooks/useFilteredGames";
+import { regionsOf, useFilteredGames } from "../../hooks/useFilteredGames";
+import { getFlag } from "../../utils/flags";
 import { useTranslation } from "../../i18n";
 import { StarIcon, EyeSlashIcon, ChildIcon } from "./Icons";
 
@@ -44,9 +45,17 @@ export function FilterBar() {
     return Array.from(set).sort();
   }, [games]);
 
+  // Regiones que aparecen en los juegos del sistema
+  const uniqueRegions = useMemo(() => {
+    const set = new Set<string>();
+    games.forEach((g) => regionsOf(g.region).forEach((r) => set.add(r)));
+    return Array.from(set).sort();
+  }, [games]);
+
   const hasActiveFilters =
     filters.genre ||
     filters.developer ||
+    filters.region ||
     filters.favorite ||
     filters.hidden ||
     filters.kidgame ||
@@ -87,6 +96,24 @@ export function FilterBar() {
           </option>
         ))}
       </select>
+
+      {/* Region dropdown (only if some game has a region) */}
+      {uniqueRegions.length > 0 && (
+        <select
+          value={filters.region || ""}
+          onChange={(e) => setFilters({ region: e.target.value || undefined })}
+          className={SELECT_CLASS}
+          style={SELECT_ARROW}
+        >
+          <option value="">{t("filter.region")}: {t("filter.allFem")}</option>
+          {uniqueRegions.map((r) => (
+            <option key={r} value={r}>
+              {getFlag(r) ? `${getFlag(r)} ` : ""}
+              {r.toUpperCase()}
+            </option>
+          ))}
+        </select>
+      )}
 
       {/* Toggle buttons */}
       <button

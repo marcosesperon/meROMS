@@ -2,6 +2,14 @@ import { useMemo } from "react";
 import type { Game } from "../types";
 import { useAppStore } from "../store/useAppStore";
 
+/** Region codes of a game: the field may hold several («us, eu», «us/eu») */
+export function regionsOf(region?: string): string[] {
+  return (region ?? "")
+    .split(/[,;/|\s]+/)
+    .map((r) => r.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export function useFilteredGames(): Game[] {
   const games = useAppStore((s) => s.games);
   const searchQuery = useAppStore((s) => s.searchQuery);
@@ -42,6 +50,9 @@ export function useFilteredGames(): Game[] {
     }
     if (filters.developer) {
       result = result.filter((g) => g.developer === filters.developer);
+    }
+    if (filters.region) {
+      result = result.filter((g) => regionsOf(g.region).includes(filters.region!));
     }
     if (filters.favorite) {
       result = result.filter((g) => g.favorite === "true");

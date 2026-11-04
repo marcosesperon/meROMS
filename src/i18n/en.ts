@@ -231,6 +231,8 @@ const en = {
   "filter.hidden": "Hidden",
   "filter.kidgames": "Kid-friendly",
   "filter.clearAll": "Clear filters",
+  "filter.region": "Region",
+  "filter.allFem": "All",
   "filter.all": "All",
   "filter.folders": "Folders",
 

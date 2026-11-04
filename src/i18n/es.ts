@@ -233,6 +233,8 @@ const es: Record<TranslationKeys, string> = {
   "filter.hidden": "Ocultos",
   "filter.kidgames": "Para niños",
   "filter.clearAll": "Limpiar filtros",
+  "filter.region": "Región",
+  "filter.allFem": "Todas",
   "filter.all": "Todos",
   "filter.folders": "Carpetas",
 

@@ -104,6 +104,8 @@ interface AppState {
   filters: {
     genre?: string;
     developer?: string;
+    /** Region code (a game can list several: «us, eu») */
+    region?: string;
     favorite?: boolean;
     hidden?: boolean;
     kidgame?: boolean;
