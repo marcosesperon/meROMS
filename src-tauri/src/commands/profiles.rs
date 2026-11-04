@@ -98,6 +98,7 @@ fn detected_profile(active: &Profile, kind: StructureKind, esde_home: Option<&Pa
         esde_home_path: esde_home.map(|h| h.to_string_lossy().to_string()),
         media_dir,
         skip_structure_prompt: false,
+        last_system: None,
     }
 }
 
@@ -126,6 +127,7 @@ mod tests {
             esde_home_path: esde_home.map(|h| h.to_string_lossy().to_string()),
             media_dir: None,
             skip_structure_prompt: false,
+            last_system: None,
         }
     }
 

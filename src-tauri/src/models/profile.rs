@@ -32,6 +32,9 @@ pub struct Profile {
     /// «No volver a preguntar»: no avisar al entrar si hay sistemas con la otra estructura.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub skip_structure_prompt: bool,
+    /// Last system opened with this profile (its folder name), reopened on start
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub last_system: Option<String>,
 }
 
 impl Profile {
@@ -50,6 +53,7 @@ impl Profile {
             esde_home_path: None,
             media_dir: None,
             skip_structure_prompt: false,
+            last_system: None,
         }
     }
 }

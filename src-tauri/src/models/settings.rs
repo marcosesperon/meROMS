@@ -46,6 +46,12 @@ pub struct AppSettings {
     pub ss_regions: Option<Vec<String>>,
     #[serde(default)]
     pub ss_languages: Option<Vec<String>>,
+    // Table view: visible columns in order, with their widths (same for every system)
+    #[serde(default)]
+    pub table_columns: Option<Vec<TableColumn>>,
+    // Last list view ("grid" | "table")
+    #[serde(default)]
+    pub last_view: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration
@@ -59,6 +65,14 @@ pub struct AppSettings {
     // ROM name cleanup rules (None = built-in defaults)
     #[serde(default)]
     pub rename_rules: Option<Vec<RenameRule>>,
+}
+
+/// One visible column of the table view
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct TableColumn {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub width: Option<u32>,
 }
 
 /// What the scraper does with one data field or media type
