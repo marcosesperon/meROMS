@@ -83,9 +83,11 @@ function GameInfo({ game }: { game: Game }) {
   // Al cambiar de juego, la galería vuelve al principio
   useEffect(() => setCurrent(0), [game.path]);
   const shown = media[current] ?? media[0];
-  // Si lo único que hay es la carátula, ya se ve arriba: no se repite en el visor
+  // Lo que ya se ve arriba (la carátula y la imagen de fondo de la cabecera): si no hay nada
+  // más, el visor solo repetiría lo mismo y no se enseña
   const coverField: keyof Game | null = game.image ? "image" : game.boxart ? "boxart" : null;
-  const onlyCover = media.length === 1 && media[0].field === coverField;
+  const sceneField: keyof Game | null = game.fanart ? "fanart" : game.thumbnail ? "thumbnail" : game.titleshot ? "titleshot" : null;
+  const onlyShownAbove = media.every((m) => m.field === coverField || m.field === sceneField);
 
   // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante).
   // Sin ninguna de las dos, la propia carátula muy desenfocada: deja un fondo con sus colores.
@@ -183,7 +185,7 @@ function GameInfo({ game }: { game: Game }) {
       </div>
 
       {/* Visor + galería */}
-      {shown && !onlyCover && (
+      {shown && !onlyShownAbove && (
         <div className="px-5 pt-4">
           <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
             {shown.field === "video" ? (
