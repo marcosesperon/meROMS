@@ -23,8 +23,10 @@ struct XmlGameList {
 }
 
 pub fn parse_gamelist(xml: &str) -> Result<GameList, String> {
+    // Only the <gameList> element: ES-DE may write other top-level elements before it
+    let (_, body) = split_gamelist(xml);
     let xml_list: XmlGameList =
-        quick_xml::de::from_str(xml).map_err(|e| format!("Failed to parse gamelist.xml: {}", e))?;
+        quick_xml::de::from_str(body).map_err(|e| format!("Failed to parse gamelist.xml: {}", e))?;
     Ok(GameList {
         games: xml_list.game,
         folders: xml_list.folder,
@@ -55,6 +57,24 @@ fn clean_serialize(gamelist: &GameList) -> Result<String, String> {
     xml.push_str(&body);
     xml.push('\n');
     Ok(xml)
+}
+
+/// Split a gamelist file into what comes before <gameList> (ES-DE writes top-level elements
+/// such as <alternativeEmulator> there, as siblings of <gameList>) and the <gameList> element
+/// itself. The XML declaration is left out of the first part.
+/// Without this, the parser stopped at the first top-level element and saw no games at all.
+fn split_gamelist(xml: &str) -> (&str, &str) {
+    let start = xml.match_indices("<gameList").map(|(i, _)| i).find(|&i| {
+        // "<gameList>", "<gameList ...>" or "<gameList/>", not "<gameListSomething"
+        matches!(xml[i + "<gameList".len()..].chars().next(), Some('>' | '/' | ' ' | '\t' | '\r' | '\n'))
+    });
+    let Some(start) = start else { return ("", xml) };
+    let mut prefix = &xml[..start];
+    // Drop the declaration (<?xml ... ?>) from the prefix: it is written separately
+    if let Some(end) = prefix.find("?>").filter(|_| prefix.trim_start().starts_with("<?xml")) {
+        prefix = &prefix[end + 2..];
+    }
+    (prefix.trim(), &xml[start..])
 }
 
 /// Known field names we manage in the Game struct.
@@ -323,6 +343,8 @@ fn capture_element_raw(
 
 /// Merge-serialize: combine our known GameList data with unknown elements from original XML.
 fn merge_serialize(gamelist: &GameList, original_xml: &str) -> Result<String, String> {
+    // Top-level elements before <gameList> are kept there; the rest only looks inside it
+    let (before_root, original_xml) = split_gamelist(original_xml);
     let unknown_map = extract_unknown_elements(original_xml)?;
     let root_unknowns = extract_root_unknowns(original_xml)?;
 
@@ -333,6 +355,12 @@ fn merge_serialize(gamelist: &GameList, original_xml: &str) -> Result<String, St
     writer
         .write_event(Event::Decl(quick_xml::events::BytesDecl::new("1.0", Some("UTF-8"), None)))
         .map_err(|e| format!("Write error: {}", e))?;
+
+    // Top-level elements that were before <gameList> (ES-DE's <alternativeEmulator>), as they were
+    if !before_root.is_empty() {
+        writer.get_mut().extend_from_slice(b"\n");
+        writer.get_mut().extend_from_slice(before_root.as_bytes());
+    }
 
     // <gameList>
     writer
@@ -569,5 +597,57 @@ mod tests {
         let first = serialize_gamelist(&gamelist, Some(ESDE_GAMELIST)).unwrap();
         let second = serialize_gamelist(&parse_gamelist(&first).unwrap(), Some(&first)).unwrap();
         assert_eq!(first, second);
+    }
+
+    /// Formato real de ES-DE (lo que el usuario tiene en Windows): <alternativeEmulator> va
+    /// ANTES de <gameList>, como otro elemento de primer nivel
+    const ESDE_TOP_LEVEL: &str = r#"<?xml version="1.0"?>
+<alternativeEmulator>
+	<label>FB Alpha 2012 CPS-2</label>
+</alternativeEmulator>
+<gameList>
+	<game>
+		<path>./1944.zip</path>
+		<name>1944 : The Loop Master</name>
+		<playcount>1</playcount>
+	</game>
+	<game>
+		<path>./avsp.zip</path>
+		<name>Alien vs. Predator</name>
+	</game>
+</gameList>
+"#;
+
+    #[test]
+    fn reads_games_when_alternative_emulator_is_before_the_gamelist() {
+        let gamelist = parse_gamelist(ESDE_TOP_LEVEL).unwrap();
+        assert_eq!(gamelist.games.len(), 2);
+        assert_eq!(gamelist.games[0].name.as_deref(), Some("1944 : The Loop Master"));
+    }
+
+    #[test]
+    fn keeps_alternative_emulator_before_the_gamelist_when_saving() {
+        let mut gamelist = parse_gamelist(ESDE_TOP_LEVEL).unwrap();
+        gamelist.games[1].name = Some("Alien vs Predator".into());
+        let out = serialize_gamelist(&gamelist, Some(ESDE_TOP_LEVEL)).unwrap();
+
+        let alt = out.find("<alternativeEmulator>").unwrap();
+        let root = out.find("<gameList>").unwrap();
+        assert!(alt < root, "must stay before <gameList>:\n{out}");
+        assert_eq!(out.matches("<alternativeEmulator>").count(), 1);
+        assert_eq!(out.matches("<label>").count(), 1, "the label must not leak into <gameList>:\n{out}");
+        assert!(out.contains("<playcount>1</playcount>"));
+
+        // Y se vuelve a leer igual
+        let reparsed = parse_gamelist(&out).unwrap();
+        assert_eq!(reparsed.games.len(), 2);
+        assert_eq!(reparsed.games[1].name.as_deref(), Some("Alien vs Predator"));
+        assert_eq!(serialize_gamelist(&reparsed, Some(&out)).unwrap(), out, "saving twice gives the same file");
+    }
+
+    #[test]
+    fn split_handles_files_without_prefix() {
+        assert_eq!(split_gamelist("<?xml version=\"1.0\"?>\n<gameList/>"), ("", "<gameList/>"));
+        assert_eq!(split_gamelist("<gameList><game/></gameList>").0, "");
     }
 }
