@@ -494,10 +494,14 @@ async fn scrape_one(
 pub async fn scrape_system(
     app: tauri::AppHandle,
     system_path: String,
+    game_paths: Option<Vec<String>>,
 ) -> Result<(), String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
-    let total = gamelist.games.len();
+    // Con `game_paths` solo se scrapean esos juegos (p. ej. las ROMs recién añadidas);
+    // el resto pasa tal cual
+    let wanted = |game: &Game| game_paths.as_ref().map_or(true, |only| only.contains(&game.path));
+    let total = gamelist.games.iter().filter(|g| wanted(g)).count();
 
     if total == 0 {
         return Err("No games to scrape".to_string());
@@ -515,7 +519,12 @@ pub async fn scrape_system(
     let client = build_http_client()?;
     let mut updated_games: Vec<Game> = Vec::new();
 
-    for (i, game) in gamelist.games.iter().enumerate() {
+    let mut i = 0;
+    for game in &gamelist.games {
+        if !wanted(game) {
+            updated_games.push(game.clone());
+            continue;
+        }
         let game_name = game.name.clone().unwrap_or_else(|| game.path.clone());
 
         let _ = app.emit(
@@ -545,6 +554,7 @@ pub async fn scrape_system(
                 status: status.to_string(),
             },
         );
+        i += 1;
     }
 
     let updated_gamelist = GameList {

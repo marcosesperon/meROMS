@@ -19,7 +19,7 @@ pub struct UnusedMediaFile {
 }
 
 /// Media subdirectories to scan for unused files.
-const MEDIA_DIRS: &[&str] = &[
+pub(super) const MEDIA_DIRS: &[&str] = &[
     "images",
     "covers",
     "screenshots",

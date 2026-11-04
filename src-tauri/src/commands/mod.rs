@@ -8,6 +8,7 @@ pub mod rename;
 pub mod rules;
 pub mod images;
 pub mod migrate;
+pub mod new_roms;
 pub mod normalize;
 pub mod profiles;
 pub mod scraper;
