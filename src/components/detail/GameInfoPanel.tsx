@@ -84,10 +84,12 @@ function GameInfo({ game }: { game: Game }) {
   useEffect(() => setCurrent(0), [game.path]);
   const shown = media[current] ?? media[0];
 
-  // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante)
-  const hero = src(game.fanart) ?? src(game.thumbnail) ?? src(game.titleshot);
-  const heroIsFanart = !!game.fanart;
+  // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante).
+  // Sin ninguna de las dos, la propia carátula muy desenfocada: deja un fondo con sus colores.
   const cover = src(game.image) ?? src(game.boxart);
+  const scene = src(game.fanart) ?? src(game.thumbnail) ?? src(game.titleshot);
+  const hero = scene ?? cover;
+  const heroStyle = game.fanart ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
 
   const details: [TranslationKey, string | undefined][] = [
     ["form.releaseDate", formatReleaseDate(game.releasedate)],
@@ -107,8 +109,8 @@ function GameInfo({ game }: { game: Game }) {
           <img
             src={hero}
             alt=""
-            // Las capturas son de baja resolución: se amplían sin suavizar (píxeles nítidos)
-            className={`absolute inset-0 w-full h-full object-cover ${heroIsFanart ? "" : "[image-rendering:pixelated]"}`}
+            // Capturas: ampliadas sin suavizar (píxeles nítidos). Carátula de relleno: muy desenfocada
+            className={`absolute inset-0 w-full h-full object-cover ${heroStyle}`}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent" />
