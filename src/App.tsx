@@ -22,6 +22,8 @@ import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
+import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
+import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
@@ -59,6 +61,7 @@ function App() {
   // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
   const [newRomsCount, setNewRomsCount] = useState(0);
   const [showMissingRoms, setShowMissingRoms] = useState(false);
+  const [showScrapeAll, setShowScrapeAll] = useState(false);
   const multiSelect = useAppStore((s) => s.multiSelect);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
@@ -113,11 +116,11 @@ function App() {
     if (current) selectGame(fresh.find((g) => g.path === current.path) ?? null);
   }
 
-  async function handleScrapeAll(gamePaths?: string[]) {
+  async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy) {
     if (!selectedSystem) return;
     setShowScrapeModal(true);
     try {
-      await scrapeSystem(selectedSystem.path, gamePaths);
+      await scrapeSystem(selectedSystem.path, gamePaths, policy);
       // Reload games after scraping completes
       loadGames(selectedSystem.path);
     } catch (e) {
@@ -210,7 +213,8 @@ function App() {
               />
               {hasCredentials && (
                 <button
-                  onClick={() => handleScrapeAll()}
+                  // First choose what to update this time
+                  onClick={() => setShowScrapeAll(true)}
                   className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors whitespace-nowrap"
                 >
                   {t("app.scrapeAll")}
@@ -241,6 +245,16 @@ function App() {
           }}
         />
       )}
+
+      <ScrapeAllModal
+        open={showScrapeAll}
+        gameCount={games.length}
+        onClose={() => setShowScrapeAll(false)}
+        onStart={(policy) => {
+          setShowScrapeAll(false);
+          handleScrapeAll(undefined, policy);
+        }}
+      />
 
       <MissingRomsModal
         open={showMissingRoms}

@@ -4,9 +4,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation, useI18nStore, type Locale } from "../../i18n";
 import { CloseIcon, DownloadIcon, CopyIcon } from "../common/Icons";
 import {
-  AVAILABLE_MEDIA_TYPES,
   DEFAULT_MEDIA_PATHS,
-  DEFAULT_MEDIA_TYPES,
   GRID_MEDIA_OPTIONS,
   type MediaPathConfig,
 } from "../../types";
@@ -16,6 +14,8 @@ import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { exportSettings, importSettings } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
+import { getScrapePolicy } from "../../commands";
 import { MigrationModal } from "../common/MigrationModal";
 import type { Profile } from "../../types";
 
@@ -55,7 +55,16 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     setForm(settings);
   }, [settings]);
 
-  const selectedMedia = form.ss_media_types ?? [...DEFAULT_MEDIA_TYPES];
+  // Not saved yet: start from what the backend derives (old "media to download" list)
+  useEffect(() => {
+    if (open && !form.scrape_fields) {
+      getScrapePolicy()
+        .then((scrape_fields) => setForm((prev) => (prev.scrape_fields ? prev : { ...prev, scrape_fields })))
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, form.scrape_fields]);
+
   const mediaPaths: MediaPathConfig[] =
     form.media_paths ?? [...DEFAULT_MEDIA_PATHS];
 
@@ -114,15 +123,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     }
   }
 
-  function toggleMediaType(id: string) {
-    const current = new Set(selectedMedia);
-    if (current.has(id)) {
-      current.delete(id);
-    } else {
-      current.add(id);
-    }
-    setForm({ ...form, ss_media_types: Array.from(current) });
-  }
 
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: "profiles", label: t("settings.tabProfiles") },
@@ -316,27 +316,15 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </div>
               </section>
 
-              {/* Media Types to download */}
+              {/* What the scraper may update (replaces the old "media to download" list) */}
               <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">
-                  {t("settings.mediaTitle")}
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {AVAILABLE_MEDIA_TYPES.map(({ id, label }) => (
-                    <label
-                      key={id}
-                      className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer hover:text-zinc-100"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMedia.includes(id)}
-                        onChange={() => toggleMediaType(id)}
-                        className="rounded border-zinc-600 bg-zinc-800 text-indigo-600 focus:ring-indigo-500"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapePolicy.title")}</h3>
+                {form.scrape_fields && (
+                  <ScrapePolicyEditor
+                    policy={form.scrape_fields}
+                    onChange={(scrape_fields) => setForm({ ...form, scrape_fields })}
+                  />
+                )}
               </section>
 
               {/* Grid media field */}

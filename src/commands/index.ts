@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -75,9 +75,15 @@ export async function scrapeGame(
   return invoke("scrape_game", { systemPath, gamePath });
 }
 
-/** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added) */
-export async function scrapeSystem(systemPath: string, gamePaths?: string[]): Promise<void> {
-  return invoke("scrape_system", { systemPath, gamePaths });
+/** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added); `policy` = what may be
+ * updated this time (missing = Settings) */
+export async function scrapeSystem(systemPath: string, gamePaths?: string[], policy?: ScrapePolicy): Promise<void> {
+  return invoke("scrape_system", { systemPath, gamePaths, policy });
+}
+
+/** What the scraper may update (saved, or derived from the old "media to download" list) */
+export async function getScrapePolicy(): Promise<ScrapePolicy> {
+  return invoke("get_scrape_policy");
 }
 
 /** Swap two media types (gamelist fields, e.g. "image" and "thumbnail") in the given games */

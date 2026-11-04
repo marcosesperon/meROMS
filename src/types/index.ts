@@ -141,6 +141,8 @@ export interface AppSettings {
   ss_user?: string;
   ss_password?: string;
   ss_media_types?: string[];
+  /** What the scraper may update (missing = derived from ss_media_types by the backend) */
+  scrape_fields?: ScrapePolicy;
   tgdb_apikey?: string;
   media_paths?: MediaPathConfig[];
   grid_media_field?: string;
@@ -228,6 +230,14 @@ export interface RuleTestResult {
 export interface RenameRequest {
   current_path: string;
   new_name: string;
+}
+
+/** What the scraper does with one data field or media type */
+export type FieldPolicy = "overwrite" | "if_empty" | "keep";
+
+export interface ScrapePolicy {
+  data: Record<string, FieldPolicy>;
+  media: Record<string, FieldPolicy>;
 }
 
 /** Image media types that can be swapped / re-typed (mirrors media::MEDIA_KINDS, ES-DE ones) */
