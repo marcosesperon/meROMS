@@ -71,6 +71,9 @@ interface AppState {
   editorOpen: boolean;
   openEditor: () => void;
   closeEditor: () => void;
+  /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
+  missingRomPaths: Set<string>;
+  setMissingRomPaths: (paths: Set<string>) => void;
   /** Right-hand game info panel folded away (remembered between sessions) */
   infoPanelCollapsed: boolean;
   /** Sidebar shows only systems with games (default) or every system folder */
@@ -275,6 +278,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   editorOpen: false,
   openEditor: () => set({ editorOpen: true }),
   closeEditor: () => set({ editorOpen: false }),
+  missingRomPaths: new Set(),
+  setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
   // Stored as "show all" so that the default (nothing stored) is "only with games"
   onlySystemsWithGames: !readFlag(ALL_SYSTEMS_KEY),

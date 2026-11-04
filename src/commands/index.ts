@@ -100,6 +100,17 @@ export async function trashFiles(systemPath: string, paths: string[]): Promise<T
   return invoke("trash_files", { systemPath, paths });
 }
 
+/** Games of the gamelist whose ROM file/folder no longer exists */
+export interface MissingRoms {
+  games: { path: string; name: string }[];
+  /** Every ROM is missing: the folder or drive is probably not connected */
+  all_missing: boolean;
+}
+
+export async function listMissingRoms(systemPath: string): Promise<MissingRoms> {
+  return invoke("list_missing_roms", { systemPath });
+}
+
 /** Add ROMs to the gamelist with the given names; returns how many were added */
 export async function addNewRoms(systemPath: string, entries: NewRomEntry[]): Promise<number> {
   return invoke("add_new_roms", { systemPath, entries });

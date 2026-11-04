@@ -1,5 +1,6 @@
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
+import { useTranslation } from "../../i18n";
 import { resolveImageSrc } from "../../utils/images";
 import { formatRating } from "../../utils/format";
 import { getSystemAspectRatio, extractCustomRatios } from "../../utils/cartridgeSizes";
@@ -15,6 +16,9 @@ export function GameCard({ game }: GameCardProps) {
   const selectedGame = useAppStore((s) => s.selectedGame);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const openEditor = useAppStore((s) => s.openEditor);
+  // ROM no longer on disk: dimmed card with a "No ROM" label
+  const romMissing = useAppStore((s) => s.missingRomPaths.has(game.path));
+  const { t } = useTranslation();
   const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
 
   // Use configured media field, with fallback chain
@@ -46,12 +50,17 @@ export function GameCard({ game }: GameCardProps) {
       }}
       className={`group rounded-lg p-2 cursor-pointer transition-colors ${
         selected ? "bg-zinc-800 ring-2 ring-indigo-500" : "hover:bg-zinc-800/70"
-      }`}
+      } ${romMissing ? "opacity-50" : ""}`}
     >
       <div
         className="relative bg-zinc-800 rounded-md flex items-center justify-center overflow-hidden shadow-lg shadow-black/40"
         style={{ aspectRatio }}
       >
+        {romMissing && (
+          <div className="absolute top-1.5 left-1.5 z-10 px-1.5 py-0.5 rounded bg-red-600/90 text-[10px] font-semibold text-white">
+            {t("missingRoms.badge")}
+          </div>
+        )}
         {game.favorite === "true" && (
           <div className="absolute top-1.5 right-1.5 z-10 text-yellow-400 drop-shadow-lg">
             <StarIcon size={16} />

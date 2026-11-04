@@ -62,6 +62,7 @@ export function GameTable({ games }: GameTableProps) {
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
   const selectGame = useAppStore((s) => s.selectGame);
   const openEditor = useAppStore((s) => s.openEditor);
+  const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const { t } = useTranslation();
 
@@ -238,7 +239,8 @@ export function GameTable({ games }: GameTableProps) {
                 selectedGame?.path === row.original.path
                   ? "bg-indigo-600/15"
                   : "hover:bg-zinc-800/50"
-              }`}
+              } ${missingRomPaths.has(row.original.path) ? "opacity-50 line-through decoration-red-500/60" : ""}`}
+              title={missingRomPaths.has(row.original.path) ? t("missingRoms.badge") : undefined}
             >
               {row.getVisibleCells().map((cell) => (
                 <td

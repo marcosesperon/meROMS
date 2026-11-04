@@ -89,6 +89,7 @@ pub fn run() {
             normalize::plan_media_normalization,
             normalize::apply_media_normalization,
             new_roms::list_new_roms,
+            new_roms::list_missing_roms,
             new_roms::add_new_roms,
             new_roms::trash_files,
             media_kinds::swap_media,

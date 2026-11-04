@@ -19,7 +19,8 @@ import { MediaReviewModal } from "./components/common/MediaReviewModal";
 import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
-import { listNewRoms, scrapeSystem } from "./commands";
+import { listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
+import { MissingRomsModal } from "./components/common/MissingRomsModal";
 import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
@@ -56,6 +57,9 @@ function App() {
   const [showMediaSwap, setShowMediaSwap] = useState(false);
   // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
   const [newRomsCount, setNewRomsCount] = useState(0);
+  const [showMissingRoms, setShowMissingRoms] = useState(false);
+  const missingRomPaths = useAppStore((s) => s.missingRomPaths);
+  const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
   const [showSettings, setShowSettings] = useState(false);
   const games = useAppStore((s) => s.games);
   const editorOpen = useAppStore((s) => s.editorOpen);
@@ -82,12 +86,17 @@ function App() {
   useEffect(() => {
     if (!selectedSystem) {
       setNewRomsCount(0);
+      setMissingRomPaths(new Set());
       return;
     }
     let cancelled = false;
     listNewRoms(selectedSystem.path)
       .then((roms) => !cancelled && setNewRomsCount(roms.length))
       .catch(() => !cancelled && setNewRomsCount(0));
+    // And the other way round: games whose ROM is gone (marked in the list, "No ROM (N)" button)
+    listMissingRoms(selectedSystem.path)
+      .then((m) => !cancelled && setMissingRomPaths(new Set(m.games.map((g) => g.path))))
+      .catch(() => !cancelled && setMissingRomPaths(new Set()));
     return () => {
       cancelled = true;
     };
@@ -168,6 +177,15 @@ function App() {
                   {t("newRoms.button", { count: newRomsCount })}
                 </button>
               )}
+              {missingRomPaths.size > 0 && (
+                <button
+                  onClick={() => setShowMissingRoms(true)}
+                  className="px-3 py-1.5 text-sm bg-red-600/15 text-red-300 border border-red-800/60 rounded hover:bg-red-600/25 transition-colors whitespace-nowrap"
+                  title={t("missingRoms.description")}
+                >
+                  {t("missingRoms.button", { count: missingRomPaths.size })}
+                </button>
+              )}
               <div className="flex-1" />
               {/* Secondary tools live in a menu so the bar never wraps */}
               <ToolsMenu
@@ -220,6 +238,17 @@ function App() {
           }}
         />
       )}
+
+      <MissingRomsModal
+        open={showMissingRoms}
+        systemPath={selectedSystem?.path || ""}
+        onClose={() => setShowMissingRoms(false)}
+        onDone={() => {
+          if (!selectedSystem) return;
+          selectGame(null);
+          loadGames(selectedSystem.path);
+        }}
+      />
 
       <MediaReviewModal
         open={showMediaReview}
