@@ -1,26 +1,163 @@
 # meROMS
 
+[![Download](https://img.shields.io/badge/Download-macOS%20%7C%20Windows%20%7C%20Linux-7f56e3?style=for-the-badge)](https://github.com/marcosesperon/meROMS/releases/latest)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/marcosesperon)
 
-Desktop ROM manager for EmulationStation `gamelist.xml` files. Browse your systems, edit game
-metadata, manage media, scrape from online databases and keep your library tidy. It supports the
-classic EmulationStation folder structure and ES-DE, and can migrate a library between them.
+**A desktop app to tidy up your EmulationStation and ES-DE game library.**
+Browse your systems, fix game names and descriptions, add the missing box art and videos, and
+clean up what's left over - without editing a single `gamelist.xml` by hand.
 
-Built with [Tauri v2](https://tauri.app/) (Rust) + React 19 + TypeScript + Tailwind CSS.
-The UI is available in English and Spanish.
+**Website:** <https://marcosesperon.github.io/meROMS/> (English and Spanish)
 
-Website: <https://marcosesperon.github.io/meROMS/> (source in `site/`, published by
-`.github/workflows/pages.yml`).
+![meROMS: cover grid with the details of the selected game](site/images/grid.jpg)
+
+## Who is it for?
+
+If you have a retro collection for **EmulationStation** (RetroPie, Batocera, Recalbox...) or
+**ES-DE** (EmulationStation Desktop Edition, RetroBat...), every system keeps a `gamelist.xml`
+with the names, descriptions, ratings and media of its games. meROMS lets you see and edit all of
+that from your computer, comfortably and in bulk.
+
+It **manages your library; it doesn't play games**. Your emulator frontend stays the same.
+
+Free and open source, for macOS, Windows and Linux, in English and Spanish.
+
+## What it does
+
+**Browse and edit**
+- Cover grid or table view (choose and reorder the columns), search and filters (genre, region,
+  favourites, hidden, clones...), keyboard navigation.
+- A side panel with the game's artwork, screenshots, video and details; a full editor for every
+  field and every media type.
+- Edit many games at once: common fields, favourite/hidden flags, find & replace.
+
+**Get what's missing**
+- Scrape names, descriptions, dates, ratings and media from **ScreenScraper** (with
+  **TheGamesDB** as a fallback), for one game, some games or a whole system.
+- You decide what may be overwritten (per field and media type) and your preferred regions and
+  languages.
+- **New ROMs**: find ROM files the gamelist doesn't know yet and add them with clean names.
+
+**Clean up**
+- Duplicate games, games whose ROM is gone, media nobody uses, the same image saved as several
+  types, and broken media links in the XML.
+- Covers and screenshots saved the wrong way round: detected by their shape and swapped.
+- Files are sent to the **trash**, never deleted outright.
+
+**Rename**
+- Rename ROM files from their title or with cleanup rules (regular expressions, compatible with
+  ES-DE-Roms-Renamer). Media, gamelist, collections and `.m3u` playlists follow along.
+
+**Organise**
+- **DAT files** (MAME, Logiqx, No-Intro): missing games, unknown files, clones and BIOS.
+- Multi-disc games: generate their `.m3u` playlists. Custom collections.
+- Automatic **backup** of every gamelist before saving, with restore.
+
+**Move between structures**
+- Migrate a whole library, or some systems, from classic EmulationStation to ES-DE or back
+  (copy or move). Your ROMs are never touched.
+
+## Classic EmulationStation or ES-DE
+
+meROMS works with both folder structures. You save each library as a **profile** and switch
+between them:
+
+| | Classic | ES-DE |
+|---|---|---|
+| Gamelist | `ROMs/snes/gamelist.xml` | `ES-DE/gamelists/snes/gamelist.xml` |
+| Media | `ROMs/snes/covers/Aladdin.png` | `ES-DE/downloaded_media/snes/covers/Aladdin.png` |
+| ROMs | `ROMs/snes/Aladdin.zip` | `ROMs/snes/Aladdin.zip` |
+
+For ES-DE, meROMS reads ES-DE's own settings (custom ROM and media folders, portable installs).
+
+## Download and install
+
+Get the latest version from the
+[Releases page](https://github.com/marcosesperon/meROMS/releases/latest):
+
+| System | File |
+|---|---|
+| macOS (Intel and Apple Silicon) | `meROMS_<version>_universal.dmg` |
+| Windows 10 / 11 | `meROMS_<version>_x64-setup.exe` (or the `.msi`) |
+| Linux | `.AppImage` (any distro), `.deb` (Debian / Ubuntu) or `.rpm` (Fedora / openSUSE) |
+
+The installers are **not signed** yet, so the system warns the first time:
+
+- **macOS**: open the `.dmg`, drag meROMS to Applications, then right-click the app > **Open** >
+  **Open**. (Or run `xattr -dr com.apple.quarantine /Applications/meROMS.app`.)
+- **Windows**: if SmartScreen appears, click **More info** > **Run anyway**.
+- **Linux**: for the AppImage, `chmod +x meROMS_*.AppImage` and run it; for the packages,
+  `sudo apt install ./meROMS_*.deb` or `sudo dnf install ./meROMS-*.rpm`.
+
+## Getting started
+
+1. **Create a profile.** On first launch meROMS opens Settings > Profiles: pick your ROM folder
+   and its structure (Classic or ES-DE). For ES-DE, choosing the ES-DE folder fills in the rest.
+2. **Pick a system** in the left bar (only systems with games are shown; the switch at the bottom
+   shows them all). Click a game to see its details; double-click (or **Edit**) to change it.
+3. **Scrape.** Enter your ScreenScraper account in Settings > General (free at
+   [screenscraper.fr](https://www.screenscraper.fr/)) and use **Scrape** on a game or
+   **Scrape All** for the system. Check "What the scraper updates" first if you don't want
+   existing data overwritten.
+4. **Tidy up** with the **Tools** menu at the bottom: duplicates, unused media, rename, DAT,
+   backups, collections...
+
+Every save makes a backup of the gamelist first (Tools > Backups to restore one).
+
+![Table view](site/images/table.jpg)
+
+## Updates
+
+meROMS checks for a new version when it starts (and once a day while open). When there is one, a
+bar appears at the top: **View and update** shows what's new and installs it, then restarts the
+app. You can turn the check off, or check by hand, in Settings > About.
+
+## FAQ
+
+**Does it change my ROM files?**
+Only if you ask it to: renaming, or removing duplicates / unwanted files (which go to the trash).
+Editing, scraping and migrating never touch the ROMs themselves.
+
+**Can I undo a change?**
+Every gamelist is backed up before each save (the last 20 are kept, next to the gamelist in
+`.backups/`). Deleted files go to the system trash.
+
+**Do I need an account to scrape?**
+A free ScreenScraper account is recommended (higher limits). TheGamesDB can be used with its own
+API key, also in Settings > General.
+
+**Does it work with RetroPie / Batocera / RetroBat...?**
+Yes, as long as they use EmulationStation (classic) or ES-DE gamelists. Point the profile at the
+ROM folder, local or on a network drive.
+
+**Can it run my games?**
+No: meROMS only manages the library. Launch your games from your usual frontend.
+
+| System details | Game editor |
+|---|---|
+| ![System summary](site/images/system.jpg) | ![Game editor](site/images/editor.jpg) |
+
+## Support
+
+meROMS is free. If it saves you time, you can
+[buy me a coffee](https://buymeacoffee.com/marcosesperon). Bugs and ideas are welcome in
+[Issues](https://github.com/marcosesperon/meROMS/issues).
 
 ---
 
-## Building the app from source
+## For developers
+
+Built with [Tauri v2](https://tauri.app/) (Rust) + React 19 + TypeScript + Tailwind CSS.
+Architecture notes for contributors are in `CLAUDE.md`. The website source is in `site/`,
+published by `.github/workflows/pages.yml`.
+
+### Building the app from source
 
 The app has to be built **on the same operating system it is for**: build the Windows installer
 on Windows, the macOS app on macOS and the Linux packages on Linux. Cross-compiling is not
 supported by this guide.
 
-### 1. Install the prerequisites
+#### 1. Install the prerequisites
 
 Every platform needs:
 
@@ -42,7 +179,7 @@ pnpm --version
 
 Then the platform-specific system libraries:
 
-#### macOS
+##### macOS
 
 1. Install the Xcode Command Line Tools (compiler and SDK):
 
@@ -60,7 +197,7 @@ Then the platform-specific system libraries:
 3. Install Node.js 22 LTS from [nodejs.org](https://nodejs.org/) or with Homebrew
    (`brew install node@22`), then run the Corepack commands above.
 
-#### Windows (10 / 11)
+##### Windows (10 / 11)
 
 1. Install the **Microsoft C++ Build Tools**: download
    [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) and,
@@ -78,7 +215,7 @@ Close and reopen the terminal (PowerShell) after installing everything so the ne
 picked up. The installer tools (NSIS and WiX) are downloaded automatically by Tauri the first
 time you build.
 
-#### Linux
+##### Linux
 
 Install the WebKitGTK libraries and build tools for your distribution:
 
@@ -117,7 +254,7 @@ source "$HOME/.cargo/env"
 
 and run the Corepack commands above.
 
-#### Check that everything is in place
+##### Check that everything is in place
 
 ```bash
 git --version
@@ -127,7 +264,7 @@ rustc --version    # rustc 1.8x or newer
 cargo --version
 ```
 
-### 2. Download the project
+#### 2. Download the project
 
 ```bash
 git clone https://github.com/marcosesperon/meROMS.git
@@ -136,7 +273,7 @@ cd meROMS
 
 To update an existing copy later: `git pull`.
 
-### 3. Install the dependencies
+#### 3. Install the dependencies
 
 ```bash
 pnpm install
@@ -145,7 +282,7 @@ pnpm install
 This installs the JavaScript packages (including the Tauri CLI). The Rust crates are downloaded
 automatically during the first build.
 
-### 3b. (Optional) ScreenScraper developer credentials
+#### 3b. (Optional) ScreenScraper developer credentials
 
 meROMS can carry its own ScreenScraper developer credentials, so users only need their
 ScreenScraper username and password. They are never stored in the repository. To build them in:
@@ -159,7 +296,7 @@ cp src-tauri/screenscraper.env.example src-tauri/screenscraper.env
 `screenscraper.env` is ignored by git. Without it the app still builds: users then enter developer
 credentials in Settings > General > ScreenScraper > Advanced.
 
-### 4. Build the app
+#### 4. Build the app
 
 ```bash
 pnpm tauri build
@@ -181,7 +318,7 @@ much faster. When it finishes, the results are in `src-tauri/target/release/bund
 The bare executable (without installer) is also at `src-tauri/target/release/meroms`
 (`meroms.exe` on Windows).
 
-#### Building only some formats
+##### Building only some formats
 
 By default every format of the current OS is built. To build just one (faster):
 
@@ -191,7 +328,7 @@ pnpm tauri build --bundles nsis           # Windows: only the -setup.exe
 pnpm tauri build --bundles deb,appimage   # Linux: .deb and AppImage
 ```
 
-#### macOS: one app for Intel and Apple Silicon
+##### macOS: one app for Intel and Apple Silicon
 
 ```bash
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
@@ -200,7 +337,7 @@ pnpm tauri build --target universal-apple-darwin
 
 The universal app is left in `src-tauri/target/universal-apple-darwin/release/bundle/`.
 
-### 5. Install and run
+#### 5. Install and run
 
 - **macOS**: open the `.dmg` and drag **meROMS** to Applications. The build is not signed, so the
   first time macOS will block it: right-click the app > **Open** > **Open**, or run
@@ -215,7 +352,7 @@ The universal app is left in `src-tauri/target/universal-apple-darwin/release/bu
 On first launch the app opens the Settings window so you can create a profile (your ROM folder
 and its structure: Classic or ES-DE).
 
-### Troubleshooting
+#### Troubleshooting
 
 - **`pnpm: command not found`**: run `corepack enable` again, or install pnpm with
   `npm install -g pnpm`.
@@ -228,7 +365,7 @@ and its structure: Classic or ES-DE).
 
 ---
 
-## Automated builds (GitHub Actions)
+### Automated builds (GitHub Actions)
 
 Instead of building on each operating system yourself, GitHub can build all the installers on
 its own Windows, macOS and Linux machines. The workflow is in `.github/workflows/build.yml`.
@@ -248,7 +385,7 @@ its own Windows, macOS and Linux machines. The workflow is in `.github/workflows
    - Linux: `.deb`, `.rpm` and `.AppImage`
 5. Check it and press **Publish release** to make it public. Until then only you can see it.
 
-### Self-update
+#### Self-update
 
 From 0.1.4 on, meROMS checks GitHub for a newer version (at start and once a day; it can be turned
 off in Settings > About) and can download, install and restart by itself. For that:
@@ -268,7 +405,7 @@ Windows x2).
 
 ---
 
-## Development
+### Development
 
 ```bash
 pnpm tauri dev                                  # app with hot reload (Vite + Rust + window)
