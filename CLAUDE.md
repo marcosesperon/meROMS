@@ -67,7 +67,7 @@ Every path decision goes through `layout::Layout` (`Classic` | `Esde`). Never bu
 - `commands/` — Tauri command handlers (most take `app: AppHandle`, injected by Tauri):
   - `settings.rs` — `get_settings` (migrates legacy settings), `save_settings`, `export_settings`, `import_settings`
   - `profiles.rs` — `detect_esde_paths`, `detect_pending_structure` (systems of the active profile whose data is only in the other structure + the source profile to migrate from: same-folder Classic, saved ES-DE profiles or `~/ES-DE`)
-  - `systems.rs` — `scan_systems` (reads ROM root subdirs, checks for the gamelist where the layout keeps it)
+  - `systems.rs` — `scan_systems` (reads ROM root subdirs, checks for the gamelist where the layout keeps it), `system_locations` (ROM folder, gamelist path + exists, media base + existing media folders with file counts — legacy ones too in Classic —, backups, collections; shown in the system summary)
   - `gamelist.rs` — `load_gamelist`, `save_gamelist`, `add_game`, `remove_game`, `generate_gamelist`, `add_folder`, `remove_folder`; `read_gamelist`/`write_gamelist`/`write_gamelist_with_original` helpers
   - `images.rs` — `set_game_media` (copies a picked file with unified naming), `scan_game_media`, `switch_image_type` (Classic only)
   - `scraper.rs` — `scrape_game` (ScreenScraper if configured, else TheGamesDB), `scrape_system` (per game: ScreenScraper, then TheGamesDB; optional `game_paths` subset; emits `scrape-progress`)

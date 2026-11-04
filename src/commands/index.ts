@@ -219,6 +219,22 @@ export async function switchImageType(
   });
 }
 
+// Where a system's data lives with the active profile (shown in the system summary)
+export interface SystemLocations {
+  structure: "classic" | "esde";
+  rom_dir: string;
+  gamelist_path: string;
+  gamelist_exists: boolean;
+  backups_dir: string;
+  media_dir: string;
+  media_folders: { folder: string; path: string; files: number }[];
+  collections_dir: string;
+}
+
+export async function systemLocations(systemPath: string): Promise<SystemLocations> {
+  return invoke("system_locations", { systemPath });
+}
+
 // Duplicates
 export interface DuplicateGroup {
   /** "screenscraper_id" | "hash" | "similar_name" */

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { systemLocations, type SystemLocations } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import type { TranslationKeys as TranslationKey } from "../../i18n/en";
@@ -312,6 +313,69 @@ function SystemSummary() {
           </div>
         ))}
       </dl>
+
+      <SystemLocationsBlock systemPath={selectedSystem.path} />
     </div>
+  );
+}
+
+/** Dónde lee y escribe la app los datos de este sistema con el perfil activo (solo informativo) */
+function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
+  const { t } = useTranslation();
+  const games = useAppStore((s) => s.games);
+  const [loc, setLoc] = useState<SystemLocations | null>(null);
+
+  // Se vuelve a pedir al cambiar los juegos (p. ej. tras generar la gamelist o scrapear)
+  useEffect(() => {
+    let cancelled = false;
+    systemLocations(systemPath)
+      .then((l) => !cancelled && setLoc(l))
+      .catch(() => !cancelled && setLoc(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [systemPath, games]);
+
+  if (!loc) return null;
+
+  // Una ruta: etiqueta y la ruta seleccionable (para copiarla)
+  const row = (label: string, path: string, note?: string) => (
+    <div className="min-w-0">
+      <dt className="text-[11px] text-zinc-500">
+        {label}
+        {note && <span className="ml-1 text-amber-400">· {note}</span>}
+      </dt>
+      <dd className="text-xs text-zinc-300 font-mono break-all select-text">{path}</dd>
+    </div>
+  );
+
+  return (
+    <>
+      <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">
+        {t("systemInfo.locations")} ·{" "}
+        <span className="normal-case tracking-normal">
+          {loc.structure === "esde" ? "ES-DE" : t("profiles.kindClassic")}
+        </span>
+      </h3>
+      <dl className="space-y-3">
+        {row(t("systemInfo.romFolder"), loc.rom_dir)}
+        {row(t("systemInfo.gamelist"), loc.gamelist_path, loc.gamelist_exists ? undefined : t("systemInfo.notCreated"))}
+        {row(t("systemInfo.mediaFolder"), loc.media_dir)}
+        {loc.media_folders.length > 0 && (
+          <div>
+            <dt className="text-[11px] text-zinc-500">{t("systemInfo.mediaFolders")}</dt>
+            <dd className="mt-1 flex flex-wrap gap-1.5">
+              {loc.media_folders.map((f) => (
+                <span key={f.folder} title={f.path} className="px-2 py-0.5 rounded bg-zinc-900 text-xs text-zinc-300">
+                  {f.folder} <span className="text-zinc-500">{f.files}</span>
+                </span>
+              ))}
+            </dd>
+          </div>
+        )}
+        {row(t("systemInfo.backups"), loc.backups_dir)}
+        {row(t("systemInfo.collections"), loc.collections_dir)}
+      </dl>
+    </>
   );
 }

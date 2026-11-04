@@ -58,6 +58,7 @@ pub fn run() {
             profiles::detect_esde_paths,
             profiles::detect_pending_structure,
             systems::scan_systems,
+            systems::system_locations,
             gamelist::load_gamelist,
             gamelist::save_gamelist,
             gamelist::add_game,
