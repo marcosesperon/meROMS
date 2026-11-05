@@ -57,7 +57,8 @@ export function StatusMenu({ game, buttonClassName = "" }: StatusMenuProps) {
   const item = "w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left hover:bg-zinc-700/70";
 
   return (
-    <div ref={rootRef} className="relative">
+    // flex: el botón se estira al alto de la fila, como sus vecinos (Favorito, Borrar…)
+    <div ref={rootRef} className="relative flex">
       <button
         onClick={() => setOpen((v) => !v)}
         title={badge ? t(badge.label) : t("status.button")}
