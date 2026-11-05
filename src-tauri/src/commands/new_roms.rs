@@ -183,7 +183,7 @@ fn find_new_roms(system: &SystemRef, games: &[Game], rules: &CompiledRules) -> V
 }
 
 /// Nombres de carpeta (en minúsculas) que no se recorren.
-fn skipped_dirs() -> HashSet<String> {
+pub(super) fn skipped_dirs() -> HashSet<String> {
     let mut dirs: HashSet<String> = super::cleanup::MEDIA_DIRS
         .iter()
         .filter_map(|d| d.split('/').next())

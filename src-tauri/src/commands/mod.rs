@@ -11,6 +11,7 @@ pub mod images;
 pub mod media_check;
 pub mod media_kinds;
 pub mod migrate;
+pub mod move_games;
 pub mod new_roms;
 pub mod normalize;
 pub mod placeholders;

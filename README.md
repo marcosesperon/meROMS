@@ -31,6 +31,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
 - A side panel with the game's artwork, screenshots, video and details; a full editor for every
   field and every media type.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace.
+- **Move to...** another system or a subfolder: ROM, disc files, media, gamelist entry and
+  collections go together (Classic and ES-DE).
 
 **Get what's missing**
 - Scrape names, descriptions, dates, ratings and media from **ScreenScraper**, with

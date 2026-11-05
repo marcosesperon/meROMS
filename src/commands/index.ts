@@ -421,6 +421,21 @@ export async function forgetPlaceholders(): Promise<void> {
   return invoke("forget_placeholders");
 }
 
+/** ROM subfolders of a system (relative, with "/"), for "Move to..." */
+export async function listSubfolders(systemPath: string): Promise<string[]> {
+  return invoke("list_subfolders", { systemPath });
+}
+
+/** Move games to another system or subfolder with their files, media, gamelist entry and collections */
+export async function moveGames(
+  systemPath: string,
+  gamePaths: string[],
+  destSystemPath: string,
+  destSubfolder?: string
+): Promise<{ moved: number; skipped: string[] }> {
+  return invoke("move_games", { systemPath, gamePaths, destSystemPath, destSubfolder });
+}
+
 export async function datReport(systemPath: string): Promise<DatReport | null> {
   return invoke("dat_report", { systemPath });
 }

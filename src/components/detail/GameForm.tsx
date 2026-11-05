@@ -8,6 +8,8 @@ interface GameFormProps {
   onChange: (field: keyof Game, value: string) => void;
   /** Shows a "Rename..." button next to the ROM path (existing games only) */
   onRenameRom?: () => void;
+  /** "Move to...": another system or subfolder */
+  onMoveRom?: () => void;
 }
 
 type FieldType = "text" | "textarea" | "number" | "toggle";
@@ -46,7 +48,7 @@ const MAIN_FIELDS: FieldDef[] = [
   { key: "hash", labelKey: "form.hash" },
 ];
 
-export function GameForm({ game, onChange, onRenameRom }: GameFormProps) {
+export function GameForm({ game, onChange, onRenameRom, onMoveRom }: GameFormProps) {
   const { t } = useTranslation();
 
   function getValue(field: FieldDef): string {
@@ -130,6 +132,15 @@ export function GameForm({ game, onChange, onRenameRom }: GameFormProps) {
                   className="shrink-0 px-2.5 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
                 >
                   {t("gameTools.renameRom")}
+                </button>
+              )}
+              {field.key === "path" && onMoveRom && (
+                <button
+                  type="button"
+                  onClick={onMoveRom}
+                  className="shrink-0 px-2.5 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+                >
+                  {t("move.button")}
                 </button>
               )}
             </div>

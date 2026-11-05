@@ -377,7 +377,7 @@ pub(super) fn remove_references(layout: &Layout, system: &SystemRef, removed: &[
 
 /// Remove the lines of a text file for which `drop` is true (keeping its line endings).
 /// Only writes if something was removed.
-fn remove_lines(path: &Path, drop: impl Fn(&str) -> bool) {
+pub(super) fn remove_lines(path: &Path, drop: impl Fn(&str) -> bool) {
     let Ok(content) = fs::read_to_string(path) else { return };
     let newline = if content.contains("\r\n") { "\r\n" } else { "\n" };
     let kept: Vec<&str> = content.lines().filter(|l| !drop(l)).collect();
@@ -393,7 +393,7 @@ fn remove_lines(path: &Path, drop: impl Fn(&str) -> bool) {
 
 /// Rewrite a text file line by line (keeping its line endings); `change` returns the
 /// new content for a line, or None to leave it as is. Only writes if something changed.
-fn rewrite_lines(path: &Path, change: impl Fn(&str) -> Option<String>) {
+pub(super) fn rewrite_lines(path: &Path, change: impl Fn(&str) -> Option<String>) {
     let Ok(content) = fs::read_to_string(path) else { return };
     let newline = if content.contains("\r\n") { "\r\n" } else { "\n" };
     let mut changed = false;

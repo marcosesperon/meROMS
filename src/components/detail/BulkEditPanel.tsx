@@ -6,6 +6,7 @@ import type { Game } from "../../types";
 import { saveGamelist } from "../../commands";
 import { toESDate } from "../../utils/format";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { MoveGamesModal } from "../common/MoveGamesModal";
 
 // Campos que se pueden poner igual en varios juegos (nombre, descripción y ruta son de cada uno)
 const BULK_FIELDS: { field: keyof Game; label: TranslationKeys; placeholder?: TranslationKeys }[] = [
@@ -57,14 +58,40 @@ export function BulkEditPanel() {
   const { t } = useTranslation();
   const games = useAppStore((s) => s.games);
   const selectedPaths = useAppStore((s) => s.selectedPaths);
+  const selectedSystem = useAppStore((s) => s.selectedSystem);
   const selected = useMemo(() => games.filter((g) => selectedPaths.has(g.path)), [games, selectedPaths]);
+  const [moveOpen, setMoveOpen] = useState(false);
+
+  // Tras mover: recargar la lista y los contadores de los sistemas, y vaciar la selección
+  async function afterMove() {
+    const { loadGames, loadSystems, setSelectedPaths } = useAppStore.getState();
+    setSelectedPaths(new Set());
+    if (selectedSystem) await loadGames(selectedSystem.path);
+    await loadSystems();
+  }
 
   return (
     <aside className="w-[420px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden">
       <div className="px-5 py-4 border-b border-zinc-800">
         <h2 className="text-lg font-bold text-zinc-100">{t("bulk.title", { count: selected.length })}</h2>
         <p className="text-xs text-zinc-500 mt-0.5">{t("bulk.help")}</p>
+        {/* Mover los marcados a otro sistema o subcarpeta */}
+        <button
+          onClick={() => setMoveOpen(true)}
+          disabled={selected.length === 0 || !selectedSystem}
+          className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 text-zinc-200 rounded hover:bg-zinc-700 disabled:opacity-40"
+        >
+          {t("move.button")}
+        </button>
       </div>
+      {moveOpen && selectedSystem && (
+        <MoveGamesModal
+          systemPath={selectedSystem.path}
+          gamePaths={selected.map((g) => g.path)}
+          onClose={() => setMoveOpen(false)}
+          onDone={afterMove}
+        />
+      )}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-8">
         <FieldsSection selected={selected} />
         <ReplaceSection selected={selected} />

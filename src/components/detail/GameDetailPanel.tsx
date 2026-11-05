@@ -10,12 +10,13 @@ import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
+import { MoveGamesModal } from "../common/MoveGamesModal";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { bumpMediaVersion } from "../../utils/images";
 
 // Per-game tools (the same ones the system toolbar has, limited to this game)
-type GameTool = "rename" | "normalize" | "clean";
+type GameTool = "rename" | "normalize" | "clean" | "move";
 
 interface GameDetailPanelProps {
   isNewGame?: boolean;
@@ -242,6 +243,7 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             game={editedGame}
             onChange={handleFieldChange}
             onRenameRom={!isNewGame ? () => runTool("rename") : undefined}
+            onMoveRom={!isNewGame ? () => runTool("move") : undefined}
           />
           </div>
         </div>
@@ -312,6 +314,21 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             onClose={() => setActiveTool(null)}
             onDone={() => refreshGame(selectedGame.path)}
           />
+          {activeTool === "move" && (
+            <MoveGamesModal
+              systemPath={selectedSystem.path}
+              gamePaths={[selectedGame.path]}
+              onClose={() => setActiveTool(null)}
+              onDone={async () => {
+                // El juego ya no está donde estaba: se cierra el editor y se recarga todo
+                const { loadGames, loadSystems, selectGame } = useAppStore.getState();
+                selectGame(null);
+                onClose();
+                await loadGames(selectedSystem.path);
+                await loadSystems();
+              }}
+            />
+          )}
           <UnusedMediaModal
             open={activeTool === "clean"}
             systemPath={selectedSystem.path}
