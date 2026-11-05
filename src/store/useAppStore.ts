@@ -82,6 +82,13 @@ interface AppState {
   editorOpen: boolean;
   openEditor: () => void;
   closeEditor: () => void;
+  /** Read-only game page over the whole window (setting "On click" or the panel's expand button) */
+  fullViewOpen: boolean;
+  openFullView: () => void;
+  closeFullView: () => void;
+  /** Paths of the games in the order the grid/table shows them (previous/next in the full view) */
+  visibleOrder: string[];
+  setVisibleOrder: (paths: string[]) => void;
   /** Multi-select mode (switch in the filter bar): a click marks games instead of opening them,
    * and the right panel becomes the bulk editor */
   multiSelect: boolean;
@@ -352,6 +359,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   editorOpen: false,
   openEditor: () => set({ editorOpen: true }),
   closeEditor: () => set({ editorOpen: false }),
+  fullViewOpen: false,
+  openFullView: () => set({ fullViewOpen: true }),
+  closeFullView: () => set({ fullViewOpen: false }),
+  visibleOrder: [],
+  setVisibleOrder: (paths) => set({ visibleOrder: paths }),
   multiSelect: false,
   selectedPaths: new Set(),
   setMultiSelect: (on) => set({ multiSelect: on, selectedPaths: new Set(), selectedGame: null }),

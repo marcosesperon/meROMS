@@ -1,17 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { checkBios, systemLocations, type SystemLocations } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import type { TranslationKeys as TranslationKey } from "../../i18n/en";
 import type { Game } from "../../types";
-import { resolveImageSrc } from "../../utils/images";
 import { formatRating, formatReleaseDate } from "../../utils/format";
+import { useGameDetails } from "../../hooks/useGameDetails";
 import { formatPlayTime, isPlayed } from "../../utils/playStats";
-import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
 import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
+import { GameMediaViewer } from "./GameMediaViewer";
 import {
   ArcadeBoardIcon,
   CardIcon,
@@ -21,6 +21,7 @@ import {
   ClockIcon,
   CpuIcon,
   DiscIcon,
+  ExpandIcon,
   FloppyIcon,
   GamepadIcon,
   HistoryIcon,
@@ -38,20 +39,6 @@ import {
   TrophyIcon,
   VideoIcon,
 } from "../common/Icons";
-
-// Medios que salen en la galería, en este orden (el vídeo va primero si hay)
-const GALLERY: { field: keyof Game; label: TranslationKey }[] = [
-  { field: "video", label: "images.video" },
-  { field: "thumbnail", label: "info.screenshot" },
-  { field: "titleshot", label: "images.titleshot" },
-  { field: "image", label: "images.boxArt" },
-  { field: "boxart", label: "images.boxart" },
-  { field: "boxback", label: "images.boxback" },
-  { field: "mix", label: "images.mix" },
-  { field: "marquee", label: "images.marquee" },
-  { field: "cartridge", label: "images.cartridge" },
-  { field: "fanart", label: "images.fanart" },
-];
 
 /**
  * Ficha fija de la derecha (estilo LaunchBox): el juego seleccionado en grande, de solo
@@ -94,62 +81,12 @@ export function GameInfoPanel() {
 
 function GameInfo({ game }: { game: Game }) {
   const { t } = useTranslation();
-  const selectedSystem = useAppStore((s) => s.selectedSystem);
   const openEditor = useAppStore((s) => s.openEditor);
+  const openFullView = useAppStore((s) => s.openFullView);
   const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
   const isFavorite = game.favorite === "true";
   const { scrape, remove, scrapeTarget, closeScrape, applyScraped } = useGameActions();
-  const systemPath = selectedSystem?.path || "";
-  // Medios que no se han podido cargar (la gamelist apunta a un fichero que no existe):
-  // no se pintan, para no dejar el icono de imagen rota
-  const [failed, setFailed] = useState<Set<string>>(new Set());
-  useEffect(() => setFailed(new Set()), [game.path]);
-  const markFailed = (url: string) => setFailed((prev) => new Set(prev).add(url));
-  const src = (value?: string) => {
-    const url = resolveImageSrc(value, systemPath);
-    return url && !failed.has(url) ? url : undefined;
-  };
-
-  // Lo que hay de verdad para la galería
-  const media = useMemo(
-    () =>
-      GALLERY.flatMap((m) => {
-        const url = src(game[m.field] as string | undefined);
-        return url ? [{ ...m, url }] : [];
-      }),
-    [game, systemPath, failed]
-  );
-  const [current, setCurrent] = useState(0);
-  // Al cambiar de juego, la galería vuelve al principio
-  useEffect(() => setCurrent(0), [game.path]);
-  const shown = media[current] ?? media[0];
-  // Lo que ya se ve arriba (la carátula y la imagen de fondo de la cabecera): si no hay nada
-  // más, el visor solo repetiría lo mismo y no se enseña
-  const firstShown = (fields: (keyof Game)[]) => fields.find((f) => !!src(game[f] as string | undefined)) ?? null;
-  const coverField = firstShown(["image", "boxart"]);
-  const sceneField = firstShown(["fanart", "thumbnail", "titleshot"]);
-  const onlyShownAbove = media.every((m) => m.field === coverField || m.field === sceneField);
-
-  // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante).
-  // Sin ninguna de las dos, la propia carátula muy desenfocada: deja un fondo con sus colores.
-  const cover = coverField ? src(game[coverField] as string) : undefined;
-  const scene = sceneField ? src(game[sceneField] as string) : undefined;
-  const hero = scene ?? cover;
-  const heroStyle = sceneField === "fanart" ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
-
-  const details: [TranslationKey, string | undefined][] = [
-    ["form.releaseDate", formatReleaseDate(game.releasedate)],
-    ["form.developer", game.developer],
-    ["form.publisher", game.publisher],
-    ["form.genre", game.genre],
-    ["form.players", game.players],
-    ["form.rating", formatRating(game.rating)],
-    ["form.region", [getFlag(game.region || game.lang), game.region || game.lang].filter(Boolean).join(" ")],
-    // Estadísticas de juego (las escribe el frontend al jugar); vacías no salen
-    ["exportDevice.playcount", Number(game.playcount ?? 0) > 0 ? game.playcount : undefined],
-    ["exportDevice.gametime", formatPlayTime(game.gametime) || undefined],
-    ["exportDevice.lastplayed", formatReleaseDate(game.lastplayed) || undefined],
-  ];
+  const { systemPath, markFailed, media, shown, setCurrent, onlyShownAbove, cover, hero, heroStyle, details } = useGameDetails(game);
 
   return (
     <div>
@@ -166,6 +103,13 @@ function GameInfo({ game }: { game: Game }) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/10 to-transparent" />
         <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            onClick={openFullView}
+            title={t("fullView.open")}
+            className="p-1.5 rounded-md bg-black/60 text-zinc-300 hover:text-white hover:bg-black/80"
+          >
+            <ExpandIcon size={14} />
+          </button>
           {game.rating && (
             <span className="px-2 py-1 rounded-md bg-black/60 text-xs text-yellow-400 font-semibold">
               {formatRating(game.rating)}
@@ -233,34 +177,7 @@ function GameInfo({ game }: { game: Game }) {
       {/* Visor + galería */}
       {shown && !onlyShownAbove && (
         <div className="px-5 pt-4">
-          <div className="aspect-video bg-black rounded-lg overflow-hidden flex items-center justify-center">
-            {shown.field === "video" ? (
-              <video key={shown.url} src={shown.url} onError={() => markFailed(shown.url)} controls autoPlay muted loop className="w-full h-full object-contain" />
-            ) : (
-              <img src={shown.url} alt={t(shown.label)} onError={() => markFailed(shown.url)} className="w-full h-full object-contain" />
-            )}
-          </div>
-          {media.length > 1 && (
-            <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
-              {media.map((m, i) => (
-                <button
-                  key={m.field}
-                  onClick={() => setCurrent(i)}
-                  title={t(m.label)}
-                  // Sin borde: la elegida se ve entera y el resto algo apagadas
-                  className={`w-16 h-11 shrink-0 rounded-md overflow-hidden bg-zinc-800 transition-opacity ${
-                    m === shown ? "opacity-100" : "opacity-50 hover:opacity-80"
-                  }`}
-                >
-                  {m.field === "video" ? (
-                    <span className="w-full h-full flex items-center justify-center text-zinc-300 text-lg">▶</span>
-                  ) : (
-                    <img src={m.url} alt="" onError={() => markFailed(m.url)} className="w-full h-full object-cover" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          <GameMediaViewer media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} />
         </div>
       )}
 

@@ -55,6 +55,9 @@ pub struct AppSettings {
     // Grid order: name | most_played | recent | playtime | release | rating (None = name)
     #[serde(default)]
     pub grid_sort: Option<String>,
+    // Click on a game: "panel" (show it in the right panel, None) | "full" (full-screen game page)
+    #[serde(default)]
+    pub click_action: Option<String>,
     // Donation prompt: unix seconds of the first launch, then of the last time it was shown
     #[serde(default)]
     pub donation_prompt_at: Option<i64>,

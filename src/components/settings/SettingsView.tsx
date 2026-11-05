@@ -410,6 +410,22 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </p>
               </section>
 
+              {/* What a click on a game does: right panel or the full-screen page */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("settings.clickAction")}</h3>
+                <select
+                  value={form.click_action ?? "panel"}
+                  onChange={(e) =>
+                    setForm({ ...form, click_action: e.target.value === "full" ? "full" : undefined })
+                  }
+                  className="w-full max-w-xs bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="panel">{t("settings.clickAction_panel")}</option>
+                  <option value="full">{t("settings.clickAction_full")}</option>
+                </select>
+                <p className="text-xs text-zinc-500 mt-2">{t("settings.clickActionHelp")}</p>
+              </section>
+
               {/* Order of the games when a gamelist is written */}
               <section>
                 <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("settings.gamelistSort")}</h3>

@@ -84,7 +84,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      const overlays = document.querySelectorAll(".fixed.inset-0:not([data-editor-layer])");
+      // La ficha a pantalla completa queda debajo del editor: no cuenta
+      const overlays = document.querySelectorAll(".fixed.inset-0:not([data-editor-layer]):not([data-full-view])");
       if (overlays.length > 0) return;
       e.preventDefault();
       handleClose();

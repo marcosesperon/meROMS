@@ -3,6 +3,7 @@ import { useAppStore } from "./store/useAppStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
 import { GameDetailPanel } from "./components/detail/GameDetailPanel";
+import { GameFullView } from "./components/detail/GameFullView";
 import { GameInfoPanel } from "./components/detail/GameInfoPanel";
 import { BulkEditPanel } from "./components/detail/BulkEditPanel";
 import { SettingsView } from "./components/settings/SettingsView";
@@ -339,6 +340,9 @@ function App() {
         </div>
         {/* Multi-select mode: the right panel edits every selected game at once */}
         {selectedSystem && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
+
+      {/* Read-only game page over the whole window (the editor opens on top of it) */}
+      <GameFullView />
 
       {showDetailPanel && (
         <GameDetailPanel

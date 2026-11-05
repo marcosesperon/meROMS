@@ -7,21 +7,19 @@ import { getSystemAspectRatio, extractCustomRatios } from "../../utils/cartridge
 import { StarIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
+import { clickGame, doubleClickGame } from "../../utils/gameClick";
 
 interface GameCardProps {
   game: Game;
 }
 
 export function GameCard({ game }: GameCardProps) {
-  const selectGame = useAppStore((s) => s.selectGame);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
-  const openEditor = useAppStore((s) => s.openEditor);
   // ROM no longer on disk: dimmed card with a "No ROM" label
   const romMissing = useAppStore((s) => s.missingRomPaths.has(game.path));
   const multiSelect = useAppStore((s) => s.multiSelect);
   const checked = useAppStore((s) => s.selectedPaths.has(game.path));
-  const toggleSelected = useAppStore((s) => s.toggleSelected);
   const { t } = useTranslation();
   const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
 
@@ -46,15 +44,10 @@ export function GameCard({ game }: GameCardProps) {
   return (
     <div
       data-game-path={game.path}
-      // En selección múltiple el clic marca/desmarca; si no, enseña el juego en la ficha
-      onClick={() => (multiSelect ? toggleSelected(game.path) : selectGame(game))}
-      // Doble clic: abrir directamente el editor de ese juego
-      onDoubleClick={() => {
-        if (multiSelect) return;
-        selectGame(game);
-        openEditor();
-      }}
-      className={`group rounded-lg p-2 cursor-pointer transition-colors ${
+      // Clic: marcar (selección múltiple) o enseñar el juego; doble clic: el editor (utils/gameClick)
+      onClick={() => clickGame(game)}
+      onDoubleClick={() => doubleClickGame(game)}
+      className={`group rounded-lg p-2 cursor-pointer scroll-mt-5 transition-colors ${
         selected ? "bg-zinc-800 ring-2 ring-indigo-500" : "hover:bg-zinc-800/70"
       } ${romMissing ? "opacity-50" : ""}`}
     >

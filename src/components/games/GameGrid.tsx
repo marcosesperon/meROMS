@@ -1,10 +1,14 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useListKeyboard } from "../../hooks/useListKeyboard";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
 import { getSystemCardWidth, extractCustomRatios } from "../../utils/cartridgeSizes";
 import { sortGames } from "../../utils/playStats";
+import { LetterBar } from "./LetterBar";
+
+// Texto por el que se ordena por nombre (como `sortGames`): de él sale la letra de la barra
+const sortText = (g: Game) => g.sortname || g.name || g.path;
 
 interface GameGridProps {
   games: Game[];
@@ -18,6 +22,10 @@ export function GameGrid({ games }: GameGridProps) {
   // como ES-DE; los que no tienen el dato del orden van al final)
   const gridSort = useAppStore((s) => s.settings.grid_sort);
   const sorted = useMemo(() => sortGames(games, gridSort), [games, gridSort]);
+  // El orden que se ve, para el anterior/siguiente de la ficha a pantalla completa
+  const setVisibleOrder = useAppStore((s) => s.setVisibleOrder);
+  useEffect(() => setVisibleOrder(sorted.map((g) => g.path)), [sorted, setVisibleOrder]);
+  const byName = !gridSort || gridSort === "name";
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -34,18 +42,22 @@ export function GameGrid({ games }: GameGridProps) {
   });
 
   return (
-    <div ref={scrollRef} className="overflow-auto flex-1 p-5">
-      <div
-        ref={gridRef}
-        className="grid gap-x-3 gap-y-4"
-        style={{
-          gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
-        }}
-      >
-        {sorted.map((game) => (
-          <GameCard key={game.path} game={game} />
-        ))}
+    <div className="flex-1 flex overflow-hidden">
+      <div ref={scrollRef} className="overflow-auto flex-1 p-5">
+        <div
+          ref={gridRef}
+          className="grid gap-x-3 gap-y-4"
+          style={{
+            gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
+          }}
+        >
+          {sorted.map((game) => (
+            <GameCard key={game.path} game={game} />
+          ))}
+        </div>
       </div>
+      {/* Saltar a letra: solo con la lista por nombre (con otro orden las letras van salteadas) */}
+      {byName && <LetterBar games={sorted} nameOf={sortText} containerRef={scrollRef} />}
     </div>
   );
 }

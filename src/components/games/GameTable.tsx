@@ -20,6 +20,11 @@ import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
 import { ColumnsMenu } from "./ColumnsMenu";
 import { formatPlayTime } from "../../utils/playStats";
+import { clickGame, doubleClickGame } from "../../utils/gameClick";
+import { LetterBar } from "./LetterBar";
+
+// Texto de la columna Nombre (de él sale la letra de la barra)
+const nameText = (g: Game) => g.name || g.path;
 
 const columnHelper = createColumnHelper<Game>();
 
@@ -109,12 +114,9 @@ function columnId(c: { id?: string }): string {
 export function GameTable({ games }: GameTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnResizeMode] = useState<ColumnResizeMode>("onChange");
-  const selectGame = useAppStore((s) => s.selectGame);
-  const openEditor = useAppStore((s) => s.openEditor);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const multiSelect = useAppStore((s) => s.multiSelect);
   const selectedPaths = useAppStore((s) => s.selectedPaths);
-  const toggleSelected = useAppStore((s) => s.toggleSelected);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const { t } = useTranslation();
 
@@ -332,122 +334,130 @@ export function GameTable({ games }: GameTableProps) {
 
   // Teclado: las filas en el orden en que se ven (con la columna de orden elegida)
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rows = table.getRowModel().rows;
+  const ordered = useMemo(() => rows.map((r) => r.original), [rows]);
   useListKeyboard({
-    items: table.getRowModel().rows.map((r) => r.original),
+    items: ordered,
     containerRef: scrollRef,
     getColumns: () => 1,
   });
+  // El orden que se ve, para el anterior/siguiente de la ficha a pantalla completa
+  const setVisibleOrder = useAppStore((s) => s.setVisibleOrder);
+  useEffect(() => setVisibleOrder(ordered.map((g) => g.path)), [ordered, setVisibleOrder]);
+  // Saltar a letra: solo con la tabla ordenada por la columna Nombre (sin orden, va como la gamelist)
+  const nameSort = sorting[0]?.id === "name" ? sorting[0] : undefined;
 
   return (
-    <div ref={scrollRef} className="overflow-auto flex-1">
-      <table
-        className="text-sm border-collapse table-fixed"
-        // Como mínimo todo el ancho: lo que sobra se lo queda una columna de relleno al final
-        // (estirar las de verdad descuadraría las congeladas, que se colocan con sus anchos)
-        style={{ width: table.getCenterTotalSize(), minWidth: "100%" }}
-      >
-        <thead className="bg-zinc-800">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  // Cada cabecera se queda arriba al bajar (top-0); las congeladas además a la
-                  // izquierda y por encima de todo (esquina): si no, las celdas congeladas del
-                  // cuerpo las tapaban al hacer scroll vertical
-                  className={`sticky top-0 bg-zinc-800 text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none ${
-                    FROZEN.has(header.column.id) ? "z-30" : "z-20"
-                  } ${header.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-700)]" : ""}`}
-                  style={{
-                    width: header.getSize(),
-                    left: FROZEN.has(header.column.id) ? header.column.getStart() : undefined,
-                  }}
-                >
-                  <div
-                    className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition-colors"
-                    onClick={header.column.getToggleSortingHandler()}
+    <div className="flex-1 flex overflow-hidden">
+      <div ref={scrollRef} className="overflow-auto flex-1">
+        <table
+          className="text-sm border-collapse table-fixed"
+          // Como mínimo todo el ancho: lo que sobra se lo queda una columna de relleno al final
+          // (estirar las de verdad descuadraría las congeladas, que se colocan con sus anchos)
+          style={{ width: table.getCenterTotalSize(), minWidth: "100%" }}
+        >
+          <thead className="bg-zinc-800">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    // Cada cabecera se queda arriba al bajar (top-0); las congeladas además a la
+                    // izquierda y por encima de todo (esquina): si no, las celdas congeladas del
+                    // cuerpo las tapaban al hacer scroll vertical
+                    className={`sticky top-0 bg-zinc-800 text-left px-4 py-2.5 text-zinc-400 font-medium border-b border-zinc-700 select-none ${
+                      FROZEN.has(header.column.id) ? "z-30" : "z-20"
+                    } ${header.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-700)]" : ""}`}
+                    style={{
+                      width: header.getSize(),
+                      left: FROZEN.has(header.column.id) ? header.column.getStart() : undefined,
+                    }}
                   >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
-                    {{
-                      asc: " ↑",
-                      desc: " ↓",
-                    }[header.column.getIsSorted() as string] ?? ""}
-                  </div>
-                  {/* Resize handle — wide hit area, thin visible line */}
-                  {header.column.getCanResize() && (
                     <div
-                      onMouseDown={header.getResizeHandler()}
-                      onTouchStart={header.getResizeHandler()}
-                      onDoubleClick={() => header.column.resetSize()}
-                      className="absolute right-0 top-0 h-full w-4 cursor-col-resize select-none touch-none group/resize -translate-x-1/2"
+                      className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition-colors"
+                      onClick={header.column.getToggleSortingHandler()}
                     >
-                      <div
-                        className={`absolute right-[7px] top-0 h-full w-0.5 transition-colors ${
-                          header.column.getIsResizing()
-                            ? "bg-indigo-500"
-                            : "bg-transparent group-hover/resize:bg-zinc-500"
-                        }`}
-                      />
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                      {{
+                        asc: " ↑",
+                        desc: " ↓",
+                      }[header.column.getIsSorted() as string] ?? ""}
                     </div>
-                  )}
-                </th>
-              ))}
-              <th className="sticky top-0 z-20 bg-zinc-800 border-b border-zinc-700" />
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr
-              key={row.id}
-              data-game-path={row.original.path}
-              onClick={() => (multiSelect ? toggleSelected(row.original.path) : selectGame(row.original))}
-              onDoubleClick={() => {
-                if (multiSelect) return;
-                selectGame(row.original);
-                openEditor();
-              }}
-              // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
-              className={`group cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
-                (multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path)
-                  ? "bg-indigo-600/15"
-                  : "hover:bg-zinc-800/50"
-              } ${missingRomPaths.has(row.original.path) ? "line-through decoration-red-500/60" : ""}`}
-              title={missingRomPaths.has(row.original.path) ? t("missingRoms.badge") : undefined}
-            >
-              {row.getVisibleCells().map((cell) => {
-                const frozen = FROZEN.has(cell.column.id);
-                const rowSelected = multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path;
-                // Juego sin ROM: atenuado. En las celdas congeladas solo el contenido, para que
-                // su fondo siga siendo opaco y no se vea lo que pasa por debajo
-                const dim = missingRomPaths.has(row.original.path) ? (frozen ? "[&>*]:opacity-50" : "opacity-50") : "";
-                return (
-                <td
-                  key={cell.id}
-                  className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate ${
-                    frozen ? `sticky z-10 ${rowSelected ? FROZEN_BG.selected : FROZEN_BG.normal}` : ""
-                  } ${cell.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-800)]" : ""} ${dim}`}
-                  // Ancho exacto (tabla de anchos fijos): si no, la miniatura podía quedar más
-                  // estrecha que su hueco y entre ella y el nombre se veía el texto de debajo
-                  style={{
-                    width: cell.column.getSize(),
-                    minWidth: cell.column.getSize(),
-                    maxWidth: cell.column.getSize(),
-                    left: frozen ? cell.column.getStart() : undefined,
-                  }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-                );
-              })}
-              <td />
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    {/* Resize handle — wide hit area, thin visible line */}
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onDoubleClick={() => header.column.resetSize()}
+                        className="absolute right-0 top-0 h-full w-4 cursor-col-resize select-none touch-none group/resize -translate-x-1/2"
+                      >
+                        <div
+                          className={`absolute right-[7px] top-0 h-full w-0.5 transition-colors ${
+                            header.column.getIsResizing()
+                              ? "bg-indigo-500"
+                              : "bg-transparent group-hover/resize:bg-zinc-500"
+                          }`}
+                        />
+                      </div>
+                    )}
+                  </th>
+                ))}
+                <th className="sticky top-0 z-20 bg-zinc-800 border-b border-zinc-700" />
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                data-game-path={row.original.path}
+                onClick={() => clickGame(row.original)}
+                onDoubleClick={() => doubleClickGame(row.original)}
+                // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
+                className={`group cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${
+                  (multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path)
+                    ? "bg-indigo-600/15"
+                    : "hover:bg-zinc-800/50"
+                } ${missingRomPaths.has(row.original.path) ? "line-through decoration-red-500/60" : ""}`}
+                title={missingRomPaths.has(row.original.path) ? t("missingRoms.badge") : undefined}
+              >
+                {row.getVisibleCells().map((cell) => {
+                  const frozen = FROZEN.has(cell.column.id);
+                  const rowSelected = multiSelect ? selectedPaths.has(row.original.path) : selectedGame?.path === row.original.path;
+                  // Juego sin ROM: atenuado. En las celdas congeladas solo el contenido, para que
+                  // su fondo siga siendo opaco y no se vea lo que pasa por debajo
+                  const dim = missingRomPaths.has(row.original.path) ? (frozen ? "[&>*]:opacity-50" : "opacity-50") : "";
+                  return (
+                  <td
+                    key={cell.id}
+                    className={`${cell.column.id === "thumb" ? "pl-4 pr-0 py-1" : "px-4 py-2.5"} text-zinc-300 truncate ${
+                      frozen ? `sticky z-10 ${rowSelected ? FROZEN_BG.selected : FROZEN_BG.normal}` : ""
+                    } ${cell.column.id === "name" ? "shadow-[inset_-1px_0_0_var(--color-zinc-800)]" : ""} ${dim}`}
+                    // Ancho exacto (tabla de anchos fijos): si no, la miniatura podía quedar más
+                    // estrecha que su hueco y entre ella y el nombre se veía el texto de debajo
+                    style={{
+                      width: cell.column.getSize(),
+                      minWidth: cell.column.getSize(),
+                      maxWidth: cell.column.getSize(),
+                      left: frozen ? cell.column.getStart() : undefined,
+                    }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                  );
+                })}
+                <td />
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {nameSort && (
+        <LetterBar games={ordered} nameOf={nameText} containerRef={scrollRef} descending={nameSort.desc} />
+      )}
     </div>
   );
 }
