@@ -129,6 +129,11 @@ Every gamelist is backed up before each save (the last 20 are kept, next to the 
 A free ScreenScraper account is recommended (higher limits). TheGamesDB can be used with its own
 API key, also in Settings > General.
 
+**What if Scrape All is cut halfway?**
+Nothing done is lost: the gamelist is saved every 10 games, and **Stop** saves at once. The next
+**Scrape All** on that system offers to **Continue** with the games left (and the same rules) or
+to start over. Scrape All makes a single backup, of the gamelist as it was before the run.
+
 **Does it work with RetroPie / Batocera / RetroBat...?**
 Yes, as long as they use EmulationStation (classic) or ES-DE gamelists. Point the profile at the
 ROM folder, local or on a network drive.

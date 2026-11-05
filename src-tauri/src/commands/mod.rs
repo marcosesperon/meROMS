@@ -13,6 +13,7 @@ pub mod migrate;
 pub mod new_roms;
 pub mod normalize;
 pub mod profiles;
+pub mod scrape_resume;
 pub mod scraper;
 pub mod scraper_tgdb;
 pub mod settings;

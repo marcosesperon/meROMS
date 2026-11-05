@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -102,8 +102,24 @@ export async function applyScrape(
 
 /** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added); `policy` = what may be
  * updated this time (missing = Settings) */
-export async function scrapeSystem(systemPath: string, gamePaths?: string[], policy?: ScrapePolicy): Promise<void> {
-  return invoke("scrape_system", { systemPath, gamePaths, policy });
+export async function scrapeSystem(
+  systemPath: string,
+  gamePaths?: string[],
+  policy?: ScrapePolicy,
+  /** Continue the run left halfway in this system (its games and rules) */
+  resume?: boolean
+): Promise<ScrapeRunResult> {
+  return invoke("scrape_system", { systemPath, gamePaths, policy, resume });
+}
+
+/** Stop the running Scrape All (the game in progress finishes; what's done is saved) */
+export async function cancelScrape(): Promise<void> {
+  return invoke("cancel_scrape");
+}
+
+/** Scrape All left halfway in this system (app closed, crash or Stop), if any */
+export async function getScrapeResume(systemPath: string): Promise<ScrapeResumeInfo | null> {
+  return invoke("get_scrape_resume", { systemPath });
 }
 
 /** Region and language order the scraper uses (saved, or defaults from the app language) */

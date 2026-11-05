@@ -56,6 +56,9 @@ function App() {
   const [showScrapeModal, setShowScrapeModal] = useState(false);
   // Scrape All finished and the games were reloaded: only then can the ones not found be searched by hand
   const [scrapeFinished, setScrapeFinished] = useState(false);
+  // How the last run ended: stopped by the user, or the error that cut it
+  const [scrapeStopped, setScrapeStopped] = useState(false);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showBackupsModal, setShowBackupsModal] = useState(false);
@@ -143,17 +146,22 @@ function App() {
     if (current) selectGame(fresh.find((g) => g.path === current.path) ?? null);
   }
 
-  async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy) {
+  // resume = continue the run left halfway in this system (its own games and rules)
+  async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy, resume?: boolean) {
     if (!selectedSystem) return;
     setScrapeFinished(false);
+    setScrapeStopped(false);
+    setScrapeError(null);
     setShowScrapeModal(true);
     try {
-      await scrapeSystem(selectedSystem.path, gamePaths, policy);
-      // Reload games after scraping completes
-      await loadGames(selectedSystem.path);
+      const result = await scrapeSystem(selectedSystem.path, gamePaths, policy, resume);
+      setScrapeStopped(result.stopped);
     } catch (e) {
       console.error("Batch scrape failed:", e);
+      setScrapeError(String(e));
     } finally {
+      // Reload games after scraping ends (also when stopped or cut: what was done is saved)
+      await loadGames(selectedSystem.path).catch(() => {});
       setScrapeFinished(true);
     }
   }
@@ -329,10 +337,15 @@ function App() {
       <ScrapeAllModal
         open={showScrapeAll}
         gameCount={games.length}
+        systemPath={selectedSystem?.path ?? ""}
         onClose={() => setShowScrapeAll(false)}
         onStart={(policy) => {
           setShowScrapeAll(false);
           handleScrapeAll(undefined, policy);
+        }}
+        onContinue={() => {
+          setShowScrapeAll(false);
+          handleScrapeAll(undefined, undefined, true);
         }}
       />
 
@@ -383,6 +396,8 @@ function App() {
       <ScrapeProgressModal
         open={showScrapeModal}
         finished={scrapeFinished}
+        stopped={scrapeStopped}
+        error={scrapeError}
         systemPath={selectedSystem?.path ?? ""}
         onClose={() => setShowScrapeModal(false)}
       />

@@ -712,7 +712,37 @@ async fn scrape_one(
     ("not_found", game.clone())
 }
 
+/// «Scrape All» saves the gamelist every this many games (and at the end)
+const SAVE_EVERY: usize = 10;
+
+/// «Stop» pressed: the batch ends before its next game
+static CANCEL_SCRAPE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Stop the running «Scrape All» (the game in progress finishes and what's done is saved)
+#[tauri::command]
+pub fn cancel_scrape() {
+    CANCEL_SCRAPE.store(true, std::sync::atomic::Ordering::SeqCst);
+}
+
+#[derive(serde::Serialize)]
+pub struct ScrapeRunResult {
+    /// Ended by «Stop»: the rest stays in the resume reminder
+    pub stopped: bool,
+}
+
+/// ROM paths a batch will scrape, in gamelist order: all of them, or only `only`
+fn paths_to_scrape(gamelist: &GameList, only: Option<&[String]>) -> Vec<String> {
+    gamelist
+        .games
+        .iter()
+        .filter(|g| only.map_or(true, |only| only.contains(&g.path)))
+        .map(|g| g.path.clone())
+        .collect()
+}
+
 /// Batch scrape all games in a system, emitting progress events.
+/// Saves every SAVE_EVERY games (one backup, before starting) and keeps a reminder of the games
+/// still to do, so a run cut halfway — app closed, crash or «Stop» — can be continued.
 #[tauri::command]
 pub async fn scrape_system(
     app: tauri::AppHandle,
@@ -720,21 +750,40 @@ pub async fn scrape_system(
     game_paths: Option<Vec<String>>,
     // What may be updated this time (chosen when launching); None = what's in Settings
     policy: Option<crate::models::settings::ScrapePolicy>,
-) -> Result<(), String> {
+    // Continue the run left halfway in this system (its games and rules)
+    resume: Option<bool>,
+) -> Result<ScrapeRunResult, String> {
+    use super::scrape_resume::{self, ResumeEntry};
+
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let resume_file = scrape_resume::resume_file(&app)?;
+    let resume_key = scrape_resume::key(&layout, &system);
+
+    // Continuing: the games, rules, total and start date of the run left halfway
+    let previous = if resume == Some(true) {
+        Some(scrape_resume::get(&resume_file, &resume_key).ok_or("Nothing to continue in this system")?)
+    } else {
+        None
+    };
+    let (only, policy) = match &previous {
+        Some(entry) => (Some(entry.remaining.clone()), entry.policy.clone()),
+        None => (game_paths, policy),
+    };
     // Con `game_paths` solo se scrapean esos juegos (p. ej. las ROMs recién añadidas);
     // el resto pasa tal cual
-    let wanted = |game: &Game| game_paths.as_ref().map_or(true, |only| only.contains(&game.path));
-    let total = gamelist.games.iter().filter(|g| wanted(g)).count();
+    let todo = paths_to_scrape(&gamelist, only.as_deref());
+    let total = todo.len();
 
     if total == 0 {
+        // Lo que quedaba ya no está en la gamelist: no hay nada que continuar
+        scrape_resume::remove(&resume_file, &resume_key)?;
         return Err("No games to scrape".to_string());
     }
 
     let mut settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
-    if let Some(policy) = policy {
-        settings.scrape_fields = Some(policy);
+    if let Some(policy) = &policy {
+        settings.scrape_fields = Some(policy.clone());
     }
 
     if !settings.has_screenscraper() && !settings.has_tgdb() {
@@ -744,15 +793,34 @@ pub async fn scrape_system(
         );
     }
 
-    let client = build_http_client()?;
-    let mut updated_games: Vec<Game> = Vec::new();
+    // The reminder, written now: if the app dies, it already says what's left
+    let reminder = |remaining: &[String]| ResumeEntry {
+        key: resume_key.clone(),
+        remaining: remaining.to_vec(),
+        policy: policy.clone(),
+        total: previous.as_ref().map_or(total, |p| p.total),
+        started_at: previous.as_ref().map_or_else(|| chrono::Utc::now().timestamp(), |p| p.started_at),
+    };
+    scrape_resume::put(&resume_file, reminder(&todo))?;
 
-    let mut i = 0;
-    for game in &gamelist.games {
-        if !wanted(game) {
-            updated_games.push(game.clone());
-            continue;
+    // One backup for the whole run: the gamelist as it was before it
+    crate::commands::backup::backup_gamelist(&layout, &system)?;
+
+    CANCEL_SCRAPE.store(false, std::sync::atomic::Ordering::SeqCst);
+    let client = build_http_client()?;
+    let mut done = 0;
+    let mut stopped = false;
+
+    for (i, path) in todo.iter().enumerate() {
+        if CANCEL_SCRAPE.load(std::sync::atomic::Ordering::SeqCst) {
+            stopped = true;
+            break;
         }
+        let Some(index) = gamelist.games.iter().position(|g| &g.path == path) else {
+            done += 1;
+            continue;
+        };
+        let game = gamelist.games[index].clone();
         let game_name = game.name.clone().unwrap_or_else(|| game.path.clone());
 
         let _ = app.emit(
@@ -771,8 +839,9 @@ pub async fn scrape_system(
         }
 
         let (status, updated_game) =
-            scrape_one(&settings, &client, game, &layout, &system).await;
-        updated_games.push(updated_game);
+            scrape_one(&settings, &client, &game, &layout, &system).await;
+        gamelist.games[index] = updated_game;
+        done += 1;
 
         let _ = app.emit(
             "scrape-progress",
@@ -784,17 +853,22 @@ pub async fn scrape_system(
                 status: status.to_string(),
             },
         );
-        i += 1;
+
+        // Cada SAVE_EVERY juegos: gamelist y recordatorio al día (el último guardado va abajo)
+        if done % SAVE_EVERY == 0 && done < total {
+            crate::commands::gamelist::write_gamelist_no_backup(&layout, &system, &gamelist)?;
+            scrape_resume::put(&resume_file, reminder(&todo[done..]))?;
+        }
     }
 
-    let updated_gamelist = GameList {
-        games: updated_games,
-        folders: gamelist.folders,
-        provider: gamelist.provider,
-    };
-    crate::commands::gamelist::write_gamelist(&layout, &system, &updated_gamelist)?;
+    crate::commands::gamelist::write_gamelist_no_backup(&layout, &system, &gamelist)?;
+    if done < total {
+        scrape_resume::put(&resume_file, reminder(&todo[done..]))?;
+    } else {
+        scrape_resume::remove(&resume_file, &resume_key)?;
+    }
 
-    Ok(())
+    Ok(ScrapeRunResult { stopped })
 }
 
 #[cfg(test)]
@@ -897,5 +971,20 @@ mod tests {
         // Un «juego» vacío (ScreenScraper sin resultados) no cuenta
         assert!(parse_ss_candidate(&serde_json::json!({}), &langs(&["us"]), false).is_none());
         assert!(real_game(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn a_batch_follows_the_gamelist_order_and_only_the_wanted_games() {
+        let gamelist = GameList {
+            games: ["./a.sfc", "./b.sfc", "./c.sfc"]
+                .iter()
+                .map(|p| Game { path: p.to_string(), ..Default::default() })
+                .collect(),
+            ..Default::default()
+        };
+        assert_eq!(paths_to_scrape(&gamelist, None), langs(&["./a.sfc", "./b.sfc", "./c.sfc"]));
+        // Continuar: solo los que quedaban (y uno que ya no está en la gamelist no cuenta)
+        let remaining = langs(&["./c.sfc", "./zz.sfc", "./b.sfc"]);
+        assert_eq!(paths_to_scrape(&gamelist, Some(&remaining)), langs(&["./b.sfc", "./c.sfc"]));
     }
 }

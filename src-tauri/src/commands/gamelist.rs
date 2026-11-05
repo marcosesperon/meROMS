@@ -45,7 +45,24 @@ pub fn write_gamelist_with_original(
     original_xml: Option<&str>,
 ) -> Result<(), String> {
     crate::commands::backup::backup_gamelist(layout, system)?;
+    write_gamelist_file(layout, system, gamelist, original_xml)
+}
 
+/// Same as write_gamelist but without a backup: for «Scrape All», which saves every few games
+/// and only backs up once, before starting (so the 20 backups aren't filled with halfway states).
+pub fn write_gamelist_no_backup(layout: &Layout, system: &SystemRef, gamelist: &GameList) -> Result<(), String> {
+    let original_xml = fs::read_to_string(layout.gamelist_path(system)).ok();
+    write_gamelist_file(layout, system, gamelist, original_xml.as_deref())
+}
+
+/// Writes the XML through a temporary file renamed over the real one, so a crash halfway
+/// leaves either the old gamelist or the new one, never half a file.
+fn write_gamelist_file(
+    layout: &Layout,
+    system: &SystemRef,
+    gamelist: &GameList,
+    original_xml: Option<&str>,
+) -> Result<(), String> {
     let gamelist_path = layout.gamelist_path(system);
     if let Some(dir) = gamelist_path.parent() {
         fs::create_dir_all(dir).map_err(|e| format!("Failed to create gamelist folder: {}", e))?;
@@ -62,8 +79,12 @@ pub fn write_gamelist_with_original(
 
     let xml = parser::serialize_gamelist(&to_write, original_xml)?;
 
-    fs::write(&gamelist_path, xml)
-        .map_err(|e| format!("Failed to write gamelist.xml: {}", e))
+    let tmp_path = gamelist_path.with_extension("xml.tmp");
+    fs::write(&tmp_path, xml).map_err(|e| format!("Failed to write gamelist.xml: {}", e))?;
+    fs::rename(&tmp_path, &gamelist_path).map_err(|e| {
+        let _ = fs::remove_file(&tmp_path);
+        format!("Failed to write gamelist.xml: {}", e)
+    })
 }
 
 #[tauri::command]
@@ -310,5 +331,25 @@ mod tests {
         write_gamelist(&Layout::Classic, &system, &gamelist).unwrap();
         let on_disk = fs::read_to_string(system.rom_dir.join("gamelist.xml")).unwrap();
         assert!(on_disk.contains("<image>./covers/Juego.png</image>"));
+    }
+
+    #[test]
+    fn saving_without_backup_leaves_no_backup_nor_temp_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde_layout(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("ROMs/snes"));
+        let mut gamelist = GameList {
+            games: vec![Game { path: "./a.sfc".into(), name: Some("Uno".into()), ..Default::default() }],
+            ..Default::default()
+        };
+        write_gamelist_no_backup(&layout, &system, &gamelist).unwrap();
+        gamelist.games[0].name = Some("Dos".into());
+        write_gamelist_no_backup(&layout, &system, &gamelist).unwrap();
+
+        let dir = tmp.path().join("ES-DE/gamelists/snes");
+        assert!(!dir.join(".backups").exists(), "no backups while saving every few games");
+        assert!(!dir.join("gamelist.xml.tmp").exists(), "the temporary file is renamed away");
+        let on_disk = fs::read_to_string(dir.join("gamelist.xml")).unwrap();
+        assert!(on_disk.contains("<name>Dos</name>"));
     }
 }

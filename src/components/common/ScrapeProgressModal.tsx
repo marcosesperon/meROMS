@@ -4,6 +4,7 @@ import type { Game, ScrapeProgress } from "../../types";
 import { useTranslation } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { saveScrapedGame } from "../../hooks/useGameActions";
+import { cancelScrape } from "../../commands";
 import { showMessage } from "../../utils/dialogs";
 import { ScrapeSearchModal } from "./ScrapeSearchModal";
 
@@ -11,6 +12,10 @@ interface ScrapeProgressModalProps {
   open: boolean;
   /** The batch ended and the games were reloaded (until then the gamelist isn't written yet) */
   finished: boolean;
+  /** Ended by «Stop» (the rest can be continued from Scrape All) */
+  stopped: boolean;
+  /** Error that cut the run (what was done until then is saved) */
+  error: string | null;
   systemPath: string;
   onClose: () => void;
 }
@@ -18,15 +23,18 @@ interface ScrapeProgressModalProps {
 export function ScrapeProgressModal({
   open,
   finished,
+  stopped,
+  error,
   systemPath,
   onClose,
 }: ScrapeProgressModalProps) {
   const [progress, setProgress] = useState<ScrapeProgress | null>(null);
   const [log, setLog] = useState<{ name: string; path: string; status: string }[]>([]);
-  const [done, setDone] = useState(false);
   // Juegos no encontrados que ya se resolvieron a mano, y el que tiene la búsqueda abierta
   const [resolved, setResolved] = useState<Set<string>>(new Set());
   const [searchGame, setSearchGame] = useState<Game | null>(null);
+  // «Detener» pulsado: se espera a que acabe el juego en curso
+  const [stopping, setStopping] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
@@ -34,9 +42,9 @@ export function ScrapeProgressModal({
     if (!open) {
       setProgress(null);
       setLog([]);
-      setDone(false);
       setResolved(new Set());
       setSearchGame(null);
+      setStopping(false);
       return;
     }
 
@@ -46,10 +54,6 @@ export function ScrapeProgressModal({
 
       if (p.status !== "scraping") {
         setLog((prev) => [...prev, { name: p.game_name, path: p.game_path, status: p.status }]);
-      }
-
-      if (p.current === p.total && p.status !== "scraping") {
-        setDone(true);
       }
     });
 
@@ -68,6 +72,15 @@ export function ScrapeProgressModal({
   const percent = progress
     ? Math.round((progress.current / progress.total) * 100)
     : 0;
+
+  // Terminado de verdad = App ya tiene la respuesta y recargó los juegos (también al detener o si falla)
+  const ended = finished;
+  const remaining = progress ? progress.total - log.length : 0;
+
+  async function stop() {
+    setStopping(true);
+    await cancelScrape().catch(() => setStopping(false));
+  }
 
   const successCount = log.filter((l) => l.status === "success").length;
   const notFoundCount = log.filter((l) => l.status === "not_found").length;
@@ -94,12 +107,18 @@ export function ScrapeProgressModal({
       <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[520px] max-h-[80vh] flex flex-col mx-4">
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">
-            {done ? t("scrapeProgress.complete") : t("scrapeProgress.inProgress")}
+            {!ended
+              ? t("scrapeProgress.inProgress")
+              : error
+                ? t("scrapeProgress.failed")
+                : stopped
+                  ? t("scrapeProgress.stopped")
+                  : t("scrapeProgress.complete")}
           </h3>
           {progress && (
             <p className="text-sm text-zinc-400 mt-1 truncate">
               {progress.current} / {progress.total}
-              {!done && progress.status === "scraping" && (
+              {!ended && progress.status === "scraping" && (
                 <span className="ml-2 text-zinc-500">
                   — {progress.game_name}
                 </span>
@@ -158,7 +177,7 @@ export function ScrapeProgressModal({
         </div>
 
         {/* Al terminar: los no encontrados, cada uno con su búsqueda manual */}
-        {done && finished && unresolved.length > 0 && (
+        {ended && unresolved.length > 0 && (
           <div className="px-5 pb-3">
             <p className="text-xs text-zinc-400 mb-1.5">{t("scrapeProgress.unresolved", { count: unresolved.length })}</p>
             <div className="max-h-40 overflow-y-auto rounded border border-zinc-700 bg-zinc-900/50 px-3 py-2 space-y-1">
@@ -181,13 +200,32 @@ export function ScrapeProgressModal({
           </div>
         )}
 
+        {/* Detenido o cortado: lo que falta se puede continuar desde «Scrapear todo» */}
+        {ended && (error || (stopped && remaining > 0)) && (
+          <p className="px-5 pb-3 text-xs text-amber-300 break-words">
+            {error && <span className="block text-red-400 mb-1">{error}</span>}
+            {remaining > 0 && t("scrapeProgress.canContinue", { count: remaining })}
+          </p>
+        )}
+
+        {/* Mientras corre no se puede cerrar: solo detener (guarda lo hecho) */}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {done ? t("scrapeProgress.close") : t("scrapeProgress.running")}
-          </button>
+          {ended ? (
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
+            >
+              {t("scrapeProgress.close")}
+            </button>
+          ) : (
+            <button
+              onClick={stop}
+              disabled={stopping}
+              className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30 transition-colors disabled:opacity-50"
+            >
+              {stopping ? t("scrapeProgress.stopping") : t("scrapeProgress.stop")}
+            </button>
+          )}
         </div>
       </div>
       {searchGame && (

@@ -211,6 +211,20 @@ export interface ScrapeCandidate {
   rom_match: boolean;
 }
 
+/** How a Scrape All run ended */
+export interface ScrapeRunResult {
+  /** Ended by Stop: the rest can be continued from Scrape All */
+  stopped: boolean;
+}
+
+/** Scrape All left halfway in a system */
+export interface ScrapeResumeInfo {
+  remaining: number;
+  total: number;
+  /** Unix seconds */
+  started_at: number;
+}
+
 export interface ScrapeSearch {
   candidates: ScrapeCandidate[];
   /** Sources that failed (the others still give results) */
