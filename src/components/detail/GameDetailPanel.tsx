@@ -4,12 +4,13 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { GameForm } from "./GameForm";
 import { ImageManager } from "./ImageManager";
-import { saveGamelist, removeGame, scrapeGame, swapMedia } from "../../commands";
+import { saveGamelist, removeGame, swapMedia } from "../../commands";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
+import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { bumpMediaVersion } from "../../utils/images";
 
@@ -41,7 +42,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
 
   const [editedGame, setEditedGame] = useState<Game>(initialGame);
   const [saving, setSaving] = useState(false);
-  const [scraping, setScraping] = useState(false);
+  // Ventana de búsqueda manual del scraper
+  const [scrapeSearchOpen, setScrapeSearchOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [activeTool, setActiveTool] = useState<GameTool | null>(null);
@@ -164,22 +166,10 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     }
   }
 
-  async function handleScrape() {
+  // Scrapear abre la búsqueda manual; lo elegido rellena el formulario sin guardar (como antes)
+  function handleScrape() {
     if (!selectedSystem || !editedGame.path) return;
-    setScraping(true);
-    try {
-      const result = await scrapeGame(selectedSystem.path, editedGame.path);
-      if (result.found) {
-        setEditedGame(result.game);
-      } else {
-        await showMessage(t("detail.scrapeNotFound"));
-      }
-    } catch (e) {
-      console.error("Scrape failed:", e);
-      await showMessage(t("detail.scrapeFailed", { error: String(e) }), "error");
-    } finally {
-      setScraping(false);
-    }
+    setScrapeSearchOpen(true);
   }
 
   async function handleDelete() {
@@ -210,10 +200,10 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               <>
                 <button
                   onClick={handleScrape}
-                  disabled={scraping}
+                  disabled={scrapeSearchOpen}
                   className="px-3 py-1.5 text-xs bg-emerald-600/20 text-emerald-400 rounded hover:bg-emerald-600/30 transition-colors disabled:opacity-50"
                 >
-                  {scraping ? t("detail.scraping") : t("detail.scrape")}
+                  {t("detail.scrape")}
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
@@ -371,6 +361,16 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Sin data-editor-layer: mientras está abierta, Esc la cierra a ella y no al editor */}
+      {scrapeSearchOpen && selectedSystem && (
+        <ScrapeSearchModal
+          systemPath={selectedSystem.path}
+          game={editedGame}
+          onClose={() => setScrapeSearchOpen(false)}
+          onApplied={(game) => setEditedGame(game)}
+        />
       )}
     </>
   );

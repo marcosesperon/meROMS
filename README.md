@@ -34,6 +34,9 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
 **Get what's missing**
 - Scrape names, descriptions, dates, ratings and media from **ScreenScraper** (with
   **TheGamesDB** as a fallback), for one game, some games or a whole system.
+- **Scrape** on one game searches both sources and lets you pick the right result (the one that
+  matches your ROM file comes first); after **Scrape All**, the games it couldn't find can be
+  searched the same way.
 - You decide what may be overwritten (per field and media type) and your preferred regions and
   languages.
 - **New ROMs**: find ROM files the gamelist doesn't know yet and add them with clean names.
@@ -96,8 +99,8 @@ The installers are **not signed** yet, so the system warns the first time:
 2. **Pick a system** in the left bar (only systems with games are shown; the switch at the bottom
    shows them all). Click a game to see its details; double-click (or **Edit**) to change it.
 3. **Scrape.** Enter your ScreenScraper account in Settings > General (free at
-   [screenscraper.fr](https://www.screenscraper.fr/)) and use **Scrape** on a game or
-   **Scrape All** for the system. Check "What the scraper updates" first if you don't want
+   [screenscraper.fr](https://www.screenscraper.fr/)) and use **Scrape** on a game (search and
+   pick the right result) or **Scrape All** for the system. Check "What the scraper updates" first if you don't want
    existing data overwritten.
 4. **Tidy up** with the **Tools** menu at the bottom: duplicates, unused media, rename, DAT,
    backups, collections...

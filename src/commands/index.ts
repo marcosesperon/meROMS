@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, SystemInfo, UnusedMediaFile } from "../types";
+import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -73,6 +73,31 @@ export async function scrapeGame(
   gamePath: string
 ): Promise<ScrapeResult> {
   return invoke("scrape_game", { systemPath, gamePath });
+}
+
+/** Manual search for one game: ScreenScraper (ROM match + text) and TheGamesDB, in one list */
+export async function searchScrape(
+  systemPath: string,
+  gamePath: string,
+  query: string,
+  allSystems: boolean
+): Promise<ScrapeSearch> {
+  return invoke("search_scrape", { systemPath, gamePath, query, allSystems });
+}
+
+/** Small cover of a ScreenScraper result of the last search (data: URI, or null) */
+export async function scrapeThumbnail(id: string): Promise<string | null> {
+  return invoke("scrape_thumbnail", { id });
+}
+
+/** Full data of the picked result, written into the game as the policy says (not saved) */
+export async function applyScrape(
+  systemPath: string,
+  gamePath: string,
+  source: string,
+  id: string
+): Promise<ScrapeResult> {
+  return invoke("apply_scrape", { systemPath, gamePath, source, id });
 }
 
 /** Scrape a whole system, or only `gamePaths` (e.g. the ROMs just added); `policy` = what may be

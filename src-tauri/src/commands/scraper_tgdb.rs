@@ -8,11 +8,12 @@ use serde_json::Value;
 use crate::layout::{Layout, SystemRef};
 use crate::media;
 use crate::models::game::Game;
-use crate::models::scraper::ScrapeResult;
+use crate::models::scraper::{ScrapeCandidate, ScrapeResult};
 use crate::models::AppSettings;
 
 const API_BASE: &str = "https://api.thegamesdb.net/v1";
 const IMAGE_BASE: &str = "https://cdn.thegamesdb.net/images/original/";
+const THUMB_BASE: &str = "https://cdn.thegamesdb.net/images/thumb/";
 
 /// Maps ES-DE folder names to TheGamesDB platform IDs.
 pub fn tgdb_platform_id(folder_name: &str) -> Option<u32> {
@@ -104,42 +105,13 @@ pub fn tgdb_platform_id(folder_name: &str) -> Option<u32> {
     }
 }
 
-/// Search for a game on TheGamesDB by name + platform.
-pub async fn scrape_game_tgdb(
-    client: &Client,
-    api_key: &str,
-    game: &Game,
-    layout: &Layout,
-    system: &SystemRef,
-    settings: &AppSettings,
-) -> Result<ScrapeResult, String> {
-    let platform_id = tgdb_platform_id(&system.name);
+/// Fields asked for in every game query (developers come as ids, resolved with the name lists)
+const GAME_FIELDS: &str = "players,publishers,genres,overview,rating";
 
-    // Use game name or derive from filename
-    let search_name = game
-        .name
-        .clone()
-        .unwrap_or_else(|| {
-            Path::new(&game.path)
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .unwrap_or(&game.path)
-                .to_string()
-        });
-
-    // Search by name
-    let mut url = format!(
-        "{}/Games/ByGameName?apikey={}&name={}&fields=players,publishers,genres,overview,rating&include=boxart",
-        API_BASE,
-        api_key,
-        urlencoding::encode(&search_name)
-    );
-    if let Some(pid) = platform_id {
-        url.push_str(&format!("&filter[platform]={}", pid));
-    }
-
+/// GET a TheGamesDB URL and read the JSON (non-2xx → error with the start of the body)
+async fn tgdb_get(client: &Client, url: &str) -> Result<Value, String> {
     let response = client
-        .get(&url)
+        .get(url)
         .send()
         .await
         .map_err(|e| format!("TheGamesDB request failed: {}", e))?;
@@ -154,22 +126,169 @@ pub async fn scrape_game_tgdb(
         ));
     }
 
-    let body: Value = response
+    response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse TheGamesDB response: {}", e))?;
+        .map_err(|e| format!("Failed to parse TheGamesDB response: {}", e))
+}
 
-    let games_arr = match body["data"]["games"].as_array() {
-        Some(arr) if !arr.is_empty() => arr,
-        _ => {
-            return Ok(ScrapeResult {
-                game: game.clone(),
-                found: false,
-            });
+/// Games whose name looks like `name`, on one platform (None = all of them)
+async fn search_by_name(client: &Client, api_key: &str, name: &str, platform_id: Option<u32>) -> Result<Value, String> {
+    let mut url = format!(
+        "{}/Games/ByGameName?apikey={}&name={}&fields={}&include=boxart,platform",
+        API_BASE,
+        api_key,
+        urlencoding::encode(name),
+        GAME_FIELDS
+    );
+    if let Some(pid) = platform_id {
+        url.push_str(&format!("&filter[platform]={}", pid));
+    }
+    tgdb_get(client, &url).await
+}
+
+/// Search for a game on TheGamesDB by name + platform and take the first result (automatic scrape).
+pub async fn scrape_game_tgdb(
+    client: &Client,
+    api_key: &str,
+    game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
+) -> Result<ScrapeResult, String> {
+    // Use game name or derive from filename
+    let search_name = game
+        .name
+        .clone()
+        .unwrap_or_else(|| {
+            Path::new(&game.path)
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or(&game.path)
+                .to_string()
+        });
+
+    let body = search_by_name(client, api_key, &search_name, tgdb_platform_id(&system.name)).await?;
+    match body["data"]["games"].as_array().and_then(|games| games.first()) {
+        Some(jeu) => Ok(ScrapeResult {
+            game: apply_tgdb_game(client, api_key, &body, jeu, game, layout, system, settings).await?,
+            found: true,
+        }),
+        None => Ok(ScrapeResult {
+            game: game.clone(),
+            found: false,
+        }),
+    }
+}
+
+/// Manual search: every game TheGamesDB finds for `query`, as cards to pick from
+pub async fn search_tgdb(
+    client: &Client,
+    api_key: &str,
+    query: &str,
+    platform_id: Option<u32>,
+) -> Result<Vec<ScrapeCandidate>, String> {
+    let body = search_by_name(client, api_key, query, platform_id).await?;
+    let mut candidates = Vec::new();
+    for (mut candidate, developer_id) in parse_tgdb_candidates(&body) {
+        // The developer comes as an id: its name, from the list kept for the session
+        if let Some(id) = developer_id {
+            candidate.developer = tgdb_name(client, api_key, NameList::Developers, id).await;
         }
-    };
+        candidates.push(candidate);
+    }
+    Ok(candidates)
+}
 
-    let jeu = &games_arr[0];
+/// The cards of a search response, each with its developer id (still to be turned into a name)
+fn parse_tgdb_candidates(body: &Value) -> Vec<(ScrapeCandidate, Option<u64>)> {
+    let Some(games) = body["data"]["games"].as_array() else {
+        return Vec::new();
+    };
+    let thumb_base = body["include"]["boxart"]["base_url"]["thumb"]
+        .as_str()
+        .unwrap_or(THUMB_BASE);
+    games
+        .iter()
+        .filter_map(|jeu| {
+            let id = jeu["id"].as_u64()?;
+            let name = jeu["game_title"].as_str()?.to_string();
+            // Platform name from the «include=platform» part (it comes in two shapes)
+            let platform = jeu["platform"].as_u64().map(|p| p.to_string());
+            let system = platform.as_deref().and_then(|p| {
+                let platforms = &body["include"]["platform"];
+                platforms["data"][p]["name"]
+                    .as_str()
+                    .or_else(|| platforms[p]["name"].as_str())
+                    .map(String::from)
+            });
+            let year = jeu["release_date"].as_str().filter(|d| d.len() >= 4).map(|d| d[..4].to_string());
+            // Front box art as the thumbnail (public CDN, it can be shown as it is)
+            let thumbnail = body["include"]["boxart"]["data"][id.to_string()]
+                .as_array()
+                .and_then(|images| {
+                    images.iter().find(|img| {
+                        img["type"].as_str() == Some("boxart") && img["side"].as_str() == Some("front")
+                    })
+                })
+                .and_then(|img| img["filename"].as_str())
+                .map(|file| format!("{}{}", thumb_base, file));
+            let developer_id = jeu["developers"].as_array().and_then(|ids| ids.first()).and_then(|id| id.as_u64());
+            Some((
+                ScrapeCandidate {
+                    source: "thegamesdb".into(),
+                    id: id.to_string(),
+                    name,
+                    system,
+                    year,
+                    developer: None,
+                    thumbnail,
+                    rom_match: false,
+                },
+                developer_id,
+            ))
+        })
+        .collect()
+}
+
+/// Manual search, once picked: the full data of one TheGamesDB game, written into `game`
+pub async fn apply_tgdb_by_id(
+    client: &Client,
+    api_key: &str,
+    id: u64,
+    game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
+) -> Result<ScrapeResult, String> {
+    let url = format!(
+        "{}/Games/ByGameID?apikey={}&id={}&fields={}&include=boxart",
+        API_BASE, api_key, id, GAME_FIELDS
+    );
+    let body = tgdb_get(client, &url).await?;
+    let jeu = body["data"]["games"]
+        .as_array()
+        .and_then(|games| games.first())
+        .ok_or("TheGamesDB: game not found")?;
+    Ok(ScrapeResult {
+        game: apply_tgdb_game(client, api_key, &body, jeu, game, layout, system, settings).await?,
+        found: true,
+    })
+}
+
+/// Write one TheGamesDB game (`jeu`, from `body`) into `game`: data and images, as the
+/// policy says. Shared by the automatic scrape and the manual search.
+#[allow(clippy::too_many_arguments)]
+async fn apply_tgdb_game(
+    client: &Client,
+    api_key: &str,
+    body: &Value,
+    jeu: &Value,
+    game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &AppSettings,
+) -> Result<Game, String> {
     let game_id = jeu["id"].as_u64().unwrap_or(0);
 
     // Extract metadata
@@ -310,10 +429,7 @@ pub async fn scrape_game_tgdb(
         }
     }
 
-    Ok(ScrapeResult {
-        game: updated,
-        found: true,
-    })
+    Ok(updated)
 }
 
 /// Older versions saved TheGamesDB ids («1436») as developer/publisher. A value that is only
@@ -483,5 +599,38 @@ mod tests {
         forget_numeric_ids(&mut game);
         assert_eq!(game.developer, None);
         assert_eq!(game.publisher.as_deref(), Some("Capcom"));
+    }
+
+    #[test]
+    fn reads_a_search_response_as_cards() {
+        let body = serde_json::json!({
+            "data": {"games": [
+                {"id": 10, "game_title": "Alien Syndrome", "release_date": "1988-01-01", "platform": 18, "developers": [7]},
+                {"id": 11, "game_title": "Sin plataforma"},
+                {"game_title": "Sin id"},
+            ]},
+            "include": {
+                "boxart": {
+                    "base_url": {"thumb": "https://cdn.example.test/thumb/"},
+                    "data": {"10": [
+                        {"type": "boxart", "side": "back", "filename": "back/10.jpg"},
+                        {"type": "boxart", "side": "front", "filename": "front/10.jpg"},
+                    ]},
+                },
+                "platform": {"data": {"18": {"id": 18, "name": "Sega Mega Drive"}}},
+            },
+        });
+        let cards = parse_tgdb_candidates(&body);
+        assert_eq!(cards.len(), 2);
+        let (first, developer) = &cards[0];
+        assert_eq!(first.source, "thegamesdb");
+        assert_eq!(first.id, "10");
+        assert_eq!(first.year.as_deref(), Some("1988"));
+        assert_eq!(first.system.as_deref(), Some("Sega Mega Drive"));
+        assert_eq!(first.thumbnail.as_deref(), Some("https://cdn.example.test/thumb/front/10.jpg"));
+        assert_eq!(*developer, Some(7));
+        let (second, _) = &cards[1];
+        assert_eq!(second.system, None);
+        assert_eq!(second.thumbnail, None);
     }
 }

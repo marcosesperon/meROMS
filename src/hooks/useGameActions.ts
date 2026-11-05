@@ -1,37 +1,44 @@
 import { useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { useTranslation } from "../i18n";
-import { removeGame, saveGamelist, scrapeGame } from "../commands";
+import { removeGame, saveGamelist } from "../commands";
 import type { Game } from "../types";
 import { askConfirm, showMessage } from "../utils/dialogs";
 
 /**
+ * Guarda en la gamelist un juego recién scrapeado y recarga, para que la media nueva se vea
+ * (en ES-DE se encuentra al leer). Lo usan la ficha y la lista de no encontrados de «Scrapear todo».
+ */
+export async function saveScrapedGame(scraped: Game) {
+  const { selectedSystem, games, folders, provider, loadGames, selectedGame, selectGame } = useAppStore.getState();
+  if (!selectedSystem) return;
+  const updated = games.map((g) => (g.path === scraped.path ? scraped : g));
+  await saveGamelist(selectedSystem.path, { games: updated, folders: folders || [], provider });
+  await loadGames(selectedSystem.path);
+  // Si era el juego seleccionado, se vuelve a seleccionar con los datos nuevos
+  if (selectedGame?.path === scraped.path) {
+    selectGame(useAppStore.getState().games.find((g) => g.path === scraped.path) ?? null);
+  }
+}
+
+/**
  * Scrapear y eliminar un juego directamente desde la ficha (sin pasar por el editor).
- * A diferencia del editor, aquí el resultado del scrapeo se guarda en el acto.
+ * Scrapear abre la búsqueda manual (`scrapeTarget`); el resultado elegido se guarda en el acto.
  */
 export function useGameActions() {
   const { t } = useTranslation();
-  const [scraping, setScraping] = useState(false);
+  // Juego con la ventana de búsqueda abierta (null = cerrada)
+  const [scrapeTarget, setScrapeTarget] = useState<Game | null>(null);
 
-  async function scrape(game: Game) {
-    const { selectedSystem, games, folders, provider, loadGames, selectGame } = useAppStore.getState();
-    if (!selectedSystem) return;
-    setScraping(true);
+  function scrape(game: Game) {
+    setScrapeTarget(game);
+  }
+
+  async function applyScraped(game: Game) {
     try {
-      const result = await scrapeGame(selectedSystem.path, game.path);
-      if (!result.found) {
-        await showMessage(t("detail.scrapeNotFound"));
-        return;
-      }
-      const updated = games.map((g) => (g.path === game.path ? result.game : g));
-      await saveGamelist(selectedSystem.path, { games: updated, folders: folders || [], provider });
-      // Recargar para que los medios nuevos se vean (en ES-DE se encuentran al leer)
-      await loadGames(selectedSystem.path);
-      selectGame(useAppStore.getState().games.find((g) => g.path === game.path) ?? null);
+      await saveScrapedGame(game);
     } catch (e) {
-      await showMessage(t("detail.scrapeFailed", { error: String(e) }), "error");
-    } finally {
-      setScraping(false);
+      await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
     }
   }
 
@@ -48,5 +55,5 @@ export function useGameActions() {
     }
   }
 
-  return { scrape, remove, scraping };
+  return { scrape, remove, scrapeTarget, closeScrape: () => setScrapeTarget(null), applyScraped };
 }

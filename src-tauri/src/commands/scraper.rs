@@ -11,7 +11,7 @@ use tokio::time::{sleep, Duration};
 use crate::layout::{Layout, SystemRef};
 use crate::media;
 use crate::models::game::Game;
-use crate::models::scraper::{ScrapeProgress, ScrapeResult};
+use crate::models::scraper::{ScrapeCandidate, ScrapeProgress, ScrapeResult, ScrapeSearch};
 use crate::models::system::screenscraper_id_for_system;
 use crate::models::AppSettings;
 use crate::models::GameList;
@@ -293,36 +293,10 @@ async fn process_scrape_response(
     Ok(game)
 }
 
-/// Scrape a single game using ScreenScraper API.
-async fn scrape_game_screenscraper(
-    settings: &AppSettings,
-    existing_game: &Game,
-    layout: &Layout,
-    system: &SystemRef,
-) -> Result<ScrapeResult, String> {
-    let folder_name = system.name.as_str();
-    let system_id = screenscraper_id_for_system(folder_name)
-        .ok_or_else(|| format!("Unknown system for ScreenScraper: {}", folder_name))?;
-
-    let rom_relative = existing_game.path.strip_prefix("./").unwrap_or(&existing_game.path);
-    let rom_absolute = system.rom_dir.join(rom_relative);
-    let md5_hash = compute_md5(&rom_absolute)?;
-
-    let rom_filename = Path::new(&existing_game.path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(&existing_game.path);
-
-    let system_id_str = system_id.to_string();
-    let params = vec![
-        ("systemeid", system_id_str.as_str()),
-        ("md5", md5_hash.as_str()),
-        ("romnom", rom_filename),
-    ];
-
-    let url = build_api_url("jeuInfos.php", settings, &params)?;
-
-    let client = build_http_client()?;
+/// GET a ScreenScraper endpoint and read the JSON. `None` = «nothing found» (HTTP 404 / 430),
+/// as the automatic scrape always treated it.
+async fn ss_get(client: &Client, settings: &AppSettings, endpoint: &str, params: &[(&str, &str)]) -> Result<Option<Value>, String> {
+    let url = build_api_url(endpoint, settings, params)?;
     let response = client
         .get(&url)
         .send()
@@ -333,10 +307,7 @@ async fn scrape_game_screenscraper(
     if !status.is_success() {
         let body_text = response.text().await.unwrap_or_default();
         if status.as_u16() == 404 || status.as_u16() == 430 {
-            return Ok(ScrapeResult {
-                game: existing_game.clone(),
-                found: false,
-            });
+            return Ok(None);
         }
         return Err(format!(
             "ScreenScraper error: HTTP {} — {}",
@@ -345,27 +316,281 @@ async fn scrape_game_screenscraper(
         ));
     }
 
-    let body: Value = response
+    response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse API response: {}", e))?;
+        .map(Some)
+        .map_err(|e| format!("Failed to parse API response: {}", e))
+}
 
-    let jeu = &body["response"]["jeu"];
-    if jeu.is_null() {
+/// The game ScreenScraper recognises from the ROM file itself (MD5 + file name), if any
+async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, system: &SystemRef) -> Result<Option<Value>, String> {
+    let folder_name = system.name.as_str();
+    let system_id = screenscraper_id_for_system(folder_name)
+        .ok_or_else(|| format!("Unknown system for ScreenScraper: {}", folder_name))?;
+
+    let rom_relative = game.path.strip_prefix("./").unwrap_or(&game.path);
+    let rom_absolute = system.rom_dir.join(rom_relative);
+    let md5_hash = compute_md5(&rom_absolute)?;
+
+    let rom_filename = Path::new(&game.path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(&game.path);
+
+    let system_id_str = system_id.to_string();
+    let params = vec![
+        ("systemeid", system_id_str.as_str()),
+        ("md5", md5_hash.as_str()),
+        ("romnom", rom_filename),
+    ];
+    Ok(ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"])))
+}
+
+/// ScreenScraper sometimes answers «nothing» with an empty or id-less game: that's no game
+fn real_game(jeu: &Value) -> Option<Value> {
+    jeu.get("id").is_some().then(|| jeu.clone())
+}
+
+/// Scrape a single game using ScreenScraper API.
+async fn scrape_game_screenscraper(
+    settings: &AppSettings,
+    existing_game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+) -> Result<ScrapeResult, String> {
+    let client = build_http_client()?;
+    let Some(jeu) = ss_game_by_rom(&client, settings, existing_game, system).await? else {
         return Ok(ScrapeResult {
             game: existing_game.clone(),
             found: false,
         });
-    }
+    };
 
     let media_types = settings.media_types();
     let updated_game =
-        process_scrape_response(&client, jeu, existing_game, layout, system, &media_types, settings).await?;
+        process_scrape_response(&client, &jeu, existing_game, layout, system, &media_types, settings).await?;
 
     Ok(ScrapeResult {
         game: updated_game,
         found: true,
     })
+}
+
+// ---------------------------------------------------------------------------------------------
+// Manual search: several results to pick from (the «Scrape» button of one game)
+// ---------------------------------------------------------------------------------------------
+
+/// Thumbnail URLs of the last ScreenScraper search, by game id. They carry the credentials,
+/// so they stay here and the window asks for each picture with `scrape_thumbnail`.
+static SS_THUMBNAILS: std::sync::OnceLock<std::sync::Mutex<std::collections::HashMap<String, String>>> =
+    std::sync::OnceLock::new();
+
+fn ss_thumbnails() -> &'static std::sync::Mutex<std::collections::HashMap<String, String>> {
+    SS_THUMBNAILS.get_or_init(Default::default)
+}
+
+/// The card of one ScreenScraper game, plus its cover URL (to be kept server-side)
+fn parse_ss_candidate(jeu: &Value, regions: &[String], rom_match: bool) -> Option<(ScrapeCandidate, Option<String>)> {
+    let id = jeu.get("id").and_then(|v| v.as_str().map(String::from).or_else(|| v.as_u64().map(|n| n.to_string())))?;
+    let name = extract_regional(&jeu["noms"], regions)?;
+    let year = extract_regional(&jeu["dates"], regions).filter(|d| d.len() >= 4).map(|d| d[..4].to_string());
+    let text = |key: &str| jeu[key].get("text").and_then(|t| t.as_str()).map(String::from);
+    let cover = find_media_url(&jeu["medias"], "box-2D", regions).or_else(|| find_media_url(&jeu["medias"], "ss", regions));
+    Some((
+        ScrapeCandidate {
+            source: "screenscraper".into(),
+            id,
+            name,
+            system: text("systeme"),
+            year,
+            developer: text("developpeur"),
+            thumbnail: None,
+            rom_match,
+        },
+        cover,
+    ))
+}
+
+/// Games ScreenScraper finds for a text (up to 30), on one system (None = all)
+async fn search_screenscraper(
+    client: &Client,
+    settings: &AppSettings,
+    query: &str,
+    system_id: Option<u32>,
+) -> Result<Vec<(ScrapeCandidate, Option<String>)>, String> {
+    let system_id = system_id.map(|id| id.to_string());
+    let mut params = vec![("recherche", query)];
+    if let Some(id) = &system_id {
+        params.push(("systemeid", id.as_str()));
+    }
+    let regions = settings.scrape_regions();
+    let Some(body) = ss_get(client, settings, "jeuRecherche.php", &params).await? else {
+        return Ok(Vec::new());
+    };
+    Ok(body["response"]["jeux"]
+        .as_array()
+        .map(|games| games.iter().filter_map(|jeu| parse_ss_candidate(jeu, &regions, false)).collect())
+        .unwrap_or_default())
+}
+
+/// One list: the ROM match first, then ScreenScraper (without repeating it), then TheGamesDB
+fn merge_candidates(rom_match: Option<ScrapeCandidate>, ss: Vec<ScrapeCandidate>, tgdb: Vec<ScrapeCandidate>) -> Vec<ScrapeCandidate> {
+    let mut list: Vec<ScrapeCandidate> = rom_match.into_iter().collect();
+    for candidate in ss.into_iter().chain(tgdb) {
+        if !list.iter().any(|c| c.source == candidate.source && c.id == candidate.id) {
+            list.push(candidate);
+        }
+    }
+    list
+}
+
+/// Manual search for one game: ScreenScraper (ROM match + text) and TheGamesDB (text) at once.
+/// A source that fails doesn't spoil the other: its error goes in `errors`.
+#[tauri::command]
+pub async fn search_scrape(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_path: String,
+    query: String,
+    all_systems: bool,
+) -> Result<ScrapeSearch, String> {
+    let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    if !settings.has_screenscraper() && !settings.has_tgdb() {
+        return Err("No scraper configured. Add ScreenScraper or TheGamesDB credentials in Settings.".into());
+    }
+    let query = query.trim().to_string();
+    let client = build_http_client()?;
+    let mut errors = Vec::new();
+
+    // TheGamesDB runs in parallel (another service, its own limits)
+    let tgdb_task = settings.has_tgdb().then(|| {
+        let client = client.clone();
+        let api_key = settings.tgdb_apikey.clone().unwrap_or_default();
+        let platform = if all_systems { None } else { crate::commands::scraper_tgdb::tgdb_platform_id(&system.name) };
+        let query = query.clone();
+        tauri::async_runtime::spawn(async move {
+            crate::commands::scraper_tgdb::search_tgdb(&client, &api_key, &query, platform).await
+        })
+    });
+
+    // ScreenScraper, one request after the other (free accounts only get one at a time)
+    let mut rom_match = None;
+    let mut ss = Vec::new();
+    if settings.has_screenscraper() {
+        let regions = settings.scrape_regions();
+        let game = crate::commands::gamelist::read_gamelist(&layout, &system)?
+            .games
+            .into_iter()
+            .find(|g| g.path == game_path);
+        if let Some(game) = game {
+            match ss_game_by_rom(&client, &settings, &game, &system).await {
+                Ok(jeu) => rom_match = jeu.and_then(|jeu| parse_ss_candidate(&jeu, &regions, true)),
+                Err(e) => errors.push(format!("ScreenScraper: {}", e)),
+            }
+        }
+        if !query.is_empty() {
+            let system_id = if all_systems { None } else { screenscraper_id_for_system(&system.name) };
+            match search_screenscraper(&client, &settings, &query, system_id).await {
+                Ok(found) => ss = found,
+                Err(e) => errors.push(format!("ScreenScraper: {}", e)),
+            }
+        }
+    }
+
+    // Covers of this search, kept here for `scrape_thumbnail`
+    let (rom_match, ss) = {
+        let mut thumbnails = ss_thumbnails().lock().map_err(|e| e.to_string())?;
+        thumbnails.clear();
+        let mut keep_cover = |(candidate, cover): (ScrapeCandidate, Option<String>)| {
+            if let Some(url) = cover {
+                thumbnails.insert(candidate.id.clone(), url);
+            }
+            candidate
+        };
+        let rom_match = rom_match.map(&mut keep_cover);
+        let ss: Vec<ScrapeCandidate> = ss.into_iter().map(&mut keep_cover).collect();
+        (rom_match, ss)
+    };
+
+    let mut tgdb = Vec::new();
+    if let Some(task) = tgdb_task {
+        match task.await {
+            Ok(Ok(found)) => tgdb = found,
+            Ok(Err(e)) => errors.push(format!("TheGamesDB: {}", e)),
+            Err(e) => errors.push(format!("TheGamesDB: {}", e)),
+        }
+    }
+
+    Ok(ScrapeSearch { candidates: merge_candidates(rom_match, ss, tgdb), errors })
+}
+
+/// Small cover of a ScreenScraper result of the last search, as a data: URI (None if it has none).
+/// The window asks for them one by one, so free accounts don't go over their one request at a time.
+#[tauri::command]
+pub async fn scrape_thumbnail(id: String) -> Result<Option<String>, String> {
+    use base64::Engine;
+    let Some(url) = ss_thumbnails().lock().map_err(|e| e.to_string())?.get(&id).cloned() else {
+        return Ok(None);
+    };
+    // ScreenScraper resizes it on its side: much less to download
+    let url = format!("{}&maxwidth=160&maxheight=220", url);
+    let response = build_http_client()?
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Download failed: {}", e))?;
+    if !response.status().is_success() {
+        return Ok(None);
+    }
+    let mime = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .filter(|v| v.starts_with("image/"))
+        .unwrap_or("image/png")
+        .to_string();
+    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+    Ok(Some(format!("data:{};base64,{}", mime, base64::engine::general_purpose::STANDARD.encode(&bytes))))
+}
+
+/// The result picked in the manual search: its full data, written into the game as the
+/// policy says (same code as the automatic scrape). Nothing is saved: the caller does it.
+#[tauri::command]
+pub async fn apply_scrape(
+    app: tauri::AppHandle,
+    system_path: String,
+    game_path: String,
+    source: String,
+    id: String,
+) -> Result<ScrapeResult, String> {
+    let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let game = crate::commands::gamelist::read_gamelist(&layout, &system)?
+        .games
+        .into_iter()
+        .find(|g| g.path == game_path)
+        .ok_or("Game not found in gamelist")?;
+    let client = build_http_client()?;
+
+    match source.as_str() {
+        "screenscraper" => {
+            let body = ss_get(&client, &settings, "jeuInfos.php", &[("gameid", id.as_str())])
+                .await?
+                .ok_or("ScreenScraper: game not found")?;
+            let jeu = real_game(&body["response"]["jeu"]).ok_or("ScreenScraper: game not found")?;
+            let media_types = settings.media_types();
+            let game = process_scrape_response(&client, &jeu, &game, &layout, &system, &media_types, &settings).await?;
+            Ok(ScrapeResult { game, found: true })
+        }
+        "thegamesdb" => {
+            let api_key = settings.tgdb_apikey.clone().filter(|k| !k.is_empty()).ok_or("TheGamesDB not configured")?;
+            let id: u64 = id.parse().map_err(|_| format!("Invalid TheGamesDB id: {}", id))?;
+            crate::commands::scraper_tgdb::apply_tgdb_by_id(&client, &api_key, id, &game, &layout, &system, &settings).await
+        }
+        other => Err(format!("Unknown scraper source: {}", other)),
+    }
 }
 
 /// Scrape a single game — dispatches to ScreenScraper or TheGamesDB based on settings.
@@ -536,6 +761,7 @@ pub async fn scrape_system(
                 current: i + 1,
                 total,
                 game_name: game_name.clone(),
+                game_path: game.path.clone(),
                 status: "scraping".to_string(),
             },
         );
@@ -554,6 +780,7 @@ pub async fn scrape_system(
                 current: i + 1,
                 total,
                 game_name,
+                game_path: game.path.clone(),
                 status: status.to_string(),
             },
         );
@@ -615,5 +842,60 @@ mod tests {
         assert_eq!(s.scrape_languages(), langs(&["en"]));
         s.ss_languages = Some(langs(&["fr"]));
         assert_eq!(s.scrape_languages(), langs(&["fr"]));
+    }
+
+    fn card(source: &str, id: &str) -> ScrapeCandidate {
+        ScrapeCandidate {
+            source: source.into(),
+            id: id.into(),
+            name: format!("Juego {}", id),
+            system: None,
+            year: None,
+            developer: None,
+            thumbnail: None,
+            rom_match: false,
+        }
+    }
+
+    #[test]
+    fn rom_match_goes_first_and_is_not_repeated() {
+        let mut matched = card("screenscraper", "2");
+        matched.rom_match = true;
+        let list = merge_candidates(
+            Some(matched),
+            vec![card("screenscraper", "1"), card("screenscraper", "2")],
+            vec![card("thegamesdb", "2")],
+        );
+        let ids: Vec<(&str, &str, bool)> = list.iter().map(|c| (c.source.as_str(), c.id.as_str(), c.rom_match)).collect();
+        // El mismo id en otra fuente es otro juego: se queda
+        assert_eq!(ids, vec![("screenscraper", "2", true), ("screenscraper", "1", false), ("thegamesdb", "2", false)]);
+    }
+
+    #[test]
+    fn reads_a_screenscraper_search_result() {
+        let jeu = serde_json::json!({
+            "id": "1234",
+            "noms": [{"region": "us", "text": "Alien Syndrome"}, {"region": "jp", "text": "Alien Syndrome (J)"}],
+            "systeme": {"id": "1", "text": "Megadrive"},
+            "developpeur": {"id": "5", "text": "Sega"},
+            "dates": [{"region": "jp", "text": "1987-07-01"}],
+            "medias": [
+                {"type": "ss", "region": "wor", "url": "https://example.test/ss"},
+                {"type": "box-2D", "region": "us", "url": "https://example.test/box-us"},
+            ],
+        });
+        let (c, cover) = parse_ss_candidate(&jeu, &langs(&["us"]), false).unwrap();
+        assert_eq!(c.id, "1234");
+        assert_eq!(c.name, "Alien Syndrome");
+        assert_eq!(c.system.as_deref(), Some("Megadrive"));
+        assert_eq!(c.developer.as_deref(), Some("Sega"));
+        assert_eq!(c.year.as_deref(), Some("1987"));
+        assert_eq!(cover.as_deref(), Some("https://example.test/box-us"));
+        // Sin miniatura todavía: se pide aparte
+        assert_eq!(c.thumbnail, None);
+
+        // Un «juego» vacío (ScreenScraper sin resultados) no cuenta
+        assert!(parse_ss_candidate(&serde_json::json!({}), &langs(&["us"]), false).is_none());
+        assert!(real_game(&serde_json::json!({})).is_none());
     }
 }

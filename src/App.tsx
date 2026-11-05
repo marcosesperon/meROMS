@@ -54,6 +54,8 @@ function App() {
   const { t } = useTranslation();
   const [showNewGame, setShowNewGame] = useState(false);
   const [showScrapeModal, setShowScrapeModal] = useState(false);
+  // Scrape All finished and the games were reloaded: only then can the ones not found be searched by hand
+  const [scrapeFinished, setScrapeFinished] = useState(false);
   const [showCleanupModal, setShowCleanupModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showBackupsModal, setShowBackupsModal] = useState(false);
@@ -143,13 +145,16 @@ function App() {
 
   async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy) {
     if (!selectedSystem) return;
+    setScrapeFinished(false);
     setShowScrapeModal(true);
     try {
       await scrapeSystem(selectedSystem.path, gamePaths, policy);
       // Reload games after scraping completes
-      loadGames(selectedSystem.path);
+      await loadGames(selectedSystem.path);
     } catch (e) {
       console.error("Batch scrape failed:", e);
+    } finally {
+      setScrapeFinished(true);
     }
   }
 
@@ -377,6 +382,8 @@ function App() {
 
       <ScrapeProgressModal
         open={showScrapeModal}
+        finished={scrapeFinished}
+        systemPath={selectedSystem?.path ?? ""}
         onClose={() => setShowScrapeModal(false)}
       />
 

@@ -192,7 +192,29 @@ export interface ScrapeProgress {
   current: number;
   total: number;
   game_name: string;
+  /** ROM path of the game (the progress window offers a manual search for the ones not found) */
+  game_path: string;
   status: string;
+}
+
+/** One result of a manual search (the full data is fetched with applyScrape once picked) */
+export interface ScrapeCandidate {
+  source: "screenscraper" | "thegamesdb";
+  id: string;
+  name: string;
+  system: string | null;
+  year: string | null;
+  developer: string | null;
+  /** data: URI or public URL; ScreenScraper ones come later with scrapeThumbnail */
+  thumbnail: string | null;
+  /** ScreenScraper recognised the ROM file itself */
+  rom_match: boolean;
+}
+
+export interface ScrapeSearch {
+  candidates: ScrapeCandidate[];
+  /** Sources that failed (the others still give results) */
+  errors: string[];
 }
 
 export interface UnusedMediaFile {

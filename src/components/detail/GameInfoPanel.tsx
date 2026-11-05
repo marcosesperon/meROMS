@@ -10,6 +10,7 @@ import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
 import { getSystemInfo, localize, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
+import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 
 // Medios que salen en la galería, en este orden (el vídeo va primero si hay)
@@ -71,7 +72,7 @@ function GameInfo({ game }: { game: Game }) {
   const openEditor = useAppStore((s) => s.openEditor);
   const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
   const isFavorite = game.favorite === "true";
-  const { scrape, remove, scraping } = useGameActions();
+  const { scrape, remove, scrapeTarget, closeScrape, applyScraped } = useGameActions();
   const systemPath = selectedSystem?.path || "";
   // Medios que no se han podido cargar (la gamelist apunta a un fichero que no existe):
   // no se pintan, para no dejar el icono de imagen rota
@@ -175,10 +176,10 @@ function GameInfo({ game }: { game: Game }) {
         </button>
         <button
           onClick={() => scrape(game)}
-          disabled={scraping}
+          disabled={!!scrapeTarget}
           className="px-4 py-2 text-sm bg-zinc-800 text-emerald-400 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50"
         >
-          {scraping ? t("detail.scraping") : t("detail.scrape")}
+          {t("detail.scrape")}
         </button>
         {/* Favorito: se guarda en el acto */}
         <button
@@ -249,6 +250,10 @@ function GameInfo({ game }: { game: Game }) {
         {game.desc && <p className="mt-4 text-sm leading-relaxed text-zinc-400 whitespace-pre-line">{game.desc}</p>}
         <p className="mt-4 text-[11px] text-zinc-600 font-mono break-all">{game.path}</p>
       </div>
+      {/* Scrapear = búsqueda manual; lo elegido se guarda en el acto */}
+      {scrapeTarget && (
+        <ScrapeSearchModal systemPath={systemPath} game={scrapeTarget} onClose={closeScrape} onApplied={applyScraped} />
+      )}
     </div>
   );
 }

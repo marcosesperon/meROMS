@@ -1,20 +1,32 @@
 import { useEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { ScrapeProgress } from "../../types";
+import type { Game, ScrapeProgress } from "../../types";
 import { useTranslation } from "../../i18n";
+import { useAppStore } from "../../store/useAppStore";
+import { saveScrapedGame } from "../../hooks/useGameActions";
+import { showMessage } from "../../utils/dialogs";
+import { ScrapeSearchModal } from "./ScrapeSearchModal";
 
 interface ScrapeProgressModalProps {
   open: boolean;
+  /** The batch ended and the games were reloaded (until then the gamelist isn't written yet) */
+  finished: boolean;
+  systemPath: string;
   onClose: () => void;
 }
 
 export function ScrapeProgressModal({
   open,
+  finished,
+  systemPath,
   onClose,
 }: ScrapeProgressModalProps) {
   const [progress, setProgress] = useState<ScrapeProgress | null>(null);
-  const [log, setLog] = useState<{ name: string; status: string }[]>([]);
+  const [log, setLog] = useState<{ name: string; path: string; status: string }[]>([]);
   const [done, setDone] = useState(false);
+  // Juegos no encontrados que ya se resolvieron a mano, y el que tiene la búsqueda abierta
+  const [resolved, setResolved] = useState<Set<string>>(new Set());
+  const [searchGame, setSearchGame] = useState<Game | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
 
@@ -23,6 +35,8 @@ export function ScrapeProgressModal({
       setProgress(null);
       setLog([]);
       setDone(false);
+      setResolved(new Set());
+      setSearchGame(null);
       return;
     }
 
@@ -31,7 +45,7 @@ export function ScrapeProgressModal({
       setProgress(p);
 
       if (p.status !== "scraping") {
-        setLog((prev) => [...prev, { name: p.game_name, status: p.status }]);
+        setLog((prev) => [...prev, { name: p.game_name, path: p.game_path, status: p.status }]);
       }
 
       if (p.current === p.total && p.status !== "scraping") {
@@ -58,6 +72,22 @@ export function ScrapeProgressModal({
   const successCount = log.filter((l) => l.status === "success").length;
   const notFoundCount = log.filter((l) => l.status === "not_found").length;
   const errorCount = log.filter((l) => l.status === "error").length;
+  // Los que no se encontraron (o fallaron): al terminar se pueden buscar a mano uno a uno
+  const unresolved = log.filter((l) => l.status !== "success");
+
+  function openSearch(path: string) {
+    const game = useAppStore.getState().games.find((g) => g.path === path);
+    if (game) setSearchGame(game);
+  }
+
+  async function applySearched(game: Game) {
+    try {
+      await saveScrapedGame(game);
+      setResolved((prev) => new Set(prev).add(game.path));
+    } catch (e) {
+      await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
+    }
+  }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -127,6 +157,30 @@ export function ScrapeProgressModal({
           </div>
         </div>
 
+        {/* Al terminar: los no encontrados, cada uno con su búsqueda manual */}
+        {done && finished && unresolved.length > 0 && (
+          <div className="px-5 pb-3">
+            <p className="text-xs text-zinc-400 mb-1.5">{t("scrapeProgress.unresolved", { count: unresolved.length })}</p>
+            <div className="max-h-40 overflow-y-auto rounded border border-zinc-700 bg-zinc-900/50 px-3 py-2 space-y-1">
+              {unresolved.map((entry) => (
+                <div key={entry.path} className="flex items-center gap-2 text-xs">
+                  <span className="flex-1 min-w-0 text-zinc-300 truncate">{entry.name}</span>
+                  {resolved.has(entry.path) ? (
+                    <span className="text-emerald-400">✓ {t("scrapeProgress.resolved")}</span>
+                  ) : (
+                    <button
+                      onClick={() => openSearch(entry.path)}
+                      className="px-2 py-0.5 rounded bg-zinc-700 text-zinc-200 hover:bg-zinc-600"
+                    >
+                      {t("scrapeProgress.search")}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end">
           <button
             onClick={onClose}
@@ -136,6 +190,14 @@ export function ScrapeProgressModal({
           </button>
         </div>
       </div>
+      {searchGame && (
+        <ScrapeSearchModal
+          systemPath={systemPath}
+          game={searchGame}
+          onClose={() => setSearchGame(null)}
+          onApplied={applySearched}
+        />
+      )}
     </div>
   );
 }

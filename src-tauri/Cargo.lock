@@ -2217,6 +2217,7 @@ dependencies = [
 name = "meroms"
 version = "0.1.4"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "imagesize",
  "md-5",
