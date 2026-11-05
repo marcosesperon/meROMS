@@ -13,6 +13,7 @@ import { ProfilesTab } from "./ProfilesTab";
 import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { AboutTab } from "./AboutTab";
+import { PlaceholdersSetting } from "./PlaceholdersSetting";
 import { exportSettings, importSettings } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
@@ -368,6 +369,8 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     onChange={(scrape_fields) => setForm({ ...form, scrape_fields })}
                   />
                 )}
+                {/* Rellenos aprendidos en «Limpiar media» (el scraper los ignora) */}
+                <PlaceholdersSetting />
               </section>
 
               {/* Grid media field */}

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { clearMediaRefs, findBrokenMediaRefs, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, trashMedia } from "../../commands";
+import { clearMediaRefs, findBrokenMediaRefs, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, trashMedia, type PlaceholderGroup } from "../../commands";
 import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMediaFile } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { resolveImageSrc } from "../../utils/images";
+import { MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
 
 interface UnusedMediaModalProps {
   open: boolean;
@@ -19,6 +20,9 @@ interface UnusedMediaModalProps {
 // Selection key of a broken reference (files use their path)
 const REF_PREFIX = "ref:";
 const refKey = (r: BrokenMediaRef) => `${REF_PREFIX}${r.game_path}|${r.field}`;
+// Selection key of a placeholder group (all its files go together)
+const PH_PREFIX = "ph:";
+const placeholderKey = (g: PlaceholderGroup) => `${PH_PREFIX}${g.md5}`;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -40,6 +44,8 @@ export function UnusedMediaModal({
   const [repeated, setRepeated] = useState<RepeatedMedia[]>([]);
   // Media fields of the gamelist pointing to files that don't exist (Classic only)
   const [broken, setBroken] = useState<BrokenMediaRef[]>([]);
+  // The same file in many different games: a source's placeholder (whole system only)
+  const [placeholders, setPlaceholders] = useState<PlaceholderGroup[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -49,6 +55,7 @@ export function UnusedMediaModal({
       setFiles([]);
       setRepeated([]);
       setBroken([]);
+      setPlaceholders([]);
       setSelected(new Set());
       return;
     }
@@ -58,16 +65,24 @@ export function UnusedMediaModal({
   async function scan() {
     setScanning(true);
     try {
-      const [result, dupes, refs] = await Promise.all([
+      const [result, dupes, refs, fillers] = await Promise.all([
         gamePath ? findGameLeftoverMedia(systemPath, gamePath) : findUnusedMedia(systemPath),
         findRepeatedMedia(systemPath, gamePath),
         findBrokenMediaRefs(systemPath, gamePath),
+        // Los rellenos solo se ven mirando el sistema entero
+        gamePath ? Promise.resolve([] as PlaceholderGroup[]) : findPlaceholderMedia(systemPath),
       ]);
       setFiles(result);
       setRepeated(dupes);
       setBroken(refs);
+      setPlaceholders(fillers);
       setSelected(
-        new Set([...result.map((f) => f.path), ...dupes.flatMap((r) => r.remove.map((f) => f.path)), ...refs.map(refKey)])
+        new Set([
+          ...result.map((f) => f.path),
+          ...dupes.flatMap((r) => r.remove.map((f) => f.path)),
+          ...refs.map(refKey),
+          ...fillers.map(placeholderKey),
+        ])
       );
     } catch (e) {
       console.error("Scan failed:", e);
@@ -92,6 +107,7 @@ export function UnusedMediaModal({
     ...files.map((f) => ({ path: f.path, size: f.size })),
     ...repeated.flatMap((r) => r.remove.map((f) => ({ path: f.path, size: f.size }))),
     ...broken.map((r) => ({ path: refKey(r), size: 0 })),
+    ...placeholders.map((g) => ({ path: placeholderKey(g), size: g.size * g.files.length })),
   ];
 
   function toggleAll() {
@@ -105,7 +121,14 @@ export function UnusedMediaModal({
   async function handleDelete() {
     if (selected.size === 0) return;
     const refs = broken.filter((r) => selected.has(refKey(r)));
-    const paths = Array.from(selected).filter((key) => !key.startsWith(REF_PREFIX));
+    const fillers = placeholders.filter((g) => selected.has(placeholderKey(g)));
+    // Cada relleno marcado aporta todos sus ficheros (sin repetir los que ya estén en otra sección)
+    const paths = [
+      ...new Set([
+        ...Array.from(selected).filter((key) => !key.startsWith(REF_PREFIX) && !key.startsWith(PH_PREFIX)),
+        ...fillers.flatMap((g) => g.files.map((f) => f.path)),
+      ]),
+    ];
     if (!(await askConfirm(t("cleanup.cleanConfirm", { files: paths.length, refs: refs.length })))) return;
     setDeleting(true);
     try {
@@ -121,6 +144,11 @@ export function UnusedMediaModal({
       }
       if (refs.length > 0) {
         lines.push(t("cleanup.refsCleared", { count: await clearMediaRefs(systemPath, refs) }));
+      }
+      // Los rellenos borrados se apuntan: el scraper ya no los vuelve a guardar
+      if (fillers.length > 0) {
+        await learnPlaceholders(fillers.map((g) => ({ size: g.size, md5: g.md5, field: g.fields[0] ?? "" })));
+        lines.push(t("cleanup.placeholdersLearned", { count: fillers.length }));
       }
       await showMessage(lines.join("\n"), failed ? "error" : "info");
       onDone?.();
@@ -141,7 +169,10 @@ export function UnusedMediaModal({
     if (field === "image") return t("mediaKinds.cover");
     if (field === "thumbnail") return t("mediaKinds.screenshot");
     const kind = SWAPPABLE_MEDIA.find((m) => m.field === field);
-    return kind ? t(kind.labelKey) : field;
+    if (kind) return t(kind.labelKey);
+    // Vídeo, manual…: los nombres del filtro «Le falta»
+    const other = MEDIA_FILTER_FIELDS.find((m) => m.field === field);
+    return other ? t(other.label) : field;
   };
 
   return (
@@ -260,6 +291,54 @@ export function UnusedMediaModal({
                         </label>
                       ))
                     )}
+                  </div>
+                </>
+              )}
+
+              {/* The same file in many different games: a source's placeholder */}
+              {placeholders.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.placeholdersSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.placeholdersHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">
+                    {placeholders.map((g) => {
+                      const isVideo = g.fields.includes("video");
+                      const names = g.files.slice(0, 3).map((f) => f.game_name).join(", ");
+                      return (
+                        <label
+                          key={placeholderKey(g)}
+                          className="flex items-center gap-3 px-5 py-2 cursor-pointer transition-colors hover:bg-zinc-700/30"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected.has(placeholderKey(g))}
+                            onChange={() => toggleFile(placeholderKey(g))}
+                            className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
+                          />
+                          {isVideo ? (
+                            <span className="w-10 h-10 flex items-center justify-center bg-zinc-900 rounded shrink-0 text-zinc-500">▶</span>
+                          ) : (
+                            <img
+                              src={resolveImageSrc(g.files[0].path, systemPath)}
+                              alt=""
+                              className="w-10 h-10 object-contain bg-zinc-900 rounded shrink-0"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm text-zinc-300 truncate">
+                              {g.fields.map(kindLabel).join(", ")} · {t("cleanup.placeholderGames", { count: g.games })}
+                            </p>
+                            <p className="text-xs text-zinc-500 truncate" title={g.files.map((f) => f.game_name).join("\n")}>
+                              {names}
+                              {g.files.length > 3 ? "…" : ""}
+                            </p>
+                          </div>
+                          <span className="text-xs text-zinc-500 shrink-0">{formatSize(g.size)}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </>
               )}

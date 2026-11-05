@@ -135,6 +135,11 @@ async fn download_media(
         .await
         .map_err(|e| format!("Failed to read download body: {}", e))?;
 
+    // Un relleno aprendido (contraportada verde vacía, vídeo «not playable»…): como si no hubiera
+    if crate::commands::placeholders::is_placeholder(&bytes) {
+        return Err("Placeholder media, skipped".into());
+    }
+
     if let Some(parent) = dest_path.parent() {
         fs::create_dir_all(parent).ok();
     }

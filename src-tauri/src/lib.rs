@@ -6,7 +6,7 @@ mod parser;
 mod rename_rules;
 mod rom_hash;
 
-use commands::{backup, cleanup, collections, dat, duplicates, export, gamelist, images, media_kinds, migrate, new_roms, normalize, profiles, rename, rules, scrape_resume, scraper, settings, systems};
+use commands::{backup, cleanup, collections, dat, duplicates, export, gamelist, images, media_kinds, migrate, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, settings, systems};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,6 +51,11 @@ pub fn run() {
                     .unwrap(),
             }
         })
+        // Media «de relleno» aprendida: la lista negra vive en la carpeta de datos de la app
+        .setup(|app| {
+            placeholders::init(app.handle());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             settings::get_settings,
             settings::save_settings,
@@ -80,6 +85,10 @@ pub fn run() {
             scraper::cancel_scrape,
             scrape_resume::get_scrape_resume,
             cleanup::find_unused_media,
+            placeholders::find_placeholder_media,
+            placeholders::learn_placeholders,
+            placeholders::placeholder_count,
+            placeholders::forget_placeholders,
             cleanup::find_game_leftover_media,
             cleanup::find_repeated_media,
             cleanup::trash_media,

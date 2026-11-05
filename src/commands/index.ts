@@ -355,6 +355,32 @@ export async function clearSystemDat(systemPath: string): Promise<void> {
 }
 
 /** null when the system has no DAT */
+/** A source's placeholder: the same file (byte for byte) in many different games of the system */
+export interface PlaceholderGroup {
+  md5: string;
+  size: number;
+  fields: string[];
+  games: number;
+  files: { path: string; field: string; game_path: string; game_name: string }[];
+}
+
+export async function findPlaceholderMedia(systemPath: string): Promise<PlaceholderGroup[]> {
+  return invoke("find_placeholder_media", { systemPath });
+}
+
+/** Add placeholders to the blocklist: the scraper won't save them again. Returns how many were new */
+export async function learnPlaceholders(entries: { size: number; md5: string; field: string }[]): Promise<number> {
+  return invoke("learn_placeholders", { entries });
+}
+
+export async function placeholderCount(): Promise<number> {
+  return invoke("placeholder_count");
+}
+
+export async function forgetPlaceholders(): Promise<void> {
+  return invoke("forget_placeholders");
+}
+
 export async function datReport(systemPath: string): Promise<DatReport | null> {
   return invoke("dat_report", { systemPath });
 }

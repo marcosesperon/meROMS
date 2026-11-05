@@ -12,6 +12,7 @@ pub mod media_kinds;
 pub mod migrate;
 pub mod new_roms;
 pub mod normalize;
+pub mod placeholders;
 pub mod profiles;
 pub mod scrape_resume;
 pub mod scraper;

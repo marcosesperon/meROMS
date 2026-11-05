@@ -542,6 +542,10 @@ async fn download_image(client: &Client, url: &str, dest: &Path) -> Result<(), S
     }
 
     let bytes = resp.bytes().await.map_err(|e| e.to_string())?;
+    // Un relleno aprendido: como si no hubiera
+    if crate::commands::placeholders::is_placeholder(&bytes) {
+        return Err("Placeholder media, skipped".into());
+    }
 
     if let Some(parent) = dest.parent() {
         fs::create_dir_all(parent).ok();
