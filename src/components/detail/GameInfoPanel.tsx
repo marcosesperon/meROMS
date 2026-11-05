@@ -9,10 +9,35 @@ import { formatRating, formatReleaseDate } from "../../utils/format";
 import { formatPlayTime, isPlayed } from "../../utils/playStats";
 import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
-import { getSystemInfo, localize, type SystemInfoEntry } from "../../utils/systemInfo";
+import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
-import { PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
+import {
+  ArcadeBoardIcon,
+  CardIcon,
+  CartridgeIcon,
+  CassetteIcon,
+  ChartIcon,
+  ClockIcon,
+  CpuIcon,
+  DiscIcon,
+  FloppyIcon,
+  GamepadIcon,
+  HistoryIcon,
+  ImageIcon,
+  KeyIcon,
+  MemoryIcon,
+  MonitorIcon,
+  PaletteIcon,
+  PencilIcon,
+  SpeakerIcon,
+  StarIcon,
+  StarOutlineIcon,
+  TextIcon,
+  TrashIcon,
+  TrophyIcon,
+  VideoIcon,
+} from "../common/Icons";
 
 // Medios que salen en la galería, en este orden (el vídeo va primero si hay)
 const GALLERY: { field: keyof Game; label: TranslationKey }[] = [
@@ -263,16 +288,50 @@ function GameInfo({ game }: { game: Game }) {
   );
 }
 
-// Campos de la ficha técnica, en este orden
-const SPECS: { key: keyof SystemInfoEntry; label: TranslationKey }[] = [
-  { key: "cpu", label: "systemInfo.cpu" },
-  { key: "memory", label: "systemInfo.memory" },
-  { key: "resolution", label: "systemInfo.resolution" },
-  { key: "colors", label: "systemInfo.colors" },
-  { key: "sound", label: "systemInfo.sound" },
-  { key: "media", label: "systemInfo.media" },
-  { key: "unitsSold", label: "systemInfo.unitsSold" },
+type Icon = typeof CpuIcon;
+
+// Campos de la ficha técnica, en este orden, con su icono (el de Soporte depende del dato: mediaIcon)
+const SPECS: { key: keyof SystemInfoEntry; label: TranslationKey; icon: Icon }[] = [
+  { key: "cpu", label: "systemInfo.cpu", icon: CpuIcon },
+  { key: "memory", label: "systemInfo.memory", icon: MemoryIcon },
+  { key: "resolution", label: "systemInfo.resolution", icon: MonitorIcon },
+  { key: "colors", label: "systemInfo.colors", icon: PaletteIcon },
+  { key: "sound", label: "systemInfo.sound", icon: SpeakerIcon },
+  { key: "media", label: "systemInfo.media", icon: CartridgeIcon },
+  { key: "unitsSold", label: "systemInfo.unitsSold", icon: ChartIcon },
 ];
+
+// Palabras del soporte → icono. El orden importa: «Placa arcade + CD-ROM» es una placa,
+// «Cartucho (Game Card)» un cartucho y «Disco Quick Disk» un disquete, no un disco óptico.
+const MEDIA_ICONS: [RegExp, Icon][] = [
+  [/placa|arcade|board/, ArcadeBoardIcon],
+  [/cartucho|cartridge/, CartridgeIcon],
+  [/hucard|card|tarjeta/, CardIcon],
+  [/casete|cassette|tape/, CassetteIcon],
+  [/disquete|floppy|diskette|quick disk/, FloppyIcon],
+  [/cd|dvd|gd-rom|blu-ray|umd|disco|disc|optical/, DiscIcon],
+];
+
+/** Icono del soporte: se mira solo el primero («Casete / disquete» → casete). Sin coincidencia, un chip */
+function mediaIcon(value: string): Icon {
+  const first = value.split("/")[0].toLowerCase();
+  return MEDIA_ICONS.find(([re]) => re.test(first))?.[1] ?? CpuIcon;
+}
+
+/** Un dato de la ficha: icono violeta en su casilla y, al lado, la etiqueta y el valor */
+function SpecItem({ icon: IconComponent, label, value }: { icon: Icon; label: string; value: string }) {
+  return (
+    <div className="flex gap-2.5 min-w-0">
+      <div className="shrink-0 w-7 h-7 rounded-md bg-indigo-500/15 text-indigo-300 grid place-items-center">
+        <IconComponent size={15} />
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[11px] text-zinc-500">{label}</dt>
+        <dd className="text-sm text-zinc-200">{value}</dd>
+      </div>
+    </div>
+  );
+}
 
 /** Sin juego seleccionado: ficha del sistema (si la hay en src/data/systemInfo.json) y cifras */
 function SystemSummary() {
@@ -293,58 +352,75 @@ function SystemSummary() {
         .filter(Boolean)
         .join(" · ")
     : "";
-  const specs = info ? SPECS.map((s) => [s.label, localize(info[s.key] as never, locale)] as const).filter(([, v]) => !!v) : [];
+  const specs = info
+    ? SPECS.map((s) => {
+        const value = localize(info[s.key] as never, locale);
+        return { label: s.label, value, icon: s.key === "media" && value ? mediaIcon(value) : s.icon };
+      }).filter((s) => !!s.value)
+    : [];
 
-  const stats: [TranslationKey, number][] = [
-    ["info.games", games.length],
-    ["info.withCover", games.filter((g) => g.image).length],
-    ["info.withDescription", games.filter((g) => g.desc).length],
-    ["info.withVideo", games.filter((g) => g.video).length],
-    ["info.favorites", games.filter((g) => g.favorite === "true").length],
+  const stats: [TranslationKey, number, Icon][] = [
+    ["info.games", games.length, GamepadIcon],
+    ["info.withCover", games.filter((g) => g.image).length, ImageIcon],
+    ["info.withDescription", games.filter((g) => g.desc).length, TextIcon],
+    ["info.withVideo", games.filter((g) => g.video).length, VideoIcon],
+    ["info.favorites", games.filter((g) => g.favorite === "true").length, StarOutlineIcon],
   ];
 
   return (
-    <div className="px-6 pt-14 pb-6">
-      <div className="flex justify-center">
-        <SystemLogo name={selectedSystem.name} width={200} maxHeight={80} />
-      </div>
-      <h2 className="mt-6 text-xl font-bold text-zinc-100 text-center">{selectedSystem.full_name}</h2>
-      {headline && <p className="mt-1 text-xs text-indigo-300 text-center">{headline}</p>}
-      <p className="mt-1 text-[11px] text-zinc-500 text-center">{t("info.pickGame")}</p>
-      {info?.description && (
-        <p className="mt-4 text-sm leading-relaxed text-zinc-400">{locale === "es" ? info.description.es : info.description.en}</p>
-      )}
-
-      {specs.length > 0 && (
-        <>
-          <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.specs")}</h3>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
-            {specs.map(([label, value]) => (
-              <div key={label} className="min-w-0">
-                <dt className="text-[11px] text-zinc-500">{t(label)}</dt>
-                <dd className="text-sm text-zinc-200">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </>
-      )}
-
-      <BiosLine system={selectedSystem.name} />
-
-      <ActivityBlock games={games} />
-
-      {/* Cifras de la biblioteca: compactas, una fila de casillas */}
-      <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
-      <dl className="grid grid-cols-5 gap-1.5">
-        {stats.map(([label, value]) => (
-          <div key={label} className="flex flex-col-reverse items-center justify-end gap-0.5 px-1 py-2 rounded-md bg-zinc-900 text-center">
-            <dt className="text-[10px] leading-tight text-zinc-500">{t(label)}</dt>
-            <dd className="text-base font-semibold text-zinc-100">{value}</dd>
+    <div className="pb-6">
+      {/* Cabecera: el logo en grande sobre el degradado de colores del sistema, fundido a oscuro por abajo */}
+      <div className="relative overflow-hidden bg-zinc-900" style={{ backgroundImage: systemGradient(selectedSystem.name) }}>
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+        <div className="relative px-8 pt-12 pb-5 flex flex-col items-center">
+          <div className="h-[110px] flex items-center justify-center">
+            <SystemLogo
+              name={selectedSystem.name}
+              width={300}
+              maxHeight={110}
+              className="drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]"
+            />
           </div>
-        ))}
-      </dl>
+          <h2 className="mt-5 text-xl font-bold text-zinc-100 text-center">{selectedSystem.full_name}</h2>
+          {headline && <p className="mt-1 text-xs text-indigo-300 text-center">{headline}</p>}
+          <p className="mt-1 text-[11px] text-zinc-500 text-center">{t("info.pickGame")}</p>
+        </div>
+      </div>
 
-      <SystemLocationsBlock systemPath={selectedSystem.path} />
+      <div className="px-6">
+        {info?.description && (
+          <p className="mt-4 text-sm leading-relaxed text-zinc-400">{locale === "es" ? info.description.es : info.description.en}</p>
+        )}
+
+        {specs.length > 0 && (
+          <>
+            <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.specs")}</h3>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+              {specs.map((s) => (
+                <SpecItem key={s.label} icon={s.icon} label={t(s.label)} value={s.value!} />
+              ))}
+            </dl>
+          </>
+        )}
+
+        <BiosLine system={selectedSystem.name} />
+
+        <ActivityBlock games={games} />
+
+        {/* Cifras de la biblioteca: compactas, una fila de casillas */}
+        <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
+        <dl className="grid grid-cols-5 gap-1.5">
+          {stats.map(([label, value, StatIcon]) => (
+            <div key={label} className="flex flex-col-reverse items-center justify-end gap-0.5 px-1 py-2 rounded-md bg-zinc-900 text-center">
+              <dt className="text-[10px] leading-tight text-zinc-500">{t(label)}</dt>
+              <dd className="text-base font-semibold text-zinc-100">{value}</dd>
+              <StatIcon size={13} className="text-zinc-500 mb-0.5" />
+            </div>
+          ))}
+        </dl>
+
+        <SystemLocationsBlock systemPath={selectedSystem.path} />
+      </div>
     </div>
   );
 }
@@ -364,10 +440,13 @@ function ActivityBlock({ games }: { games: Game[] }) {
     .filter((g) => g.lastplayed)
     .sort((a, b) => (b.lastplayed ?? "").localeCompare(a.lastplayed ?? ""))
     .slice(0, 5);
-  const list = (title: TranslationKey, items: Game[], value: (g: Game) => string) =>
+  const list = (title: TranslationKey, TitleIcon: Icon, items: Game[], value: (g: Game) => string) =>
     items.length > 0 && (
       <div className="min-w-0">
-        <p className="text-[11px] text-zinc-500 mb-1">{t(title)}</p>
+        <p className="flex items-center gap-1.5 text-[11px] text-zinc-500 mb-1">
+          <TitleIcon size={12} />
+          {t(title)}
+        </p>
         {items.map((g) => (
           <button key={g.path} onClick={() => selectGame(g)} className="w-full flex items-center gap-2 text-left text-xs py-0.5 hover:text-indigo-300">
             <span className="flex-1 truncate text-zinc-300">{g.name || g.path}</span>
@@ -379,15 +458,31 @@ function ActivityBlock({ games }: { games: Game[] }) {
   return (
     <>
       <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("activity.title")}</h3>
-      <p className="text-xs text-zinc-400 mb-3">
-        {t("activity.played", { played: played.length, total: games.length })}
-        {totalSeconds > 0 && <> · {t("activity.total", { time: formatPlayTime(String(totalSeconds)) })}</>}
-      </p>
+      {/* Las dos cifras grandes: cuántos se han jugado y el tiempo total (si se sabe) */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <ActivityTile icon={GamepadIcon} value={`${played.length} / ${games.length}`} label={t("activity.playedLabel")} />
+        {totalSeconds > 0 && (
+          <ActivityTile icon={ClockIcon} value={formatPlayTime(String(totalSeconds))} label={t("activity.totalLabel")} />
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4">
-        {list("activity.mostPlayed", top, (g) => t("activity.times", { count: g.playcount ?? 0 }))}
-        {list("activity.recent", recent, (g) => formatReleaseDate(g.lastplayed))}
+        {list("activity.mostPlayed", TrophyIcon, top, (g) => t("activity.times", { count: g.playcount ?? 0 }))}
+        {list("activity.recent", HistoryIcon, recent, (g) => formatReleaseDate(g.lastplayed))}
       </div>
     </>
+  );
+}
+
+/** Casilla destacada de Actividad: icono violeta, cifra grande y qué es debajo */
+function ActivityTile({ icon: IconComponent, value, label }: { icon: Icon; value: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-zinc-900 min-w-0">
+      <IconComponent size={18} className="shrink-0 text-indigo-300" />
+      <div className="min-w-0">
+        <p className="text-base font-semibold text-zinc-100 leading-tight truncate">{value}</p>
+        <p className="text-[10px] text-zinc-500">{label}</p>
+      </div>
+    </div>
   );
 }
 
@@ -407,7 +502,8 @@ function BiosLine({ system }: { system: string }) {
   if (!count) return null;
   const color = count.ok === count.total ? "text-emerald-400" : count.ok > 0 ? "text-amber-300" : "text-zinc-400";
   return (
-    <p className={`mt-4 text-xs ${color}`} title={t("bios.lineHelp")}>
+    <p className={`mt-4 flex items-center gap-1.5 text-xs ${color}`} title={t("bios.lineHelp")}>
+      <KeyIcon size={13} />
       {t("bios.line", { ok: count.ok, total: count.total })}
     </p>
   );

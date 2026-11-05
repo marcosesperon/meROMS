@@ -7,6 +7,10 @@
     "year": 1993,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#b91c1c",
+      "#1f2937"
+    ],
     "cpu": {
       "es": "ARM60 a 12,5 MHz",
       "en": "ARM60 at 12.5 MHz"
@@ -38,6 +42,10 @@
     "manufacturer": "Chris Jones (Adventure Game Studio)",
     "year": 1997,
     "type": "engine",
+    "gradient": [
+      "#2563eb",
+      "#0f766e"
+    ],
     "description": {
       "es": "Motor para crear aventuras gráficas al estilo point-and-click. Miles de juegos amateur y comerciales están hechos con él.",
       "en": "An engine for making point-and-click graphic adventures. Thousands of hobbyist and commercial games were built with it."
@@ -47,6 +55,10 @@
     "manufacturer": "Commodore",
     "year": 1985,
     "type": "computer",
+    "gradient": [
+      "#1d4ed8",
+      "#ea580c"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 7,16 MHz (A500/A2000)",
       "en": "Motorola 68000 at 7.16 MHz (A500/A2000)"
@@ -81,6 +93,10 @@
     "manufacturer": "Amstrad",
     "year": 1984,
     "type": "computer",
+    "gradient": [
+      "#15803d",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 4 MHz",
       "en": "Zilog Z80A at 4 MHz"
@@ -109,6 +125,10 @@
     "manufacturer": "Apple",
     "year": 1977,
     "type": "computer",
+    "gradient": [
+      "#16a34a",
+      "#ca8a04"
+    ],
     "cpu": {
       "es": "MOS 6502 a 1 MHz",
       "en": "MOS 6502 at 1 MHz"
@@ -149,6 +169,10 @@
     },
     "year": 1971,
     "type": "arcade",
+    "gradient": [
+      "#7c3aed",
+      "#db2777"
+    ],
     "media": {
       "es": "Placas arcade",
       "en": "Arcade boards"
@@ -163,6 +187,10 @@
     "year": 1978,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#b45309",
+      "#7c2d12"
+    ],
     "cpu": {
       "es": "Zilog Z80 a 1,789 MHz",
       "en": "Zilog Z80 at 1.789 MHz"
@@ -191,6 +219,10 @@
     "year": 1977,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#92400e",
+      "#1c1917"
+    ],
     "cpu": {
       "es": "MOS 6507 a 1,19 MHz",
       "en": "MOS 6507 at 1.19 MHz"
@@ -220,6 +252,10 @@
     "year": 1982,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#57534e",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "MOS 6502C a 1,79 MHz",
       "en": "MOS 6502C at 1.79 MHz"
@@ -252,6 +288,10 @@
     "year": 1986,
     "type": "console",
     "generation": 3,
+    "gradient": [
+      "#1e40af",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Atari SALLY (6502) a 1,79 MHz",
       "en": "Atari SALLY (6502) at 1.79 MHz"
@@ -283,6 +323,10 @@
     "manufacturer": "Atari",
     "year": 1979,
     "type": "computer",
+    "gradient": [
+      "#a16207",
+      "#44403c"
+    ],
     "cpu": {
       "es": "MOS 6502B a 1,79 MHz",
       "en": "MOS 6502B at 1.79 MHz"
@@ -315,6 +359,10 @@
     "year": 1993,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#b91c1c",
+      "#111827"
+    ],
     "cpu": {
       "es": "Motorola 68000 + chips Tom y Jerry (RISC de 32 bits)",
       "en": "Motorola 68000 + Tom and Jerry chips (32-bit RISC)"
@@ -350,6 +398,10 @@
     "year": 1995,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#991b1b",
+      "#4b5563"
+    ],
     "cpu": {
       "es": "Igual que Jaguar",
       "en": "Same as Jaguar"
@@ -385,6 +437,10 @@
     "year": 1989,
     "type": "handheld",
     "generation": 4,
+    "gradient": [
+      "#ca8a04",
+      "#374151"
+    ],
     "cpu": {
       "es": "WDC 65SC02 a 4 MHz + coprocesador Suzy de 16 bits",
       "en": "WDC 65SC02 at 4 MHz + 16-bit Suzy coprocessor"
@@ -416,6 +472,10 @@
     "manufacturer": "Atari",
     "year": 1985,
     "type": "computer",
+    "gradient": [
+      "#4b5563",
+      "#1d4ed8"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 8 MHz",
       "en": "Motorola 68000 at 8 MHz"
@@ -447,6 +507,10 @@
     "manufacturer": "Acorn Computers",
     "year": 1981,
     "type": "computer",
+    "gradient": [
+      "#b91c1c",
+      "#a16207"
+    ],
     "cpu": {
       "es": "MOS 6502 a 2 MHz",
       "en": "MOS 6502 at 2 MHz"
@@ -478,6 +542,10 @@
     "manufacturer": "Commodore",
     "year": 1982,
     "type": "computer",
+    "gradient": [
+      "#4338ca",
+      "#7c3aed"
+    ],
     "cpu": {
       "es": "MOS 6510 a ~1 MHz",
       "en": "MOS 6510 at ~1 MHz"
@@ -507,6 +575,10 @@
     "year": 1976,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#a16207",
+      "#57534e"
+    ],
     "cpu": {
       "es": "Fairchild F8 a 1,79 MHz",
       "en": "Fairchild F8 at 1.79 MHz"
@@ -537,6 +609,10 @@
     "manufacturer": "Tandy / RadioShack",
     "year": 1980,
     "type": "computer",
+    "gradient": [
+      "#1e40af",
+      "#64748b"
+    ],
     "cpu": {
       "es": "Motorola 6809E a 0,89 MHz",
       "en": "Motorola 6809E at 0.89 MHz"
@@ -565,6 +641,10 @@
     "year": 1982,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#1f2937",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
       "en": "Zilog Z80A at 3.58 MHz"
@@ -593,6 +673,10 @@
     "manufacturer": "Capcom",
     "year": 1988,
     "type": "arcade",
+    "gradient": [
+      "#1d4ed8",
+      "#d97706"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 10 MHz + Z80 (sonido)",
       "en": "Motorola 68000 at 10 MHz + Z80 (sound)"
@@ -620,6 +704,10 @@
     "manufacturer": "Capcom",
     "year": 1993,
     "type": "arcade",
+    "gradient": [
+      "#1e3a8a",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 16 MHz + Z80 (sonido)",
       "en": "Motorola 68000 at 16 MHz + Z80 (sound)"
@@ -647,6 +735,10 @@
     "manufacturer": "Capcom",
     "year": 1996,
     "type": "arcade",
+    "gradient": [
+      "#0f766e",
+      "#1e3a8a"
+    ],
     "cpu": {
       "es": "Hitachi SH-2 a 25 MHz",
       "en": "Hitachi SH-2 at 25 MHz"
@@ -677,6 +769,10 @@
     "manufacturer": "Matt Ownby",
     "year": 1999,
     "type": "engine",
+    "gradient": [
+      "#b45309",
+      "#7f1d1d"
+    ],
     "description": {
       "es": "Emulador de recreativas con LaserDisc, como Dragon's Lair o Space Ace, que mezclaban vídeo y juego.",
       "en": "An emulator for LaserDisc arcade games such as Dragon's Lair and Space Ace, which mixed video and gameplay."
@@ -686,6 +782,10 @@
     "manufacturer": "—",
     "year": null,
     "type": "software",
+    "gradient": [
+      "#475569",
+      "#334155"
+    ],
     "description": {
       "es": "Accesos directos a aplicaciones de escritorio lanzadas desde el frontend.",
       "en": "Shortcuts to desktop applications launched from the frontend."
@@ -695,6 +795,10 @@
     "manufacturer": "Dragon Data",
     "year": 1982,
     "type": "computer",
+    "gradient": [
+      "#b91c1c",
+      "#1f2937"
+    ],
     "cpu": {
       "es": "Motorola 6809E a 0,89 MHz",
       "en": "Motorola 6809E at 0.89 MHz"
@@ -730,6 +834,10 @@
     "year": 1998,
     "type": "console",
     "generation": 6,
+    "gradient": [
+      "#ea580c",
+      "#1d4ed8"
+    ],
     "cpu": {
       "es": "Hitachi SH-4 a 200 MHz",
       "en": "Hitachi SH-4 at 200 MHz"
@@ -758,6 +866,10 @@
     "manufacturer": "Proyecto EasyRPG",
     "year": 2007,
     "type": "engine",
+    "gradient": [
+      "#0d9488",
+      "#4338ca"
+    ],
     "description": {
       "es": "Intérprete libre para jugar a juegos hechos con RPG Maker 2000 y 2003.",
       "en": "A free interpreter for playing games made with RPG Maker 2000 and 2003."
@@ -767,6 +879,10 @@
     "manufacturer": "Equipo FinalBurn",
     "year": 2000,
     "type": "engine",
+    "gradient": [
+      "#c2410c",
+      "#7f1d1d"
+    ],
     "description": {
       "es": "FinalBurn Alpha / Neo, emulador de recreativas centrado en Capcom, SNK, Sega, Toaplan y otras placas de los 80 y 90.",
       "en": "FinalBurn Alpha / Neo, an arcade emulator focused on Capcom, SNK, Sega, Toaplan and other boards of the 80s and 90s."
@@ -777,6 +893,10 @@
     "year": 1986,
     "type": "console",
     "generation": 3,
+    "gradient": [
+      "#ca8a04",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Igual que Famicom (Ricoh 2A03)",
       "en": "Same as Famicom (Ricoh 2A03)"
@@ -811,6 +931,10 @@
     "manufacturer": "Nintendo",
     "year": 1980,
     "type": "handheld",
+    "gradient": [
+      "#b45309",
+      "#a16207"
+    ],
     "cpu": {
       "es": "Microcontrolador Sharp SM5 de 4 bits",
       "en": "Sharp SM5 4-bit microcontroller"
@@ -849,6 +973,10 @@
     "year": 1990,
     "type": "handheld",
     "generation": 4,
+    "gradient": [
+      "#1f2937",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "Zilog Z80 a 3,58 MHz",
       "en": "Zilog Z80 at 3.58 MHz"
@@ -881,6 +1009,10 @@
     "year": 1989,
     "type": "handheld",
     "generation": 4,
+    "gradient": [
+      "#4d7c0f",
+      "#65a30d"
+    ],
     "cpu": {
       "es": "Sharp LR35902 a 4,19 MHz",
       "en": "Sharp LR35902 at 4.19 MHz"
@@ -913,6 +1045,10 @@
     "year": 2001,
     "type": "handheld",
     "generation": 6,
+    "gradient": [
+      "#4f46e5",
+      "#7c3aed"
+    ],
     "cpu": {
       "es": "ARM7TDMI a 16,78 MHz",
       "en": "ARM7TDMI at 16.78 MHz"
@@ -945,6 +1081,10 @@
     "year": 1998,
     "type": "handheld",
     "generation": 5,
+    "gradient": [
+      "#7c3aed",
+      "#0d9488"
+    ],
     "cpu": {
       "es": "Sharp LR35902 a 8,4 MHz (doble velocidad)",
       "en": "Sharp LR35902 at 8.4 MHz (double speed)"
@@ -977,6 +1117,10 @@
     "year": 2001,
     "type": "console",
     "generation": 6,
+    "gradient": [
+      "#5b21b6",
+      "#4338ca"
+    ],
     "cpu": {
       "es": "IBM PowerPC Gekko a 486 MHz",
       "en": "IBM PowerPC Gekko at 486 MHz"
@@ -1014,6 +1158,10 @@
     "manufacturer": "—",
     "year": null,
     "type": "software",
+    "gradient": [
+      "#475569",
+      "#0e7490"
+    ],
     "description": {
       "es": "Visor de imágenes del frontend (no es un sistema de juego).",
       "en": "The frontend's image viewer (not a game system)."
@@ -1024,6 +1172,10 @@
     "year": 1979,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#a16207",
+      "#44403c"
+    ],
     "cpu": {
       "es": "General Instrument CP1610 a 0,89 MHz (16 bits)",
       "en": "General Instrument CP1610 at 0.89 MHz (16 bits)"
@@ -1055,6 +1207,10 @@
     "manufacturer": "Comunidad LÖVE",
     "year": 2008,
     "type": "engine",
+    "gradient": [
+      "#db2777",
+      "#2563eb"
+    ],
     "description": {
       "es": "Motor libre para hacer juegos 2D en el lenguaje Lua.",
       "en": "A free framework for making 2D games in Lua."
@@ -1064,6 +1220,10 @@
     "manufacturer": "Apple",
     "year": 1984,
     "type": "computer",
+    "gradient": [
+      "#78716c",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 7,8 MHz (modelo original)",
       "en": "Motorola 68000 at 7.8 MHz (original model)"
@@ -1094,6 +1254,10 @@
     "manufacturer": "Equipo MAME",
     "year": 1997,
     "type": "engine",
+    "gradient": [
+      "#7c3aed",
+      "#1e3a8a"
+    ],
     "description": {
       "es": "MAME (Multiple Arcade Machine Emulator), el emulador de referencia para preservar miles de placas arcade.",
       "en": "MAME (Multiple Arcade Machine Emulator), the reference emulator for preserving thousands of arcade boards."
@@ -1104,6 +1268,10 @@
     "year": 1985,
     "type": "console",
     "generation": 3,
+    "gradient": [
+      "#1f2937",
+      "#dc2626"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
       "en": "Zilog Z80A at 3.58 MHz"
@@ -1139,6 +1307,10 @@
     "year": 1988,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#1e3a8a",
+      "#dc2626"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 7,67 MHz + Zilog Z80 (sonido)",
       "en": "Motorola 68000 at 7.67 MHz + Zilog Z80 (sound)"
@@ -1170,6 +1342,10 @@
     "manufacturer": "Equipo MAME",
     "year": 1998,
     "type": "engine",
+    "gradient": [
+      "#1e3a8a",
+      "#0f766e"
+    ],
     "description": {
       "es": "MESS, la parte de MAME que emula consolas y ordenadores (hoy integrada en MAME).",
       "en": "MESS, the part of MAME that emulates consoles and computers (now merged into MAME)."
@@ -1179,6 +1355,10 @@
     "manufacturer": "byuu / near",
     "year": 2012,
     "type": "software",
+    "gradient": [
+      "#6d28d9",
+      "#64748b"
+    ],
     "description": {
       "es": "Chip de mejora para Super Nintendo que permite audio en calidad CD y vídeo en juegos modificados.",
       "en": "An enhancement chip for the Super Nintendo that adds CD-quality audio and video to modified games."
@@ -1191,6 +1371,10 @@
     },
     "year": 1983,
     "type": "computer",
+    "gradient": [
+      "#1d4ed8",
+      "#64748b"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
       "en": "Zilog Z80A at 3.58 MHz"
@@ -1220,6 +1404,10 @@
     "year": 1996,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#15803d",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "NEC VR4300 a 93,75 MHz (64 bits)",
       "en": "NEC VR4300 at 93.75 MHz (64 bits)"
@@ -1258,6 +1446,10 @@
     "year": 2004,
     "type": "handheld",
     "generation": 7,
+    "gradient": [
+      "#64748b",
+      "#0e7490"
+    ],
     "cpu": {
       "es": "ARM946E-S a 67 MHz + ARM7TDMI a 33 MHz",
       "en": "ARM946E-S at 67 MHz + ARM7TDMI at 33 MHz"
@@ -1293,6 +1485,10 @@
     "year": 1990,
     "type": "arcade",
     "generation": 4,
+    "gradient": [
+      "#b45309",
+      "#1f2937"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 12 MHz + Zilog Z80 (sonido)",
       "en": "Motorola 68000 at 12 MHz + Zilog Z80 (sound)"
@@ -1322,6 +1518,10 @@
     "year": 1994,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#a16207",
+      "#1e3a8a"
+    ],
     "cpu": {
       "es": "Igual que Neo Geo",
       "en": "Same as Neo Geo"
@@ -1354,6 +1554,10 @@
     "year": 1983,
     "type": "console",
     "generation": 3,
+    "gradient": [
+      "#b91c1c",
+      "#57534e"
+    ],
     "cpu": {
       "es": "Ricoh 2A03 (6502) a 1,79 MHz",
       "en": "Ricoh 2A03 (6502) at 1.79 MHz"
@@ -1386,6 +1590,10 @@
     "year": 1999,
     "type": "handheld",
     "generation": 5,
+    "gradient": [
+      "#1e3a8a",
+      "#b45309"
+    ],
     "cpu": {
       "es": "Toshiba TLCS-900H a 6,14 MHz + Z80 (sonido)",
       "en": "Toshiba TLCS-900H at 6.14 MHz + Z80 (sound)"
@@ -1418,6 +1626,10 @@
     "year": 1978,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#1e3a8a",
+      "#a16207"
+    ],
     "cpu": {
       "es": "Intel 8048 a 1,79 MHz",
       "en": "Intel 8048 at 1.79 MHz"
@@ -1446,6 +1658,10 @@
     "manufacturer": "Comunidad OpenBOR",
     "year": 2004,
     "type": "engine",
+    "gradient": [
+      "#b91c1c",
+      "#ea580c"
+    ],
     "description": {
       "es": "Motor libre para juegos de lucha con desplazamiento (beat 'em up), nacido de Beats of Rage. Hay cientos de juegos hechos por fans.",
       "en": "A free engine for side-scrolling beat 'em ups, born from Beats of Rage. Fans have made hundreds of games with it."
@@ -1455,6 +1671,10 @@
     "manufacturer": "Tangerine Computer Systems",
     "year": 1983,
     "type": "computer",
+    "gradient": [
+      "#b91c1c",
+      "#1f2937"
+    ],
     "cpu": {
       "es": "MOS 6502A a 1 MHz",
       "en": "MOS 6502A at 1 MHz"
@@ -1486,6 +1706,10 @@
     },
     "year": 1981,
     "type": "computer",
+    "gradient": [
+      "#475569",
+      "#1d4ed8"
+    ],
     "cpu": {
       "es": "Intel x86 (8088 en adelante)",
       "en": "Intel x86 (8088 onwards)"
@@ -1520,6 +1744,10 @@
     "year": 1988,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#c2410c",
+      "#4b5563"
+    ],
     "cpu": {
       "es": "Igual que PC Engine",
       "en": "Same as PC Engine"
@@ -1551,6 +1779,10 @@
     "year": 1987,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#ea580c",
+      "#57534e"
+    ],
     "cpu": {
       "es": "Hudson HuC6280 a 7,16 MHz (8 bits)",
       "en": "Hudson HuC6280 at 7.16 MHz (8 bits)"
@@ -1585,6 +1817,10 @@
     },
     "year": null,
     "type": "software",
+    "gradient": [
+      "#0e7490",
+      "#4338ca"
+    ],
     "description": {
       "es": "Juegos portados de forma nativa (por ejemplo Doom, Quake o Cave Story) que se lanzan sin un emulador de consola.",
       "en": "Games ported natively (such as Doom, Quake or Cave Story) that run without a console emulator."
@@ -1594,6 +1830,10 @@
     "manufacturer": "Proyecto PrBoom",
     "year": 1999,
     "type": "engine",
+    "gradient": [
+      "#991b1b",
+      "#57534e"
+    ],
     "description": {
       "es": "Motor libre para jugar a Doom, Doom II y sus mods en sistemas modernos.",
       "en": "A free engine for playing Doom, Doom II and their mods on modern systems."
@@ -1604,6 +1844,10 @@
     "year": 2000,
     "type": "console",
     "generation": 6,
+    "gradient": [
+      "#1e3a8a",
+      "#1d4ed8"
+    ],
     "cpu": {
       "es": "Emotion Engine (MIPS R5900) a 294,9 MHz",
       "en": "Emotion Engine (MIPS R5900) at 294.9 MHz"
@@ -1636,6 +1880,10 @@
     "year": 2006,
     "type": "console",
     "generation": 7,
+    "gradient": [
+      "#1f2937",
+      "#475569"
+    ],
     "cpu": {
       "es": "Cell Broadband Engine a 3,2 GHz",
       "en": "Cell Broadband Engine at 3.2 GHz"
@@ -1671,6 +1919,10 @@
     "year": 2004,
     "type": "handheld",
     "generation": 7,
+    "gradient": [
+      "#1f2937",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "MIPS R4000 a 333 MHz",
       "en": "MIPS R4000 at 333 MHz"
@@ -1706,6 +1958,10 @@
     "year": 1994,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#4b5563",
+      "#2563eb"
+    ],
     "cpu": {
       "es": "MIPS R3000A a 33,87 MHz",
       "en": "MIPS R3000A at 33.87 MHz"
@@ -1737,6 +1993,10 @@
     "manufacturer": "Comunidad Pygame",
     "year": 2000,
     "type": "engine",
+    "gradient": [
+      "#ca8a04",
+      "#2563eb"
+    ],
     "description": {
       "es": "Biblioteca de Python para crear juegos; aquí se agrupan juegos hechos con ella.",
       "en": "A Python library for making games; this groups games built with it."
@@ -1746,6 +2006,10 @@
     "manufacturer": "Equipo ResidualVM",
     "year": 2003,
     "type": "engine",
+    "gradient": [
+      "#15803d",
+      "#0e7490"
+    ],
     "description": {
       "es": "Motor para aventuras en 3D como Grim Fandango o Myst III. Hoy está integrado en ScummVM.",
       "en": "An engine for 3D adventures such as Grim Fandango and Myst III. It is now part of ScummVM."
@@ -1755,6 +2019,10 @@
     "manufacturer": "Libretro",
     "year": 2010,
     "type": "software",
+    "gradient": [
+      "#4b5563",
+      "#7c3aed"
+    ],
     "description": {
       "es": "Interfaz común para muchos emuladores («cores») de libretro.",
       "en": "A common frontend for many libretro emulators (cores)."
@@ -1764,6 +2032,10 @@
     "manufacturer": "Proyecto RetroPie",
     "year": 2012,
     "type": "software",
+    "gradient": [
+      "#b91c1c",
+      "#be185d"
+    ],
     "description": {
       "es": "Menú de configuración de RetroPie (no es un sistema de juego).",
       "en": "RetroPie's setup menu (not a game system)."
@@ -1773,6 +2045,10 @@
     "manufacturer": "Miles Gordon Technology",
     "year": 1989,
     "type": "computer",
+    "gradient": [
+      "#1f2937",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Zilog Z80B a 6 MHz",
       "en": "Zilog Z80B at 6 MHz"
@@ -1805,6 +2081,10 @@
     "year": 1994,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#1e3a8a",
+      "#4b5563"
+    ],
     "cpu": {
       "es": "2 × Hitachi SH-2 a 28,6 MHz",
       "en": "2 × Hitachi SH-2 at 28.6 MHz"
@@ -1839,6 +2119,10 @@
     "manufacturer": "Equipo ScummVM",
     "year": 2001,
     "type": "engine",
+    "gradient": [
+      "#15803d",
+      "#ca8a04"
+    ],
     "description": {
       "es": "Motor que permite jugar a aventuras gráficas clásicas (LucasArts, Sierra, Revolution…) sustituyendo su ejecutable original.",
       "en": "An engine for classic graphic adventures (LucasArts, Sierra, Revolution…) that replaces their original executables."
@@ -1849,6 +2133,10 @@
     "year": 1994,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#b91c1c",
+      "#ca8a04"
+    ],
     "cpu": {
       "es": "2 × Hitachi SH-2 a 23 MHz (más la Mega Drive)",
       "en": "2 × Hitachi SH-2 at 23 MHz (plus the Mega Drive)"
@@ -1881,6 +2169,10 @@
     "year": 1991,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#1e3a8a",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 12,5 MHz (más la Mega Drive)",
       "en": "Motorola 68000 at 12.5 MHz (plus the Mega Drive)"
@@ -1910,6 +2202,10 @@
     "year": 1983,
     "type": "console",
     "generation": 3,
+    "gradient": [
+      "#1d4ed8",
+      "#57534e"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
       "en": "Zilog Z80A at 3.58 MHz"
@@ -1935,6 +2231,10 @@
     "year": 1990,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#6d28d9",
+      "#6b7280"
+    ],
     "cpu": {
       "es": "Ricoh 5A22 (65C816) a 3,58 MHz",
       "en": "Ricoh 5A22 (65C816) at 3.58 MHz"
@@ -1969,6 +2269,10 @@
     "manufacturer": "Proyecto Solarus",
     "year": 2006,
     "type": "engine",
+    "gradient": [
+      "#0f766e",
+      "#ca8a04"
+    ],
     "description": {
       "es": "Motor libre para juegos de acción y aventura al estilo Zelda en 2D.",
       "en": "A free engine for 2D Zelda-style action-adventure games."
@@ -1978,6 +2282,10 @@
     "manufacturer": "Valve",
     "year": 2003,
     "type": "software",
+    "gradient": [
+      "#1e3a8a",
+      "#0e7490"
+    ],
     "description": {
       "es": "Juegos de la tienda Steam lanzados desde el frontend.",
       "en": "Steam store games launched from the frontend."
@@ -1987,6 +2295,10 @@
     "manufacturer": "Proyecto Stratagus",
     "year": 2002,
     "type": "engine",
+    "gradient": [
+      "#7f1d1d",
+      "#a16207"
+    ],
     "description": {
       "es": "Motor libre de estrategia en tiempo real, usado por ejemplo por Wargus para jugar a Warcraft II.",
       "en": "A free real-time strategy engine, used for example by Wargus to play Warcraft II."
@@ -1997,6 +2309,10 @@
     "year": 1989,
     "type": "console",
     "generation": 4,
+    "gradient": [
+      "#57534e",
+      "#ea580c"
+    ],
     "cpu": {
       "es": "Hudson HuC6280 a 7,16 MHz",
       "en": "Hudson HuC6280 at 7.16 MHz"
@@ -2031,6 +2347,10 @@
     "manufacturer": "Texas Instruments",
     "year": 1981,
     "type": "computer",
+    "gradient": [
+      "#57534e",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "TMS9900 a 3 MHz (16 bits)",
       "en": "TMS9900 at 3 MHz (16 bits)"
@@ -2059,6 +2379,10 @@
     "manufacturer": "Tandy / RadioShack",
     "year": 1977,
     "type": "computer",
+    "gradient": [
+      "#475569",
+      "#a16207"
+    ],
     "cpu": {
       "es": "Zilog Z80 a 1,77 MHz",
       "en": "Zilog Z80 at 1.77 MHz"
@@ -2093,6 +2417,10 @@
     "manufacturer": "Kevin Shanahan",
     "year": 2001,
     "type": "engine",
+    "gradient": [
+      "#78350f",
+      "#57534e"
+    ],
     "description": {
       "es": "Motor libre basado en el código de Quake para jugar al original y sus mods.",
       "en": "A free engine based on the Quake source code for playing the original and its mods."
@@ -2103,6 +2431,10 @@
     "year": 1982,
     "type": "console",
     "generation": 2,
+    "gradient": [
+      "#1f2937",
+      "#0e7490"
+    ],
     "cpu": {
       "es": "Motorola 6809 a 1,5 MHz",
       "en": "Motorola 6809 at 1.5 MHz"
@@ -2137,6 +2469,10 @@
     "year": 1995,
     "type": "console",
     "generation": 5,
+    "gradient": [
+      "#b91c1c",
+      "#450a0a"
+    ],
     "cpu": {
       "es": "NEC V810 a 20 MHz (32 bits)",
       "en": "NEC V810 at 20 MHz (32 bits)"
@@ -2172,6 +2508,10 @@
     "year": 2006,
     "type": "console",
     "generation": 7,
+    "gradient": [
+      "#0284c7",
+      "#64748b"
+    ],
     "cpu": {
       "es": "IBM PowerPC Broadway a 729 MHz",
       "en": "IBM PowerPC Broadway at 729 MHz"
@@ -2207,6 +2547,10 @@
     "year": 2012,
     "type": "console",
     "generation": 8,
+    "gradient": [
+      "#0284c7",
+      "#1f2937"
+    ],
     "cpu": {
       "es": "IBM PowerPC Espresso (3 núcleos) a 1,24 GHz",
       "en": "IBM PowerPC Espresso (3 cores) at 1.24 GHz"
@@ -2241,6 +2585,10 @@
     "manufacturer": "Microsoft",
     "year": 1985,
     "type": "computer",
+    "gradient": [
+      "#0369a1",
+      "#15803d"
+    ],
     "description": {
       "es": "Juegos de PC para Windows lanzados desde el frontend.",
       "en": "Windows PC games launched from the frontend."
@@ -2251,6 +2599,10 @@
     "year": 1999,
     "type": "handheld",
     "generation": 5,
+    "gradient": [
+      "#4b5563",
+      "#ca8a04"
+    ],
     "cpu": {
       "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
       "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
@@ -2283,6 +2635,10 @@
     "year": 2000,
     "type": "handheld",
     "generation": 5,
+    "gradient": [
+      "#2563eb",
+      "#db2777"
+    ],
     "cpu": {
       "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
       "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
@@ -2314,6 +2670,10 @@
     "manufacturer": "Sharp",
     "year": 1987,
     "type": "computer",
+    "gradient": [
+      "#374151",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Motorola 68000 a 10 MHz",
       "en": "Motorola 68000 at 10 MHz"
@@ -2341,6 +2701,10 @@
     "manufacturer": "Infocom",
     "year": 1979,
     "type": "engine",
+    "gradient": [
+      "#15803d",
+      "#1f2937"
+    ],
     "description": {
       "es": "Máquina virtual de Infocom para aventuras conversacionales como Zork.",
       "en": "Infocom's virtual machine for text adventures such as Zork."
@@ -2350,6 +2714,10 @@
     "manufacturer": "Sinclair Research",
     "year": 1981,
     "type": "computer",
+    "gradient": [
+      "#1f2937",
+      "#b91c1c"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,25 MHz",
       "en": "Zilog Z80A at 3.25 MHz"
@@ -2387,6 +2755,10 @@
     "manufacturer": "Sinclair Research",
     "year": 1982,
     "type": "computer",
+    "gradient": [
+      "#1f2937",
+      "#0284c7"
+    ],
     "cpu": {
       "es": "Zilog Z80A a 3,5 MHz",
       "en": "Zilog Z80A at 3.5 MHz"
