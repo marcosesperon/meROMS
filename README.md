@@ -26,7 +26,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
 
 **Browse and edit**
 - Cover grid or table view (choose and reorder the columns), search and filters (genre, region,
-  favourites, hidden, clones...), keyboard navigation.
+  favourites, hidden, clones, missing media...), keyboard navigation.
+- Filter the games missing a cover, a video... and **Scrape All** only those.
 - A side panel with the game's artwork, screenshots, video and details; a full editor for every
   field and every media type.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace.

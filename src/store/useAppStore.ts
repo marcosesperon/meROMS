@@ -12,6 +12,7 @@ import type {
 import * as commands from "../commands";
 import { translate, useI18nStore } from "../i18n";
 import { showMessage } from "../utils/dialogs";
+import { brokenKey } from "../utils/mediaFilter";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
@@ -85,6 +86,8 @@ interface AppState {
   setSelectedPaths: (paths: Set<string>) => void;
   /** Clone/BIOS marks from the system's DAT (null = the system has no DAT) */
   datMarks: Map<string, commands.DatMark> | null;
+  /** Media fields pointing to files that don't exist (Classic only), keys from `brokenKey` */
+  brokenMedia: Set<string>;
   setDatMarks: (marks: Map<string, commands.DatMark> | null) => void;
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
@@ -116,6 +119,8 @@ interface AppState {
     kidgame?: boolean;
     /** Hide the games the system's DAT marks as clones */
     hideClones?: boolean;
+    /** Only games lacking this media field ("any" = without any media) */
+    missingMedia?: string;
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;
@@ -271,6 +276,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         systems: updatedSystems,
         selectedSystem: updatedSelected,
       });
+      // Rutas de media que apuntan a ficheros que ya no existen (para el filtro «Le falta»).
+      // Va aparte para no retrasar la lista; en ES-DE siempre sale vacío.
+      commands
+        .findBrokenMediaRefs(systemPath)
+        .then((refs) => {
+          if (get().selectedSystem?.path !== systemPath) return;
+          set({ brokenMedia: new Set(refs.map((r) => brokenKey(r.game_path, r.field, r.value))) });
+        })
+        .catch(() => set({ brokenMedia: new Set() }));
     } catch (e) {
       console.error("Failed to load gamelist:", e);
       set({ loading: false });
@@ -334,6 +348,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   setSelectedPaths: (paths) => set({ selectedPaths: paths }),
   datMarks: null,
+  brokenMedia: new Set(),
   setDatMarks: (marks) => set({ datMarks: marks }),
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),

@@ -7,25 +7,31 @@ import { ScrapePolicyEditor } from "./ScrapePolicyEditor";
 interface ScrapeAllModalProps {
   open: boolean;
   gameCount: number;
+  /** Games the list shows now (search, folder, filters); fewer than gameCount = offer «only these» */
+  visibleCount: number;
   systemPath: string;
   onClose: () => void;
   /** Start scraping the system with this choice (not saved) */
-  onStart: (policy: ScrapePolicy) => void;
+  onStart: (policy: ScrapePolicy, onlyVisible: boolean) => void;
   /** Continue the run left halfway (its games and rules) */
   onContinue: () => void;
 }
 
 /** Antes de «Scrapear Todo»: qué se actualiza esta vez (empieza con lo de Ajustes, no se guarda) */
-export function ScrapeAllModal({ open, gameCount, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
+export function ScrapeAllModal({ open, gameCount, visibleCount, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
   const { t, locale } = useTranslation();
   const [policy, setPolicy] = useState<ScrapePolicy | null>(null);
   // Un «Scrapear todo» que se quedó a medias en este sistema (app cerrada, fallo o «Detener»)
   const [pending, setPending] = useState<ScrapeResumeInfo | null>(null);
+  // Con búsqueda o filtros, por defecto solo los juegos que se ven
+  const [onlyVisible, setOnlyVisible] = useState(true);
+  const filtered = visibleCount < gameCount;
 
   useEffect(() => {
     if (!open) {
       setPolicy(null);
       setPending(null);
+      setOnlyVisible(true);
       return;
     }
     getScrapePolicy().then(setPolicy).catch(() => setPolicy({ data: {}, media: {} }));
@@ -39,7 +45,22 @@ export function ScrapeAllModal({ open, gameCount, systemPath, onClose, onStart, 
       <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[720px] max-h-[85vh] flex flex-col mx-4">
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("scrapePolicy.runTitle")}</h3>
-          <p className="text-sm text-zinc-400 mt-1">{t("scrapePolicy.runHelp", { count: gameCount })}</p>
+          <p className="text-sm text-zinc-400 mt-1">
+            {t("scrapePolicy.runHelp", { count: filtered && onlyVisible ? visibleCount : gameCount })}
+          </p>
+          {/* La lista está filtrada: solo los que se ven, o el sistema entero */}
+          {filtered && (
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-300">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" checked={onlyVisible} onChange={() => setOnlyVisible(true)} className="text-indigo-600" />
+                {t("scrapePolicy.onlyVisible", { count: visibleCount })}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" checked={!onlyVisible} onChange={() => setOnlyVisible(false)} className="text-indigo-600" />
+                {t("scrapePolicy.wholeSystem", { count: gameCount })}
+              </label>
+            </div>
+          )}
         </div>
         {/* A medias: «Continuar» sigue con sus juegos y sus reglas; «Empezar de nuevo» usa la tabla de abajo */}
         {pending && (
@@ -70,8 +91,8 @@ export function ScrapeAllModal({ open, gameCount, systemPath, onClose, onStart, 
             {t("rename.close")}
           </button>
           <button
-            onClick={() => policy && onStart(policy)}
-            disabled={!policy}
+            onClick={() => policy && onStart(policy, filtered && onlyVisible)}
+            disabled={!policy || (filtered && onlyVisible && visibleCount === 0)}
             className="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors disabled:opacity-50"
           >
             {pending ? t("scrapePolicy.startOver") : t("scrapePolicy.start")}

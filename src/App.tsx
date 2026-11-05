@@ -23,6 +23,7 @@ import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { datReport, listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
 import { DatModal } from "./components/common/DatModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
+import { useFilteredGames } from "./hooks/useFilteredGames";
 import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
@@ -82,6 +83,8 @@ function App() {
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
   const [showSettings, setShowSettings] = useState(false);
   const games = useAppStore((s) => s.games);
+  // What the list shows now (search, folder, filters): Scrape All can do only these
+  const visibleGames = useFilteredGames();
   const editorOpen = useAppStore((s) => s.editorOpen);
   const closeEditor = useAppStore((s) => s.closeEditor);
   // Selecting a game only shows it in the info panel; the editor opens on "Edit" / double click
@@ -337,11 +340,12 @@ function App() {
       <ScrapeAllModal
         open={showScrapeAll}
         gameCount={games.length}
+        visibleCount={visibleGames.length}
         systemPath={selectedSystem?.path ?? ""}
         onClose={() => setShowScrapeAll(false)}
-        onStart={(policy) => {
+        onStart={(policy, onlyVisible) => {
           setShowScrapeAll(false);
-          handleScrapeAll(undefined, policy);
+          handleScrapeAll(onlyVisible ? visibleGames.map((g) => g.path) : undefined, policy);
         }}
         onContinue={() => {
           setShowScrapeAll(false);

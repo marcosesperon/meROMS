@@ -4,6 +4,8 @@ import { regionsOf, useFilteredGames } from "../../hooks/useFilteredGames";
 import { getFlag } from "../../utils/flags";
 import { useTranslation } from "../../i18n";
 import { StarIcon, EyeSlashIcon, ChildIcon } from "./Icons";
+import { MEDIA_FILTER_FIELDS, NO_MEDIA } from "../../utils/mediaFilter";
+import { getActiveProfile } from "../../utils/profiles";
 
 // Los selectores, con el mismo aspecto que los botones de al lado (alto, borde, fondo).
 // El aspecto nativo de macOS no deja cambiar el alto, así que se quita y se pinta la flecha.
@@ -27,6 +29,8 @@ export function FilterBar() {
   const setSelectedPaths = useAppStore((s) => s.setSelectedPaths);
   const visibleGames = useFilteredGames();
   const hasDat = useAppStore((s) => s.datMarks !== null);
+  // Wheel solo existe en la estructura clásica
+  const isClassic = useAppStore((s) => getActiveProfile(s.settings)?.kind !== "esde");
   const { t } = useTranslation();
 
   const uniqueGenres = useMemo(() => {
@@ -59,7 +63,8 @@ export function FilterBar() {
     filters.favorite ||
     filters.hidden ||
     filters.kidgame ||
-    filters.hideClones;
+    filters.hideClones ||
+    filters.missingMedia;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -114,6 +119,22 @@ export function FilterBar() {
           ))}
         </select>
       )}
+
+      {/* «Le falta»: juegos sin ese tipo de media (o sin ninguna) */}
+      <select
+        value={filters.missingMedia || ""}
+        onChange={(e) => setFilters({ missingMedia: e.target.value || undefined })}
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
+      >
+        <option value="">{t("filter.missingMedia")}: —</option>
+        {MEDIA_FILTER_FIELDS.filter((m) => isClassic || !m.classicOnly).map((m) => (
+          <option key={m.field} value={m.field}>
+            {t("filter.missingMedia")}: {t(m.label)}
+          </option>
+        ))}
+        <option value={NO_MEDIA}>{t("filter.media.none")}</option>
+      </select>
 
       {/* Toggle buttons */}
       <button

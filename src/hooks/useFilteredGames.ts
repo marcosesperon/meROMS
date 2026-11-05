@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { Game } from "../types";
 import { useAppStore } from "../store/useAppStore";
+import { lacksMedia } from "../utils/mediaFilter";
 
 /** Region codes of a game: the field may hold several («us, eu», «us/eu») */
 export function regionsOf(region?: string): string[] {
@@ -16,6 +17,7 @@ export function useFilteredGames(): Game[] {
   const filters = useAppStore((s) => s.filters);
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
   const datMarks = useAppStore((s) => s.datMarks);
+  const brokenMedia = useAppStore((s) => s.brokenMedia);
 
   return useMemo(() => {
     let result = games;
@@ -68,6 +70,11 @@ export function useFilteredGames(): Game[] {
       result = result.filter((g) => !datMarks.has(g.path));
     }
 
+    // «Le falta»: sin ese tipo de media (campo vacío o ruta a un fichero que ya no existe)
+    if (filters.missingMedia) {
+      result = result.filter((g) => lacksMedia(g, filters.missingMedia!, brokenMedia));
+    }
+
     return result;
-  }, [games, searchQuery, filters, activeFolderPath, datMarks]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia]);
 }
