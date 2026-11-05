@@ -411,6 +411,8 @@ function App() {
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowCleanupModal(false)}
         onDone={reloadAfterMediaChange}
+        // Damaged media sent to the trash: offer to download it again (only with a scraper configured)
+        onRescrape={hasCredentials ? (paths, policy) => handleScrapeAll(paths, policy) : undefined}
       />
 
       <RenameModal

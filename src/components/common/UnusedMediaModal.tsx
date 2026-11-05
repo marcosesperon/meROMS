@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { clearMediaRefs, findBrokenMediaRefs, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, trashMedia, type PlaceholderGroup } from "../../commands";
+import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, trashMedia, type DamagedMedia, type PlaceholderGroup } from "../../commands";
+import type { ScrapePolicy } from "../../types";
+import { DATA_FIELDS } from "./ScrapePolicyEditor";
 import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMediaFile } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { resolveImageSrc } from "../../utils/images";
@@ -15,6 +17,8 @@ interface UnusedMediaModalProps {
   gameName?: string;
   /** After sending files to the trash (to reload the games) */
   onDone?: () => void;
+  /** Download again the media of these games (whole-system mode): Scrape All with this policy */
+  onRescrape?: (gamePaths: string[], policy: ScrapePolicy) => void;
 }
 
 // Selection key of a broken reference (files use their path)
@@ -30,6 +34,14 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Para volver a descargar los dañados: datos sin tocar y solo sus tipos de media, «si falta» */
+function rescrapePolicy(gone: DamagedMedia[]): ScrapePolicy {
+  return {
+    data: Object.fromEntries(DATA_FIELDS.map(({ field }) => [field, "keep"])),
+    media: Object.fromEntries(gone.flatMap((d) => d.scraper_types).map((type) => [type, "if_empty"])),
+  };
+}
+
 export function UnusedMediaModal({
   open,
   systemPath,
@@ -37,6 +49,7 @@ export function UnusedMediaModal({
   gamePath,
   gameName,
   onDone,
+  onRescrape,
 }: UnusedMediaModalProps) {
   const { t } = useTranslation();
   const [files, setFiles] = useState<UnusedMediaFile[]>([]);
@@ -46,6 +59,8 @@ export function UnusedMediaModal({
   const [broken, setBroken] = useState<BrokenMediaRef[]>([]);
   // The same file in many different games: a source's placeholder (whole system only)
   const [placeholders, setPlaceholders] = useState<PlaceholderGroup[]>([]);
+  // Empty, not a real image/video, or cut short (a download left halfway)
+  const [damaged, setDamaged] = useState<DamagedMedia[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scanning, setScanning] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -56,6 +71,7 @@ export function UnusedMediaModal({
       setRepeated([]);
       setBroken([]);
       setPlaceholders([]);
+      setDamaged([]);
       setSelected(new Set());
       return;
     }
@@ -65,23 +81,26 @@ export function UnusedMediaModal({
   async function scan() {
     setScanning(true);
     try {
-      const [result, dupes, refs, fillers] = await Promise.all([
+      const [result, dupes, refs, fillers, broken_files] = await Promise.all([
         gamePath ? findGameLeftoverMedia(systemPath, gamePath) : findUnusedMedia(systemPath),
         findRepeatedMedia(systemPath, gamePath),
         findBrokenMediaRefs(systemPath, gamePath),
         // Los rellenos solo se ven mirando el sistema entero
         gamePath ? Promise.resolve([] as PlaceholderGroup[]) : findPlaceholderMedia(systemPath),
+        findDamagedMedia(systemPath, gamePath),
       ]);
       setFiles(result);
       setRepeated(dupes);
       setBroken(refs);
       setPlaceholders(fillers);
+      setDamaged(broken_files);
       setSelected(
         new Set([
           ...result.map((f) => f.path),
           ...dupes.flatMap((r) => r.remove.map((f) => f.path)),
           ...refs.map(refKey),
           ...fillers.map(placeholderKey),
+          ...broken_files.map((d) => d.path),
         ])
       );
     } catch (e) {
@@ -108,6 +127,7 @@ export function UnusedMediaModal({
     ...repeated.flatMap((r) => r.remove.map((f) => ({ path: f.path, size: f.size }))),
     ...broken.map((r) => ({ path: refKey(r), size: 0 })),
     ...placeholders.map((g) => ({ path: placeholderKey(g), size: g.size * g.files.length })),
+    ...damaged.map((d) => ({ path: d.path, size: d.size })),
   ];
 
   function toggleAll() {
@@ -150,6 +170,19 @@ export function UnusedMediaModal({
         await learnPlaceholders(fillers.map((g) => ({ size: g.size, md5: g.md5, field: g.fields[0] ?? "" })));
         lines.push(t("cleanup.placeholdersLearned", { count: fillers.length }));
       }
+      // Dañados que se han borrado: se ofrece volver a descargarlos (solo esa media, sin tocar datos)
+      const gone = damaged.filter((d) => paths.includes(d.path));
+      if (gone.length > 0 && onRescrape) {
+        onDone?.();
+        const games = [...new Set(gone.map((d) => d.game_path))];
+        if (await askConfirm(lines.join("\n") + "\n\n" + t("cleanup.rescrapeAsk", { count: games.length }))) {
+          onRescrape(games, rescrapePolicy(gone));
+          onClose();
+          return;
+        }
+        await scan();
+        return;
+      }
       await showMessage(lines.join("\n"), failed ? "error" : "info");
       onDone?.();
       await scan();
@@ -161,6 +194,9 @@ export function UnusedMediaModal({
   }
 
   if (!open) return null;
+
+  const damageLabel = (d: DamagedMedia) =>
+    t(d.damage === "empty" ? "cleanup.damageEmpty" : d.damage === "not_media" ? "cleanup.damageNotMedia" : "cleanup.damageTruncated");
 
   const totalSize = allItems.reduce((sum, f) => sum + f.size, 0);
   const selectedSize = allItems.filter((f) => selected.has(f.path)).reduce((sum, f) => sum + f.size, 0);
@@ -291,6 +327,40 @@ export function UnusedMediaModal({
                         </label>
                       ))
                     )}
+                  </div>
+                </>
+              )}
+
+              {/* Empty, not a real image/video, or cut short */}
+              {damaged.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.damagedSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.damagedHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">
+                    {damaged.map((d) => (
+                      <label
+                        key={d.path}
+                        className="flex items-center gap-3 px-5 py-2 cursor-pointer transition-colors hover:bg-zinc-700/30"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(d.path)}
+                          onChange={() => toggleFile(d.path)}
+                          className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-zinc-300 truncate">
+                            {d.game_name} <span className="text-zinc-500">· {kindLabel(d.field)}</span>
+                          </p>
+                          <p className="text-xs text-amber-400/80 truncate" title={d.path}>
+                            {damageLabel(d)}
+                          </p>
+                        </div>
+                        <span className="text-xs text-zinc-500 shrink-0">{formatSize(d.size)}</span>
+                      </label>
+                    ))}
                   </div>
                 </>
               )}

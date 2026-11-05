@@ -47,6 +47,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
   types, and broken media links in the XML.
 - Placeholders: the same empty image or video a source gives for many games (like ScreenScraper's
   blank green back covers). They're learned, so the scraper skips them from then on.
+- Damaged media: empty files, error pages saved as images and downloads cut halfway, with an
+  offer to download them again.
 - Covers and screenshots saved the wrong way round: detected by their shape and swapped.
 - Files are sent to the **trash**, never deleted outright.
 

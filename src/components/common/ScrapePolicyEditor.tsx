@@ -3,7 +3,7 @@ import type { TranslationKeys } from "../../i18n/en";
 import { AVAILABLE_MEDIA_TYPES, type FieldPolicy, type ScrapePolicy } from "../../types";
 
 // Datos que rellena el scraper (mismo orden y nombres que SCRAPE_DATA_FIELDS en Rust)
-const DATA_FIELDS: { field: string; label: TranslationKeys }[] = [
+export const DATA_FIELDS: { field: string; label: TranslationKeys }[] = [
   { field: "name", label: "form.name" },
   { field: "desc", label: "form.description" },
   { field: "genre", label: "form.genre" },

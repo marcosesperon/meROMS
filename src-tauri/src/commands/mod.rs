@@ -8,6 +8,7 @@ pub mod gamelist;
 pub mod rename;
 pub mod rules;
 pub mod images;
+pub mod media_check;
 pub mod media_kinds;
 pub mod migrate;
 pub mod new_roms;

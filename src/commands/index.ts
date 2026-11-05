@@ -364,6 +364,22 @@ export interface PlaceholderGroup {
   files: { path: string; field: string; game_path: string; game_name: string }[];
 }
 
+/** A media file that is empty, not what its extension says, or cut short */
+export interface DamagedMedia {
+  path: string;
+  field: string;
+  game_path: string;
+  game_name: string;
+  damage: "empty" | "not_media" | "truncated";
+  size: number;
+  /** Scraper media types that fill this field (to download it again) */
+  scraper_types: string[];
+}
+
+export async function findDamagedMedia(systemPath: string, gamePath?: string): Promise<DamagedMedia[]> {
+  return invoke("find_damaged_media", { systemPath, gamePath });
+}
+
 export async function findPlaceholderMedia(systemPath: string): Promise<PlaceholderGroup[]> {
   return invoke("find_placeholder_media", { systemPath });
 }
