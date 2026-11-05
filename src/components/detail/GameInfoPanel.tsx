@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { systemLocations, type SystemLocations } from "../../commands";
+import { checkBios, systemLocations, type SystemLocations } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import type { TranslationKeys as TranslationKey } from "../../i18n/en";
@@ -324,6 +324,8 @@ function SystemSummary() {
         </>
       )}
 
+      <BiosLine system={selectedSystem.name} />
+
       {/* Cifras de la biblioteca: compactas, una fila de casillas */}
       <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
       <dl className="grid grid-cols-5 gap-1.5">
@@ -337,6 +339,28 @@ function SystemSummary() {
 
       <SystemLocationsBlock systemPath={selectedSystem.path} />
     </div>
+  );
+}
+
+/** «BIOS: N de M» del sistema (solo si la lista de BIOS está descargada y el sistema tiene alguna) */
+function BiosLine({ system }: { system: string }) {
+  const { t } = useTranslation();
+  const [count, setCount] = useState<{ ok: number; total: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    checkBios([system])
+      .then((r) => !cancelled && setCount(r?.systems[0] ? { ok: r.systems[0].ok, total: r.systems[0].total } : null))
+      .catch(() => !cancelled && setCount(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [system]);
+  if (!count) return null;
+  const color = count.ok === count.total ? "text-emerald-400" : count.ok > 0 ? "text-amber-300" : "text-zinc-400";
+  return (
+    <p className={`mt-4 text-xs ${color}`} title={t("bios.lineHelp")}>
+      {t("bios.line", { ok: count.ok, total: count.total })}
+    </p>
   );
 }
 

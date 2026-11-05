@@ -32,6 +32,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
   field and every media type.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace, "The X" <->
   "X, The", and translate descriptions with DeepL (your own free key).
+- **BIOS check**: which system files each system needs (RetroArch's list) and whether your BIOS
+  folder has the right ones.
 - **Undo** the last rename, move, media normalization or media swap: files, gamelists,
   collections and playlists go back, keeping later edits.
 - **Export to device**: copy chosen systems (all games, favourites or all but hidden) and media
@@ -186,6 +188,8 @@ Scraped data and media belong to their sources: [ScreenScraper](https://www.scre
 [LaunchBox Games Database](https://gamesdb.launchbox-app.com/),
 [ArcadeItalia](https://adb.arcadeitalia.net/) (game histories from
 [arcade-history.com](https://www.arcade-history.com/)) and [TheGamesDB](https://thegamesdb.net/).
+The BIOS list is libretro's [System.dat](https://github.com/libretro/libretro-database) (CC BY-SA
+4.0): it is downloaded from Settings, not included in meROMS.
 
 ---
 

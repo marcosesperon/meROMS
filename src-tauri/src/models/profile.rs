@@ -35,6 +35,9 @@ pub struct Profile {
     /// Last system opened with this profile (its folder name), reopened on start
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub last_system: Option<String>,
+    /// BIOS folder (Tools > BIOS); None = the usual one next to the ROM folder
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bios_dir: Option<String>,
 }
 
 impl Profile {
@@ -54,6 +57,7 @@ impl Profile {
             media_dir: None,
             skip_structure_prompt: false,
             last_system: None,
+            bios_dir: None,
         }
     }
 }

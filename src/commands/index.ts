@@ -473,6 +473,50 @@ export async function applyPull(changes: DeviceChange[]): Promise<number> {
   return invoke("apply_pull", { changes });
 }
 
+/** BIOS list (libretro System.dat) downloaded in Settings */
+export interface BiosListStatus {
+  downloaded: boolean;
+  downloaded_at: number | null;
+  files: number;
+}
+
+export interface BiosCheck {
+  name: string;
+  status: "ok" | "missing" | "mismatch";
+  expected_md5: string | null;
+  found: string | null;
+}
+
+export interface SystemBios {
+  system: string;
+  section: string;
+  ok: number;
+  total: number;
+  files: BiosCheck[];
+}
+
+export async function biosStatus(): Promise<BiosListStatus> {
+  return invoke("bios_status");
+}
+
+export async function biosDownload(): Promise<BiosListStatus> {
+  return invoke("bios_download");
+}
+
+export async function biosDelete(): Promise<void> {
+  return invoke("bios_delete");
+}
+
+/** BIOS folder proposed for a profile without one */
+export async function suggestedBiosDir(profile: Profile): Promise<string | null> {
+  return invoke("suggested_bios_dir", { profile });
+}
+
+/** BIOS of these systems (folder names) in the profile's BIOS folder; null = list not downloaded */
+export async function checkBios(systems: string[]): Promise<{ bios_dir: string | null; systems: SystemBios[] } | null> {
+  return invoke("check_bios", { systems });
+}
+
 /** The last file operation that can be undone (rename | move | normalize | swap), or null */
 export interface UndoInfo {
   kind: "rename" | "move" | "normalize" | "swap";

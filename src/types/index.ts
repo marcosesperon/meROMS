@@ -110,6 +110,8 @@ export interface Profile {
   skip_structure_prompt?: boolean;
   /** Last system opened with this profile (folder name), reopened on start */
   last_system?: string;
+  /** BIOS folder (Tools > BIOS); missing = the usual one next to the ROM folder */
+  bios_dir?: string;
 }
 
 /** Systems of the active profile that are in the other structure, and where to migrate them from */

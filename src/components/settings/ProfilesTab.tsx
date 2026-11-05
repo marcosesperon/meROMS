@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
-import { detectEsdePaths } from "../../commands";
+import { detectEsdePaths, suggestedBiosDir } from "../../commands";
 import type { EsdeDetectedPaths, Profile, StructureKind } from "../../types";
 import { createProfile, isDefaultEsdeMedia, isProfileComplete } from "../../utils/profiles";
 import { TrashIcon } from "../common/Icons";
@@ -26,6 +26,12 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
   const [detectError, setDetectError] = useState<string | null>(null);
 
   const editing = profiles.find((p) => p.id === editingId);
+  // Carpeta de BIOS que se usaría si se deja vacía (se enseña como ejemplo)
+  const [suggestedBios, setSuggestedBios] = useState<string | null>(null);
+  useEffect(() => {
+    if (!editing) return;
+    suggestedBiosDir(editing).then(setSuggestedBios).catch(() => setSuggestedBios(null));
+  }, [editing?.rom_root_path, editing?.esde_home_path, editing?.kind]);
 
   function updateProfile(changes: Partial<Profile>) {
     if (!editing) return;
@@ -210,6 +216,20 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
               onClear={editing.media_dir ? () => updateProfile({ media_dir: undefined }) : undefined}
             />
           )}
+
+          {/* Carpeta de BIOS (Herramientas → BIOS); vacía = la habitual junto a las ROMs */}
+          <FolderField
+            label={t("bios.folder")}
+            help={t("bios.folderHelp")}
+            value={editing.bios_dir}
+            placeholder={suggestedBios ?? t("settings.noFolder")}
+            browseLabel={t("settings.browse")}
+            onBrowse={async () => {
+              const folder = await pickFolder();
+              if (folder) updateProfile({ bios_dir: folder });
+            }}
+            onClear={editing.bios_dir ? () => updateProfile({ bios_dir: undefined }) : undefined}
+          />
 
           <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
             {editing.id !== activeProfileId && (

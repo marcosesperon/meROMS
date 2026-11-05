@@ -99,6 +99,7 @@ fn detected_profile(active: &Profile, kind: StructureKind, esde_home: Option<&Pa
         media_dir,
         skip_structure_prompt: false,
         last_system: None,
+        bios_dir: None,
     }
 }
 
@@ -128,6 +129,7 @@ mod tests {
             media_dir: None,
             skip_structure_prompt: false,
             last_system: None,
+            bios_dir: None,
         }
     }
 

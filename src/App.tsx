@@ -14,6 +14,7 @@ import { ExportModal } from "./components/common/ExportModal";
 import { runUndo } from "./utils/undo";
 import { BestVersionModal } from "./components/common/BestVersionModal";
 import { ExportDeviceModal } from "./components/common/ExportDeviceModal";
+import { BiosModal } from "./components/common/BiosModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
@@ -71,6 +72,7 @@ function App() {
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showBestVersion, setShowBestVersion] = useState(false);
   const [showExportDevice, setShowExportDevice] = useState(false);
+  const [showBios, setShowBios] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
   const [showNewRomsModal, setShowNewRomsModal] = useState(false);
@@ -301,6 +303,7 @@ function App() {
                   { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
                   { label: t("best.button"), onClick: () => setShowBestVersion(true) },
                   { label: t("dat.button"), onClick: () => setShowDat(true), separatorBefore: true },
+                  { label: t("bios.button"), onClick: () => setShowBios(true) },
                   { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
@@ -452,6 +455,8 @@ function App() {
       />
 
       <ExportDeviceModal open={showExportDevice} onClose={() => setShowExportDevice(false)} />
+
+      <BiosModal open={showBios} onClose={() => setShowBios(false)} />
 
       <BestVersionModal
         open={showBestVersion}

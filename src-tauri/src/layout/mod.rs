@@ -207,6 +207,7 @@ mod tests {
             media_dir: media.map(String::from),
             skip_structure_prompt: false,
             last_system: None,
+            bios_dir: None,
         }
     }
 
