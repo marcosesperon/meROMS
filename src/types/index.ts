@@ -153,6 +153,8 @@ export interface AppSettings {
   table_columns?: { id: string; width?: number }[];
   /** Last list view */
   last_view?: "grid" | "table";
+  /** Grid order (missing = by name) */
+  grid_sort?: "name" | "most_played" | "recent" | "playtime" | "release" | "rating";
   /** Donation prompt: unix seconds of the first launch, then of the last time it was shown */
   donation_prompt_at?: number;
   /** Look for a new version at start and once a day (missing = yes) */

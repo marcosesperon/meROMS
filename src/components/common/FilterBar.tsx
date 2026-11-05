@@ -64,7 +64,8 @@ export function FilterBar() {
     filters.hidden ||
     filters.kidgame ||
     filters.hideClones ||
-    filters.missingMedia;
+    filters.missingMedia ||
+    filters.played;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -134,6 +135,18 @@ export function FilterBar() {
           </option>
         ))}
         <option value={NO_MEDIA}>{t("filter.media.none")}</option>
+      </select>
+
+      {/* Jugados / sin jugar */}
+      <select
+        value={filters.played || ""}
+        onChange={(e) => setFilters({ played: (e.target.value || undefined) as "played" | "unplayed" | undefined })}
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
+      >
+        <option value="">{t("filter.played")}: —</option>
+        <option value="played">{t("filter.playedYes")}</option>
+        <option value="unplayed">{t("filter.playedNo")}</option>
       </select>
 
       {/* Toggle buttons */}

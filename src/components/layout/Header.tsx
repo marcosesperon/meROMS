@@ -6,11 +6,15 @@ import { ViewToggle } from "../common/ViewToggle";
 import { SystemLogo } from "../common/SystemLogo";
 import { FilterIcon } from "../common/Icons";
 import { FilterBar } from "../common/FilterBar";
+import { GRID_SORTS, type GridSort } from "../../utils/playStats";
 
 export function Header() {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const games = useAppStore((s) => s.games);
   const filters = useAppStore((s) => s.filters);
+  const viewMode = useAppStore((s) => s.viewMode);
+  const gridSort = useAppStore((s) => s.settings.grid_sort);
+  const patchSettings = useAppStore((s) => s.patchSettings);
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
 
@@ -55,6 +59,21 @@ export function Header() {
           >
             <FilterIcon size={18} />
           </button>
+          {/* Orden de la cuadrícula (la tabla ordena por sus columnas) */}
+          {viewMode === "grid" && (
+            <select
+              value={gridSort ?? "name"}
+              onChange={(e) => patchSettings({ grid_sort: e.target.value as GridSort })}
+              title={t("sort.title")}
+              className="h-8 bg-zinc-700 text-zinc-200 text-xs rounded border border-zinc-600 px-2 cursor-pointer focus:outline-none focus:border-indigo-500"
+            >
+              {GRID_SORTS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {t(s.label)}
+                </option>
+              ))}
+            </select>
+          )}
           <ViewToggle />
         </div>
       </header>

@@ -126,6 +126,8 @@ interface AppState {
     hideClones?: boolean;
     /** Only games lacking this media field ("any" = without any media) */
     missingMedia?: string;
+    /** Played (has play count or last played) / never played */
+    played?: "played" | "unplayed";
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;

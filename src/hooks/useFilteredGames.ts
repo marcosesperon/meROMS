@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Game } from "../types";
 import { useAppStore } from "../store/useAppStore";
 import { lacksMedia } from "../utils/mediaFilter";
+import { isPlayed } from "../utils/playStats";
 
 /** Region codes of a game: the field may hold several («us, eu», «us/eu») */
 export function regionsOf(region?: string): string[] {
@@ -73,6 +74,12 @@ export function useFilteredGames(): Game[] {
     // «Le falta»: sin ese tipo de media (campo vacío o ruta a un fichero que ya no existe)
     if (filters.missingMedia) {
       result = result.filter((g) => lacksMedia(g, filters.missingMedia!, brokenMedia));
+    }
+
+    // Jugados / sin jugar (según las estadísticas que guarda el frontend)
+    if (filters.played) {
+      const wanted = filters.played === "played";
+      result = result.filter((g) => isPlayed(g) === wanted);
     }
 
     return result;

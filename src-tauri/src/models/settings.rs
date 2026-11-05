@@ -52,6 +52,9 @@ pub struct AppSettings {
     // Last list view ("grid" | "table")
     #[serde(default)]
     pub last_view: Option<String>,
+    // Grid order: name | most_played | recent | playtime | release | rating (None = name)
+    #[serde(default)]
+    pub grid_sort: Option<String>,
     // Donation prompt: unix seconds of the first launch, then of the last time it was shown
     #[serde(default)]
     pub donation_prompt_at: Option<i64>,

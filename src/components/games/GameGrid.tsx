@@ -4,6 +4,7 @@ import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
 import { getSystemCardWidth, extractCustomRatios } from "../../utils/cartridgeSizes";
+import { sortGames } from "../../utils/playStats";
 
 interface GameGridProps {
   games: Game[];
@@ -13,18 +14,10 @@ export function GameGrid({ games }: GameGridProps) {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const systemConfigs = useAppStore((s) => s.settings.system_configs);
   const cardWidth = getSystemCardWidth(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
-  // Ordenada por nombre (o por «nombre para ordenar» si lo tiene, como hace ES-DE).
-  // Sin distinguir mayúsculas ni tildes, y con los números en su orden («2» antes que «10»).
-  const sorted = useMemo(
-    () =>
-      [...games].sort((a, b) =>
-        (a.sortname || a.name || a.path).localeCompare(b.sortname || b.name || b.path, undefined, {
-          numeric: true,
-          sensitivity: "base",
-        })
-      ),
-    [games]
-  );
+  // Orden elegido junto al cambio de vista (por defecto, por nombre o «nombre para ordenar»
+  // como ES-DE; los que no tienen el dato del orden van al final)
+  const gridSort = useAppStore((s) => s.settings.grid_sort);
+  const sorted = useMemo(() => sortGames(games, gridSort), [games, gridSort]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);

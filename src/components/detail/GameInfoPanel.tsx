@@ -6,6 +6,7 @@ import type { TranslationKeys as TranslationKey } from "../../i18n/en";
 import type { Game } from "../../types";
 import { resolveImageSrc } from "../../utils/images";
 import { formatRating, formatReleaseDate } from "../../utils/format";
+import { formatPlayTime, isPlayed } from "../../utils/playStats";
 import { getFlag } from "../../utils/flags";
 import { useGameActions } from "../../hooks/useGameActions";
 import { getSystemInfo, localize, type SystemInfoEntry } from "../../utils/systemInfo";
@@ -119,6 +120,10 @@ function GameInfo({ game }: { game: Game }) {
     ["form.players", game.players],
     ["form.rating", formatRating(game.rating)],
     ["form.region", [getFlag(game.region || game.lang), game.region || game.lang].filter(Boolean).join(" ")],
+    // Estadísticas de juego (las escribe el frontend al jugar); vacías no salen
+    ["exportDevice.playcount", Number(game.playcount ?? 0) > 0 ? game.playcount : undefined],
+    ["exportDevice.gametime", formatPlayTime(game.gametime) || undefined],
+    ["exportDevice.lastplayed", formatReleaseDate(game.lastplayed) || undefined],
   ];
 
   return (
@@ -326,6 +331,8 @@ function SystemSummary() {
 
       <BiosLine system={selectedSystem.name} />
 
+      <ActivityBlock games={games} />
+
       {/* Cifras de la biblioteca: compactas, una fila de casillas */}
       <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("systemInfo.library")}</h3>
       <dl className="grid grid-cols-5 gap-1.5">
@@ -339,6 +346,48 @@ function SystemSummary() {
 
       <SystemLocationsBlock systemPath={selectedSystem.path} />
     </div>
+  );
+}
+
+/** Actividad del sistema: tiempo total, cuántos se han jugado y los más jugados / recientes */
+function ActivityBlock({ games }: { games: Game[] }) {
+  const { t } = useTranslation();
+  const selectGame = useAppStore((s) => s.selectGame);
+  const played = games.filter(isPlayed);
+  if (played.length === 0) return null;
+  const totalSeconds = played.reduce((sum, g) => sum + (Number(g.gametime ?? 0) || 0), 0);
+  const top = [...played]
+    .filter((g) => Number(g.playcount ?? 0) > 0)
+    .sort((a, b) => Number(b.playcount) - Number(a.playcount))
+    .slice(0, 5);
+  const recent = [...played]
+    .filter((g) => g.lastplayed)
+    .sort((a, b) => (b.lastplayed ?? "").localeCompare(a.lastplayed ?? ""))
+    .slice(0, 5);
+  const list = (title: TranslationKey, items: Game[], value: (g: Game) => string) =>
+    items.length > 0 && (
+      <div className="min-w-0">
+        <p className="text-[11px] text-zinc-500 mb-1">{t(title)}</p>
+        {items.map((g) => (
+          <button key={g.path} onClick={() => selectGame(g)} className="w-full flex items-center gap-2 text-left text-xs py-0.5 hover:text-indigo-300">
+            <span className="flex-1 truncate text-zinc-300">{g.name || g.path}</span>
+            <span className="shrink-0 text-zinc-500">{value(g)}</span>
+          </button>
+        ))}
+      </div>
+    );
+  return (
+    <>
+      <h3 className="mt-6 text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("activity.title")}</h3>
+      <p className="text-xs text-zinc-400 mb-3">
+        {t("activity.played", { played: played.length, total: games.length })}
+        {totalSeconds > 0 && <> · {t("activity.total", { time: formatPlayTime(String(totalSeconds)) })}</>}
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        {list("activity.mostPlayed", top, (g) => t("activity.times", { count: g.playcount ?? 0 }))}
+        {list("activity.recent", recent, (g) => formatReleaseDate(g.lastplayed))}
+      </div>
+    </>
   );
 }
 

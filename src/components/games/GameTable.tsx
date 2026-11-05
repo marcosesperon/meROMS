@@ -19,6 +19,7 @@ import { getFlag } from "../../utils/flags";
 import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
 import { ColumnsMenu } from "./ColumnsMenu";
+import { formatPlayTime } from "../../utils/playStats";
 
 const columnHelper = createColumnHelper<Game>();
 
@@ -82,14 +83,6 @@ const FIXED_COLUMNS = ["thumb", "name"];
 // Las de siempre, si no se ha guardado otra elección
 const DEFAULT_COLUMNS = ["genre", "developer", "publisher", "players", "rating", "releasedate", "flags"];
 
-/** Segundos de juego → «1 h 25 min» / «12 min» */
-function formatPlayTime(seconds?: string): string {
-  const s = Number(seconds ?? 0);
-  if (!s) return "";
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
-  return h > 0 ? `${h} h ${m} min` : `${m} min`;
-}
 
 // Columnas «congeladas» en el scroll horizontal: la miniatura y el nombre
 const FROZEN = new Set(["thumb", "name"]);
