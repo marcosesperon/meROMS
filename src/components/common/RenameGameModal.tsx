@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { checkRenameTarget, listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
+import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
 import { useDebounce } from "../../hooks/useDebounce";
 import { showMessage } from "../../utils/dialogs";
 
@@ -114,7 +115,7 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
           <h3 className="text-base font-semibold text-zinc-100">{t("gameTools.renameTitle")}</h3>
           {/* De dónde sale el nombre propuesto */}
           <div className="flex gap-2 mt-3">
-            {(["title", "rules"] as RenameSource[]).map((s) => (
+            {RENAME_SOURCES.map(({ id: s, label }) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}
@@ -123,12 +124,12 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
                   source === s ? "bg-indigo-600 text-white" : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                 }`}
               >
-                {t(s === "title" ? "rename.sourceTitle" : "rename.sourceRules")}
+                {t(label)}
               </button>
             ))}
           </div>
           <p className="text-xs text-zinc-500 mt-2">
-            {t(source === "title" ? "rename.sourceTitleHelp" : "rename.sourceRulesHelp")}
+            {t(renameSourceText(source).help)}
           </p>
         </div>
 

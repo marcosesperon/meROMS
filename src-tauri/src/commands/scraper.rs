@@ -331,6 +331,25 @@ async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, sy
 
     let rom_relative = game.path.strip_prefix("./").unwrap_or(&game.path);
     let rom_absolute = system.rom_dir.join(rom_relative);
+    let system_id_str = system_id.to_string();
+
+    // Un .zip/.7z con un solo fichero: ScreenScraper conoce el fichero de dentro (su CRC,
+    // tamaño y nombre), no el comprimido. Se leen del índice, sin descomprimir.
+    if let Some(inner) = crate::rom_hash::single_archive_entry(&rom_absolute) {
+        let crc = inner.crc.to_uppercase();
+        let size = inner.size.to_string();
+        // Solo el nombre, sin la carpeta que pudiera llevar dentro del comprimido
+        let inner_name = inner.name.rsplit(['/', '\\']).next().unwrap_or(&inner.name).to_string();
+        let params = vec![
+            ("systemeid", system_id_str.as_str()),
+            ("crc", crc.as_str()),
+            ("romtaille", size.as_str()),
+            ("romnom", inner_name.as_str()),
+        ];
+        return Ok(ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"])));
+    }
+
+    // Fichero suelto, o zip de arcade (varios ficheros: se identifica por el nombre del zip)
     let md5_hash = compute_md5(&rom_absolute)?;
 
     let rom_filename = Path::new(&game.path)
@@ -338,7 +357,6 @@ async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, sy
         .and_then(|n| n.to_str())
         .unwrap_or(&game.path);
 
-    let system_id_str = system_id.to_string();
     let params = vec![
         ("systemeid", system_id_str.as_str()),
         ("md5", md5_hash.as_str()),

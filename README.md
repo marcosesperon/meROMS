@@ -53,7 +53,9 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
   ES-DE-Roms-Renamer). Media, gamelist, collections and `.m3u` playlists follow along.
 
 **Organise**
-- **DAT files** (MAME, Logiqx, No-Intro): missing games, unknown files, clones and BIOS.
+- **DAT files** (MAME, Logiqx, No-Intro): missing games, unknown files, clones and BIOS; ROMs
+  are recognised by their content (CRC32, also inside zip/7z), and Rename can use the DAT's
+  official names.
 - Multi-disc games: generate their `.m3u` playlists. Custom collections.
 - Automatic **backup** of every gamelist before saving, with restore.
 

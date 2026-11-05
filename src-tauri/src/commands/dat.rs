@@ -33,7 +33,15 @@ pub struct DatGame {
     pub year: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub manufacturer: String,
+    /// CRC32 de sus ROMs (hex en minúsculas), para reconocerlas por contenido. Solo en juegos
+    /// de hasta MAX_CRC_ROMS ROMs (cartuchos, discos): los de arcade llevan decenas y se
+    /// reconocen por nombre (es su identidad), así el DAT de MAME no se dispara de tamaño.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub crcs: Vec<String>,
 }
+
+/// Juegos con más ROMs que esto no guardan sus CRC (ver `DatGame::crcs`)
+const MAX_CRC_ROMS: usize = 4;
 
 /// El DAT resumido que se guarda por sistema
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -49,6 +57,9 @@ pub struct DatSummary {
     pub games: usize,
     pub clones: usize,
     pub bios: usize,
+    /// Trae CRC (asociado con esta versión): se puede comprobar por contenido.
+    /// Los DAT asociados antes no los guardaban: hay que volver a elegirlos.
+    pub has_crcs: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -84,6 +95,8 @@ pub struct DatReport {
     pub unknown_files: Vec<String>,
     pub marks: Vec<DatCloneMark>,
     pub names: Vec<DatNameProposal>,
+    /// Ficheros reconocidos por contenido (CRC en caché que está en el DAT)
+    pub content_matched: usize,
 }
 
 // ---------- Lectura del XML ----------
@@ -118,6 +131,19 @@ pub fn parse_dat(xml: &str, fallback_name: &str) -> Result<Dat, String> {
                 let game = game_from_attrs(&e, &mut ids, dat.games.len(), &mut clone_ids);
                 dat.games.push(game);
             }
+            // <rom name="…" size="…" crc="…"/>: su CRC, para reconocer el fichero por contenido
+            Ok(Event::Empty(e)) if e.name().as_ref() == b"rom" => {
+                if let Some(game) = current.as_mut() {
+                    let crc = e
+                        .attributes()
+                        .flatten()
+                        .find(|a| a.key.as_ref() == b"crc")
+                        .and_then(|a| a.unescape_value().ok().map(|v| v.trim().to_lowercase()));
+                    if let Some(crc) = crc.filter(|c| c.len() == 8) {
+                        game.crcs.push(crc);
+                    }
+                }
+            }
             Ok(Event::Text(t)) => {
                 if let Some(target) = text_target {
                     let text = t.unescape().map(|c| c.trim().to_string()).unwrap_or_default();
@@ -142,6 +168,13 @@ pub fn parse_dat(xml: &str, fallback_name: &str) -> Result<Dat, String> {
             Ok(Event::Eof) => break,
             Err(e) => return Err(format!("Not a valid DAT (XML): {}", e)),
             _ => {}
+        }
+    }
+
+    // Arcade y similares: demasiadas ROMs por juego para que el CRC sirva (y pesaría mucho)
+    for game in &mut dat.games {
+        if game.crcs.len() > MAX_CRC_ROMS {
+            game.crcs.clear();
         }
     }
 
@@ -209,6 +242,7 @@ fn summary(dat: &Dat) -> DatSummary {
         games: dat.games.iter().filter(|g| !g.bios && !g.device).count(),
         clones: dat.games.iter().filter(|g| g.cloneof.is_some()).count(),
         bios: dat.games.iter().filter(|g| g.bios).count(),
+        has_crcs: dat.games.iter().any(|g| !g.crcs.is_empty()),
     }
 }
 
@@ -241,7 +275,94 @@ pub fn dat_report(app: tauri::AppHandle, system_path: String) -> Result<Option<D
     let Some(dat) = load_dat(&app, &system.name)? else { return Ok(None) };
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;
     let files = super::new_roms::rom_files(&system);
-    Ok(Some(report(&system, &dat, &games, &files)))
+    // Solo lo que ya está en caché: el informe nunca calcula (eso es «Comprobar por contenido»)
+    let crcs = cached_crcs(&app, &files)?;
+    Ok(Some(report(&system, &dat, &games, &files, &crcs)))
+}
+
+/// Huellas en caché de estos ficheros (sin calcular nada)
+fn cached_crcs(app: &tauri::AppHandle, files: &[PathBuf]) -> Result<HashMap<PathBuf, String>, String> {
+    let cache = crate::rom_hash::CrcCache::load(&crate::rom_hash::cache_file(app)?);
+    Ok(files
+        .iter()
+        .filter_map(|f| cache.cached(f).flatten().map(|crc| (f.clone(), crc)))
+        .collect())
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct CrcProgress {
+    current: usize,
+    total: usize,
+    file: String,
+}
+
+/// «Comprobar por contenido»: calcula y guarda en caché las huellas de las ROMs del sistema
+/// que falten (los comprimidos se leen de su índice; los sueltos, enteros la primera vez).
+/// Emite `dat-crc-progress`. Devuelve cuántos ficheros reconoce el DAT por contenido.
+#[tauri::command]
+pub async fn dat_compute_crcs(app: tauri::AppHandle, system_path: String) -> Result<usize, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Emitter;
+        let system = SystemRef::from_rom_dir(&system_path);
+        let dat = load_dat(&app, &system.name)?.ok_or("This system has no DAT")?;
+        let files = super::new_roms::rom_files(&system);
+        let mut cache = crate::rom_hash::CrcCache::load(&crate::rom_hash::cache_file(&app)?);
+        let mut crcs = HashMap::new();
+        for (i, file) in files.iter().enumerate() {
+            let _ = app.emit(
+                "dat-crc-progress",
+                CrcProgress {
+                    current: i + 1,
+                    total: files.len(),
+                    file: file.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+                },
+            );
+            if let Some(crc) = cache.crc(file) {
+                crcs.insert(file.clone(), crc);
+            }
+            // Cada 50 ficheros a disco: si se corta, lo calculado no se pierde
+            if i % 50 == 49 {
+                cache.save()?;
+            }
+        }
+        cache.save()?;
+        let by_crc = crc_index(&dat);
+        Ok(crcs.values().filter(|crc| by_crc.contains_key(crc.as_str())).count())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Para Renombrar con el DAT: nombre del juego del DAT de cada ROM reconocida por contenido
+/// (solo con lo que hay en caché), por ruta absoluta. Vacío si el sistema no tiene DAT.
+pub fn names_by_content(app: &tauri::AppHandle, system: &SystemRef, rom_paths: &[PathBuf]) -> Result<HashMap<PathBuf, String>, String> {
+    let Some(dat) = load_dat(app, &system.name)? else { return Ok(HashMap::new()) };
+    let crcs = cached_crcs(app, rom_paths)?;
+    let by_crc = crc_index(&dat);
+    Ok(crcs
+        .into_iter()
+        .filter_map(|(path, crc)| {
+            let key = match_key(&path.to_string_lossy());
+            pick_by_crc(&by_crc, &crc, &key).map(|g| (path, g.name.clone()))
+        })
+        .collect())
+}
+
+/// CRC → juegos del DAT que tienen una ROM con ese CRC
+fn crc_index(dat: &Dat) -> HashMap<&str, Vec<&DatGame>> {
+    let mut index: HashMap<&str, Vec<&DatGame>> = HashMap::new();
+    for game in &dat.games {
+        for crc in &game.crcs {
+            index.entry(crc.as_str()).or_default().push(game);
+        }
+    }
+    index
+}
+
+/// El juego de un CRC; si varios lo comparten (clones idénticos), el que coincide por nombre
+fn pick_by_crc<'a>(index: &HashMap<&str, Vec<&'a DatGame>>, crc: &str, name_key: &str) -> Option<&'a DatGame> {
+    let games = index.get(crc)?;
+    games.iter().find(|g| g.name.to_lowercase() == name_key).or_else(|| games.first()).copied()
 }
 
 // ---------- Informe ----------
@@ -252,9 +373,23 @@ fn match_key(path: &str) -> String {
     Path::new(path).file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default()
 }
 
-fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf]) -> DatReport {
+fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs: &HashMap<PathBuf, String>) -> DatReport {
     let by_name: HashMap<String, &DatGame> = dat.games.iter().map(|g| (g.name.to_lowercase(), g)).collect();
-    let present: HashSet<String> = files.iter().map(|f| match_key(&f.to_string_lossy())).collect();
+    let by_crc = crc_index(dat);
+    // El juego del DAT de un fichero: primero por contenido (si su huella está en caché), luego por nombre
+    let mut content_matched = 0;
+    let mut entry_of_file: HashMap<&PathBuf, &DatGame> = HashMap::new();
+    for file in files {
+        let key = match_key(&file.to_string_lossy());
+        let by_content = crcs.get(file).and_then(|crc| pick_by_crc(&by_crc, crc, &key));
+        if by_content.is_some() {
+            content_matched += 1;
+        }
+        if let Some(entry) = by_content.or_else(|| by_name.get(&key).copied()) {
+            entry_of_file.insert(file, entry);
+        }
+    }
+    let present: HashSet<String> = entry_of_file.values().map(|g| g.name.to_lowercase()).collect();
     let description_of = |name: &str| {
         by_name.get(&name.to_lowercase()).map(|g| if g.description.is_empty() { g.name.clone() } else { g.description.clone() })
     };
@@ -274,7 +409,7 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf]) -> D
 
     let mut unknown_files: Vec<String> = files
         .iter()
-        .filter(|f| !by_name.contains_key(&match_key(&f.to_string_lossy())))
+        .filter(|f| !entry_of_file.contains_key(f))
         .filter_map(|f| f.strip_prefix(&system.rom_dir).ok())
         .map(|rel| format!("./{}", rel.to_string_lossy().replace('\\', "/")))
         .collect();
@@ -283,7 +418,10 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf]) -> D
     let mut marks = Vec::new();
     let mut names = Vec::new();
     for game in games {
-        let Some(entry) = by_name.get(&match_key(&game.path)) else { continue };
+        let rom = system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path));
+        let Some(entry) = entry_of_file.get(&rom).copied().or_else(|| by_name.get(&match_key(&game.path)).copied()) else {
+            continue;
+        };
         let kind = if entry.bios {
             Some("bios")
         } else if entry.device {
@@ -312,7 +450,7 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf]) -> D
         }
     }
 
-    DatReport { summary: summary(dat), missing, unknown_files, marks, names }
+    DatReport { summary: summary(dat), missing, unknown_files, marks, names, content_matched }
 }
 
 #[cfg(test)]
@@ -377,7 +515,7 @@ mod tests {
             game("./neogeo.zip", Some("Neo Geo BIOS")), // BIOS, ya con nombre
         ];
 
-        let r = report(&system, &dat, &games, &files);
+        let r = report(&system, &dat, &games, &files, &HashMap::new());
         // Faltan: sf2 y ffight (ni la BIOS ni el dispositivo)
         let missing: Vec<_> = r.missing.iter().map(|m| m.name.as_str()).collect();
         assert_eq!(missing, vec!["sf2", "ffight"]);
@@ -392,5 +530,47 @@ mod tests {
         assert_eq!(r.names[0].proposed, "Street Fighter II: The World Warrior (USA 910206)");
         assert_eq!(r.summary.games, 3);
         assert_eq!(r.summary.bios, 1);
+    }
+
+    const NOINTRO_CRC: &str = r#"<?xml version="1.0"?>
+<datafile>
+	<header><name>Nintendo - Super Nintendo Entertainment System</name></header>
+	<game name="Super Mario World (USA)"><description>Super Mario World (USA)</description><rom name="Super Mario World (USA).sfc" size="524288" crc="B19ED489"/></game>
+	<game name="Zelda (USA)"><description>Zelda (USA)</description><rom name="Zelda (USA).sfc" size="1048576" crc="777aac2f"/></game>
+	<game name="Muchas ROMs"><rom name="a" crc="00000001"/><rom name="b" crc="00000002"/><rom name="c" crc="00000003"/><rom name="d" crc="00000004"/><rom name="e" crc="00000005"/></game>
+</datafile>"#;
+
+    #[test]
+    fn keeps_the_crcs_of_small_games_only() {
+        let dat = parse_dat(NOINTRO_CRC, "x").unwrap();
+        assert_eq!(dat.games[0].crcs, vec!["b19ed489".to_string()]);
+        assert!(dat.games[2].crcs.is_empty(), "games with many ROMs (arcade) are matched by name");
+        assert!(summary(&dat).has_crcs);
+        assert!(!summary(&parse_dat(MAME, "mame").unwrap()).has_crcs);
+    }
+
+    #[test]
+    fn a_rom_with_another_name_is_recognised_by_its_crc() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("snes"));
+        let dat = parse_dat(NOINTRO_CRC, "x").unwrap();
+        let smw = system.rom_dir.join("smw.sfc");
+        let files = vec![smw.clone(), system.rom_dir.join("otro.sfc")];
+        let crcs: HashMap<PathBuf, String> = [(smw.clone(), "b19ed489".to_string())].into_iter().collect();
+        let games = vec![game("./smw.sfc", Some("smw"))];
+
+        let r = report(&system, &dat, &games, &files, &crcs);
+        assert_eq!(r.content_matched, 1);
+        // smw.sfc es Super Mario World: no falta ni está «fuera del DAT»; otro.sfc sí lo está
+        let missing: Vec<_> = r.missing.iter().map(|m| m.name.as_str()).collect();
+        assert_eq!(missing, vec!["Zelda (USA)", "Muchas ROMs"]);
+        assert_eq!(r.unknown_files, vec!["./otro.sfc"]);
+        // Y se le propone el nombre del DAT (no estaba scrapeado)
+        assert_eq!(r.names[0].proposed, "Super Mario World (USA)");
+
+        // Sin huella en caché: por nombre, smw.sfc no está en el DAT
+        let r = report(&system, &dat, &games, &files, &HashMap::new());
+        assert_eq!(r.content_matched, 0);
+        assert_eq!(r.unknown_files.len(), 2);
     }
 }

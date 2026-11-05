@@ -37,6 +37,8 @@ pub enum RenameSource {
     Title,
     /// Current file name cleaned with the regex rules (ES-DE-Roms-Renamer style)
     Rules,
+    /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
+    Dat,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -89,12 +91,22 @@ pub fn list_rename_candidates(
     let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
     let source = source.unwrap_or_default();
+    let wanted = |game: &&crate::models::Game| game_path.as_ref().is_none_or(|only| &game.path == only);
+    let rom_of = |game: &crate::models::Game| system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path));
+
+    // «Nombre del DAT»: el del juego que el DAT reconoce por contenido (solo lo que hay en caché)
+    let dat_names = if source == RenameSource::Dat {
+        let roms: Vec<_> = gamelist.games.iter().filter(wanted).map(rom_of).collect();
+        crate::commands::dat::names_by_content(&app, &system, &roms)?
+    } else {
+        HashMap::new()
+    };
 
     let mut entries: Vec<RenameEntry> = gamelist
         .games
         .iter()
-        .filter(|game| game_path.as_ref().is_none_or(|only| &game.path == only))
-        .map(|game| propose(game, source, &rules))
+        .filter(wanted)
+        .map(|game| propose(game, source, &rules, dat_names.get(&rom_of(game)).map(String::as_str)))
         .collect();
     mark_conflicts(&mut entries, &system.rom_dir);
 
@@ -102,7 +114,7 @@ pub fn list_rename_candidates(
     Ok(entries)
 }
 
-fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules) -> RenameEntry {
+fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules, dat_name: Option<&str>) -> RenameEntry {
     let rom_path = Path::new(&game.path);
     let ext = rom_path
         .extension()
@@ -118,6 +130,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
     let proposed = match source {
         RenameSource::Title => game_title.as_deref().map(sanitize_filename),
         RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
+        RenameSource::Dat => dat_name.map(sanitize_filename),
     }
     .filter(|p| !p.is_empty())
     .unwrap_or_else(|| current_name.clone());
@@ -487,7 +500,20 @@ mod tests {
 
     fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
-        propose(&game, source, &CompiledRules::new(&default_rules()))
+        propose(&game, source, &CompiledRules::new(&default_rules()), None)
+    }
+
+    #[test]
+    fn dat_source_proposes_the_official_name_only_for_recognised_roms() {
+        let game = Game { path: "./smw.sfc".into(), ..Default::default() };
+        let rules = CompiledRules::new(&default_rules());
+        let e = propose(&game, RenameSource::Dat, &rules, Some("Super Mario World (USA)"));
+        assert_eq!(e.proposed_name, "Super Mario World (USA)");
+        assert!(e.can_rename);
+        // No reconocida por contenido: se queda como está
+        let e = propose(&game, RenameSource::Dat, &rules, None);
+        assert_eq!(e.proposed_name, "smw");
+        assert!(!e.can_rename);
     }
 
     #[test]

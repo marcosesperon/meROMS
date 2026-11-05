@@ -4,6 +4,7 @@ mod media;
 mod models;
 mod parser;
 mod rename_rules;
+mod rom_hash;
 
 use commands::{backup, cleanup, collections, dat, duplicates, export, gamelist, images, media_kinds, migrate, new_roms, normalize, profiles, rename, rules, scrape_resume, scraper, settings, systems};
 
@@ -110,6 +111,7 @@ pub fn run() {
             dat::set_system_dat,
             dat::clear_system_dat,
             dat::dat_report,
+            dat::dat_compute_crcs,
             duplicates::remove_games_with_files,
             collections::detect_multidisc_games,
             collections::generate_m3u_playlists,

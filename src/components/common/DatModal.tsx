@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
-import { clearSystemDat, datReport, saveGamelist, setSystemDat, trashFiles, type DatReport } from "../../commands";
+import { clearSystemDat, datComputeCrcs, datReport, saveGamelist, setSystemDat, trashFiles, type DatReport } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 
 interface DatModalProps {
@@ -28,6 +29,8 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   const [withClones, setWithClones] = useState(false);
   const [unknownSel, setUnknownSel] = useState<Set<string>>(new Set());
   const [nameSel, setNameSel] = useState<Set<string>>(new Set());
+  // «Comprobar por contenido» en marcha: fichero actual / total
+  const [crcProgress, setCrcProgress] = useState<{ current: number; total: number; file: string } | null>(null);
 
   async function load() {
     setLoading(true);
@@ -67,6 +70,22 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
       await showMessage(t("dat.loadFailed", { error: String(e) }), "error");
     } finally {
       setBusy(false);
+    }
+  }
+
+  /** Calcula las huellas que falten (los sueltos, la primera vez, se leen enteros) y recarga el informe */
+  async function checkByContent() {
+    setCrcProgress({ current: 0, total: 0, file: "" });
+    const unlisten = await listen<{ current: number; total: number; file: string }>("dat-crc-progress", (e) => setCrcProgress(e.payload));
+    try {
+      await datComputeCrcs(systemPath);
+      onChanged();
+      await load();
+    } catch (e) {
+      await showMessage(String(e), "error");
+    } finally {
+      unlisten();
+      setCrcProgress(null);
     }
   }
 
@@ -154,6 +173,38 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
             </div>
           </div>
           {!report && <p className="text-xs text-zinc-500 mt-2">{t("dat.help")}</p>}
+          {/* Reconocer por contenido (CRC): con barra mientras calcula */}
+          {report && (
+            <div className="flex items-center gap-3 mt-2 text-xs">
+              {!report.summary.has_crcs ? (
+                <p className="text-amber-300">{t("dat.noCrcs")}</p>
+              ) : crcProgress ? (
+                <div className="flex-1 min-w-0">
+                  <div className="w-full bg-zinc-700 rounded-full h-1.5">
+                    <div
+                      className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                      style={{ width: `${crcProgress.total ? Math.round((crcProgress.current / crcProgress.total) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-zinc-500 mt-1 truncate">
+                    {crcProgress.current} / {crcProgress.total} — {crcProgress.file}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="flex-1 text-zinc-400">{t("dat.contentMatched", { count: report.content_matched })}</p>
+                  <button
+                    onClick={checkByContent}
+                    disabled={busy}
+                    className="px-3 py-1.5 bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600 disabled:opacity-50"
+                    title={t("dat.checkContentHelp")}
+                  >
+                    {t("dat.checkContent")}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
           {report && (
             <div className="flex gap-1 mt-3">
               {tabs.map((x) => (

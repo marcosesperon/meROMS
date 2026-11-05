@@ -325,6 +325,8 @@ export interface DatSummary {
   games: number;
   clones: number;
   bios: number;
+  /** Saved with ROM CRCs (DATs associated before can't be checked by content: pick them again) */
+  has_crcs: boolean;
 }
 
 export interface DatMark {
@@ -340,6 +342,8 @@ export interface DatReport {
   unknown_files: string[];
   marks: DatMark[];
   names: { game_path: string; current: string | null; proposed: string }[];
+  /** Files recognised by content (CRC already in the cache) */
+  content_matched: number;
 }
 
 export async function setSystemDat(systemPath: string, datPath: string): Promise<DatSummary> {
@@ -353,6 +357,11 @@ export async function clearSystemDat(systemPath: string): Promise<void> {
 /** null when the system has no DAT */
 export async function datReport(systemPath: string): Promise<DatReport | null> {
   return invoke("dat_report", { systemPath });
+}
+
+/** "Check by content": computes the missing ROM CRCs (emits dat-crc-progress); returns the files the DAT recognises */
+export async function datComputeCrcs(systemPath: string): Promise<number> {
+  return invoke("dat_compute_crcs", { systemPath });
 }
 
 // Duplicates

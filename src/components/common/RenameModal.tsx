@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
+import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 
@@ -122,7 +123,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           </h3>
           {/* Where the new name comes from */}
           <div className="flex gap-2 mt-3">
-            {(["title", "rules"] as RenameSource[]).map((s) => (
+            {RENAME_SOURCES.map(({ id: s, label }) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}
@@ -133,12 +134,12 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                     : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                 }`}
               >
-                {t(s === "title" ? "rename.sourceTitle" : "rename.sourceRules")}
+                {t(label)}
               </button>
             ))}
           </div>
           <p className="text-xs text-zinc-500 mt-2">
-            {t(source === "title" ? "rename.sourceTitleHelp" : "rename.sourceRulesHelp")}
+            {t(renameSourceText(source).help)}
           </p>
           {!scanning && renameableCount > 0 && (
             <p className="text-sm text-zinc-400 mt-1">
@@ -158,7 +159,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
             </div>
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {t(source === "title" ? "rename.noRenames" : "rename.noRenamesRules")}
+              {t(renameSourceText(source).empty)}
             </div>
           ) : (
             <>
