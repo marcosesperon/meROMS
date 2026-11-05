@@ -755,3 +755,28 @@ export async function addFolder(systemPath: string, folder: Folder): Promise<Gam
 export async function removeFolder(systemPath: string, folderPath: string): Promise<GameList> {
   return invoke("remove_folder", { systemPath, folderPath });
 }
+
+// Game statuses (game_status.rs): kept by meROMS; "completed" also goes to the gamelist
+export type PlayStatus = "incomplete" | "finished" | "completed" | "abandoned" | "never";
+export const PLAY_STATUSES: PlayStatus[] = ["incomplete", "finished", "completed", "abandoned", "never"];
+
+export interface GameStatus {
+  status?: PlayStatus;
+  playing?: boolean;
+  backlog?: boolean;
+}
+
+/** What to change; a missing field is left as it is. `status: null` clears it */
+export interface StatusChange {
+  status?: PlayStatus | null;
+  playing?: boolean;
+  backlog?: boolean;
+}
+
+export async function getGameStatuses(systemPath: string): Promise<Record<string, GameStatus>> {
+  return invoke("get_game_statuses", { systemPath });
+}
+
+export async function setGameStatuses(systemPath: string, gamePaths: string[], change: StatusChange): Promise<Record<string, GameStatus>> {
+  return invoke("set_game_statuses", { systemPath, gamePaths, change });
+}

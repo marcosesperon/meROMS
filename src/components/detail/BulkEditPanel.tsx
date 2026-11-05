@@ -3,7 +3,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import type { TranslationKeys } from "../../i18n/en";
 import type { Game } from "../../types";
-import { saveGamelist, translateTexts } from "../../commands";
+import { PLAY_STATUSES, saveGamelist, translateTexts, type PlayStatus, type StatusChange } from "../../commands";
+import { STATUS_FLAGS, STATUS_META } from "../../utils/gameStatus";
 import { articleToEnd, articleToFront } from "../../utils/articles";
 import { toESDate } from "../../utils/format";
 import { askConfirm, showMessage } from "../../utils/dialogs";
@@ -97,6 +98,7 @@ export function BulkEditPanel() {
         <FieldsSection selected={selected} />
         <ReplaceSection selected={selected} />
         <ArticleSection selected={selected} />
+        <StatusSection selected={selected} />
         <TranslateSection selected={selected} />
       </div>
     </aside>
@@ -401,6 +403,82 @@ function ArticleSection({ selected }: { selected: Game[] }) {
         className="mt-3 w-full px-4 py-2 text-sm bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {saving ? "..." : t("article.apply", { count: chosen.length })}
+      </button>
+    </section>
+  );
+}
+
+/** Estado de juego (meROMS) de los marcados: estado de partida y las marcas Jugando / Pendiente */
+function StatusSection({ selected }: { selected: Game[] }) {
+  const { t } = useTranslation();
+  const setStatuses = useAppStore((s) => s.setStatuses);
+  // «keep» = dejarlo; «none» = quitarlo; si no, el estado a poner
+  const [status, setStatus] = useState<"keep" | "none" | PlayStatus>("keep");
+  const [flags, setFlags] = useState<Record<"playing" | "backlog", FlagChoice>>({ playing: "keep", backlog: "keep" });
+  const [saving, setSaving] = useState(false);
+
+  const change: StatusChange = {};
+  if (status !== "keep") change.status = status === "none" ? null : status;
+  for (const f of STATUS_FLAGS) {
+    if (flags[f.key] !== "keep") change[f.key] = flags[f.key] === "yes";
+  }
+  const hasChange = Object.keys(change).length > 0;
+
+  async function apply() {
+    setSaving(true);
+    try {
+      await setStatuses(selected.map((g) => g.path), change);
+      await showMessage(t("status.applied", { count: selected.length }));
+      setStatus("keep");
+      setFlags({ playing: "keep", backlog: "keep" });
+    } catch (e) {
+      await showMessage(String(e), "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section>
+      <h3 className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-3">{t("status.column")}</h3>
+      <div className="flex items-center gap-2">
+        <span className="w-[136px] shrink-0 text-xs text-zinc-400">{t("status.button")}</span>
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as typeof status)}
+          className="flex-1 min-w-0 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+        >
+          <option value="keep">{t("bulk.flag_keep")}</option>
+          <option value="none">{t("status.none")}</option>
+          {PLAY_STATUSES.map((s) => (
+            <option key={s} value={s}>{t(STATUS_META[s].label)}</option>
+          ))}
+        </select>
+      </div>
+      <div className="mt-2 space-y-2">
+        {STATUS_FLAGS.map((f) => (
+          <div key={f.key} className="flex items-center gap-2">
+            <span className="w-[136px] shrink-0 text-xs text-zinc-400">{t(f.label)}</span>
+            {(["keep", "yes", "no"] as FlagChoice[]).map((choice) => (
+              <button
+                key={choice}
+                onClick={() => setFlags((prev) => ({ ...prev, [f.key]: choice }))}
+                className={`px-2.5 py-1 text-xs rounded transition-colors ${
+                  flags[f.key] === choice ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                }`}
+              >
+                {t(`bulk.flag_${choice}` as TranslationKeys)}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={apply}
+        disabled={selected.length === 0 || !hasChange || saving}
+        className="mt-4 w-full px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        {saving ? "..." : t("status.apply", { count: selected.length })}
       </button>
     </section>
   );

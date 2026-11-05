@@ -43,6 +43,8 @@ export interface Game {
   favorite?: string;
   hidden?: string;
   kidgame?: string;
+  /** ES-DE «completed» ("true"/"false"); kept in step with the game status */
+  completed?: string;
 
   // Play stats
   playcount?: string;

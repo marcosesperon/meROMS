@@ -8,6 +8,7 @@ import { StarIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
+import { statusBadge, statusText } from "../../utils/gameStatus";
 
 interface GameCardProps {
   game: Game;
@@ -38,6 +39,8 @@ export function GameCard({ game }: GameCardProps) {
   const aspectRatio = getSystemAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
 
   const selected = multiSelect ? checked : selectedGame?.path === game.path;
+  const status = useAppStore((s) => s.statuses.get(game.path));
+  const badge = statusBadge(status);
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
 
@@ -71,9 +74,15 @@ export function GameCard({ game }: GameCardProps) {
             {t("missingRoms.badge")}
           </div>
         )}
-        {game.favorite === "true" && (
-          <div className="absolute top-1.5 right-1.5 z-10 text-yellow-400 drop-shadow-lg">
-            <StarIcon size={16} />
+        {/* Arriba a la derecha: favorito y, debajo, el estado del juego */}
+        {(game.favorite === "true" || badge) && (
+          <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-center gap-1 drop-shadow-lg">
+            {game.favorite === "true" && <StarIcon size={16} className="text-yellow-400" />}
+            {badge && (
+              <span className="p-0.5 rounded bg-black/60" title={statusText(status, t)}>
+                <badge.icon size={13} className={badge.color} />
+              </span>
+            )}
           </div>
         )}
         {imageSrc ? (

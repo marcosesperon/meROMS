@@ -6,6 +6,8 @@ import { resolveImageSrc } from "../utils/images";
 import { formatRating, formatReleaseDate } from "../utils/format";
 import { formatPlayTime } from "../utils/playStats";
 import { getFlag } from "../utils/flags";
+import { statusText } from "../utils/gameStatus";
+import { useTranslation } from "../i18n";
 
 // Medios que salen en la galería, en este orden (el vídeo va primero si hay)
 const GALLERY: { field: keyof Game; label: TranslationKey }[] = [
@@ -68,7 +70,12 @@ export function useGameDetails(game: Game) {
   const hero = scene ?? cover;
   const heroStyle = sceneField === "fanart" ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
 
+  // Estado de juego (meROMS): «Terminado · Jugando»
+  const { t } = useTranslation();
+  const status = useAppStore((s) => s.statuses.get(game.path));
+
   const details: [TranslationKey, string | undefined][] = [
+    ["status.column", statusText(status, t) || undefined],
     ["form.releaseDate", formatReleaseDate(game.releasedate)],
     ["form.developer", game.developer],
     ["form.publisher", game.publisher],

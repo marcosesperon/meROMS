@@ -19,6 +19,7 @@ pub mod migrate;
 pub mod move_games;
 pub mod new_roms;
 pub mod normalize;
+pub mod game_status;
 pub mod placeholders;
 pub mod profiles;
 pub mod scrape_resume;

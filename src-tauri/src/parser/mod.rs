@@ -83,7 +83,7 @@ const KNOWN_GAME_FIELDS: &[&str] = &[
     "fanart", "titleshot", "boxback", "boxart", "cartridge", "wheel", "mix",
     "manual", "video", "rating", "releasedate", "developer", "publisher",
     "genre", "genreid", "players", "family", "arcadesystemname", "region",
-    "lang", "favorite", "hidden", "kidgame", "playcount", "lastplayed",
+    "lang", "favorite", "hidden", "kidgame", "completed", "playcount", "lastplayed",
     "gametime", "emulator", "core", "hash", "md5", "crc32",
     "cheevosHash", "cheevosId",
 ];
@@ -518,6 +518,7 @@ fn write_game(
     write_opt_element(writer, "favorite", &game.favorite)?;
     write_opt_element(writer, "hidden", &game.hidden)?;
     write_opt_element(writer, "kidgame", &game.kidgame)?;
+    write_opt_element(writer, "completed", &game.completed)?;
     write_opt_element(writer, "playcount", &game.playcount)?;
     write_opt_element(writer, "lastplayed", &game.lastplayed)?;
     write_opt_element(writer, "gametime", &game.gametime)?;

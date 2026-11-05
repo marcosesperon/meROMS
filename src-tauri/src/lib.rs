@@ -6,7 +6,7 @@ mod parser;
 mod rename_rules;
 mod rom_hash;
 
-use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate, undo};
+use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate, undo};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -51,9 +51,10 @@ pub fn run() {
                     .unwrap(),
             }
         })
-        // Media «de relleno» aprendida: la lista negra vive en la carpeta de datos de la app
+        // Media «de relleno» aprendida y estados de juego: viven en la carpeta de datos de la app
         .setup(|app| {
             placeholders::init(app.handle());
+            game_status::init(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -121,6 +122,8 @@ pub fn run() {
             chd::list_chd_candidates,
             chd::convert_to_chd,
             chd::cancel_chd,
+            game_status::get_game_statuses,
+            game_status::set_game_statuses,
             move_games::list_subfolders,
             move_games::move_games,
             rename::check_rename_target,

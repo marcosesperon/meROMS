@@ -76,6 +76,9 @@ pub struct Game {
     pub hidden: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kidgame: Option<String>,
+    /// ES-DE «completed» (true/false); meROMS keeps it in step with the game status (game_status.rs)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub completed: Option<String>,
 
     // === Play stats ===
     #[serde(skip_serializing_if = "Option::is_none")]

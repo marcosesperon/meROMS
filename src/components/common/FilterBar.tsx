@@ -5,6 +5,8 @@ import { getFlag } from "../../utils/flags";
 import { useTranslation } from "../../i18n";
 import { StarIcon, EyeSlashIcon, ChildIcon } from "./Icons";
 import { MEDIA_FILTER_FIELDS, NO_MEDIA } from "../../utils/mediaFilter";
+import { PLAY_STATUSES } from "../../commands";
+import { STATUS_FLAGS, STATUS_META } from "../../utils/gameStatus";
 import { getActiveProfile } from "../../utils/profiles";
 
 // Los selectores, con el mismo aspecto que los botones de al lado (alto, borde, fondo).
@@ -65,7 +67,8 @@ export function FilterBar() {
     filters.kidgame ||
     filters.hideClones ||
     filters.missingMedia ||
-    filters.played;
+    filters.played ||
+    filters.status;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -147,6 +150,23 @@ export function FilterBar() {
         <option value="">{t("filter.played")}: —</option>
         <option value="played">{t("filter.playedYes")}</option>
         <option value="unplayed">{t("filter.playedNo")}</option>
+      </select>
+
+      {/* Estado de juego (meROMS) */}
+      <select
+        value={filters.status || ""}
+        onChange={(e) => setFilters({ status: e.target.value || undefined })}
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
+      >
+        <option value="">{t("status.button")}: —</option>
+        <option value="none">{t("status.none")}</option>
+        {PLAY_STATUSES.map((s) => (
+          <option key={s} value={s}>{t(STATUS_META[s].label)}</option>
+        ))}
+        {STATUS_FLAGS.map((f) => (
+          <option key={f.key} value={f.key}>{t(f.label)}</option>
+        ))}
       </select>
 
       {/* Toggle buttons */}

@@ -351,3 +351,58 @@ export function VideoIcon({ size = 16, className = "" }: IconProps) {
     </svg>
   );
 }
+
+// Estados de juego
+
+export function FlagIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 21V4" />
+      <path d="M5 4h11l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
+export function FlagOffIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 21V4" />
+      <path d="M9 4h7l-2 4 2 4h-4M5 12h3" />
+      <path d="m3 3 18 18" />
+    </svg>
+  );
+}
+
+export function BanIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m5.6 5.6 12.8 12.8" />
+    </svg>
+  );
+}
+
+export function CircleDashedIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M10.1 2.2a10 10 0 0 1 3.8 0M17.6 4.5a10 10 0 0 1 1.9 1.9M21.8 10.1a10 10 0 0 1 0 3.8M19.5 17.6a10 10 0 0 1-1.9 1.9M13.9 21.8a10 10 0 0 1-3.8 0M6.4 19.5a10 10 0 0 1-1.9-1.9M2.2 13.9a10 10 0 0 1 0-3.8M4.5 6.4a10 10 0 0 1 1.9-1.9" />
+    </svg>
+  );
+}
+
+export function CircleHalfIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="m5 12 5 5 9-10" />
+    </svg>
+  );
+}

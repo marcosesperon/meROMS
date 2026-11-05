@@ -22,6 +22,7 @@ import { ColumnsMenu } from "./ColumnsMenu";
 import { formatPlayTime } from "../../utils/playStats";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
+import { statusBadge, statusText } from "../../utils/gameStatus";
 
 // Texto de la columna Nombre (de él sale la letra de la barra)
 const nameText = (g: Game) => g.name || g.path;
@@ -118,6 +119,7 @@ export function GameTable({ games }: GameTableProps) {
   const multiSelect = useAppStore((s) => s.multiSelect);
   const selectedPaths = useAppStore((s) => s.selectedPaths);
   const selectedGame = useAppStore((s) => s.selectedGame);
+  const statuses = useAppStore((s) => s.statuses);
   const { t } = useTranslation();
 
   // Todas las columnas posibles; las que se ven (y en qué orden) salen de Ajustes
@@ -248,6 +250,23 @@ export function GameTable({ games }: GameTableProps) {
         minSize: 70,
         sortingFn: (a, b) => Number(a.original.gametime ?? 0) - Number(b.original.gametime ?? 0),
       }),
+      // Estado de juego (meROMS): icono y texto; se ordena por el texto
+      columnHelper.accessor((g) => statusText(statuses.get(g.path), t), {
+        id: "status",
+        header: t("status.column"),
+        cell: (i) => {
+          const badge = statusBadge(statuses.get(i.row.original.path));
+          if (!badge) return "";
+          return (
+            <span className="flex items-center gap-1.5 min-w-0" title={i.getValue()}>
+              <badge.icon size={13} className={`shrink-0 ${badge.color}`} />
+              <span className="truncate">{i.getValue()}</span>
+            </span>
+          );
+        },
+        size: 150,
+        minSize: 80,
+      }),
       columnHelper.accessor("arcadesystemname", { header: t("table.arcadesystem"), cell: (i) => i.getValue() || "", size: 110, minSize: 70 }),
       columnHelper.accessor("sortname", { header: t("form.sortname"), cell: (i) => i.getValue() || "", size: 180, minSize: 80 }),
       columnHelper.accessor("path", {
@@ -271,7 +290,7 @@ export function GameTable({ games }: GameTableProps) {
         minSize: 50,
       }),
     ],
-    [t]
+    [t, statuses]
   );
 
   // Columnas visibles: miniatura y nombre siempre (congeladas), y el resto en el orden guardado

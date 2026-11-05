@@ -11,6 +11,7 @@ import { useGameActions } from "../../hooks/useGameActions";
 import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
+import { StatusMenu } from "../common/StatusMenu";
 import { GameMediaViewer } from "./GameMediaViewer";
 import {
   ArcadeBoardIcon,
@@ -165,6 +166,7 @@ function GameInfo({ game }: { game: Game }) {
         >
           {isFavorite ? <StarIcon size={14} /> : <StarOutlineIcon size={14} />}
         </button>
+        <StatusMenu game={game} buttonClassName="px-3 py-2 text-sm bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors" />
         <button
           onClick={() => remove(game)}
           title={t("detail.delete")}

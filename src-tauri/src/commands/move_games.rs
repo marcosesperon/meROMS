@@ -266,6 +266,8 @@ pub(super) fn update_collections(layout: &Layout, from: &SystemRef, to: &SystemR
     if moved.is_empty() {
         return;
     }
+    // El estado del juego (guardado por la ruta de la ROM) se va con él
+    super::game_status::remap(&from.rom_dir, &to.rom_dir, moved);
     let cfgs = |dir: &Path| -> Vec<PathBuf> {
         fs::read_dir(dir)
             .map(|e| {

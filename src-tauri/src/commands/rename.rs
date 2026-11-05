@@ -429,6 +429,8 @@ pub(super) fn update_references(layout: &Layout, system: &SystemRef, renamed: &[
     if renamed.is_empty() {
         return;
     }
+    // Game statuses are kept by ROM path: they follow the new name
+    super::game_status::remap(&system.rom_dir, &system.rom_dir, renamed);
 
     // Collections: entries are written exactly as collection_entry() builds them
     let collection_renames: HashMap<String, String> = renamed
@@ -476,6 +478,7 @@ pub(super) fn remove_references(layout: &Layout, system: &SystemRef, removed: &[
     if removed.is_empty() {
         return;
     }
+    super::game_status::forget(&system.rom_dir, removed);
 
     let entries: std::collections::HashSet<String> = removed.iter().map(|p| layout.collection_entry(system, p)).collect();
     if let Ok(files) = fs::read_dir(layout.collections_dir(system)) {

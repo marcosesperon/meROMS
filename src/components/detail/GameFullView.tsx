@@ -5,6 +5,7 @@ import type { Game } from "../../types";
 import { useGameActions } from "../../hooks/useGameActions";
 import { useGameDetails } from "../../hooks/useGameDetails";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
+import { StatusMenu } from "../common/StatusMenu";
 import { CloseIcon, PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 import { GameMediaViewer } from "./GameMediaViewer";
 
@@ -55,7 +56,8 @@ function FullView({ game }: { game: Game }) {
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const others = Array.from(document.querySelectorAll(".fixed.inset-0")).some((el) => el !== rootRef.current);
-      if (others) return;
+      // Un menú desplegable abierto (estados…): Esc y las flechas son para él
+      if (others || document.querySelector("[data-popup-open]")) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
       const { prevPath, nextPath, go } = latest.current;
@@ -125,6 +127,7 @@ function FullView({ game }: { game: Game }) {
         >
           {isFavorite ? <StarIcon size={14} /> : <StarOutlineIcon size={14} />}
         </button>
+        <StatusMenu game={game} buttonClassName="px-3 py-2 text-sm bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors" />
         <button
           onClick={() => remove(game)}
           title={t("detail.delete")}

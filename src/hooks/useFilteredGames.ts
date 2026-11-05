@@ -18,6 +18,7 @@ export function useFilteredGames(): Game[] {
   const filters = useAppStore((s) => s.filters);
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
   const datMarks = useAppStore((s) => s.datMarks);
+  const statuses = useAppStore((s) => s.statuses);
   const brokenMedia = useAppStore((s) => s.brokenMedia);
 
   return useMemo(() => {
@@ -82,6 +83,18 @@ export function useFilteredGames(): Game[] {
       result = result.filter((g) => isPlayed(g) === wanted);
     }
 
+    // Estado de juego: un estado de partida, una de las marcas, o «sin estado»
+    if (filters.status) {
+      const wanted = filters.status;
+      result = result.filter((g) => {
+        const s = statuses.get(g.path);
+        if (wanted === "none") return !s;
+        if (wanted === "playing") return !!s?.playing;
+        if (wanted === "backlog") return !!s?.backlog;
+        return s?.status === wanted;
+      });
+    }
+
     return result;
-  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses]);
 }

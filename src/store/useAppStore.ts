@@ -100,6 +100,10 @@ interface AppState {
   datMarks: Map<string, commands.DatMark> | null;
   /** Media fields pointing to files that don't exist (Classic only), keys from `brokenKey` */
   brokenMedia: Set<string>;
+  /** Game statuses of the selected system (only games that have one), by game path */
+  statuses: Map<string, commands.GameStatus>;
+  /** Change the status of some games (saved by meROMS; "completed" also in the gamelist) */
+  setStatuses: (gamePaths: string[], change: commands.StatusChange) => Promise<void>;
   setDatMarks: (marks: Map<string, commands.DatMark> | null) => void;
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
@@ -135,6 +139,8 @@ interface AppState {
     missingMedia?: string;
     /** Played (has play count or last played) / never played */
     played?: "played" | "unplayed";
+    /** Game status: a play status, "playing", "backlog" or "none" (no status at all) */
+    status?: string;
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;
@@ -266,6 +272,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Another system: multi-select starts off and empty
       multiSelect: false,
       selectedPaths: new Set(),
+      statuses: new Map(),
     });
     get().loadGames(system.path);
   },
@@ -307,6 +314,14 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ brokenMedia: new Set(refs.map((r) => brokenKey(r.game_path, r.field, r.value))) });
         })
         .catch(() => set({ brokenMedia: new Set() }));
+      // Estados de juego: después de leer la gamelist (lo marcado «completed» en ES-DE se adopta)
+      commands
+        .getGameStatuses(systemPath)
+        .then((map) => {
+          if (get().selectedSystem?.path !== systemPath) return;
+          set({ statuses: new Map(Object.entries(map)) });
+        })
+        .catch(() => set({ statuses: new Map() }));
     } catch (e) {
       console.error("Failed to load gamelist:", e);
       set({ loading: false });
@@ -376,6 +391,30 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedPaths: (paths) => set({ selectedPaths: paths }),
   datMarks: null,
   brokenMedia: new Set(),
+  statuses: new Map(),
+  setStatuses: async (gamePaths, change) => {
+    const { selectedSystem } = get();
+    if (!selectedSystem || gamePaths.length === 0) return;
+    const updated = await commands.setGameStatuses(selectedSystem.path, gamePaths, change);
+    const statuses = new Map(get().statuses);
+    // Los juegos sin nada quedan fuera del mapa (como los devuelve get_game_statuses)
+    for (const path of gamePaths) {
+      const s = updated[path];
+      if (s && (s.status || s.playing || s.backlog)) statuses.set(path, s);
+      else statuses.delete(path);
+    }
+    // La gamelist ya lleva el «completed» nuevo: se copia a los juegos en memoria, para que
+    // un guardado del editor no lo pise con el valor viejo (misma regla que game_status.rs)
+    const done = (p: string) => ["finished", "completed"].includes(statuses.get(p)?.status ?? "");
+    const touched = new Set(gamePaths);
+    const fix = (g: Game): Game => {
+      if (!touched.has(g.path)) return g;
+      const completed = done(g.path) ? "true" : g.completed === undefined ? undefined : "false";
+      return completed === g.completed ? g : { ...g, completed };
+    };
+    const { games, selectedGame } = get();
+    set({ statuses, games: games.map(fix), selectedGame: selectedGame ? fix(selectedGame) : null });
+  },
   setDatMarks: (marks) => set({ datMarks: marks }),
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
