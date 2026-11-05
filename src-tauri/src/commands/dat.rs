@@ -348,6 +348,26 @@ pub fn names_by_content(app: &tauri::AppHandle, system: &SystemRef, rom_paths: &
         .collect())
 }
 
+/// Para «Mejor versión»: grupo de cada juego según el DAT (el original para los clones, el propio
+/// nombre para los originales), en minúsculas. Por contenido si su huella está en caché; si no,
+/// por nombre. Los juegos que el DAT no reconoce no salen. Vacío si el sistema no tiene DAT.
+pub fn version_groups(app: &tauri::AppHandle, system: &SystemRef, games: &[Game]) -> Result<HashMap<String, String>, String> {
+    let Some(dat) = load_dat(app, &system.name)? else { return Ok(HashMap::new()) };
+    let roms: Vec<PathBuf> = games.iter().map(|g| system.rom_dir.join(g.path.strip_prefix("./").unwrap_or(&g.path))).collect();
+    let crcs = cached_crcs(app, &roms)?;
+    let by_name: HashMap<String, &DatGame> = dat.games.iter().map(|g| (g.name.to_lowercase(), g)).collect();
+    let by_crc = crc_index(&dat);
+    Ok(games
+        .iter()
+        .zip(roms.iter())
+        .filter_map(|(game, rom)| {
+            let key = match_key(&game.path);
+            let entry = crcs.get(rom).and_then(|crc| pick_by_crc(&by_crc, crc, &key)).or_else(|| by_name.get(&key).copied())?;
+            Some((game.path.clone(), entry.cloneof.clone().unwrap_or_else(|| entry.name.clone()).to_lowercase()))
+        })
+        .collect())
+}
+
 /// CRC → juegos del DAT que tienen una ROM con ese CRC
 fn crc_index(dat: &Dat) -> HashMap<&str, Vec<&DatGame>> {
     let mut index: HashMap<&str, Vec<&DatGame>> = HashMap::new();

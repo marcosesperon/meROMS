@@ -32,6 +32,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
   field and every media type.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace, "The X" <->
   "X, The", and translate descriptions with DeepL (your own free key).
+- **Best version**: keep one version of each game (your region and language, no betas or bad
+  dumps, newest revision) and hide, move or trash the others.
 - **Move to...** another system or a subfolder: ROM, disc files, media, gamelist entry and
   collections go together (Classic and ES-DE).
 

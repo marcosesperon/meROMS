@@ -11,6 +11,7 @@ import { UnusedMediaModal } from "./components/common/UnusedMediaModal";
 import { RenameModal } from "./components/common/RenameModal";
 import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
+import { BestVersionModal } from "./components/common/BestVersionModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
@@ -66,6 +67,7 @@ function App() {
   const [showBackupsModal, setShowBackupsModal] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
+  const [showBestVersion, setShowBestVersion] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
   const [showNewRomsModal, setShowNewRomsModal] = useState(false);
@@ -289,6 +291,7 @@ function App() {
                   { label: t("mediaKinds.reviewButton"), onClick: () => setShowMediaReview(true) },
                   { label: t("mediaKinds.swapButton"), onClick: () => setShowMediaSwap(true) },
                   { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
+                  { label: t("best.button"), onClick: () => setShowBestVersion(true) },
                   { label: t("dat.button"), onClick: () => setShowDat(true), separatorBefore: true },
                   { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
@@ -437,6 +440,16 @@ function App() {
         open={showExportModal}
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowExportModal(false)}
+      />
+
+      <BestVersionModal
+        open={showBestVersion}
+        systemPath={selectedSystem?.path || ""}
+        onClose={() => setShowBestVersion(false)}
+        onDone={() => {
+          if (selectedSystem) loadGames(selectedSystem.path);
+          useAppStore.getState().loadSystems();
+        }}
       />
 
       <DuplicatesModal

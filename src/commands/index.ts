@@ -421,6 +421,27 @@ export async function forgetPlaceholders(): Promise<void> {
   return invoke("forget_placeholders");
 }
 
+/** One version of a game in "Best version" (tags read from the file name) */
+export interface GameVersion {
+  game_path: string;
+  name: string;
+  file: string;
+  tags: { regions: string[]; languages: string[]; revision: number; unwanted: boolean; verified: boolean };
+  chosen: boolean;
+}
+
+/** Versions of one game with the proposed one; reason: not_unwanted | region | language | revision | verified | shortest */
+export interface VersionGroup {
+  title: string;
+  reason: string;
+  versions: GameVersion[];
+}
+
+/** Groups of versions of the same game (by DAT if any, else by name) with the preferred one proposed */
+export async function bestVersions(systemPath: string): Promise<VersionGroup[]> {
+  return invoke("best_versions", { systemPath });
+}
+
 /** Translate texts with DeepL to the app language ("es" | "en"); text null = already in that language */
 export async function translateTexts(texts: string[], target: string): Promise<{ text: string | null }[]> {
   return invoke("translate_texts", { texts, target });

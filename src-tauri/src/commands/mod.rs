@@ -1,4 +1,5 @@
 pub mod backup;
+pub mod best_version;
 pub mod cleanup;
 pub mod dat;
 pub mod collections;
