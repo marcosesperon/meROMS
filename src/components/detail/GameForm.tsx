@@ -10,6 +10,9 @@ interface GameFormProps {
   onRenameRom?: () => void;
   /** "Move to...": another system or subfolder */
   onMoveRom?: () => void;
+  /** Translate the description (DeepL); missing = no key */
+  onTranslateDesc?: () => void;
+  translating?: boolean;
 }
 
 type FieldType = "text" | "textarea" | "number" | "toggle";
@@ -48,7 +51,7 @@ const MAIN_FIELDS: FieldDef[] = [
   { key: "hash", labelKey: "form.hash" },
 ];
 
-export function GameForm({ game, onChange, onRenameRom, onMoveRom }: GameFormProps) {
+export function GameForm({ game, onChange, onRenameRom, onMoveRom, onTranslateDesc, translating }: GameFormProps) {
   const { t } = useTranslation();
 
   function getValue(field: FieldDef): string {
@@ -105,9 +108,20 @@ export function GameForm({ game, onChange, onRenameRom, onMoveRom }: GameFormPro
       {/* Main fields */}
       {MAIN_FIELDS.map((field) => (
         <div key={field.key}>
-          <label className="text-xs text-zinc-400 mb-1 block">
-            {t(field.labelKey)}
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs text-zinc-400 block">{t(field.labelKey)}</label>
+            {/* Traducir la descripción al idioma de la app (rellena el campo, sin guardar) */}
+            {field.key === "desc" && onTranslateDesc && game.desc?.trim() && (
+              <button
+                type="button"
+                onClick={onTranslateDesc}
+                disabled={translating}
+                className="px-2 py-0.5 text-[11px] bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50"
+              >
+                {translating ? "..." : t("translate.button")}
+              </button>
+            )}
+          </div>
           {field.type === "textarea" ? (
             <textarea
               value={getValue(field)}

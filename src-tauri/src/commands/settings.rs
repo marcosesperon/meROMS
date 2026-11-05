@@ -28,6 +28,8 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
     if settings.migrate_legacy() {
         save_settings(app, settings.clone())?;
     }
+    // Las escrituras de gamelist no reciben los ajustes: el orden se les deja a mano
+    super::gamelist::set_sort(settings.gamelist_sort.as_deref());
     Ok(settings)
 }
 
@@ -37,7 +39,9 @@ pub fn save_settings(app: tauri::AppHandle, settings: AppSettings) -> Result<(),
     let content = serde_json::to_string_pretty(&settings)
         .map_err(|e| format!("Failed to serialize settings: {}", e))?;
     fs::write(&path, content)
-        .map_err(|e| format!("Failed to write settings: {}", e))
+        .map_err(|e| format!("Failed to write settings: {}", e))?;
+    super::gamelist::set_sort(settings.gamelist_sort.as_deref());
+    Ok(())
 }
 
 #[tauri::command]

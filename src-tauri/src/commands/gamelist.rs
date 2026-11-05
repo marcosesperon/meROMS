@@ -55,6 +55,37 @@ pub fn write_gamelist_no_backup(layout: &Layout, system: &SystemRef, gamelist: &
     write_gamelist_file(layout, system, gamelist, original_xml.as_deref())
 }
 
+/// Orden de los juegos al escribir una gamelist (Ajustes → «Ordenar la gamelist al guardar»).
+/// Las escrituras no reciben los ajustes, así que se fija al leerlos o guardarlos.
+static SORT: std::sync::Mutex<Option<GamelistSort>> = std::sync::Mutex::new(None);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GamelistSort {
+    Name,
+    Path,
+}
+
+pub fn set_sort(sort: Option<&str>) {
+    let value = match sort {
+        Some("name") => Some(GamelistSort::Name),
+        Some("path") => Some(GamelistSort::Path),
+        _ => None,
+    };
+    if let Ok(mut s) = SORT.lock() {
+        *s = value;
+    }
+}
+
+/// Ordena juegos y carpetas: por nombre (sin mayúsculas; sin nombre, por fichero) o por ruta
+pub fn sort_gamelist(gamelist: &mut GameList, sort: GamelistSort) {
+    let key = |name: &Option<String>, path: &str| match sort {
+        GamelistSort::Name => name.as_deref().filter(|n| !n.trim().is_empty()).unwrap_or(path).to_lowercase(),
+        GamelistSort::Path => path.to_lowercase(),
+    };
+    gamelist.games.sort_by_cached_key(|g| (key(&g.name, &g.path), g.path.to_lowercase()));
+    gamelist.folders.sort_by_cached_key(|f| (key(&f.name, &f.path), f.path.to_lowercase()));
+}
+
 /// Writes the XML through a temporary file renamed over the real one, so a crash halfway
 /// leaves either the old gamelist or the new one, never half a file.
 fn write_gamelist_file(
@@ -69,6 +100,9 @@ fn write_gamelist_file(
     }
 
     let mut to_write = gamelist.clone();
+    if let Some(sort) = SORT.lock().ok().and_then(|s| *s) {
+        sort_gamelist(&mut to_write, sort);
+    }
     if !layout.writes_media_tags() {
         to_write.games.iter_mut().for_each(media::clear_media_fields);
         for folder in &mut to_write.folders {
@@ -351,5 +385,24 @@ mod tests {
         assert!(!dir.join("gamelist.xml.tmp").exists(), "the temporary file is renamed away");
         let on_disk = fs::read_to_string(dir.join("gamelist.xml")).unwrap();
         assert!(on_disk.contains("<name>Dos</name>"));
+    }
+
+    #[test]
+    fn sorts_by_name_or_by_file() {
+        let mut gl = GameList {
+            games: vec![
+                Game { path: "./b.sfc".into(), name: Some("zelda".into()), ..Default::default() },
+                Game { path: "./c.sfc".into(), name: None, ..Default::default() },
+                Game { path: "./a.sfc".into(), name: Some("Mario".into()), ..Default::default() },
+            ],
+            ..Default::default()
+        };
+        sort_gamelist(&mut gl, GamelistSort::Name);
+        let paths: Vec<&str> = gl.games.iter().map(|g| g.path.as_str()).collect();
+        // Sin nombre cuenta el fichero («./c.sfc» va antes que «mario»)
+        assert_eq!(paths, vec!["./c.sfc", "./a.sfc", "./b.sfc"]);
+        sort_gamelist(&mut gl, GamelistSort::Path);
+        let paths: Vec<&str> = gl.games.iter().map(|g| g.path.as_str()).collect();
+        assert_eq!(paths, vec!["./a.sfc", "./b.sfc", "./c.sfc"]);
     }
 }

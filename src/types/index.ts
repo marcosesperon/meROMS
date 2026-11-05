@@ -157,6 +157,10 @@ export interface AppSettings {
   check_updates?: boolean;
   ss_languages?: string[];
   tgdb_apikey?: string;
+  /** DeepL API key, to translate descriptions */
+  deepl_apikey?: string;
+  /** Order of the games when a gamelist is written (missing = as they are) */
+  gamelist_sort?: "name" | "path";
   media_paths?: MediaPathConfig[];
   grid_media_field?: string;
   /** App language: "es", "en", etc. */

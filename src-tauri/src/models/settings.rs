@@ -58,6 +58,12 @@ pub struct AppSettings {
     // Look for a new version at start and once a day (None = yes)
     #[serde(default)]
     pub check_updates: Option<bool>,
+    // Order of the <game> entries when a gamelist is written: "name" | "path" (None = as they are)
+    #[serde(default)]
+    pub gamelist_sort: Option<String>,
+    // DeepL API key (the free plan works) to translate descriptions
+    #[serde(default)]
+    pub deepl_apikey: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration

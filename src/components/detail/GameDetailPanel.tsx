@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
-import { useTranslation } from "../../i18n";
+import { useTranslation, useI18nStore } from "../../i18n";
 import { GameForm } from "./GameForm";
 import { ImageManager } from "./ImageManager";
-import { saveGamelist, removeGame, swapMedia } from "../../commands";
+import { saveGamelist, removeGame, swapMedia, translateTexts } from "../../commands";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { CloseIcon } from "../common/Icons";
 import { RenameGameModal } from "../common/RenameGameModal";
@@ -167,6 +167,24 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     }
   }
 
+  // Traducir la descripción con DeepL al idioma de la app: rellena el formulario, sin guardar
+  const deeplKey = useAppStore((s) => !!s.settings.deepl_apikey?.trim());
+  const locale = useI18nStore((s) => s.locale);
+  const [translating, setTranslating] = useState(false);
+  async function handleTranslateDesc() {
+    if (!editedGame.desc?.trim()) return;
+    setTranslating(true);
+    try {
+      const [result] = await translateTexts([editedGame.desc], locale);
+      if (result?.text) setEditedGame((g) => ({ ...g, desc: result.text ?? g.desc }));
+      else await showMessage(t("translate.already"));
+    } catch (e) {
+      await showMessage(t("translate.failed", { error: String(e) }), "error");
+    } finally {
+      setTranslating(false);
+    }
+  }
+
   // Scrapear abre la búsqueda manual; lo elegido rellena el formulario sin guardar (como antes)
   function handleScrape() {
     if (!selectedSystem || !editedGame.path) return;
@@ -244,6 +262,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
             onChange={handleFieldChange}
             onRenameRom={!isNewGame ? () => runTool("rename") : undefined}
             onMoveRom={!isNewGame ? () => runTool("move") : undefined}
+            onTranslateDesc={deeplKey ? handleTranslateDesc : undefined}
+            translating={translating}
           />
           </div>
         </div>

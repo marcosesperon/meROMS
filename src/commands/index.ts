@@ -421,6 +421,11 @@ export async function forgetPlaceholders(): Promise<void> {
   return invoke("forget_placeholders");
 }
 
+/** Translate texts with DeepL to the app language ("es" | "en"); text null = already in that language */
+export async function translateTexts(texts: string[], target: string): Promise<{ text: string | null }[]> {
+  return invoke("translate_texts", { texts, target });
+}
+
 /** ROM subfolders of a system (relative, with "/"), for "Move to..." */
 export async function listSubfolders(systemPath: string): Promise<string[]> {
   return invoke("list_subfolders", { systemPath });

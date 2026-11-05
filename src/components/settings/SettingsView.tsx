@@ -21,7 +21,9 @@ import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
 import { getScrapeOrder, getScrapePolicy } from "../../commands";
 import { ScrapeOrderEditor } from "./ScrapeOrderEditor";
 import { MigrationModal } from "../common/MigrationModal";
-import type { Profile } from "../../types";
+import type { AppSettings, Profile } from "../../types";
+
+type AppSettingsSort = AppSettings["gamelist_sort"];
 
 type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems" | "about";
 
@@ -399,6 +401,36 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 <p className="text-xs text-zinc-500 mt-2">
                   {t("settings.gridMediaHelp")}
                 </p>
+              </section>
+
+              {/* Order of the games when a gamelist is written */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("settings.gamelistSort")}</h3>
+                <select
+                  value={form.gamelist_sort ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, gamelist_sort: (e.target.value || undefined) as AppSettingsSort })
+                  }
+                  className="w-full max-w-xs bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="">{t("settings.gamelistSortNone")}</option>
+                  <option value="name">{t("settings.gamelistSortName")}</option>
+                  <option value="path">{t("settings.gamelistSortPath")}</option>
+                </select>
+                <p className="text-xs text-zinc-500 mt-2">{t("settings.gamelistSortHelp")}</p>
+              </section>
+
+              {/* DeepL key to translate descriptions */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("translate.settingsTitle")}</h3>
+                <input
+                  type="text"
+                  value={form.deepl_apikey || ""}
+                  onChange={(e) => setForm({ ...form, deepl_apikey: e.target.value || undefined })}
+                  placeholder="DeepL API key"
+                  className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                />
+                <p className="text-xs text-zinc-500 mt-2">{t("translate.settingsHelp")}</p>
               </section>
             </>
           )}

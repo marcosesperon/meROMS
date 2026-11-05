@@ -138,13 +138,15 @@ fn split_inside(system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<Stri
 }
 
 /// Ficheros de la carpeta del sistema (y subcarpetas) que pueden ser ROMs: sin carpetas de
-/// medios ni ocultas, sin extensiones que no son ROMs y sin los discos que ya usa un .m3u.
+/// medios ni ocultas, sin extensiones que no son ROMs y sin los ficheros que ya usa otro
+/// (discos de un .m3u, .bin de un .cue, pistas de un .gdi).
 /// También lo usa la herramienta DAT («ficheros que no están en el DAT»).
 pub(super) fn rom_files(system: &SystemRef) -> Vec<PathBuf> {
     let mut files = Vec::new();
     collect_files(&system.rom_dir, &skipped_dirs(), &mut files);
-    // Los discos que ya usa un .m3u no son juegos sueltos
-    let in_playlists = m3u_entries(&files);
+    // Los ficheros que usa otro (discos de un .m3u, .bin de un .cue, pistas de un .gdi) no
+    // son juegos sueltos
+    let in_playlists = used_by_others(&files);
     files
         .into_iter()
         .filter(|f| !in_playlists.contains(f))
@@ -215,16 +217,13 @@ fn collect_files(dir: &Path, skipped_dirs: &HashSet<String>, out: &mut Vec<PathB
     }
 }
 
-/// Ficheros a los que apunta algún .m3u (rutas relativas a la carpeta del .m3u).
-fn m3u_entries(files: &[PathBuf]) -> HashSet<PathBuf> {
-    let mut used = HashSet::new();
-    for m3u in files.iter().filter(|f| f.extension().is_some_and(|e| e.eq_ignore_ascii_case("m3u"))) {
-        let (Ok(content), Some(dir)) = (fs::read_to_string(m3u), m3u.parent()) else { continue };
-        for line in content.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')) {
-            used.insert(dir.join(line));
-        }
-    }
-    used
+/// Ficheros a los que apunta algún .m3u, .cue o .gdi (y los .bin de los .cue de un .m3u)
+fn used_by_others(files: &[PathBuf]) -> HashSet<PathBuf> {
+    files
+        .iter()
+        .filter(|f| matches!(media::extension_lower(f).as_deref(), Some("m3u" | "cue" | "gdi")))
+        .flat_map(|f| super::move_games::companion_files(f))
+        .collect()
 }
 
 /// Añade las entradas que aún no estén en la gamelist. En clásica enlaza los medios que ya
@@ -365,6 +364,21 @@ mod tests {
         let found = find_new_roms(&system, &[], &rules());
         let paths: Vec<_> = found.iter().map(|r| r.path.as_str()).collect();
         assert_eq!(paths, vec!["./Juego.m3u"]);
+    }
+
+    #[test]
+    fn los_bin_de_un_cue_y_las_pistas_de_un_gdi_no_se_ofrecen_sueltos() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("psx"));
+        touch(&system.rom_dir.join("Juego.cue"), "FILE \"Juego (Track 1).bin\" BINARY\nFILE \"Juego (Track 2).bin\" BINARY\n");
+        touch(&system.rom_dir.join("Juego (Track 1).bin"), "");
+        touch(&system.rom_dir.join("Juego (Track 2).bin"), "");
+        touch(&system.rom_dir.join("Otro.gdi"), "1\n1 0 4 2352 track01.bin 0\n");
+        touch(&system.rom_dir.join("track01.bin"), "");
+
+        let found = find_new_roms(&system, &[], &rules());
+        let paths: Vec<_> = found.iter().map(|r| r.path.as_str()).collect();
+        assert_eq!(paths, vec!["./Juego.cue", "./Otro.gdi"]);
     }
 
     #[test]

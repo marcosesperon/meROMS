@@ -24,6 +24,7 @@ pub mod scraper_launchbox;
 pub mod scraper_tgdb;
 pub mod settings;
 pub mod systems;
+pub mod translate;
 
 use crate::layout::{Layout, SystemRef};
 
