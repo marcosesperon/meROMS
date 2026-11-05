@@ -64,6 +64,9 @@ pub struct AppSettings {
     // DeepL API key (the free plan works) to translate descriptions
     #[serde(default)]
     pub deepl_apikey: Option<String>,
+    // «Export to device»: destinations used, each with its selection (managed by the UI)
+    #[serde(default)]
+    pub export_targets: Option<Vec<serde_json::Value>>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration

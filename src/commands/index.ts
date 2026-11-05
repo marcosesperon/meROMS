@@ -421,6 +421,58 @@ export async function forgetPlaceholders(): Promise<void> {
   return invoke("forget_placeholders");
 }
 
+/** "Export to device": what is exported and where */
+export interface ExportOptions {
+  dest: string;
+  /** ROM folders of the systems */
+  systems: string[];
+  games: "all" | "favorites" | "visible";
+  /** Media type folders to copy (covers, videos...) */
+  media: string[];
+  remove_extra: boolean;
+}
+
+export interface ExportPreview {
+  copy_files: number;
+  copy_bytes: number;
+  up_to_date: number;
+  remove_files: number;
+  remove_sample: string[];
+  games: number;
+}
+
+export interface DeviceChange {
+  system_path: string;
+  system: string;
+  game_path: string;
+  name: string;
+  field: "favorite" | "hidden" | "playcount" | "lastplayed" | "gametime";
+  from: string | null;
+  to: string | null;
+}
+
+export async function planExport(options: ExportOptions): Promise<ExportPreview> {
+  return invoke("plan_export", { options });
+}
+
+/** Copies the selection (emits export-progress); cancelExport stops it between files */
+export async function runExport(options: ExportOptions): Promise<{ copied: number; removed: number; failed: string[]; stopped: boolean }> {
+  return invoke("run_export", { options });
+}
+
+export async function cancelExport(): Promise<void> {
+  return invoke("cancel_export");
+}
+
+/** What changed in the destination (favourite, hidden, play stats) */
+export async function pullChanges(dest: string, systems: string[]): Promise<DeviceChange[]> {
+  return invoke("pull_changes", { dest, systems });
+}
+
+export async function applyPull(changes: DeviceChange[]): Promise<number> {
+  return invoke("apply_pull", { changes });
+}
+
 /** One version of a game in "Best version" (tags read from the file name) */
 export interface GameVersion {
   game_path: string;

@@ -6,7 +6,7 @@ mod parser;
 mod rename_rules;
 mod rom_hash;
 
-use commands::{backup, best_version, cleanup, collections, dat, duplicates, export, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate};
+use commands::{backup, best_version, cleanup, collections, dat, duplicates, export, export_device, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -102,6 +102,11 @@ pub fn run() {
             rename::rename_roms,
             translate::translate_texts,
             best_version::best_versions,
+            export_device::plan_export,
+            export_device::run_export,
+            export_device::cancel_export,
+            export_device::pull_changes,
+            export_device::apply_pull,
             move_games::list_subfolders,
             move_games::move_games,
             rename::check_rename_target,

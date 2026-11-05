@@ -12,6 +12,7 @@ import { RenameModal } from "./components/common/RenameModal";
 import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
 import { BestVersionModal } from "./components/common/BestVersionModal";
+import { ExportDeviceModal } from "./components/common/ExportDeviceModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
 import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
@@ -68,6 +69,7 @@ function App() {
   const [showExportModal, setShowExportModal] = useState(false);
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showBestVersion, setShowBestVersion] = useState(false);
+  const [showExportDevice, setShowExportDevice] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
   const [showNewRomsModal, setShowNewRomsModal] = useState(false);
@@ -296,6 +298,7 @@ function App() {
                   { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
+                  { label: t("exportDevice.button"), onClick: () => setShowExportDevice(true) },
                 ]}
               />
               {hasCredentials && (
@@ -441,6 +444,8 @@ function App() {
         systemPath={selectedSystem?.path || ""}
         onClose={() => setShowExportModal(false)}
       />
+
+      <ExportDeviceModal open={showExportDevice} onClose={() => setShowExportDevice(false)} />
 
       <BestVersionModal
         open={showBestVersion}

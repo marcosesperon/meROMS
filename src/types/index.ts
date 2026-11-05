@@ -157,6 +157,8 @@ export interface AppSettings {
   check_updates?: boolean;
   ss_languages?: string[];
   tgdb_apikey?: string;
+  /** "Export to device": destinations used, with their selection */
+  export_targets?: { dest: string; systems: string[]; games: "all" | "favorites" | "visible"; media: string[]; remove_extra: boolean }[];
   /** DeepL API key, to translate descriptions */
   deepl_apikey?: string;
   /** Order of the games when a gamelist is written (missing = as they are) */

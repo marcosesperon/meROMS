@@ -5,6 +5,7 @@ pub mod dat;
 pub mod collections;
 pub mod duplicates;
 pub mod export;
+pub mod export_device;
 pub mod gamelist;
 pub mod rename;
 pub mod rules;
