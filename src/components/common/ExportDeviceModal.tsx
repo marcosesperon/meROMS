@@ -16,6 +16,7 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { formatBytes } from "../../utils/format";
 
 interface ExportDeviceModalProps {
   open: boolean;
@@ -48,8 +49,7 @@ const FIELD_LABEL: Record<DeviceChange["field"], TranslationKeys> = {
 
 type Progress = { current: number; total: number; bytes: number; total_bytes: number; file: string };
 
-const size = (bytes: number) =>
-  bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : bytes >= 1024 ** 2 ? `${(bytes / 1024 ** 2).toFixed(0)} MB` : `${Math.ceil(bytes / 1024)} KB`;
+const size = formatBytes;
 
 /**
  * «Exportar a dispositivo»: copia sistemas, juegos y media elegidos a una carpeta (SD, USB…)

@@ -32,7 +32,8 @@ pub struct ExportOptions {
 }
 
 /// Estructura del destino: la misma que la del perfil. ES-DE: <destino>/ROMs y <destino>/ES-DE.
-fn dest_layout(layout: &Layout, dest: &Path) -> (Layout, PathBuf) {
+/// También la usa «Comparar con otra carpeta».
+pub(crate) fn dest_layout(layout: &Layout, dest: &Path) -> (Layout, PathBuf) {
     match layout {
         Layout::Classic => (Layout::Classic, dest.to_path_buf()),
         Layout::Esde(_) => {
@@ -51,9 +52,14 @@ fn wanted(game: &Game, filter: &str) -> bool {
     }
 }
 
-/// Todos los ficheros de una carpeta (una ROM que es carpeta, p. ej. «Juego.ps3»)
-fn files_in(dir: &Path) -> Vec<PathBuf> {
-    media::list_files_recursive(dir)
+/// Los ficheros de un juego: la ROM con sus acompañantes (.bin de un .cue, discos de un .m3u…)
+/// o, si la ROM es una carpeta (p. ej. «Juego.ps3»), todo lo que hay dentro
+pub(crate) fn rom_files(rom: &Path) -> Vec<PathBuf> {
+    if rom.is_dir() {
+        media::list_files_recursive(rom)
+    } else {
+        std::iter::once(rom.to_path_buf()).chain(super::move_games::companion_files(rom)).collect()
+    }
 }
 
 /// ¿Hay que copiarlo? Si falta, si cambia el tamaño o si el original es más nuevo
@@ -92,12 +98,7 @@ fn plan_system(layout: &Layout, dst_layout: &Layout, src: &SystemRef, dst: Syste
             continue; // sin ROM no se exporta
         }
         let is_dir = rom.is_dir();
-        let rom_files: Vec<PathBuf> = if is_dir {
-            files_in(&rom)
-        } else {
-            std::iter::once(rom.clone()).chain(super::move_games::companion_files(&rom)).collect()
-        };
-        for file in rom_files {
+        for file in rom_files(&rom) {
             if let Ok(rel) = file.strip_prefix(&src.rom_dir) {
                 pairs.push((file.clone(), dst.rom_dir.join(rel)));
             }

@@ -14,6 +14,7 @@ import { ExportModal } from "./components/common/ExportModal";
 import { runUndo } from "./utils/undo";
 import { BestVersionModal } from "./components/common/BestVersionModal";
 import { ExportDeviceModal } from "./components/common/ExportDeviceModal";
+import { CompareModal } from "./components/common/CompareModal";
 import { BiosModal } from "./components/common/BiosModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
@@ -72,6 +73,7 @@ function App() {
   const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
   const [showBestVersion, setShowBestVersion] = useState(false);
   const [showExportDevice, setShowExportDevice] = useState(false);
+  const [showCompare, setShowCompare] = useState(false);
   const [showBios, setShowBios] = useState(false);
   const [showCollectionsModal, setShowCollectionsModal] = useState(false);
   const [showNormalizeModal, setShowNormalizeModal] = useState(false);
@@ -308,6 +310,7 @@ function App() {
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
                   { label: t("exportDevice.button"), onClick: () => setShowExportDevice(true) },
+                  { label: t("compare.button"), onClick: () => setShowCompare(true) },
                 ]}
               />
               {hasCredentials && (
@@ -455,6 +458,7 @@ function App() {
       />
 
       <ExportDeviceModal open={showExportDevice} onClose={() => setShowExportDevice(false)} />
+      <CompareModal open={showCompare} onClose={() => setShowCompare(false)} />
 
       <BiosModal open={showBios} onClose={() => setShowBios(false)} />
 

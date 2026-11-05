@@ -70,6 +70,9 @@ pub struct AppSettings {
     // «Export to device»: destinations used, each with its selection (managed by the UI)
     #[serde(default)]
     pub export_targets: Option<Vec<serde_json::Value>>,
+    // «Compare with another folder»: the last folder compared
+    #[serde(default)]
+    pub compare_dest: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration

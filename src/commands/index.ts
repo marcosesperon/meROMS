@@ -473,6 +473,51 @@ export async function applyPull(changes: DeviceChange[]): Promise<number> {
   return invoke("apply_pull", { changes });
 }
 
+/** "Compare with another folder": one side of a game (size of all its files, newest date) */
+export interface CompareSide {
+  size: number;
+  modified: number;
+  files: number;
+}
+
+export interface CompareGame {
+  path: string;
+  name: string;
+  here: CompareSide | null;
+  there: CompareSide | null;
+}
+
+export interface SystemCompare {
+  system: string;
+  only_here: CompareGame[];
+  only_there: CompareGame[];
+  different: CompareGame[];
+  same: number;
+}
+
+/** A game copied to the other folder ("there") or into the library ("here") */
+export interface CompareAction {
+  system: string;
+  game_path: string;
+  to: "here" | "there";
+}
+
+/** Compares the library with `dest` (emits compare-progress; cancelCompare stops it) */
+export async function compareFolders(dest: string, checkCrc: boolean): Promise<{ systems: SystemCompare[] }> {
+  return invoke("compare_folders", { dest, checkCrc });
+}
+
+export async function applyCompare(
+  dest: string,
+  actions: CompareAction[],
+): Promise<{ to_there: number; to_here: number; replaced: number; failed: string[]; stopped: boolean }> {
+  return invoke("apply_compare", { dest, actions });
+}
+
+export async function cancelCompare(): Promise<void> {
+  return invoke("cancel_compare");
+}
+
 /** BIOS list (libretro System.dat) downloaded in Settings */
 export interface BiosListStatus {
   downloaded: boolean;

@@ -4,6 +4,7 @@ pub mod bios;
 pub mod cleanup;
 pub mod dat;
 pub mod collections;
+pub mod compare;
 pub mod duplicates;
 pub mod export;
 pub mod export_device;

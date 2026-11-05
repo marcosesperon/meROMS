@@ -21,3 +21,10 @@ export function toESDate(dateStr: string): string {
   if (cleaned.length === 8) return `${cleaned}T000000`;
   return cleaned;
 }
+
+/** Bytes as KB / MB / GB (sizes of copies) */
+export function formatBytes(bytes: number): string {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
+  return `${Math.ceil(bytes / 1024)} KB`;
+}
