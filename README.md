@@ -32,6 +32,8 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
   field and every media type.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace, "The X" <->
   "X, The", and translate descriptions with DeepL (your own free key).
+- **Undo** the last rename, move, media normalization or media swap: files, gamelists,
+  collections and playlists go back, keeping later edits.
 - **Export to device**: copy chosen systems (all games, favourites or all but hidden) and media
   types to an SD card, USB or network folder, only what's new or changed; bring favourites and
   play stats back from it.

@@ -162,6 +162,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
       }
       bumpMediaVersion();
       await refreshGame(selectedGame.path);
+      // Queda en Herramientas → «Deshacer»
+      useAppStore.getState().refreshUndo();
     } catch (e) {
       await showMessage(t("mediaKinds.failed", { error: String(e) }), "error");
     }

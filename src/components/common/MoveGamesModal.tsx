@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { listSubfolders, moveGames } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface MoveGamesModalProps {
   /** ROM folder of the system the games are in */
@@ -59,7 +60,7 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
       if (result.skipped.length > 0) {
         lines.push("", t("move.skipped", { count: result.skipped.length }), ...result.skipped);
       }
-      await showMessage(lines.join("\n"), result.skipped.length > 0 ? "error" : "info");
+      await reportWithUndo(lines.join("\n"));
       onDone();
       onClose();
     } catch (e) {

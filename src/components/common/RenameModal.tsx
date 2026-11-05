@@ -5,6 +5,7 @@ import type { RenameEntry, RenameSource } from "../../types";
 import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface RenameModalProps {
   open: boolean;
@@ -98,7 +99,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       if (result.skipped.length > 0) {
         message += "\n\n" + t("rename.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      await showMessage(message);
+      await reportWithUndo(message);
       onClose();
     } catch (e) {
       await showMessage(t("rename.failed", { error: String(e) }), "error");

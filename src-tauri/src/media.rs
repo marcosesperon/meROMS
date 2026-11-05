@@ -294,11 +294,56 @@ pub fn rename_rom_media(
                 let _ = fs::create_dir_all(dir);
             }
             if fs::rename(&old, &new).is_ok() {
+                journal_move(&old, &new);
                 moved.push((old, new));
             }
         }
     }
     moved
+}
+
+// ---------- Diario para «Deshacer» ----------
+
+/// Un paso de ficheros que se puede deshacer
+#[derive(Debug, Clone, PartialEq)]
+pub enum Journaled {
+    /// Movido de .0 a .1
+    Moved(PathBuf, PathBuf),
+    /// Copia nueva (al deshacer se borra)
+    Copied(PathBuf),
+}
+
+// Mientras una operación deshacible está en marcha, aquí se apunta cada paso (None = no se
+// apunta). Es por hilo: cada comando de Tauri corre entero en el suyo, y así dos cosas a la
+// vez (o los tests en paralelo) no se mezclan.
+thread_local! {
+    static JOURNAL: std::cell::RefCell<Option<Vec<Journaled>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Empieza a apuntar los movimientos de ficheros (Renombrar, Mover, Normalizar, Intercambiar)
+pub fn journal_begin() {
+    JOURNAL.with(|j| *j.borrow_mut() = Some(Vec::new()));
+}
+
+/// Deja de apuntar y devuelve lo apuntado
+pub fn journal_take() -> Vec<Journaled> {
+    JOURNAL.with(|j| j.borrow_mut().take()).unwrap_or_default()
+}
+
+fn journal_push(step: Journaled) {
+    JOURNAL.with(|j| {
+        if let Some(list) = j.borrow_mut().as_mut() {
+            list.push(step);
+        }
+    });
+}
+
+pub fn journal_move(from: &Path, to: &Path) {
+    journal_push(Journaled::Moved(from.to_path_buf(), to.to_path_buf()));
+}
+
+pub fn journal_copy(dest: &Path) {
+    journal_push(Journaled::Copied(dest.to_path_buf()));
 }
 
 /// Mueve un fichero creando las carpetas que falten. Si es a otro disco (rename falla),
@@ -311,10 +356,13 @@ pub fn move_file(from: &Path, to: &Path) -> Result<(), String> {
         fs::create_dir_all(dir).map_err(|e| format!("Failed to create {}: {}", dir.display(), e))?;
     }
     if fs::rename(from, to).is_ok() {
+        journal_move(from, to);
         return Ok(());
     }
     fs::copy(from, to).map_err(|e| format!("Failed to copy {}: {}", from.display(), e))?;
-    fs::remove_file(from).map_err(|e| format!("Failed to remove {}: {}", from.display(), e))
+    fs::remove_file(from).map_err(|e| format!("Failed to remove {}: {}", from.display(), e))?;
+    journal_move(from, to);
+    Ok(())
 }
 
 /// Manda varios ficheros a la papelera en una sola operación (en macOS suena una vez, no una

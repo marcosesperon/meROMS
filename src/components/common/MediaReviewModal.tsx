@@ -4,6 +4,7 @@ import { detectSwappedMedia, swapMedia } from "../../commands";
 import type { DetectResult, MediaFileInfo, MediaProfile, SwapProposal } from "../../types";
 import { resolveImageSrc } from "../../utils/images";
 import { showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface MediaReviewModalProps {
   open: boolean;
@@ -65,7 +66,7 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
       if (result.skipped.length > 0) {
         message += "\n\n" + t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      await showMessage(message);
+      await reportWithUndo(message);
       onClose();
       onDone();
     } catch (e) {

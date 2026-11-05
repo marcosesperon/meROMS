@@ -76,11 +76,23 @@ pub fn swap_media(
         return Ok(SwapResult::default());
     }
     let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let before = gamelist.clone();
+    media::journal_begin();
     let result = swap_in(&layout, &system, &mut gamelist.games, &game_paths, a, b);
+    let files = media::journal_take();
     // En ES-DE la gamelist no guarda rutas de medios: no hay nada que reescribir
     if result.swapped > 0 && layout.writes_media_tags() {
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     }
+    // Para «Deshacer»
+    let sys = system.rom_dir.to_string_lossy().to_string();
+    super::undo::record(super::undo::UndoOp {
+        kind: "swap".into(),
+        system: sys.clone(),
+        files,
+        games: super::undo::changes_same_paths(&sys, &before, &gamelist),
+        refs: super::undo::RefUndo::None,
+    });
     Ok(result)
 }
 

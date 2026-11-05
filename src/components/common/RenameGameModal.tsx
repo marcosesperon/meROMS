@@ -5,6 +5,7 @@ import type { RenameEntry, RenameSource } from "../../types";
 import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
 import { useDebounce } from "../../hooks/useDebounce";
 import { showMessage } from "../../utils/dialogs";
+import { useAppStore } from "../../store/useAppStore";
 
 interface RenameGameModalProps {
   open: boolean;
@@ -95,6 +96,8 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
       }
       onDone(pathWithName(entry, name));
       onClose();
+      // Queda en Herramientas → «Deshacer»
+      useAppStore.getState().refreshUndo();
     } catch (e) {
       await showMessage(t("rename.failed", { error: String(e) }), "error");
     } finally {

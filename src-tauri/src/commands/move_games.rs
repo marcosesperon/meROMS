@@ -229,7 +229,11 @@ fn move_between(
                     i != pos && media::media_fields().any(|f| media::get_field(g, f).is_some_and(|v| media::resolve_media_path(from, v) == *src))
                 });
             let ok = if shared {
-                dest.parent().map(fs::create_dir_all).is_some() && fs::copy(src, dest).is_ok()
+                let copied = dest.parent().map(fs::create_dir_all).is_some() && fs::copy(src, dest).is_ok();
+                if copied {
+                    media::journal_copy(dest);
+                }
+                copied
             } else {
                 media::move_file(src, dest).is_ok()
             };
@@ -253,7 +257,7 @@ fn move_between(
 /// Colecciones: el juego pasa a su ruta nueva.
 /// ES-DE (colecciones comunes): se reescribe la línea. Clásica (cada sistema tiene las suyas):
 /// sale del custom-X.cfg del origen y entra en el custom-X.cfg del destino.
-fn update_collections(layout: &Layout, from: &SystemRef, to: &SystemRef, moved: &[(String, String)]) {
+pub(super) fn update_collections(layout: &Layout, from: &SystemRef, to: &SystemRef, moved: &[(String, String)]) {
     if moved.is_empty() {
         return;
     }
@@ -327,13 +331,25 @@ pub fn move_games(
     let mut src_list = super::gamelist::read_gamelist(&layout, &from)?;
     let mut dst_list = if same { GameList::default() } else { super::gamelist::read_gamelist(&layout, &to)? };
 
+    let before = src_list.clone();
+    media::journal_begin();
     let (moved, skipped) = move_between(&layout, &from, &to, &mut src_list, &mut dst_list, &game_paths, &sub);
+    let files = media::journal_take();
     if !moved.is_empty() {
         super::gamelist::write_gamelist(&layout, &from, &src_list)?;
         if !same {
             super::gamelist::write_gamelist(&layout, &to, &dst_list)?;
         }
         update_collections(&layout, &from, &to, &moved);
+        // Para «Deshacer»
+        let (fs_, ts) = (from.rom_dir.to_string_lossy().to_string(), to.rom_dir.to_string_lossy().to_string());
+        super::undo::record(super::undo::UndoOp {
+            kind: "move".into(),
+            system: fs_.clone(),
+            files,
+            games: super::undo::changes_by_path(&fs_, &before, &ts, if same { &src_list } else { &dst_list }, &moved),
+            refs: super::undo::RefUndo::Move { from: fs_, to: ts, pairs: moved.clone() },
+        });
     }
     Ok(MoveResult { moved: moved.len(), skipped })
 }

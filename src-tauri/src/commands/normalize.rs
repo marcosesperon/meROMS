@@ -74,13 +74,25 @@ pub fn apply_media_normalization(
 ) -> Result<NormalizeResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let before = gamelist.clone();
+    media::journal_begin();
     let result = apply(&layout, &system, &mut gamelist.games, &items);
+    let files = media::journal_take();
     // En ES-DE la gamelist no guarda rutas de medios: reescribirla solo dejaría una copia
     // de seguridad que no sirve para nada
     if layout.writes_media_tags() {
         // write_gamelist() hace la copia de seguridad antes de escribir
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     }
+    // Para «Deshacer»
+    let sys = system.rom_dir.to_string_lossy().to_string();
+    super::undo::record(super::undo::UndoOp {
+        kind: "normalize".into(),
+        system: sys.clone(),
+        files,
+        games: super::undo::changes_same_paths(&sys, &before, &gamelist),
+        refs: super::undo::RefUndo::None,
+    });
     Ok(result)
 }
 

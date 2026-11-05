@@ -49,6 +49,9 @@ interface AppState {
   scraperStatus: commands.ScraperStatus;
   /** Ask again which scrapers can be used (after downloading or deleting the LaunchBox database) */
   refreshScraperStatus: () => void;
+  /** Last file operation that can be undone (Tools > Undo) */
+  undoInfo: commands.UndoInfo | null;
+  refreshUndo: () => Promise<void>;
   loadSettings: () => Promise<void>;
   updateSettings: (settings: AppSettings) => Promise<void>;
   /** Small UI preferences (view, columns, last system): applied now, saved a moment later */
@@ -149,6 +152,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: {},
   settingsLoaded: false,
   scraperStatus: { built_in_dev: false, screenscraper: false, tgdb: false, launchbox: false },
+  undoInfo: null,
+  refreshUndo: async () => {
+    const undoInfo = await commands.undoStatus().catch(() => null);
+    set({ undoInfo });
+  },
   refreshScraperStatus: () => {
     commands.scraperStatus().then((scraperStatus) => set({ scraperStatus })).catch(() => {});
   },

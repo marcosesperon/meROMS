@@ -11,6 +11,7 @@ import { UnusedMediaModal } from "./components/common/UnusedMediaModal";
 import { RenameModal } from "./components/common/RenameModal";
 import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
+import { runUndo } from "./utils/undo";
 import { BestVersionModal } from "./components/common/BestVersionModal";
 import { ExportDeviceModal } from "./components/common/ExportDeviceModal";
 import { DuplicatesModal } from "./components/common/DuplicatesModal";
@@ -176,6 +177,7 @@ function App() {
 
   // Developer credentials may be built into the app, so ask the backend instead of the settings
   const scraperStatus = useAppStore((s) => s.scraperStatus);
+  const undoInfo = useAppStore((s) => s.undoInfo);
   // Some source can scrape this system: an account/key, the LaunchBox database, or ArcadeItalia (arcade, no account)
   const hasCredentials =
     scraperStatus.screenscraper ||
@@ -283,7 +285,11 @@ function App() {
               <ToolsMenu
                 label={t("toolbar.tools")}
                 items={[
-                  { label: t("rename.button"), onClick: () => setShowRenameModal(true) },
+                  // Undo the last rename / move / normalize / swap (only while there is one)
+                  ...(undoInfo
+                    ? [{ label: t("undo.menu", { what: t(`undo.kind_${undoInfo.kind}`), count: undoInfo.files }), onClick: () => runUndo() }]
+                    : []),
+                  { label: t("rename.button"), onClick: () => setShowRenameModal(true), separatorBefore: !!undoInfo },
                   {
                     label: t("normalize.button"),
                     onClick: () => setShowNormalizeModal(true),

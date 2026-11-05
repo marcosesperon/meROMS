@@ -228,6 +228,9 @@ pub fn rename_roms(
 
     // write_gamelist() backs the gamelist up before saving
     let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    // Para «Deshacer»: la gamelist de antes y el diario de ficheros movidos
+    let before = gamelist.clone();
+    media::journal_begin();
     let mut done: Vec<(String, String)> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
 
@@ -266,6 +269,7 @@ pub fn rename_roms(
         if old_abs != new_abs {
             fs::rename(&old_abs, &new_abs)
                 .map_err(|e| format!("Failed to rename {}: {}", old_rel, e))?;
+            media::journal_move(&old_abs, &new_abs);
         }
 
         let moved = media::rename_rom_media(&layout, &system, &req.current_path, &new_relative, rom_is_dir);
@@ -289,6 +293,15 @@ pub fn rename_roms(
     crate::commands::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     update_references(&layout, &system, &done);
 
+    let sys = system.rom_dir.to_string_lossy().to_string();
+    super::undo::record(super::undo::UndoOp {
+        kind: "rename".into(),
+        system: sys.clone(),
+        files: media::journal_take(),
+        games: super::undo::changes_by_path(&sys, &before, &sys, &gamelist, &done),
+        refs: super::undo::RefUndo::Rename { system: sys.clone(), pairs: done.clone() },
+    });
+
     Ok(RenameResult {
         // Re-read so ES-DE media fields reflect the renamed files
         gamelist: crate::commands::gamelist::read_gamelist(&layout, &system)?,
@@ -299,7 +312,7 @@ pub fn rename_roms(
 
 /// After renaming ROMs, fix what points to them by file name:
 /// custom collections (where the active structure keeps them) and .m3u playlists.
-fn update_references(layout: &Layout, system: &SystemRef, renamed: &[(String, String)]) {
+pub(super) fn update_references(layout: &Layout, system: &SystemRef, renamed: &[(String, String)]) {
     if renamed.is_empty() {
         return;
     }
@@ -484,6 +497,7 @@ fn rename_media_field(
 
     if old_abs.exists() && old_abs != new_abs {
         if fs::rename(&old_abs, &new_abs).is_ok() {
+            media::journal_move(&old_abs, &new_abs);
             *field = Some(format!("./{}", new_media_rel));
         }
     } else {

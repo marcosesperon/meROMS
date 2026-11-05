@@ -4,6 +4,7 @@ import type { TranslationKeys } from "../../i18n/en";
 import { bestVersions, moveGames, removeGamesWithFiles, saveGamelist, type VersionGroup } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface BestVersionModalProps {
   open: boolean;
@@ -87,7 +88,7 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
         message = t("best.doneTrash", { count: result.removed });
         if (result.failed.length > 0) message += "\n\n" + result.failed.join("\n");
       }
-      await showMessage(message);
+      await reportWithUndo(message);
       onDone();
       onClose();
     } catch (e) {

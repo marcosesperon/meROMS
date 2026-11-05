@@ -5,6 +5,7 @@ import type { NormalizeItem } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
 import { showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface NormalizeMediaModalProps {
   open: boolean;
@@ -87,7 +88,7 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
       if (result.skipped.length > 0) {
         message += "\n\n" + t("normalize.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      await showMessage(message);
+      await reportWithUndo(message);
       onClose();
     } catch (e) {
       await showMessage(t("normalize.failed", { error: String(e) }), "error");

@@ -473,6 +473,22 @@ export async function applyPull(changes: DeviceChange[]): Promise<number> {
   return invoke("apply_pull", { changes });
 }
 
+/** The last file operation that can be undone (rename | move | normalize | swap), or null */
+export interface UndoInfo {
+  kind: "rename" | "move" | "normalize" | "swap";
+  system: string;
+  files: number;
+}
+
+export async function undoStatus(): Promise<UndoInfo | null> {
+  return invoke("undo_status");
+}
+
+/** Undoes the last rename / move / normalize / swap (files, gamelists, collections) */
+export async function undoLast(): Promise<{ restored: number; skipped: string[] }> {
+  return invoke("undo_last");
+}
+
 /** One version of a game in "Best version" (tags read from the file name) */
 export interface GameVersion {
   game_path: string;

@@ -3,6 +3,7 @@ import { useTranslation } from "../../i18n";
 import { swapMedia } from "../../commands";
 import { SWAPPABLE_MEDIA, type Game } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { reportWithUndo } from "../../utils/undo";
 
 interface MediaSwapModalProps {
   open: boolean;
@@ -41,7 +42,7 @@ export function MediaSwapModal({ open, systemPath, games, onClose, onDone }: Med
       if (result.skipped.length > 0) {
         message += "\n\n" + t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
-      await showMessage(message);
+      await reportWithUndo(message);
       onClose();
       onDone();
     } catch (e) {
