@@ -1,6 +1,7 @@
 pub mod backup;
 pub mod best_version;
 pub mod bios;
+pub mod chd;
 pub mod cleanup;
 pub mod dat;
 pub mod collections;

@@ -165,6 +165,8 @@ export interface AppSettings {
   export_targets?: { dest: string; systems: string[]; games: "all" | "favorites" | "visible"; media: string[]; remove_extra: boolean }[];
   /** "Compare with another folder": the last folder compared */
   compare_dest?: string;
+  /** "Convert to CHD": chdman chosen by hand (missing = found in the PATH or the usual places) */
+  chdman_path?: string;
   /** DeepL API key, to translate descriptions */
   deepl_apikey?: string;
   /** Order of the games when a gamelist is written (missing = as they are) */

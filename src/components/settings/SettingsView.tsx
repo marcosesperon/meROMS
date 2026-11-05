@@ -439,6 +439,19 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 />
                 <p className="text-xs text-zinc-500 mt-2">{t("translate.settingsHelp")}</p>
               </section>
+
+              {/* chdman for "Convert to CHD" (empty = look for it) */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("chd.settingsTitle")}</h3>
+                <input
+                  type="text"
+                  value={form.chdman_path || ""}
+                  onChange={(e) => setForm({ ...form, chdman_path: e.target.value || undefined })}
+                  placeholder="chdman"
+                  className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                />
+                <p className="text-xs text-zinc-500 mt-2">{t("chd.settingsHelp")}</p>
+              </section>
             </>
           )}
 

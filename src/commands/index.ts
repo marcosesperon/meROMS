@@ -518,6 +518,49 @@ export async function cancelCompare(): Promise<void> {
   return invoke("cancel_compare");
 }
 
+/** "Convert to CHD": where chdman is (null = not found) */
+export async function chdStatus(): Promise<{ path: string | null; version: string | null }> {
+  return invoke("chd_status");
+}
+
+export interface ChdCandidate {
+  path: string;
+  name: string;
+  /** Discs converted (relative to the system folder) */
+  discs: string[];
+  size: number;
+  /** "exists" = there is already a .chd with that name */
+  blocked: "exists" | null;
+}
+
+export async function listChdCandidates(systemPath: string): Promise<{ supported: boolean; games: ChdCandidate[] }> {
+  return invoke("list_chd_candidates", { systemPath });
+}
+
+export interface ChdResult {
+  converted: number;
+  skipped: string[];
+  failed: string[];
+  originals_failed: string[];
+  bytes_before: number;
+  bytes_after: number;
+  stopped: boolean;
+}
+
+/** Converts the games (emits chd-progress; cancelChd stops the running chdman) */
+export async function convertToChd(
+  systemPath: string,
+  gamePaths: string[],
+  originals: "trash" | "keep" | "subfolder",
+  subfolder?: string,
+): Promise<ChdResult> {
+  return invoke("convert_to_chd", { systemPath, gamePaths, originals, subfolder });
+}
+
+export async function cancelChd(): Promise<void> {
+  return invoke("cancel_chd");
+}
+
 /** BIOS list (libretro System.dat) downloaded in Settings */
 export interface BiosListStatus {
   downloaded: boolean;

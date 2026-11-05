@@ -73,6 +73,9 @@ pub struct AppSettings {
     // «Compare with another folder»: the last folder compared
     #[serde(default)]
     pub compare_dest: Option<String>,
+    // «Convert to CHD»: chdman chosen by hand (None = look in the PATH and the usual places)
+    #[serde(default)]
+    pub chdman_path: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // Media path configuration
