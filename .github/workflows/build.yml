@@ -5,6 +5,11 @@ name: Build installers
 
 on:
   workflow_dispatch:
+    inputs:
+      macos:
+        description: "Also build macOS here (untick when the Mac build is made and uploaded by hand)"
+        type: boolean
+        default: true
 
 # Needed to create the Release and upload the installers to it
 permissions:
@@ -55,16 +60,10 @@ jobs:
     strategy:
       # One platform failing shouldn't cancel the others
       fail-fast: false
+      # macOS (one .dmg for both Intel and Apple Silicon) can be left out; Linux on 22.04 (not
+      # the newest) so the builds also run on older distributions
       matrix:
-        include:
-          # One .dmg for both Intel and Apple Silicon Macs
-          - platform: macos-latest
-            args: --target universal-apple-darwin
-          - platform: windows-latest
-            args: ""
-          # 22.04 (not the newest) so the Linux builds also run on older distributions
-          - platform: ubuntu-22.04
-            args: ""
+        platform: ${{ fromJSON(inputs.macos && '["macos-latest", "windows-latest", "ubuntu-22.04"]' || '["windows-latest", "ubuntu-22.04"]') }}
 
     runs-on: ${{ matrix.platform }}
 
@@ -117,7 +116,7 @@ jobs:
         with:
           # The draft created by the first job (all builds upload to it)
           releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: ${{ matrix.args }}
+          args: ${{ matrix.platform == 'macos-latest' && '--target universal-apple-darwin' || '' }}
           # latest.json is built when the Release is published (updater.yml): the three jobs
           # run in parallel and would overwrite each other's, and the notes are final by then
           includeUpdaterJson: false
