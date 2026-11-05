@@ -24,6 +24,7 @@ import { datReport, listMissingRoms, listNewRoms, scrapeSystem } from "./command
 import { DatModal } from "./components/common/DatModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
 import { useFilteredGames } from "./hooks/useFilteredGames";
+import { isArcadeSystem } from "./utils/arcade";
 import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
@@ -171,7 +172,12 @@ function App() {
 
   // Developer credentials may be built into the app, so ask the backend instead of the settings
   const scraperStatus = useAppStore((s) => s.scraperStatus);
-  const hasCredentials = scraperStatus.screenscraper || scraperStatus.tgdb;
+  // Some source can scrape this system: an account/key, the LaunchBox database, or ArcadeItalia (arcade, no account)
+  const hasCredentials =
+    scraperStatus.screenscraper ||
+    scraperStatus.tgdb ||
+    scraperStatus.launchbox ||
+    (!!selectedSystem && isArcadeSystem(selectedSystem.name));
 
   // Auto-show settings while there is no usable profile (no ROM folder, or ES-DE without its folder).
   // Only once the saved settings are read: before that they are empty and would always look unusable.

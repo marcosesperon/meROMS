@@ -62,6 +62,30 @@ export interface ScraperStatus {
   built_in_dev: boolean;
   screenscraper: boolean;
   tgdb: boolean;
+  /** LaunchBox database downloaded */
+  launchbox: boolean;
+}
+
+/** LaunchBox database copy (Settings) */
+export interface LaunchBoxStatus {
+  downloaded: boolean;
+  /** Unix seconds */
+  downloaded_at: number | null;
+  games: number;
+  platforms: number;
+}
+
+export async function launchboxStatus(): Promise<LaunchBoxStatus> {
+  return invoke("launchbox_status");
+}
+
+/** Downloads Metadata.zip (~110 MB) and keeps it summarised per platform; emits launchbox-progress */
+export async function launchboxDownload(): Promise<LaunchBoxStatus> {
+  return invoke("launchbox_download");
+}
+
+export async function launchboxDelete(): Promise<void> {
+  return invoke("launchbox_delete");
 }
 
 export async function scraperStatus(): Promise<ScraperStatus> {

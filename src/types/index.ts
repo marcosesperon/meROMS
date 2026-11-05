@@ -199,7 +199,7 @@ export interface ScrapeProgress {
 
 /** One result of a manual search (the full data is fetched with applyScrape once picked) */
 export interface ScrapeCandidate {
-  source: "screenscraper" | "thegamesdb";
+  source: "screenscraper" | "thegamesdb" | "launchbox" | "arcadeitalia";
   id: string;
   name: string;
   system: string | null;

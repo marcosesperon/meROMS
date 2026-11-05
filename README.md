@@ -33,9 +33,11 @@ Free and open source, for macOS, Windows and Linux, in English and Spanish.
 - Edit many games at once: common fields, favourite/hidden flags, find & replace.
 
 **Get what's missing**
-- Scrape names, descriptions, dates, ratings and media from **ScreenScraper** (with
-  **TheGamesDB** as a fallback), for one game, some games or a whole system.
-- **Scrape** on one game searches both sources and lets you pick the right result (the one that
+- Scrape names, descriptions, dates, ratings and media from **ScreenScraper**, with
+  **LaunchBox** (a free database you download once: no account, no daily limit),
+  **ArcadeItalia** (arcade, with videos, no account) and **TheGamesDB** as fallbacks, for one game,
+  some games or a whole system.
+- **Scrape** on one game searches every source and lets you pick the right result (the one that
   matches your ROM file comes first); after **Scrape All**, the games it couldn't find can be
   searched the same way.
 - You decide what may be overwritten (per field and media type) and your preferred regions and
@@ -133,8 +135,9 @@ Every gamelist is backed up before each save (the last 20 are kept, next to the 
 `.backups/`). Deleted files go to the system trash.
 
 **Do I need an account to scrape?**
-A free ScreenScraper account is recommended (higher limits). TheGamesDB can be used with its own
-API key, also in Settings > General.
+No: download the LaunchBox database in Settings > General, and arcade systems also use
+ArcadeItalia. A free ScreenScraper account is still recommended (the most complete source, with
+videos). TheGamesDB can be used with its own API key, also in Settings > General.
 
 **What if Scrape All is cut halfway?**
 Nothing done is lost: the gamelist is saved every 10 games, and **Stop** saves at once. The next
@@ -168,6 +171,11 @@ from EmulationStation themes under CC BY-NC-SA
 ([Carbon](https://github.com/fabricecaruso/es-theme-carbon),
 [Slate](https://gitlab.com/es-de/themes/slate-es-de) and most likely es-theme-simple), many of
 them recoloured to white. See `LICENSE`.
+
+Scraped data and media belong to their sources: [ScreenScraper](https://www.screenscraper.fr/),
+[LaunchBox Games Database](https://gamesdb.launchbox-app.com/),
+[ArcadeItalia](https://adb.arcadeitalia.net/) (game histories from
+[arcade-history.com](https://www.arcade-history.com/)) and [TheGamesDB](https://thegamesdb.net/).
 
 ---
 

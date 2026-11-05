@@ -6,7 +6,7 @@ mod parser;
 mod rename_rules;
 mod rom_hash;
 
-use commands::{backup, cleanup, collections, dat, duplicates, export, gamelist, images, media_check, media_kinds, migrate, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, settings, systems};
+use commands::{backup, cleanup, collections, dat, duplicates, export, gamelist, images, media_check, media_kinds, migrate, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -75,6 +75,9 @@ pub fn run() {
             images::set_game_media,
             images::scan_game_media,
             scraper::scrape_game,
+            scraper_launchbox::launchbox_status,
+            scraper_launchbox::launchbox_download,
+            scraper_launchbox::launchbox_delete,
             scraper::search_scrape,
             scraper::scrape_thumbnail,
             scraper::apply_scrape,

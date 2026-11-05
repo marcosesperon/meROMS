@@ -457,10 +457,10 @@ async fn search_screenscraper(
         .unwrap_or_default())
 }
 
-/// One list: the ROM match first, then ScreenScraper (without repeating it), then TheGamesDB
-fn merge_candidates(rom_match: Option<ScrapeCandidate>, ss: Vec<ScrapeCandidate>, tgdb: Vec<ScrapeCandidate>) -> Vec<ScrapeCandidate> {
+/// One list: the ROM match first, then each source's results in order (without repeating any)
+fn merge_candidates(rom_match: Option<ScrapeCandidate>, sources: Vec<Vec<ScrapeCandidate>>) -> Vec<ScrapeCandidate> {
     let mut list: Vec<ScrapeCandidate> = rom_match.into_iter().collect();
-    for candidate in ss.into_iter().chain(tgdb) {
+    for candidate in sources.into_iter().flatten() {
         if !list.iter().any(|c| c.source == candidate.source && c.id == candidate.id) {
             list.push(candidate);
         }
@@ -480,8 +480,8 @@ pub async fn search_scrape(
 ) -> Result<ScrapeSearch, String> {
     let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    if !settings.has_screenscraper() && !settings.has_tgdb() {
-        return Err("No scraper configured. Add ScreenScraper or TheGamesDB credentials in Settings.".into());
+    if source_order(&app, &settings, &system).is_empty() {
+        return Err(NO_SCRAPER.into());
     }
     let query = query.trim().to_string();
     let client = build_http_client()?;
@@ -546,7 +546,24 @@ pub async fn search_scrape(
         }
     }
 
-    Ok(ScrapeSearch { candidates: merge_candidates(rom_match, ss, tgdb), errors })
+    // ArcadeItalia (solo arcade: por el nombre del zip) y LaunchBox (base descargada)
+    let mut adb = Vec::new();
+    if crate::commands::scraper_adb::is_arcade_system(&system.name) {
+        let game = crate::commands::gamelist::read_gamelist(&layout, &system)?.games.into_iter().find(|g| g.path == game_path);
+        if let Some(game) = game {
+            match crate::commands::scraper_adb::search_adb(&client, &game, &query).await {
+                Ok(found) => adb = found,
+                Err(e) => errors.push(format!("ArcadeItalia: {}", e)),
+            }
+        }
+    }
+    let launchbox = if crate::commands::scraper_launchbox::is_downloaded(&app) && !query.is_empty() {
+        crate::commands::scraper_launchbox::search_launchbox(&app, &system, &query, all_systems, &settings.scrape_regions())
+    } else {
+        Vec::new()
+    };
+
+    Ok(ScrapeSearch { candidates: merge_candidates(rom_match, vec![ss, adb, launchbox, tgdb]), errors })
 }
 
 /// Small cover of a ScreenScraper result of the last search, as a data: URI (None if it has none).
@@ -612,6 +629,8 @@ pub async fn apply_scrape(
             let id: u64 = id.parse().map_err(|_| format!("Invalid TheGamesDB id: {}", id))?;
             crate::commands::scraper_tgdb::apply_tgdb_by_id(&client, &api_key, id, &game, &layout, &system, &settings).await
         }
+        "launchbox" => crate::commands::scraper_launchbox::apply_launchbox_by_id(&app, &client, &id, &game, &layout, &system, &settings).await,
+        "arcadeitalia" => crate::commands::scraper_adb::apply_adb_by_id(&client, &id, &game, &layout, &system, &settings).await,
         other => Err(format!("Unknown scraper source: {}", other)),
     }
 }
@@ -644,20 +663,80 @@ pub struct ScraperStatus {
     pub screenscraper: bool,
     /// TheGamesDB key configured
     pub tgdb: bool,
+    /// LaunchBox database downloaded
+    pub launchbox: bool,
 }
 
 /// What scrapers are available (the UI shows the ScreenScraper account fields and the scrape
 /// buttons from this, since the built-in credentials aren't visible in the settings).
 #[tauri::command]
 pub fn scraper_status(app: tauri::AppHandle) -> Result<ScraperStatus, String> {
-    let settings = crate::commands::settings::get_settings(app)?;
+    let settings = crate::commands::settings::get_settings(app.clone())?;
     Ok(ScraperStatus {
         built_in_dev: crate::models::settings::built_in_ss_credentials().is_some(),
         screenscraper: settings.has_screenscraper(),
         tgdb: settings.has_tgdb(),
+        launchbox: crate::commands::scraper_launchbox::is_downloaded(&app),
     })
 }
 
+const NO_SCRAPER: &str = "No scraper available. Add ScreenScraper or TheGamesDB credentials, or download the LaunchBox database, in Settings.";
+
+/// Fuentes del scraper automático
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Source {
+    ScreenScraper,
+    ArcadeItalia,
+    LaunchBox,
+    TheGamesDb,
+}
+
+/// Fuentes que se prueban para un sistema, en orden (gana la primera que encuentra el juego):
+/// arcade: ScreenScraper → ArcadeItalia → LaunchBox; resto: ScreenScraper → LaunchBox → TheGamesDB.
+/// Solo las disponibles (credenciales, base descargada, sistema arcade).
+fn source_order(app: &tauri::AppHandle, settings: &AppSettings, system: &SystemRef) -> Vec<Source> {
+    let arcade = crate::commands::scraper_adb::is_arcade_system(&system.name);
+    let order: &[Source] = if arcade {
+        &[Source::ScreenScraper, Source::ArcadeItalia, Source::LaunchBox]
+    } else {
+        &[Source::ScreenScraper, Source::LaunchBox, Source::TheGamesDb]
+    };
+    order
+        .iter()
+        .copied()
+        .filter(|s| match s {
+            Source::ScreenScraper => settings.has_screenscraper(),
+            Source::ArcadeItalia => arcade,
+            Source::LaunchBox => {
+                crate::commands::scraper_launchbox::lb_platform(&system.name).is_some() && crate::commands::scraper_launchbox::is_downloaded(app)
+            }
+            Source::TheGamesDb => settings.has_tgdb(),
+        })
+        .collect()
+}
+
+async fn try_source(
+    source: Source,
+    app: &tauri::AppHandle,
+    settings: &AppSettings,
+    client: &Client,
+    game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+) -> Result<ScrapeResult, String> {
+    match source {
+        Source::ScreenScraper => scrape_game_screenscraper(settings, game, layout, system).await,
+        Source::ArcadeItalia => crate::commands::scraper_adb::scrape_game_adb(client, game, layout, system, settings).await,
+        Source::LaunchBox => crate::commands::scraper_launchbox::scrape_game_launchbox(app, client, game, layout, system, settings).await,
+        Source::TheGamesDb => {
+            let api_key = settings.tgdb_apikey.as_deref().unwrap_or_default();
+            crate::commands::scraper_tgdb::scrape_game_tgdb(client, api_key, game, layout, system, settings).await
+        }
+    }
+}
+
+/// Automatic scrape of one game, without a manual search (kept for completeness; the UI uses
+/// the manual search for single games). Same source order as Scrape All.
 #[tauri::command]
 pub async fn scrape_game(
     app: tauri::AppHandle,
@@ -675,64 +754,39 @@ pub async fn scrape_game(
         .cloned()
         .ok_or("Game not found in gamelist")?;
 
-    // Try ScreenScraper first if configured
-    if settings.has_screenscraper() {
-        return scrape_game_screenscraper(&settings, &existing_game, &layout, &system).await;
+    if source_order(&app, &settings, &system).is_empty() {
+        return Err(NO_SCRAPER.into());
     }
-
-    // Fallback to TheGamesDB
-    if settings.has_tgdb() {
-        let client = build_http_client()?;
-        let api_key = settings.tgdb_apikey.as_deref().unwrap();
-        return crate::commands::scraper_tgdb::scrape_game_tgdb(
-            &client,
-            api_key,
-            &existing_game,
-            &layout,
-            &system,
-            &settings,
-        )
-        .await;
+    let client = build_http_client()?;
+    match scrape_one(&app, &settings, &client, &existing_game, &layout, &system).await {
+        ("success", game) => Ok(ScrapeResult { game, found: true }),
+        (_, game) => Ok(ScrapeResult { game, found: false }),
     }
-
-    Err("No scraper configured. Add ScreenScraper or TheGamesDB credentials in Settings.".into())
 }
 
-/// Scrape a single game internally (used by batch). Returns (status_str, updated_game).
+/// Scrape a single game internally (used by batch): each source in order until one finds it.
+/// Returns (status_str, updated_game): "success", "not_found" or "error" (every source failed).
 async fn scrape_one(
+    app: &tauri::AppHandle,
     settings: &AppSettings,
     client: &Client,
     game: &Game,
     layout: &Layout,
     system: &SystemRef,
 ) -> (&'static str, Game) {
-    if settings.has_screenscraper() {
-        match scrape_game_screenscraper(settings, game, layout, system).await {
+    let mut answered = false;
+    for source in source_order(app, settings, system) {
+        match try_source(source, app, settings, client, game, layout, system).await {
             Ok(r) if r.found => return ("success", r.game),
-            Ok(_) => {}
+            Ok(_) => answered = true,
             Err(_) => {}
         }
     }
-
-    if settings.has_tgdb() {
-        let api_key = settings.tgdb_apikey.as_deref().unwrap();
-        match crate::commands::scraper_tgdb::scrape_game_tgdb(
-            client,
-            api_key,
-            game,
-            layout,
-            system,
-            settings,
-        )
-        .await
-        {
-            Ok(r) if r.found => return ("success", r.game),
-            Ok(_) => return ("not_found", game.clone()),
-            Err(_) => return ("error", game.clone()),
-        }
+    if answered {
+        ("not_found", game.clone())
+    } else {
+        ("error", game.clone())
     }
-
-    ("not_found", game.clone())
 }
 
 /// «Scrape All» saves the gamelist every this many games (and at the end)
@@ -809,11 +863,8 @@ pub async fn scrape_system(
         settings.scrape_fields = Some(policy.clone());
     }
 
-    if !settings.has_screenscraper() && !settings.has_tgdb() {
-        return Err(
-            "No scraper configured. Add ScreenScraper or TheGamesDB credentials in Settings."
-                .into(),
-        );
+    if source_order(&app, &settings, &system).is_empty() {
+        return Err(NO_SCRAPER.into());
     }
 
     // The reminder, written now: if the app dies, it already says what's left
@@ -862,7 +913,7 @@ pub async fn scrape_system(
         }
 
         let (status, updated_game) =
-            scrape_one(&settings, &client, &game, &layout, &system).await;
+            scrape_one(&app, &settings, &client, &game, &layout, &system).await;
         gamelist.games[index] = updated_game;
         done += 1;
 
@@ -960,8 +1011,7 @@ mod tests {
         matched.rom_match = true;
         let list = merge_candidates(
             Some(matched),
-            vec![card("screenscraper", "1"), card("screenscraper", "2")],
-            vec![card("thegamesdb", "2")],
+            vec![vec![card("screenscraper", "1"), card("screenscraper", "2")], vec![card("thegamesdb", "2")]],
         );
         let ids: Vec<(&str, &str, bool)> = list.iter().map(|c| (c.source.as_str(), c.id.as_str(), c.rom_match)).collect();
         // El mismo id en otra fuente es otro juego: se queda

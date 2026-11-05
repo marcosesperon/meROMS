@@ -28,6 +28,8 @@ function initialQuery(game: Game): string {
 const SOURCE_LABEL: Record<ScrapeCandidate["source"], string> = {
   screenscraper: "ScreenScraper",
   thegamesdb: "TheGamesDB",
+  launchbox: "LaunchBox",
+  arcadeitalia: "ArcadeItalia",
 };
 
 const candidateKey = (c: ScrapeCandidate) => `${c.source}:${c.id}`;

@@ -14,6 +14,7 @@ import { RenameRulesTab } from "./RenameRulesTab";
 import { SystemsConfigTab } from "./SystemsConfigTab";
 import { AboutTab } from "./AboutTab";
 import { PlaceholdersSetting } from "./PlaceholdersSetting";
+import { LaunchBoxSetting } from "./LaunchBoxSetting";
 import { exportSettings, importSettings } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { ScrapePolicyEditor } from "../common/ScrapePolicyEditor";
@@ -346,6 +347,12 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     {t("settings.tgdbHelp")}
                   </p>
                 </div>
+              </section>
+
+              {/* LaunchBox: offline database (download / update / delete) */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">LaunchBox</h3>
+                <LaunchBoxSetting />
               </section>
 
               {/* Region / language order of the scraper */}
