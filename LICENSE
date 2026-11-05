@@ -19,3 +19,21 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+System logos
+
+The system logos in src/assets/logos/ are NOT covered by the MIT License above.
+The logos and trademarks they show belong to their respective owners. The SVG
+files come from EmulationStation themes licensed under Creative Commons
+Attribution-NonCommercial-ShareAlike (CC BY-NC-SA):
+
+- es-theme-carbon by Fabrice Caruso
+  https://github.com/fabricecaruso/es-theme-carbon
+- Slate (ES-DE theme) by the ES-DE project
+  https://gitlab.com/es-de/themes/slate-es-de
+- The original set, most likely from es-theme-simple (RetroPie)
+
+Many were recoloured to plain white to match the app. They may be used and
+changed for non-commercial purposes, with credit, under the same license.

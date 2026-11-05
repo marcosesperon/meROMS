@@ -148,6 +148,12 @@ meROMS is free. If it saves you time, you can
 meROMS is open source under the [MIT License](LICENSE). The built-in rename rules come from
 [ES-DE-Roms-Renamer](https://github.com/mirai-toto/ES-DE-Roms-Renamer) (also MIT).
 
+The system logos (`src/assets/logos/`) are not MIT: they are trademarks of their owners, taken
+from EmulationStation themes under CC BY-NC-SA
+([Carbon](https://github.com/fabricecaruso/es-theme-carbon),
+[Slate](https://gitlab.com/es-de/themes/slate-es-de) and most likely es-theme-simple), many of
+them recoloured to white. See `LICENSE`.
+
 ---
 
 ## For developers
