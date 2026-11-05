@@ -56,7 +56,8 @@ export function Sidebar() {
             </p>
           </div>
         ) : visibleSystems.length === 0 ? (
-          <p className="text-zinc-500 text-sm px-4 py-2">{t("sidebar.noSystems")}</p>
+          // Sin sistemas que enseñar la barra queda vacía: lo explica la pantalla del centro
+          null
         ) : (
           visibleSystems.map((system) => {
             const selected = selectedSystem?.path === system.path;

@@ -7,6 +7,7 @@ import { generateGamelist } from "../../commands";
 import { GameTable } from "./GameTable";
 import { GameGrid } from "./GameGrid";
 import { EmptyState } from "../common/EmptyState";
+import { WelcomeScreen } from "../common/WelcomeScreen";
 import { Header } from "../layout/Header";
 import { FolderIcon } from "../common/Icons";
 import { showMessage } from "../../utils/dialogs";
@@ -27,13 +28,7 @@ export function GameListView() {
   const { t } = useTranslation();
 
   if (!selectedSystem) {
-    return (
-      <EmptyState
-        icon="🎮"
-        title={t("gameList.selectSystem")}
-        description={t("gameList.selectSystemDesc")}
-      />
-    );
+    return <WelcomeScreen />;
   }
 
   async function handleGenerate() {

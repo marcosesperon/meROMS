@@ -15,8 +15,11 @@ const en = {
   "header.games": "games",
 
   // GameListView
-  "gameList.selectSystem": "Select a system",
-  "gameList.selectSystemDesc": "Choose a system from the sidebar to browse its games.",
+  "welcome.pickSystem": "Pick a system in the sidebar to browse its games.",
+  "welcome.noSystems": "The ROM folder of this profile has no systems yet.",
+  "welcome.openSettings": "Open Settings",
+  "welcome.allHidden": "The {count} systems are hidden because none has games (switch at the bottom of the sidebar).",
+  "welcome.showAll": "Show all systems",
   "gameList.generating": "Generating gamelist...",
   "gameList.loadFailed": "The gamelist could not be read: {error}",
   "gameList.loading": "Loading...",

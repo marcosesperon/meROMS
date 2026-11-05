@@ -17,8 +17,11 @@ const es: Record<TranslationKeys, string> = {
   "header.games": "juegos",
 
   // GameListView
-  "gameList.selectSystem": "Selecciona un sistema",
-  "gameList.selectSystemDesc": "Elige un sistema de la barra lateral para explorar sus juegos.",
+  "welcome.pickSystem": "Elige un sistema de la barra lateral para ver sus juegos.",
+  "welcome.noSystems": "La carpeta de ROMs de este perfil todavía no tiene sistemas.",
+  "welcome.openSettings": "Abrir Ajustes",
+  "welcome.allHidden": "Los {count} sistemas están ocultos porque ninguno tiene juegos (interruptor abajo en la barra lateral).",
+  "welcome.showAll": "Mostrar todos los sistemas",
   "gameList.generating": "Generando gamelist...",
   "gameList.loadFailed": "No se ha podido leer la gamelist: {error}",
   "gameList.loading": "Cargando...",
