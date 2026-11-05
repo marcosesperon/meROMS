@@ -26,6 +26,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 - **Backups** — automatic gamelist.xml backup before every save (Scrape All: one, before the run); list/restore/delete
 - **Collections** — detect multi-disc games and generate `.m3u` playlists; generate custom collections
 - **Export** — export a gamelist; export/import app settings
+- **Windows installers** — `bundle.windows.nsis` (`installerIcon` = `icons/icon.ico`, `headerImage` 150×57, `sidebarImage` 164×314) and `bundle.windows.wix` (`bannerPath` 493×58, `dialogImagePath` 493×312) in `tauri.conf.json`; 24-bit BMPs in `src-tauri/icons/installer/`, composed from `icons/source/installer.html` (how to regenerate them is in its header). The `.msi` file itself always shows Windows' MSI icon
 - **Self-update** — `tauri-plugin-updater` + `tauri-plugin-process`; `useUpdateStore` (check at start and daily unless `check_updates` is false, download/install with progress, relaunch), `UpdateBanner` + `UpdateModal` (release notes); signed with the updater key (secrets `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD`, pubkey in `tauri.conf.json`); `latest.json` is built when a Release is published (`.github/workflows/updater.yml`), not by the build jobs
 - **About & donation** — Settings → About (version, author, GitHub / website / Buy Me a Coffee); a "meROMS is free" prompt at most once a week (`donation_prompt_at`; the first launch only starts the count); links in `src/utils/links.ts`
 

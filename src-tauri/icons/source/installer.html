@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Imágenes de los instaladores de Windows (src-tauri/icons/installer/*.bmp).
+     Para regenerarlas: captura de esta página con Chrome sin ventana a 800x500 y escala 1
+     (--headless=new --force-device-scale-factor=1 --window-size=800,500 --screenshot), y
+     recortes a BMP de 24 bits: barra lateral NSIS (0,0) 164x314, diálogo WiX (200,0) 493x312,
+     cabecera NSIS (0,350) 150x57, banner WiX (200,350) 493x58. -->
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;background:#888;}
+  .b{position:absolute;overflow:hidden;font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;}
+  .dark{background:radial-gradient(120% 80% at 20% 0%,#3a2a66 0%,rgba(58,42,102,0) 60%),linear-gradient(180deg,#2c2724 0%,#151211 70%);}
+  .name{color:#f4efe9;font-weight:700;letter-spacing:.3px}
+  .sub{color:#a59c96}
+  .accent{position:absolute;left:0;right:0;bottom:0;height:4px;background:#7f56e3}
+</style></head><body>
+<!-- NSIS: barra lateral de bienvenida / final (164x314) -->
+<div class="b dark" style="left:0;top:0;width:164px;height:314px">
+  <img src="meroms.svg" style="position:absolute;left:22px;top:48px;width:120px;height:120px">
+  <div class="name" style="position:absolute;top:186px;width:164px;text-align:center;font-size:24px">meROMS</div>
+  <div class="sub" style="position:absolute;top:220px;width:164px;text-align:center;font-size:11px;line-height:1.35">ROM manager for<br>EmulationStation</div>
+  <div class="accent"></div>
+</div>
+<!-- WiX: imagen de diálogo (493x312): franja oscura a la izquierda, resto claro (ahí va el texto) -->
+<div class="b" style="left:200px;top:0;width:493px;height:312px;background:#fff">
+  <div class="dark" style="position:absolute;left:0;top:0;width:164px;height:312px">
+    <img src="meroms.svg" style="position:absolute;left:22px;top:48px;width:120px;height:120px">
+    <div class="name" style="position:absolute;top:186px;width:164px;text-align:center;font-size:24px">meROMS</div>
+    <div class="sub" style="position:absolute;top:220px;width:164px;text-align:center;font-size:11px;line-height:1.35">ROM manager for<br>EmulationStation</div>
+    <div class="accent"></div>
+  </div>
+</div>
+<!-- NSIS: cabecera (150x57), fondo claro con el icono a la derecha -->
+<div class="b" style="left:0;top:350px;width:150px;height:57px;background:#fff">
+  <img src="meroms.svg" style="position:absolute;right:4px;top:2px;width:53px;height:53px">
+</div>
+<!-- WiX: banner (493x58), fondo claro con el icono a la derecha -->
+<div class="b" style="left:200px;top:350px;width:493px;height:58px;background:#fff">
+  <img src="meroms.svg" style="position:absolute;right:6px;top:2px;width:54px;height:54px">
+</div>
+</body></html>
