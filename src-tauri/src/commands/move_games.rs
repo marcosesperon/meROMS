@@ -60,11 +60,12 @@ pub fn companion_files(rom: &Path) -> Vec<PathBuf> {
     out
 }
 
-fn add_companions(file: &Path, out: &mut Vec<PathBuf>, depth: u8) {
-    let Some(dir) = file.parent() else { return };
+/// Nombres de fichero tal como están escritos en un .cue, .gdi o .m3u (relativos a su carpeta).
+/// Vacío si no es de esos tipos o no se puede leer como texto UTF-8.
+pub fn sheet_names(file: &Path) -> Vec<String> {
     let ext = media::extension_lower(file).unwrap_or_default();
-    let Ok(content) = fs::read_to_string(file) else { return };
-    let referenced: Vec<String> = match ext.as_str() {
+    let Ok(content) = fs::read_to_string(file) else { return Vec::new() };
+    match ext.as_str() {
         // FILE "Juego (Track 1).bin" BINARY
         "cue" => content
             .lines()
@@ -91,8 +92,12 @@ fn add_companions(file: &Path, out: &mut Vec<PathBuf>, depth: u8) {
             .collect(),
         "m3u" => content.lines().map(str::trim).filter(|l| !l.is_empty() && !l.starts_with('#')).map(String::from).collect(),
         _ => Vec::new(),
-    };
-    for name in referenced {
+    }
+}
+
+fn add_companions(file: &Path, out: &mut Vec<PathBuf>, depth: u8) {
+    let Some(dir) = file.parent() else { return };
+    for name in sheet_names(file) {
         let path = dir.join(name.replace('\\', "/"));
         if path.is_file() && !out.contains(&path) {
             out.push(path.clone());

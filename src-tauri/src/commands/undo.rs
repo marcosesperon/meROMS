@@ -133,6 +133,13 @@ fn undo_files(files: &[Journaled], result: &mut UndoResult) {
                     result.restored += 1;
                 }
             }
+            Journaled::Rewritten(path, before) => {
+                if path.is_file() && std::fs::write(path, before).is_ok() {
+                    result.restored += 1;
+                } else {
+                    result.skipped.push(format!("{} (no longer there)", path.display()));
+                }
+            }
         }
     }
 }
@@ -325,5 +332,24 @@ mod tests {
         assert_eq!(r.restored, 3);
         assert_eq!(fs::read_to_string(d.join("covers/J.png")).unwrap(), "captura");
         assert_eq!(fs::read_to_string(d.join("screenshots/J.png")).unwrap(), "caratula");
+    }
+
+    #[test]
+    fn a_rewritten_cue_and_its_renamed_tracks_go_back() {
+        let tmp = tempfile::tempdir().unwrap();
+        let d = tmp.path();
+        touch(&d.join("J (USA).cue"), "FILE \"J (USA).bin\" BINARY\n");
+        touch(&d.join("J (USA).bin"), "pista");
+        media::journal_begin();
+        media::move_file(&d.join("J (USA).cue"), &d.join("J.cue")).unwrap();
+        media::move_file(&d.join("J (USA).bin"), &d.join("J.bin")).unwrap();
+        let before = fs::read(d.join("J.cue")).unwrap();
+        media::journal_rewrite(&d.join("J.cue"), before);
+        fs::write(d.join("J.cue"), "FILE \"J.bin\" BINARY\n").unwrap();
+        let mut r = UndoResult::default();
+        undo_files(&media::journal_take(), &mut r);
+        assert_eq!(r.restored, 3, "{:?}", r.skipped);
+        assert_eq!(fs::read_to_string(d.join("J (USA).cue")).unwrap(), "FILE \"J (USA).bin\" BINARY\n");
+        assert!(d.join("J (USA).bin").is_file());
     }
 }

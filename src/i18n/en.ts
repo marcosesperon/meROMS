@@ -752,6 +752,8 @@ const en = {
   "rename.sourceTitleHelp": "The new file name is the game title from the gamelist.",
   "rename.sourceRulesHelp": "The current file name is cleaned with the rules from Settings > Rules (region, language and version tags, [..], etc.).",
   "rename.noRenamesRules": "The rules do not change any file name.",
+  "rename.tracks": "+{count} tracks",
+  "rename.tracksHelp": "The .bin/.raw tracks named after the game are renamed too, and the .cue/.gdi is updated",
   "rename.sourceDat": "DAT name",
   "rename.sourceDatHelp": "The official name from the system's DAT, for ROMs recognised by their content (DAT... > Check by content). The extension is kept.",
   "rename.noRenamesDat": "No ROM recognised by content has a name different from the DAT. If you haven't yet, open DAT... and use Check by content.",

@@ -258,6 +258,8 @@ export interface RenameEntry {
   game_title?: string;
   proposed_name: string;
   can_rename: boolean;
+  /** Tracks of a .cue/.gdi renamed along with it (the ones named after the game) */
+  tracks?: number;
   /** duplicate = another ROM would get the same name · exists = a different file has it */
   conflict?: "duplicate" | "exists";
 }

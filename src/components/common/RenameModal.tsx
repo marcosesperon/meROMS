@@ -230,6 +230,12 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
                               : "border-zinc-600 text-zinc-300"
                           }`}
                         />
+                        {/* Las pistas de un .cue/.gdi con el nombre del juego van con él */}
+                        {!!entry.tracks && (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300" title={t("rename.tracksHelp")}>
+                            {t("rename.tracks", { count: entry.tracks })}
+                          </span>
+                        )}
                         {isBlocked(entry) && (
                           <span
                             className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-300"

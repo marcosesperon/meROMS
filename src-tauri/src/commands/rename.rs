@@ -22,6 +22,9 @@ pub struct RenameEntry {
     pub proposed_name: String,
     /// Whether a rename makes sense (there is a proposal and it differs from the current name)
     pub can_rename: bool,
+    /// Tracks of a .cue/.gdi renamed along with it (the ones named after the game)
+    #[serde(default)]
+    pub tracks: usize,
     /// Why the proposal can't be applied as is: "duplicate" (another ROM would get the
     /// same name) or "exists" (a different file already has that name)
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -109,6 +112,7 @@ pub fn list_rename_candidates(
         .map(|game| propose(game, source, &rules, dat_names.get(&rom_of(game)).map(String::as_str)))
         .collect();
     mark_conflicts(&mut entries, &system.rom_dir);
+    mark_track_conflicts(&mut entries, &system.rom_dir);
 
     entries.sort_by(|a, b| a.current_name.to_lowercase().cmp(&b.current_name.to_lowercase()));
     Ok(entries)
@@ -143,6 +147,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
         game_title,
         proposed_name: proposed,
         can_rename,
+        tracks: 0,
         conflict: None,
     }
 }
@@ -202,10 +207,99 @@ fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<St
         game_title: None,
         proposed_name: new_name.to_string(),
         can_rename: true,
+        tracks: 0,
         conflict: None,
     }];
     mark_conflicts(&mut entry, rom_dir);
+    mark_track_conflicts(&mut entry, rom_dir);
     entry[0].conflict.take()
+}
+
+/// Una pista de un .cue/.gdi que se renombra con él
+#[derive(Debug, Clone, PartialEq)]
+struct TrackRename {
+    from: std::path::PathBuf,
+    to: std::path::PathBuf,
+    /// Cómo está escrita en la hoja y cómo quedará
+    old_ref: String,
+    new_ref: String,
+}
+
+/// Pistas de un .cue/.gdi cuyo nombre empieza por el nombre antiguo del juego (seguido del
+/// final, un espacio, un punto o un paréntesis): «Juego (USA) (Track 1).bin» → «Juego (Track 1).bin».
+/// Las de nombre genérico (track01.bin) no. Si la hoja no se lee como UTF-8, ninguna.
+fn track_renames(rom: &Path, old_stem: &str, new_stem: &str) -> Vec<TrackRename> {
+    if !matches!(media::extension_lower(rom).as_deref(), Some("cue" | "gdi")) || old_stem == new_stem || old_stem.is_empty() {
+        return Vec::new();
+    }
+    let Some(dir) = rom.parent() else { return Vec::new() };
+    super::move_games::sheet_names(rom)
+        .into_iter()
+        .filter_map(|old_ref| {
+            let cut = old_ref.rfind(['/', '\\']).map_or(0, |i| i + 1);
+            let (folder, file) = old_ref.split_at(cut);
+            let rest = file.strip_prefix(old_stem)?;
+            if !(rest.is_empty() || rest.starts_with([' ', '.', '('])) {
+                return None;
+            }
+            let new_ref = format!("{}{}{}", folder, new_stem, rest);
+            let from = dir.join(old_ref.replace('\\', "/"));
+            from.is_file().then(|| TrackRename { to: dir.join(new_ref.replace('\\', "/")), from, old_ref, new_ref })
+        })
+        .collect()
+}
+
+/// Cuenta las pistas de cada propuesta y marca conflicto si el nombre nuevo de alguna ya existe
+fn mark_track_conflicts(entries: &mut [RenameEntry], rom_dir: &Path) {
+    for e in entries.iter_mut().filter(|e| e.can_rename) {
+        let rom = rom_dir.join(e.current_path.strip_prefix("./").unwrap_or(&e.current_path));
+        let old_stem = rom.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        let tracks = track_renames(&rom, &old_stem, &e.proposed_name);
+        e.tracks = tracks.len();
+        if e.conflict.is_none() && tracks.iter().any(|t| t.to.exists() && t.to != t.from) {
+            e.conflict = Some("exists".into());
+        }
+    }
+}
+
+/// Cambia en una línea de la hoja el nombre antiguo de una pista por el nuevo: entre comillas,
+/// o como palabra suelta (sin comillas)
+fn replace_ref(line: &str, old: &str, new: &str) -> String {
+    let quoted = format!("\"{}\"", old);
+    if line.contains(&quoted) {
+        return line.replacen(&quoted, &format!("\"{}\"", new), 1);
+    }
+    let words: Vec<&str> = line.split(' ').collect();
+    if words.contains(&old) {
+        return words.iter().map(|w| if *w == old { new } else { *w }).collect::<Vec<_>>().join(" ");
+    }
+    line.to_string()
+}
+
+/// Reescribe la hoja (.cue/.gdi) con los nombres nuevos de las pistas, conservando el resto
+/// (y los finales de línea). Apunta el contenido de antes para «Deshacer».
+fn rewrite_sheet(sheet: &Path, tracks: &[TrackRename]) {
+    let Ok(content) = fs::read_to_string(sheet) else { return };
+    let mut out = String::with_capacity(content.len());
+    for piece in content.split_inclusive('\n') {
+        let (line, ending) = match piece.strip_suffix("\r\n") {
+            Some(l) => (l, "\r\n"),
+            None => match piece.strip_suffix('\n') {
+                Some(l) => (l, "\n"),
+                None => (piece, ""),
+            },
+        };
+        let mut changed = line.to_string();
+        for t in tracks {
+            changed = replace_ref(&changed, &t.old_ref, &t.new_ref);
+        }
+        out.push_str(&changed);
+        out.push_str(ending);
+    }
+    if out != content {
+        media::journal_rewrite(sheet, content.into_bytes());
+        let _ = fs::write(sheet, out);
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -265,11 +359,30 @@ pub fn rename_roms(
         }
         let rom_is_dir = old_abs.is_dir();
 
+        // Pistas de un .cue/.gdi con el nombre del juego: si alguna chocaría, el juego se salta
+        let tracks = track_renames(&old_abs, old_stem, &req.new_name);
+        if tracks.iter().any(|t| t.to.exists() && t.to != t.from) {
+            skipped.push(old_rel.to_string());
+            continue;
+        }
+
         // Rename the ROM file
         if old_abs != new_abs {
             fs::rename(&old_abs, &new_abs)
                 .map_err(|e| format!("Failed to rename {}: {}", old_rel, e))?;
             media::journal_move(&old_abs, &new_abs);
+        }
+
+        // …y sus pistas, con la hoja reescrita con los nombres nuevos
+        let mut renamed_tracks = Vec::new();
+        for t in tracks {
+            if fs::rename(&t.from, &t.to).is_ok() {
+                media::journal_move(&t.from, &t.to);
+                renamed_tracks.push(t);
+            }
+        }
+        if !renamed_tracks.is_empty() {
+            rewrite_sheet(&new_abs, &renamed_tracks);
         }
 
         let moved = media::rename_rom_media(&layout, &system, &req.current_path, &new_relative, rom_is_dir);
@@ -610,5 +723,52 @@ mod tests {
             fs::read_to_string(system.rom_dir.join("Juego.m3u")).unwrap(),
             "Juego (Disc 1).cue\r\nJuego (USA) (Disc 2).cue\r\n"
         );
+    }
+
+    #[test]
+    fn a_cue_takes_its_tracks_along_and_generic_tracks_stay() {
+        let tmp = tempfile::tempdir().unwrap();
+        let d = tmp.path();
+        fs::write(d.join("Juego (USA).cue"), "FILE \"Juego (USA) (Track 1).bin\" BINARY\r\n  TRACK 01 MODE1/2352\r\nFILE \"Juego (USA) (Track 2).bin\" BINARY\r\n").unwrap();
+        fs::write(d.join("Juego (USA) (Track 1).bin"), "1").unwrap();
+        fs::write(d.join("Juego (USA) (Track 2).bin"), "2").unwrap();
+        let tracks = track_renames(&d.join("Juego (USA).cue"), "Juego (USA)", "Juego");
+        assert_eq!(tracks.len(), 2);
+        assert_eq!(tracks[0].new_ref, "Juego (Track 1).bin");
+
+        // Lo que hace rename_roms: ROM, pistas y hoja
+        fs::rename(d.join("Juego (USA).cue"), d.join("Juego.cue")).unwrap();
+        for t in &tracks {
+            fs::rename(&t.from, &t.to).unwrap();
+        }
+        rewrite_sheet(&d.join("Juego.cue"), &tracks);
+        assert_eq!(
+            fs::read_to_string(d.join("Juego.cue")).unwrap(),
+            "FILE \"Juego (Track 1).bin\" BINARY\r\n  TRACK 01 MODE1/2352\r\nFILE \"Juego (Track 2).bin\" BINARY\r\n",
+            "only the names change, CRLF kept"
+        );
+        assert!(d.join("Juego (Track 2).bin").is_file());
+
+        // Una pista que se llama igual que el juego
+        fs::write(d.join("Uno (Europe).cue"), "FILE \"Uno (Europe).bin\" BINARY\n").unwrap();
+        fs::write(d.join("Uno (Europe).bin"), "x").unwrap();
+        assert_eq!(track_renames(&d.join("Uno (Europe).cue"), "Uno (Europe)", "Uno")[0].new_ref, "Uno.bin");
+
+        // GDI con pistas genéricas: no se tocan
+        fs::write(d.join("Crazy (Japan).gdi"), "2\n1 0 4 2352 track01.bin 0\n2 600 0 2352 track02.raw 0\n").unwrap();
+        fs::write(d.join("track01.bin"), "").unwrap();
+        fs::write(d.join("track02.raw"), "").unwrap();
+        assert!(track_renames(&d.join("Crazy (Japan).gdi"), "Crazy (Japan)", "Crazy").is_empty());
+    }
+
+    #[test]
+    fn a_track_clash_is_a_conflict() {
+        let tmp = tempfile::tempdir().unwrap();
+        let d = tmp.path();
+        fs::write(d.join("Juego (USA).cue"), "FILE \"Juego (USA).bin\" BINARY\n").unwrap();
+        fs::write(d.join("Juego (USA).bin"), "x").unwrap();
+        fs::write(d.join("Juego.bin"), "otro").unwrap();
+        assert_eq!(target_conflict(d, "./Juego (USA).cue", "Juego").as_deref(), Some("exists"));
+        assert_eq!(target_conflict(d, "./Juego (USA).cue", "Juego Bueno"), None);
     }
 }

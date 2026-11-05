@@ -159,6 +159,7 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
             ) : (
               <p className="text-xs text-zinc-500 mt-1">{t("gameTools.renameHelp")}</p>
             )}
+            {!!entry?.tracks && <p className="text-xs text-zinc-400 mt-1">{t("rename.tracksHelp")} ({t("rename.tracks", { count: entry.tracks })})</p>}
           </div>
         </div>
 

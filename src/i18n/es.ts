@@ -754,6 +754,8 @@ const es: Record<TranslationKeys, string> = {
   "rename.sourceTitleHelp": "El nombre nuevo del fichero es el título del juego en la gamelist.",
   "rename.sourceRulesHelp": "El nombre actual del fichero se limpia con las reglas de Ajustes > Reglas (etiquetas de región, idioma y versión, [..], etc.).",
   "rename.noRenamesRules": "Las reglas no cambian ningún nombre de fichero.",
+  "rename.tracks": "+{count} pistas",
+  "rename.tracksHelp": "Las pistas .bin/.raw con el nombre del juego se renombran también, y se actualiza el .cue/.gdi",
   "rename.sourceDat": "Nombre del DAT",
   "rename.sourceDatHelp": "El nombre oficial del DAT del sistema, para las ROMs reconocidas por su contenido (DAT… > Comprobar por contenido). Se conserva la extensión.",
   "rename.noRenamesDat": "Ninguna ROM reconocida por contenido tiene un nombre distinto al del DAT. Si aún no lo has hecho, abre DAT… y usa «Comprobar por contenido».",

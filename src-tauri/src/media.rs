@@ -311,6 +311,8 @@ pub enum Journaled {
     Moved(PathBuf, PathBuf),
     /// Copia nueva (al deshacer se borra)
     Copied(PathBuf),
+    /// Fichero de texto reescrito (.cue/.gdi): su contenido de antes
+    Rewritten(PathBuf, Vec<u8>),
 }
 
 // Mientras una operación deshacible está en marcha, aquí se apunta cada paso (None = no se
@@ -344,6 +346,10 @@ pub fn journal_move(from: &Path, to: &Path) {
 
 pub fn journal_copy(dest: &Path) {
     journal_push(Journaled::Copied(dest.to_path_buf()));
+}
+
+pub fn journal_rewrite(path: &Path, before: Vec<u8>) {
+    journal_push(Journaled::Rewritten(path.to_path_buf(), before));
 }
 
 /// Mueve un fichero creando las carpetas que falten. Si es a otro disco (rename falla),
