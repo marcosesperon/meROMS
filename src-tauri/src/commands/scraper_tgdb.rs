@@ -351,8 +351,11 @@ async fn apply_tgdb_game(
     };
     let need_image = wanted("box-2D");
     let need_thumbnail = wanted("ss");
+    // The back of the box, as ScreenScraper's «box-2D-back» (backcovers/)
+    let need_back = wanted("box-2D-back");
     let mut image: Option<String> = None;
     let mut thumbnail: Option<String> = None;
+    let mut back: Option<String> = None;
 
     let base_url = body["include"]["boxart"]["base_url"]["original"]
         .as_str()
@@ -374,6 +377,8 @@ async fn apply_tgdb_game(
 
             if img_type == "boxart" && side == "front" && need_image && image.is_none() {
                 image = download_as(client, &img_url, layout, system, settings, "box-2D", &game.path, ext).await;
+            } else if img_type == "boxart" && side == "back" && need_back && back.is_none() {
+                back = download_as(client, &img_url, layout, system, settings, "box-2D-back", &game.path, ext).await;
             } else if img_type == "screenshot" && need_thumbnail && thumbnail.is_none() {
                 thumbnail = download_as(client, &img_url, layout, system, settings, "ss", &game.path, ext).await;
             }
@@ -381,7 +386,7 @@ async fn apply_tgdb_game(
     }
 
     // If we have a game ID, fetch additional images
-    if game_id > 0 && ((need_image && image.is_none()) || (need_thumbnail && thumbnail.is_none())) {
+    if game_id > 0 && ((need_image && image.is_none()) || (need_thumbnail && thumbnail.is_none()) || (need_back && back.is_none())) {
         if let Ok(extra_images) = fetch_game_images(client, api_key, game_id).await {
             let img_base = extra_images["data"]["base_url"]["original"]
                 .as_str()
@@ -398,10 +403,12 @@ async fn apply_tgdb_game(
                     let img_url = format!("{}{}", img_base, filename);
                     let ext = filename.rsplit('.').next().unwrap_or("jpg");
 
-                    if img_type == "boxart" && need_image && image.is_none() {
+                    if img_type == "boxart" {
                         let side = img["side"].as_str().unwrap_or("");
-                        if side == "front" {
+                        if side == "front" && need_image && image.is_none() {
                             image = download_as(client, &img_url, layout, system, settings, "box-2D", &game.path, ext).await;
+                        } else if side == "back" && need_back && back.is_none() {
+                            back = download_as(client, &img_url, layout, system, settings, "box-2D-back", &game.path, ext).await;
                         }
                     } else if img_type == "screenshot" && need_thumbnail && thumbnail.is_none() {
                         thumbnail = download_as(client, &img_url, layout, system, settings, "ss", &game.path, ext).await;
@@ -423,7 +430,7 @@ async fn apply_tgdb_game(
     policy.data("rating").apply(&mut updated.rating, rating);
     policy.data("releasedate").apply(&mut updated.releasedate, releasedate);
     // Classic may map these media types to other fields; write each one where configured
-    for (media_type, value) in [("box-2D", image), ("ss", thumbnail)] {
+    for (media_type, value) in [("box-2D", image), ("ss", thumbnail), ("box-2D-back", back)] {
         if let (Some(value), Some(field)) = (value, media::field_for_scraper_type(layout, settings, media_type)) {
             media::set_field(&mut updated, &field, Some(value));
         }

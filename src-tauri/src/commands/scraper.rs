@@ -107,8 +107,20 @@ fn extract_regional(arr: &Value, regions: &[String]) -> Option<String> {
 
 /// Media URL of a type, in the preferred region order.
 fn find_media_url(medias: &Value, media_type: &str, regions: &[String]) -> Option<String> {
+    find_media(medias, media_type, regions).map(|(url, _)| url)
+}
+
+/// URL of a media type and its `format` (png, jpg, mp4, pdf…) when ScreenScraper gives it:
+/// its URLs end in «mediaJeu.php?…», so the extension can't be taken from them
+fn find_media(medias: &Value, media_type: &str, regions: &[String]) -> Option<(String, Option<String>)> {
     let item = pick_preferred(medias.as_array()?, "region", regions, |i| i.get("type").and_then(|t| t.as_str()) == Some(media_type))?;
-    item.get("url").and_then(|u| u.as_str()).map(String::from)
+    let url = item.get("url").and_then(|u| u.as_str()).map(String::from)?;
+    let format = item
+        .get("format")
+        .and_then(|f| f.as_str())
+        .map(|f| f.trim().to_lowercase())
+        .filter(|f| (2..=4).contains(&f.len()) && f.chars().all(|c| c.is_ascii_alphanumeric()));
+    Some((url, format))
 }
 
 // Where each media type is saved and which field it fills is decided by
@@ -226,22 +238,20 @@ async fn process_scrape_response(
             media_type.as_str()
         };
 
-        if let Some(url) = find_media_url(medias, search_type, &regions)
+        if let Some((url, format)) = find_media(medias, search_type, &regions)
             .or_else(|| {
                 if media_type == "video" {
-                    find_media_url(medias, "video", &regions)
+                    find_media(medias, "video", &regions)
                 } else {
                     None
                 }
             })
         {
-            let ext = url
-                .rsplit('.')
-                .next()
-                .unwrap_or(if media_type == "video" { "mp4" } else { "png" })
-                .split('?')
-                .next()
-                .unwrap_or(if media_type == "video" { "mp4" } else { "png" });
+            let fallback = if media_type == "video" { "mp4" } else { "png" };
+            // The format ScreenScraper gives (a manual is «pdf»); if not, from the URL as before
+            let from_url = url.rsplit('.').next().unwrap_or(fallback).split('?').next().unwrap_or(fallback).to_string();
+            let ext = format.unwrap_or(from_url);
+            let ext = ext.as_str();
 
             let Some(target) = media::scraped_media_target(
                 layout, system, settings, media_type, &existing_game.path, ext,
@@ -977,6 +987,16 @@ mod tests {
         assert_eq!(find_media_url(&medias, "box-2D", &langs(&["eu", "us"])).as_deref(), Some("box-eu"));
         assert_eq!(find_media_url(&medias, "box-2D", &langs(&["jp"])).as_deref(), Some("box-us"));
         assert_eq!(find_media_url(&medias, "video", &langs(&["eu"])), None);
+
+        // El manual: la extensión sale de «format», no de la URL (mediaJeu.php?…)
+        let medias = serde_json::json!([
+            {"type": "manuel", "region": "eu", "url": "https://x.test/api2/mediaJeu.php?media=manuel(eu)", "format": "PDF"},
+            {"type": "box-2D-back", "region": "eu", "url": "https://x.test/back"},
+        ]);
+        let (url, format) = find_media(&medias, "manuel", &langs(&["eu"])).unwrap();
+        assert!(url.contains("manuel"));
+        assert_eq!(format.as_deref(), Some("pdf"));
+        assert_eq!(find_media(&medias, "box-2D-back", &langs(&["eu"])).unwrap().1, None);
     }
 
     #[test]

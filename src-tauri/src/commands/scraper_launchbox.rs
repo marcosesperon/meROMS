@@ -155,7 +155,8 @@ pub fn lb_platform(folder_name: &str) -> Option<&'static str> {
 }
 
 /// Tipo de imagen de LaunchBox → tipo del scraper de meROMS (los que «Qué actualiza el
-/// scraper» deja elegir). Los demás (contraportada, cartucho…) no se guardan.
+/// scraper» deja elegir). Los demás no se guardan. Se aplica al crear la base local: un tipo
+/// nuevo aquí solo llega tras volver a descargarla.
 fn media_type_for(lb_type: &str) -> Option<&'static str> {
     Some(match lb_type {
         "Box - Front" => "box-2D",
@@ -165,6 +166,8 @@ fn media_type_for(lb_type: &str) -> Option<&'static str> {
         "Clear Logo" => "wheel",
         "Arcade - Marquee" => "marquee",
         "Fanart - Background" => "fanart",
+        "Box - Back" => "box-2D-back",
+        "Cart - Front" | "Disc" => "support-2D",
         _ => return None,
     })
 }

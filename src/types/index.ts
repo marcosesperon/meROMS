@@ -457,6 +457,9 @@ export const AVAILABLE_MEDIA_TYPES = [
   { id: "mixrbv1", label: "Mix V1" },
   { id: "mixrbv2", label: "Mix V2" },
   { id: "video", label: "Video" },
+  { id: "box-2D-back", label: "Back Cover" },
+  { id: "support-2D", label: "Physical Media" },
+  { id: "manuel", label: "Manual (PDF)" },
 ] as const;
 
 export const DEFAULT_MEDIA_TYPES = ["box-2D", "ss", "marquee"];
@@ -488,6 +491,9 @@ export const MEDIA_TYPE_FOLDERS: Record<string, string> = {
   mixrbv1: "miximages",
   mixrbv2: "miximages",
   video: "videos",
+  "box-2D-back": "backcovers",
+  "support-2D": "physicalmedia",
+  manuel: "manuals",
 };
 
 /** Per scraper media type: which gamelist field it fills (Classic structure only) */
@@ -516,4 +522,7 @@ export const DEFAULT_MEDIA_PATHS: MediaPathConfig[] = [
   { mediaType: "mixrbv1", gameField: "image" },
   { mediaType: "mixrbv2", gameField: "image" },
   { mediaType: "video", gameField: "video" },
+  { mediaType: "box-2D-back", gameField: "boxback" },
+  { mediaType: "support-2D", gameField: "cartridge" },
+  { mediaType: "manuel", gameField: "manual" },
 ];

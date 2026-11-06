@@ -458,7 +458,7 @@ const en = {
   "move.moved": "{count} games moved.",
   "move.skipped": "{count} not moved:",
   "move.failed": "Could not move: {error}",
-  "launchbox.help": "A free game database you download once (about 110 MB): no account and no daily limit. Used for consoles and computers after ScreenScraper, and for arcade after ArcadeItalia. Images come from LaunchBox when used.",
+  "launchbox.help": "A free game database you download once (about 110 MB): no account and no daily limit. Used for consoles and computers after ScreenScraper, and for arcade after ArcadeItalia. Images come from LaunchBox when used. Downloaded before version 0.1.7? Update it to get back covers and cartridges/discs too.",
   "launchbox.notDownloaded": "Not downloaded: LaunchBox is not used.",
   "launchbox.current": "{games} games, downloaded on {date}.",
   "launchbox.download": "Download database (110 MB)",

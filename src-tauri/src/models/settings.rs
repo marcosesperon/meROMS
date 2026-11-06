@@ -130,6 +130,8 @@ pub const SCRAPE_DATA_FIELDS: &[&str] = &["name", "desc", "genre", "developer", 
 /// Media types the scraper can download (ScreenScraper ids; mirrors AVAILABLE_MEDIA_TYPES in the UI)
 pub const SCRAPE_MEDIA_TYPES: &[&str] = &[
     "box-2D", "box-3D", "ss", "sstitle", "marquee", "wheel", "wheel-hd", "fanart", "screenmarquee", "mixrbv1", "mixrbv2", "video",
+    // Back cover, cartridge/disc and the PDF manual (not in saved policies ⇒ «don't touch»)
+    "box-2D-back", "support-2D", "manuel",
 ];
 
 /// Per data field and per media type, what the scraper may update

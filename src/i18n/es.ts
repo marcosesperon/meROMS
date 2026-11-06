@@ -460,7 +460,7 @@ const es: Record<TranslationKeys, string> = {
   "move.moved": "{count} juegos movidos.",
   "move.skipped": "{count} no movidos:",
   "move.failed": "No se ha podido mover: {error}",
-  "launchbox.help": "Base de datos de juegos gratuita que se descarga una vez (unos 110 MB): sin cuenta y sin límite diario. Se usa en consolas y ordenadores después de ScreenScraper, y en arcade después de ArcadeItalia. Las imágenes se bajan de LaunchBox al usarlas.",
+  "launchbox.help": "Base de datos de juegos gratuita que se descarga una vez (unos 110 MB): sin cuenta y sin límite diario. Se usa en consolas y ordenadores después de ScreenScraper, y en arcade después de ArcadeItalia. Las imágenes se bajan de LaunchBox al usarlas. ¿La descargaste antes de la 0.1.7? Actualízala para tener también contraportadas y cartuchos o discos.",
   "launchbox.notDownloaded": "Sin descargar: LaunchBox no se usa.",
   "launchbox.current": "{games} juegos, descargada el {date}.",
   "launchbox.download": "Descargar base de datos (110 MB)",
