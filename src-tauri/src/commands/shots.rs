@@ -36,6 +36,8 @@ pub fn shots_prepare(window: tauri::WebviewWindow) -> Result<(), String> {
     }
     window.set_size(tauri::LogicalSize::new(1600.0, 1000.0)).map_err(|e| e.to_string())?;
     window.center().map_err(|e| e.to_string())?;
+    // Siempre encima: la foto es de la zona de pantalla y otra ventana delante saldría en ella
+    window.set_always_on_top(true).map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())
 }
 
