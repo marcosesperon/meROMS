@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
-import { detectEsdePaths, suggestedBiosDir } from "../../commands";
+import { detectEsdePaths, suggestedBiosDir, suggestedSavesDir } from "../../commands";
 import type { EsdeDetectedPaths, Profile, StructureKind } from "../../types";
 import { createProfile, isDefaultEsdeMedia, isProfileComplete } from "../../utils/profiles";
 import { TrashIcon } from "../common/Icons";
@@ -28,9 +28,12 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
   const editing = profiles.find((p) => p.id === editingId);
   // Carpeta de BIOS que se usaría si se deja vacía (se enseña como ejemplo)
   const [suggestedBios, setSuggestedBios] = useState<string | null>(null);
+  // Y la de partidas guardadas (pestaña «Datos guardados» de la ficha a pantalla completa)
+  const [suggestedSaves, setSuggestedSaves] = useState<string | null>(null);
   useEffect(() => {
     if (!editing) return;
     suggestedBiosDir(editing).then(setSuggestedBios).catch(() => setSuggestedBios(null));
+    suggestedSavesDir(editing).then(setSuggestedSaves).catch(() => setSuggestedSaves(null));
   }, [editing?.rom_root_path, editing?.esde_home_path, editing?.kind]);
 
   function updateProfile(changes: Partial<Profile>) {
@@ -229,6 +232,20 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
               if (folder) updateProfile({ bios_dir: folder });
             }}
             onClear={editing.bios_dir ? () => updateProfile({ bios_dir: undefined }) : undefined}
+          />
+
+          {/* Carpeta de partidas guardadas; vacía = la habitual junto a las ROMs */}
+          <FolderField
+            label={t("saves.folder")}
+            help={t("saves.folderHelp")}
+            value={editing.saves_dir}
+            placeholder={suggestedSaves ?? t("settings.noFolder")}
+            browseLabel={t("settings.browse")}
+            onBrowse={async () => {
+              const folder = await pickFolder();
+              if (folder) updateProfile({ saves_dir: folder });
+            }}
+            onClear={editing.saves_dir ? () => updateProfile({ saves_dir: undefined }) : undefined}
           />
 
           <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50">

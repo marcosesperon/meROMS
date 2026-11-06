@@ -780,3 +780,84 @@ export async function getGameStatuses(systemPath: string): Promise<Record<string
 export async function setGameStatuses(systemPath: string, gamePaths: string[], change: StatusChange): Promise<Record<string, GameStatus>> {
   return invoke("set_game_statuses", { systemPath, gamePaths, change });
 }
+
+// Saves (saves.rs): save games and states of a game, in the profile's saves folder
+export interface SaveFile {
+  path: string;
+  name: string;
+  kind: "save" | "state";
+  /** State slot: 0 = .state, N = .stateN, -1 = .state.auto */
+  slot: number | null;
+  size: number;
+  /** Unix seconds */
+  modified: number;
+  thumbnail: string | null;
+}
+
+export async function suggestedSavesDir(profile: Profile): Promise<string | null> {
+  return invoke("suggested_saves_dir", { profile });
+}
+
+export async function listSaves(systemPath: string, gamePath: string): Promise<{ dir: string | null; files: SaveFile[] }> {
+  return invoke("list_saves", { systemPath, gamePath });
+}
+
+export async function trashSave(file: string): Promise<void> {
+  return invoke("trash_save", { file });
+}
+
+export async function backupSaves(systemPath: string, gamePath: string, dest: string): Promise<string> {
+  return invoke("backup_saves", { systemPath, gamePath, dest });
+}
+
+export async function importSave(systemPath: string, gamePath: string, file: string): Promise<string> {
+  return invoke("import_save", { systemPath, gamePath, file });
+}
+
+// Metadata tab (game_meta.rs)
+export interface GameFiles {
+  name: string;
+  exists: boolean;
+  is_dir: boolean;
+  size: number;
+  files: { path: string; size: number }[];
+  archive: { name: string; size: number; crc: string }[] | null;
+}
+
+export interface GameHashes {
+  target: string;
+  inside_archive: boolean;
+  size: number;
+  crc: string;
+  md5: string;
+  sha1: string;
+}
+
+export interface DatMatch {
+  dat: string;
+  by: "content" | "name" | null;
+  name: string | null;
+  description: string | null;
+  cloneof: string | null;
+  bios: boolean;
+}
+
+export async function gameFiles(systemPath: string, gamePath: string): Promise<GameFiles> {
+  return invoke("game_files", { systemPath, gamePath });
+}
+
+export async function gameHashes(systemPath: string, gamePath: string): Promise<GameHashes | null> {
+  return invoke("game_hashes", { systemPath, gamePath });
+}
+
+export async function datGameInfo(systemPath: string, gamePath: string): Promise<DatMatch | null> {
+  return invoke("dat_game_info", { systemPath, gamePath });
+}
+
+export async function rawGameFields(systemPath: string, gamePath: string): Promise<[string, string][]> {
+  return invoke("raw_game_fields", { systemPath, gamePath });
+}
+
+export async function openManual(path: string): Promise<void> {
+  return invoke("open_manual", { path });
+}

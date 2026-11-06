@@ -7,7 +7,7 @@ import { useGameDetails } from "../../hooks/useGameDetails";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
 import { CloseIcon, PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
-import { GameMediaViewer } from "./GameMediaViewer";
+import { GameTabs } from "./GameTabs";
 
 /**
  * Ficha de un juego a pantalla completa (idea de RomM): lo del panel derecho en grande, con
@@ -81,8 +81,6 @@ function FullView({ game }: { game: Game }) {
     []
   );
 
-  // El visor solo si hay algo más que la carátula (que ya va grande a la izquierda)
-  const showViewer = !!shown && media.some((m) => m.url !== cover);
   const subtitle = [game.developer, game.releasedate?.slice(0, 4), game.genre].filter(Boolean).join(" · ");
   const fits = useFitsScreen();
 
@@ -150,6 +148,9 @@ function FullView({ game }: { game: Game }) {
         ))}
     </dl>
   );
+  const tabs = (fill: boolean) => (
+    <GameTabs game={game} systemPath={systemPath} media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} fill={fill} />
+  );
   const arrow = "absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-black/50 text-zinc-200 text-2xl leading-none hover:bg-black/80 hover:text-white disabled:opacity-0 transition";
 
   return (
@@ -182,35 +183,30 @@ function FullView({ game }: { game: Game }) {
       </button>
 
       {fits ? (
-        // Ventana grande: dos columnas que caben enteras (la descripción se desplaza sola)
-        <div
-          className="relative flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-20 pb-8 grid gap-10"
-          // Una sola fila del alto disponible: las columnas no pueden crecer más que la ventana
-          style={{
-            gridTemplateColumns: showViewer ? "minmax(0, 5fr) minmax(0, 6fr)" : "minmax(0, 1fr)",
-            gridTemplateRows: "minmax(0, 1fr)",
-          }}
-        >
-          <div className="flex flex-col min-h-0">
-            {/* Título y botones apoyados en la parte de abajo de la carátula */}
-            <div className="flex gap-6 items-end">
-              {coverImg("max-h-[34vh] max-w-[40%]")}
-              <div className="min-w-0 flex-1">{heading}</div>
-            </div>
-            <div className="mt-6">{detailList}</div>
-            {game.desc && (
-              <p className="mt-5 flex-1 min-h-0 overflow-y-auto pr-2 text-sm leading-relaxed text-zinc-300 whitespace-pre-line">{game.desc}</p>
-            )}
-            <p className="mt-3 text-[11px] text-zinc-600 font-mono truncate" title={game.path}>{game.path}</p>
+        // Ventana grande: todo cabe sin desplazarse. Arriba la cabecera (carátula, título y
+        // botones); debajo, desde la base de la carátula, datos a la izquierda y pestañas a la derecha
+        <div className="relative flex-1 min-h-0 w-full max-w-[1600px] mx-auto px-20 pb-8 flex flex-col">
+          <div className="flex gap-6 items-end shrink-0">
+            {coverImg("max-h-[30vh] max-w-[240px]")}
+            <div className="min-w-0 flex-1">{heading}</div>
           </div>
-          {showViewer && (
-            <div className="min-h-0">
-              <GameMediaViewer media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} large fit />
+          <div
+            className="mt-6 flex-1 min-h-0 grid gap-10"
+            // Una sola fila del alto que queda: las columnas no pueden crecer más que la ventana
+            style={{ gridTemplateColumns: "minmax(0, 5fr) minmax(0, 6fr)", gridTemplateRows: "minmax(0, 1fr)" }}
+          >
+            <div className="flex flex-col min-h-0">
+              {detailList}
+              {game.desc && (
+                <p className="mt-5 flex-1 min-h-0 overflow-y-auto pr-2 text-sm leading-relaxed text-zinc-300 whitespace-pre-line">{game.desc}</p>
+              )}
+              <p className="mt-3 text-[11px] text-zinc-600 font-mono truncate" title={game.path}>{game.path}</p>
             </div>
-          )}
+            {tabs(true)}
+          </div>
         </div>
       ) : (
-        // Ventana pequeña: todo seguido, desplazándose
+        // Ventana pequeña: todo seguido, desplazándose (las pestañas al final)
         <div className="relative flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-20 pb-12 pt-2">
             <div className="flex gap-10 items-start">
@@ -221,11 +217,7 @@ function FullView({ game }: { game: Game }) {
                 <div className="mt-6 max-w-3xl">{detailList}</div>
               </div>
             </div>
-            {showViewer && (
-              <div className="mt-10 max-w-4xl mx-auto">
-                <GameMediaViewer media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} large />
-              </div>
-            )}
+            <div className="mt-10">{tabs(false)}</div>
             <p className="mt-8 text-[11px] text-zinc-600 font-mono break-all text-center">{game.path}</p>
           </div>
         </div>

@@ -208,6 +208,7 @@ mod tests {
             skip_structure_prompt: false,
             last_system: None,
             bios_dir: None,
+            saves_dir: None,
         }
     }
 

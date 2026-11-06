@@ -393,6 +393,49 @@ fn match_key(path: &str) -> String {
     Path::new(path).file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default()
 }
 
+/// Lo que dice el DAT de una ROM (pestaña Metadatos de la ficha a pantalla completa)
+#[derive(Debug, Clone, Serialize)]
+pub struct DatMatch {
+    /// Nombre del DAT
+    pub dat: String,
+    /// "content" (por su CRC), "name" (por el nombre del fichero) o None si no está
+    pub by: Option<String>,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub cloneof: Option<String>,
+    pub bios: bool,
+}
+
+/// El juego del DAT de una ROM, con el mismo criterio que el informe: primero por contenido
+/// (si su CRC está en caché), luego por nombre. None si el sistema no tiene DAT.
+pub(crate) fn match_rom(app: &tauri::AppHandle, system: &SystemRef, rom: &Path) -> Result<Option<DatMatch>, String> {
+    let Some(dat) = load_dat(app, &system.name)? else { return Ok(None) };
+    let crcs = cached_crcs(app, &[rom.to_path_buf()])?;
+    Ok(Some(match_in(&dat, rom, crcs.get(rom).map(String::as_str))))
+}
+
+fn match_in(dat: &Dat, rom: &Path, crc: Option<&str>) -> DatMatch {
+    let key = match_key(&rom.to_string_lossy());
+    let by_crc = crc_index(dat);
+    let by_content = crc.and_then(|c| pick_by_crc(&by_crc, c, &key));
+    let by_name = || dat.games.iter().find(|g| g.name.to_lowercase() == key);
+    let (by, game) = match by_content {
+        Some(g) => (Some("content"), Some(g)),
+        None => match by_name() {
+            Some(g) => (Some("name"), Some(g)),
+            None => (None, None),
+        },
+    };
+    DatMatch {
+        dat: dat.name.clone(),
+        by: by.map(String::from),
+        name: game.map(|g| g.name.clone()),
+        description: game.map(|g| g.description.clone()).filter(|d| !d.is_empty()),
+        cloneof: game.and_then(|g| g.cloneof.clone()),
+        bios: game.is_some_and(|g| g.bios),
+    }
+}
+
 fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs: &HashMap<PathBuf, String>) -> DatReport {
     let by_name: HashMap<String, &DatGame> = dat.games.iter().map(|g| (g.name.to_lowercase(), g)).collect();
     let by_crc = crc_index(dat);
@@ -476,6 +519,25 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn una_rom_por_contenido_o_por_nombre() {
+        let dat = Dat {
+            name: "No-Intro".into(),
+            games: vec![
+                DatGame { name: "Zelda (USA)".into(), crcs: vec!["abcd1234".into()], ..Default::default() },
+                DatGame { name: "Zelda (Europe)".into(), cloneof: Some("Zelda (USA)".into()), ..Default::default() },
+            ],
+        };
+        let m = match_in(&dat, Path::new("/r/snes/zelda.sfc"), Some("abcd1234"));
+        assert_eq!(m.by.as_deref(), Some("content"));
+        assert_eq!(m.name.as_deref(), Some("Zelda (USA)"));
+        let m = match_in(&dat, Path::new("/r/snes/Zelda (Europe).zip"), None);
+        assert_eq!(m.by.as_deref(), Some("name"));
+        assert_eq!(m.cloneof.as_deref(), Some("Zelda (USA)"));
+        let m = match_in(&dat, Path::new("/r/snes/otro.sfc"), None);
+        assert!(m.by.is_none() && m.name.is_none());
+    }
 
     const MAME: &str = r#"<?xml version="1.0"?>
 <mame build="0.270">

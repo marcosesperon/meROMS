@@ -6,7 +6,7 @@ mod parser;
 mod rename_rules;
 mod rom_hash;
 
-use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate, undo};
+use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, saves, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, translate, undo};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,11 +37,14 @@ pub fn run() {
                         "mp4" => "video/mp4",
                         "webm" => "video/webm",
                         "avi" => "video/x-msvideo",
+                        "pdf" => "application/pdf",
                         _ => "application/octet-stream",
                     };
                     tauri::http::Response::builder()
                         .status(200)
                         .header("Content-Type", mime)
+                        // The manual viewer (pdf.js) reads the file with fetch(), which needs CORS
+                        .header("Access-Control-Allow-Origin", "*")
                         .body(std::borrow::Cow::Owned(data))
                         .unwrap()
                 }
@@ -124,6 +127,16 @@ pub fn run() {
             chd::cancel_chd,
             game_status::get_game_statuses,
             game_status::set_game_statuses,
+            saves::suggested_saves_dir,
+            saves::list_saves,
+            saves::trash_save,
+            saves::backup_saves,
+            saves::import_save,
+            game_meta::game_files,
+            game_meta::game_hashes,
+            game_meta::dat_game_info,
+            game_meta::raw_game_fields,
+            game_meta::open_manual,
             move_games::list_subfolders,
             move_games::move_games,
             rename::check_rename_target,

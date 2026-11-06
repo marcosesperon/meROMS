@@ -391,6 +391,7 @@ game (
             skip_structure_prompt: false,
             last_system: None,
             bios_dir: None,
+            saves_dir: None,
         };
         assert_eq!(bios_dir(&p), Some(PathBuf::from("/ficticio/Emulation/bios")));
         let mine = Profile { bios_dir: Some("/mis/bios".into()), ..p };

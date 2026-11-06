@@ -1,8 +1,8 @@
 import type { TranslationKeys } from "../i18n/en";
 export interface Game {
-  // XML attributes
-  id?: string;
-  source?: string;
+  // XML attributes (the Rust struct serializes them as "@id" / "@source")
+  "@id"?: string;
+  "@source"?: string;
 
   // Core
   path: string;
@@ -114,6 +114,8 @@ export interface Profile {
   last_system?: string;
   /** BIOS folder (Tools > BIOS); missing = the usual one next to the ROM folder */
   bios_dir?: string;
+  /** Saves folder (save games and states); missing = the usual one next to the ROM folder */
+  saves_dir?: string;
 }
 
 /** Systems of the active profile that are in the other structure, and where to migrate them from */

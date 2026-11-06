@@ -8,7 +8,7 @@ interface GameMediaViewerProps {
   onFailed: (url: string) => void;
   /** Miniaturas más grandes (ficha a pantalla completa) */
   large?: boolean;
-  /** Que quepa en la ventana: el visor no pasa de su alto y se centra en vertical */
+  /** Ocupar el alto del hueco: el visor crece hasta él y deja sitio a las miniaturas debajo */
   fit?: boolean;
 }
 
@@ -16,10 +16,9 @@ interface GameMediaViewerProps {
 export function GameMediaViewer({ media, shown, onPick, onFailed, large = false, fit = false }: GameMediaViewerProps) {
   const { t } = useTranslation();
   return (
-    <div className={fit ? "h-full flex flex-col justify-center" : ""}>
-      {/* Con «fit», 16:9 pero sin pasar del alto de la ventana menos la barra de arriba y las
-          miniaturas (lo que sobra a los lados queda en negro) */}
-      <div className={`aspect-video w-full bg-black rounded-lg overflow-hidden flex items-center justify-center ${fit ? "max-h-[calc(100vh-13rem)]" : ""}`}>
+    <div className={fit ? "h-full flex flex-col min-h-0" : ""}>
+      {/* Con «fit», todo el alto que quede libre (la imagen o el vídeo, enteros dentro) */}
+      <div className={`w-full bg-black rounded-lg overflow-hidden flex items-center justify-center ${fit ? "flex-1 min-h-0" : "aspect-video"}`}>
         {shown.field === "video" ? (
           <video key={shown.url} src={shown.url} onError={() => onFailed(shown.url)} controls autoPlay muted loop className="w-full h-full object-contain" />
         ) : (
@@ -27,7 +26,7 @@ export function GameMediaViewer({ media, shown, onPick, onFailed, large = false,
         )}
       </div>
       {media.length > 1 && (
-        <div className="flex gap-2 mt-2 overflow-x-auto pb-1">
+        <div className="flex gap-2 mt-2 overflow-x-auto pb-1 shrink-0">
           {media.map((m, i) => (
             <button
               key={m.field}

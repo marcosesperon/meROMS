@@ -38,6 +38,9 @@ pub struct Profile {
     /// BIOS folder (Tools > BIOS); None = the usual one next to the ROM folder
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bios_dir: Option<String>,
+    /// Saves folder (save games and states); None = the usual one next to the ROM folder
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub saves_dir: Option<String>,
 }
 
 impl Profile {
@@ -58,6 +61,7 @@ impl Profile {
             skip_structure_prompt: false,
             last_system: None,
             bios_dir: None,
+            saves_dir: None,
         }
     }
 }

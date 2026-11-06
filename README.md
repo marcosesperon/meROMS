@@ -176,7 +176,8 @@ meROMS is free. If it saves you time, you can
 ## License
 
 meROMS is open source under the [MIT License](LICENSE). The built-in rename rules come from
-[ES-DE-Roms-Renamer](https://github.com/mirai-toto/ES-DE-Roms-Renamer) (also MIT).
+[ES-DE-Roms-Renamer](https://github.com/mirai-toto/ES-DE-Roms-Renamer) (also MIT). The manual
+viewer uses [PDF.js](https://mozilla.github.io/pdf.js/) by Mozilla (Apache License 2.0).
 
 The system logos (`src/assets/logos/`) are not MIT: they are trademarks of their owners, taken
 from EmulationStation themes under CC BY-NC-SA

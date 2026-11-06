@@ -100,6 +100,7 @@ fn detected_profile(active: &Profile, kind: StructureKind, esde_home: Option<&Pa
         skip_structure_prompt: false,
         last_system: None,
         bios_dir: None,
+        saves_dir: None,
     }
 }
 
@@ -130,6 +131,7 @@ mod tests {
             skip_structure_prompt: false,
             last_system: None,
             bios_dir: None,
+            saves_dir: None,
         }
     }
 
