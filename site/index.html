@@ -128,6 +128,7 @@
     .tool b { color: var(--text); font-size: 15px; font-weight: 600; }
     .tool p { margin: 0; font-size: 14px; color: var(--text-dim); }
     .tools-sub { margin: 44px 0 14px; font-size: 17px; }
+    .tools-shot { display: block; max-width: 960px; margin: 0 auto 28px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); }
     .tag {
       display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: .04em;
       padding: 2px 7px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent-soft);
@@ -229,7 +230,7 @@
           <span lang="es">Gratis y de código abierto &middot; macOS, Windows y Linux &middot; inglés y español</span>
         </p>
         <a class="shot-main" href="images/grid.jpg" data-viewer>
-          <img src="images/grid.jpg" width="1600" height="901" alt="meROMS: game grid with the details of the selected game">
+          <img src="images/grid.jpg" width="1600" height="1000" alt="meROMS: game grid with the details of the selected game">
         </a>
       </div>
     </div>
@@ -252,7 +253,7 @@
                 <span lang="es">Miniaturas, columnas ordenables que eliges y recolocas, anchos que se recuerdan y el nombre fijo al desplazarte en horizontal. También con el teclado. Filtra por lo que has jugado y ordena la cuadrícula por más jugados, recientes, tiempo de juego, fecha de salida o nota.</span>
               </p>
             </div>
-            <a class="shot" href="images/table.jpg" data-viewer><img src="images/table.jpg" width="1600" height="901" loading="lazy" alt="Table view"></a>
+            <a class="shot" href="images/table.jpg" data-viewer><img src="images/table.jpg" width="1600" height="1000" loading="lazy" alt="Table view"></a>
           </div>
           <div class="tour-item">
             <div class="tour-text">
@@ -262,7 +263,7 @@
                 <span lang="es">Logos de casi cien sistemas, un poco de historia, ficha técnica y lo completa que está tu biblioteca: carátulas, descripciones, vídeos, favoritos. Y lo que juegas: los más jugados y los jugados hace poco, con veces, tiempo de juego y última partida de cada juego.</span>
               </p>
             </div>
-            <a class="shot" href="images/system.jpg" data-viewer><img src="images/system.jpg" width="1600" height="802" loading="lazy" alt="System summary"></a>
+            <a class="shot" href="images/system.jpg" data-viewer><img src="images/system.jpg" width="1600" height="1000" loading="lazy" alt="System summary"></a>
           </div>
           <div class="tour-item">
             <div class="tour-text">
@@ -272,7 +273,67 @@
                 <span lang="es">Medios a un lado y datos al otro. Asigna cualquier imagen o vídeo, corrige una carátula guardada como captura, renombra la ROM y sus medios de una vez.</span>
               </p>
             </div>
-            <a class="shot" href="images/editor.jpg" data-viewer><img src="images/editor.jpg" width="1600" height="901" loading="lazy" alt="Game editor"></a>
+            <a class="shot" href="images/editor.jpg" data-viewer><img src="images/editor.jpg" width="1600" height="1000" loading="lazy" alt="Game editor"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">The whole game, full screen</span><span lang="es">El juego entero, a pantalla completa</span></h3>
+              <p>
+                <span lang="en">Open a game over the whole window and move to the previous or next one with the arrows. Media, video and details on one page; make it open with a single click if you like (Settings).</span>
+                <span lang="es">Abre un juego a toda la ventana y pasa al anterior o al siguiente con las flechas. Medios, vídeo y datos en una sola página; si quieres, que se abra con un clic (Ajustes).</span>
+              </p>
+            </div>
+            <a class="shot" href="images/fullview.jpg" data-viewer><img src="images/fullview.jpg" width="1600" height="1000" loading="lazy" alt="Full-screen game page"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Manuals and saves</span><span lang="es">Manuales y partidas</span></h3>
+              <p>
+                <span lang="en">Read the game's manual in the built-in PDF viewer, page by page or enlarged. Its save games and states are one tab away: back them up, import or delete them.</span>
+                <span lang="es">Lee el manual del juego en el visor de PDF integrado, página a página o en grande. Sus partidas guardadas y estados, en la pestaña de al lado: cópialos, impórtalos o bórralos.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/manual.jpg" data-viewer><img src="images/manual.jpg" width="1600" height="1000" loading="lazy" alt="Manual viewer"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">The file itself</span><span lang="es">El propio fichero</span></h3>
+              <p>
+                <span lang="en">Its files, CRC, MD5 and SHA-1 (inside the zip too), what the system's DAT says about it, its id in the metadata sources and every field of its gamelist entry.</span>
+                <span lang="es">Sus ficheros, CRC, MD5 y SHA-1 (también dentro del zip), qué dice de él el DAT del sistema, su id en las fuentes de metadatos y todos los campos de su entrada en la gamelist.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/metadata.jpg" data-viewer><img src="images/metadata.jpg" width="1600" height="1000" loading="lazy" alt="Game metadata"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Playing, finished, abandoned...</span><span lang="es">Jugando, terminado, abandonado...</span></h3>
+              <p>
+                <span lang="en">Give each game a status (incomplete, finished, 100% completed, abandoned, never playing) plus "playing" and "backlog". Filter by it, see it on the covers, and ES-DE's "completed" stays in step.</span>
+                <span lang="es">Dale a cada juego un estado (incompleto, terminado, completado al 100 %, abandonado, nunca jugar) y además «jugando» y «pendiente». Filtra por él, míralo en las carátulas, y el «completado» de ES-DE va a la par.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/status.jpg" data-viewer><img src="images/status.jpg" width="1600" height="1000" loading="lazy" alt="Game status menu"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Find it fast</span><span lang="es">Encuéntralo rápido</span></h3>
+              <p>
+                <span lang="en">Search, filters (genre, region, favourites, missing media, played, status...) and a jump-to-letter bar beside the list.</span>
+                <span lang="es">Búsqueda, filtros (género, región, favoritos, medios que faltan, jugados, estado...) y una barra para saltar a una letra junto a la lista.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/filters.jpg" data-viewer><img src="images/filters.jpg" width="1600" height="1000" loading="lazy" alt="Filters and jump-to-letter bar"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">You decide what the scraper touches</span><span lang="es">Tú decides qué toca el scraper</span></h3>
+              <p>
+                <span lang="en">For each field and media type: overwrite, only if empty, or leave it. Covers, screenshots, videos, logos... and also back covers, cartridges and discs, and PDF manuals.</span>
+                <span lang="es">Para cada dato y tipo de medio: sobrescribir, solo si está vacío o no tocarlo. Carátulas, capturas, vídeos, logos... y también contraportadas, cartuchos y discos, y manuales en PDF.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/settings-scraper.jpg" data-viewer><img src="images/settings-scraper.jpg" width="1600" height="1000" loading="lazy" alt="What the scraper updates"></a>
           </div>
         </div>
       </div>
@@ -363,6 +424,21 @@
             <h3><span lang="en">Discs to CHD</span><span lang="es">Discos a CHD</span></h3>
             <p><span lang="en">Convert <code>.cue</code>, <code>.gdi</code>, <code>.iso</code> and the discs of an <code>.m3u</code> to CHD with <code>chdman</code> (installed separately: it comes with MAME). Each CHD is verified before the game uses it; the originals go to the trash, stay or move to a subfolder.</span><span lang="es">Convierte <code>.cue</code>, <code>.gdi</code>, <code>.iso</code> y los discos de un <code>.m3u</code> a CHD con <code>chdman</code> (se instala aparte: viene con MAME). Cada CHD se comprueba antes de que el juego lo use; los originales van a la papelera, se quedan o pasan a una subcarpeta.</span></p>
           </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg></div>
+            <h3><span lang="en">Full-screen game page</span><span lang="es">Ficha a pantalla completa</span></h3>
+            <p><span lang="en">Each game over the whole window, with previous/next arrows and tabs: media, the manual in a built-in PDF viewer, save games and states, and metadata (files, hashes, DAT check, every gamelist field).</span><span lang="es">Cada juego a toda la ventana, con flechas de anterior/siguiente y pestañas: medios, el manual en un visor de PDF integrado, partidas guardadas y estados, y metadatos (ficheros, hashes, comprobación con el DAT, todos los campos de la gamelist).</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg></div>
+            <h3><span lang="en">Game statuses</span><span lang="es">Estados de juego</span></h3>
+            <p><span lang="en">Incomplete, finished, 100% completed, abandoned or never playing, plus playing and backlog. Shown on covers and in the table, with a filter and bulk edit. Finished games are marked "completed" for ES-DE too.</span><span lang="es">Incompleto, terminado, completado al 100 %, abandonado o nunca jugar, y además jugando y pendiente. Se ven en las carátulas y en la tabla, con filtro y edición múltiple. Los terminados quedan como «completado» también para ES-DE.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h10M4 18h10"/><path d="M19 4v16M17 7l2-3 2 3M17 17l2 3 2-3"/></svg></div>
+            <h3><span lang="en">Find your way</span><span lang="es">Muévete por tu biblioteca</span></h3>
+            <p><span lang="en">Jump to a letter from the bar beside the list, a welcome screen when nothing is picked, and each system with its own colours, logo and specs.</span><span lang="es">Salta a una letra desde la barra junto a la lista, una pantalla de bienvenida cuando no hay nada elegido, y cada sistema con sus colores, su logo y su ficha técnica.</span></p>
+          </div>
         </div>
       </div>
     </section>
@@ -376,6 +452,7 @@
           <span lang="en">At the bottom of every system, the <b>Tools</b> menu works on the whole system. Each tool shows what it will do and asks before changing anything.</span>
           <span lang="es">Abajo, en cada sistema, el menú <b>Herramientas</b> trabaja sobre el sistema entero. Cada herramienta enseña lo que va a hacer y pregunta antes de cambiar nada.</span>
         </p>
+        <a class="tools-shot" href="images/tools.jpg" data-viewer><img src="images/tools.jpg" width="1600" height="1000" loading="lazy" alt="The Tools menu"></a>
         <div class="tools">
           <div class="tool">
             <div><b><span lang="en">Rename</span><span lang="es">Renombrar</span></b></div>
@@ -518,6 +595,7 @@ downloaded_media/snes/covers/Aladdin.png
 ROMs/snes/Aladdin.zip</code>
           </div>
         </div>
+        <a class="tools-shot" style="margin-top:28px" href="images/settings-profiles.jpg" data-viewer><img src="images/settings-profiles.jpg" width="1600" height="1000" loading="lazy" alt="Profiles in Settings"></a>
       </div>
     </section>
 
