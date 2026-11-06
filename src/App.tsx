@@ -39,6 +39,7 @@ import { useTranslation } from "./i18n";
 import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
+import { shotsRunning, startShots } from "./dev/shots";
 import { DonationModal } from "./components/common/DonationModal";
 import { UpdateBanner } from "./components/common/UpdateBanner";
 import { UpdateModal } from "./components/common/UpdateModal";
@@ -214,7 +215,7 @@ function App() {
     // (the first timer is cancelled), and marking it here would skip the check for good
     const timer = setTimeout(() => {
       donationChecked.current = true;
-      if (document.querySelector(".fixed.inset-0")) return;
+      if (document.querySelector(".fixed.inset-0") || shotsRunning()) return;
       const { settings: current, patchSettings } = useAppStore.getState();
       const due = donationPromptDue(current.donation_prompt_at, Math.floor(Date.now() / 1000));
       if (due.saveAt) patchSettings({ donation_prompt_at: due.saveAt });
@@ -223,12 +224,17 @@ function App() {
     return () => clearTimeout(timer);
   }, [settingsLoaded, hasUsableProfile]);
 
+  // Development only: screenshots for the website (MEROMS_SHOTS=1 pnpm tauri dev, src/dev/shots.ts)
+  useEffect(() => {
+    if (settingsLoaded) startShots();
+  }, [settingsLoaded]);
+
   // New versions: look at start and then once a day while the app stays open, unless turned
   // off in Settings > About. Automatic checks fail silently (offline, dev build...)
   const checkUpdates = settings.check_updates !== false;
   useEffect(() => {
     if (!settingsLoaded || !checkUpdates) return;
-    const run = () => useUpdateStore.getState().checkNow();
+    const run = () => !shotsRunning() && useUpdateStore.getState().checkNow();
     const first = setTimeout(run, 3000);
     const daily = setInterval(run, 24 * 3600 * 1000);
     return () => {

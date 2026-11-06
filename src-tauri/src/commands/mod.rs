@@ -23,6 +23,7 @@ pub mod game_meta;
 pub mod game_status;
 pub mod placeholders;
 pub mod saves;
+pub mod shots;
 pub mod profiles;
 pub mod scrape_resume;
 pub mod scrape_common;

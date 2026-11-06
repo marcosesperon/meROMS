@@ -34,6 +34,7 @@ meROMS is a desktop ROM manager for EmulationStation gamelist.xml files. Built w
 
 - `pnpm tauri dev` — Start full development mode (Vite + Rust backend + Tauri window)
 - `pnpm tauri build` — Production build (creates platform-specific installers in `src-tauri/target/release/bundle/`)
+- `MEROMS_SHOTS=1 pnpm tauri dev` — Development only: the app walks the scenes in `src/dev/shots.ts` with the active profile's library and saves the website screenshots to `site/images/<name>.jpg` (1600 px, `shots.rs`: `screencapture -R` of the window + `sips`), then quits. If a `pnpm tauri dev` is already running, `cd src-tauri && MEROMS_SHOTS=1 cargo run --no-default-features` reuses its Vite. Scenes click elements marked `data-shot`. macOS asks once for Screen Recording permission for the terminal
 - `pnpm dev` — Frontend-only dev server (Vite on port 1420, no Tauri window)
 - `pnpm build` — Frontend-only build (`tsc && vite build`, outputs to `dist/`)
 - `cargo test --manifest-path src-tauri/Cargo.toml` — Rust unit tests (use temp dirs via `tempfile`; no real ROMs needed)

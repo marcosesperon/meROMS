@@ -61,7 +61,7 @@ export function ScrapePolicyEditor({ policy, onChange }: ScrapePolicyEditorProps
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-shot="scrape-policy">
       <div className="flex gap-2">
         <button onClick={() => setAll("if_empty")} className="px-2.5 py-1 text-xs bg-zinc-800 text-zinc-300 rounded hover:bg-zinc-700">
           {t("scrapePolicy.allIfEmpty")}

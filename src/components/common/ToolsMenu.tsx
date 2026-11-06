@@ -42,6 +42,7 @@ export function ToolsMenu({ label, items }: ToolsMenuProps) {
     <div ref={rootRef} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
+        data-shot="tools-menu"
         className={`px-3 py-1.5 text-sm rounded whitespace-nowrap transition-colors ${
           open ? "bg-zinc-600 text-zinc-100" : "bg-zinc-700 text-zinc-300 hover:bg-zinc-600"
         }`}

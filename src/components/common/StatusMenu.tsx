@@ -61,6 +61,7 @@ export function StatusMenu({ game, buttonClassName = "" }: StatusMenuProps) {
     <div ref={rootRef} className="relative flex">
       <button
         onClick={() => setOpen((v) => !v)}
+        data-shot="status-menu"
         title={badge ? t(badge.label) : t("status.button")}
         className={`${buttonClassName} ${badge ? badge.color : "text-zinc-400 hover:text-zinc-200"}`}
       >

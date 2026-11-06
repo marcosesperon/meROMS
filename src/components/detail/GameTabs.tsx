@@ -61,6 +61,7 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
           <button
             key={tb.id}
             onClick={() => setTab(tb.id)}
+            data-shot={`tab-${tb.id}`}
             className={`px-4 py-2 text-sm -mb-px border-b-2 transition-colors ${
               tab === tb.id ? "border-indigo-400 text-zinc-100" : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}

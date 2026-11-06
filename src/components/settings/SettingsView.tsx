@@ -190,6 +190,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
           </h2>
           <button
             onClick={onClose}
+            data-shot="settings-close"
             className="text-zinc-400 hover:text-zinc-200 transition-colors"
           >
             <CloseIcon size={20} />
@@ -200,6 +201,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
+              data-shot={`settings-tab-${tab.id}`}
               className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 activeTab === tab.id
                   ? "border-indigo-500 text-indigo-400"

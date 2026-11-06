@@ -50,6 +50,7 @@ export function Header() {
           <SearchBar />
           <button
             onClick={() => setShowFilters((v) => !v)}
+            data-shot="filters-toggle"
             className={`p-2 rounded transition-colors ${
               showFilters || hasActiveFilters
                 ? "bg-indigo-600/20 text-indigo-400"
