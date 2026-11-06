@@ -12,7 +12,7 @@ import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from ".
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
-import { GameMediaViewer } from "./GameMediaViewer";
+import { GameTabs } from "./GameTabs";
 import {
   ArcadeBoardIcon,
   CardIcon,
@@ -87,7 +87,7 @@ function GameInfo({ game }: { game: Game }) {
   const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
   const isFavorite = game.favorite === "true";
   const { scrape, remove, scrapeTarget, closeScrape, applyScraped } = useGameActions();
-  const { systemPath, markFailed, media, shown, setCurrent, onlyShownAbove, cover, hero, heroStyle, details } = useGameDetails(game);
+  const { systemPath, markFailed, media, shown, setCurrent, cover, hero, heroStyle, details } = useGameDetails(game);
 
   return (
     <div>
@@ -176,12 +176,10 @@ function GameInfo({ game }: { game: Game }) {
         </button>
       </div>
 
-      {/* Visor + galería */}
-      {shown && !onlyShownAbove && (
-        <div className="px-5 pt-4">
-          <GameMediaViewer media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} />
-        </div>
-      )}
+      {/* Las mismas pestañas que la ficha a pantalla completa, en su propio recuadro */}
+      <section className="mx-5 mt-4 p-3 rounded-lg border border-zinc-800 bg-zinc-900/60">
+        <GameTabs game={game} systemPath={systemPath} media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} compact />
+      </section>
 
       {/* Información */}
       <div className="px-5 py-4">

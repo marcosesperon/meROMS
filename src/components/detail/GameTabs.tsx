@@ -28,13 +28,15 @@ interface GameTabsProps {
   onFailed: (url: string) => void;
   /** Ocupar el alto del hueco (ficha en dos columnas) en vez de crecer con el contenido */
   fill?: boolean;
+  /** Para el panel derecho: pestañas más juntas y el manual algo más bajo */
+  compact?: boolean;
 }
 
 /**
  * Pestañas de la ficha a pantalla completa: medios, manual (visor de PDF), datos guardados y
  * metadatos. La elegida se mantiene al pasar de un juego a otro.
  */
-export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fill = false }: GameTabsProps) {
+export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fill = false, compact = false }: GameTabsProps) {
   const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("media");
   const manualUrl = resolveImageSrc(game.manual, systemPath);
@@ -52,7 +54,7 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
     }
   }
 
-  const empty = (text: string) => <p className="py-12 text-center text-sm text-zinc-500">{text}</p>;
+  const empty = (text: string) => <p className={`${compact ? "py-6" : "py-12"} text-center text-sm text-zinc-500`}>{text}</p>;
 
   return (
     <div className={`flex flex-col ${fill ? "h-full min-h-0" : ""}`}>
@@ -62,7 +64,7 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
             key={tb.id}
             onClick={() => setTab(tb.id)}
             data-shot={`tab-${tb.id}`}
-            className={`px-4 py-2 text-sm -mb-px border-b-2 transition-colors ${
+            className={`${compact ? "px-2 py-1.5 text-xs" : "px-4 py-2 text-sm"} -mb-px border-b-2 transition-colors whitespace-nowrap ${
               tab === tb.id ? "border-indigo-400 text-zinc-100" : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
@@ -70,12 +72,12 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
           </button>
         ))}
       </div>
-      <div className={`pt-4 ${fill ? "flex-1 min-h-0" : "min-h-[320px]"}`}>
+      <div className={`${compact ? "pt-3" : "pt-4"} ${fill ? "flex-1 min-h-0" : compact ? "" : "min-h-[320px]"}`}>
         {tab === "media" &&
           (shown ? <GameMediaViewer media={media} shown={shown} onPick={onPick} onFailed={onFailed} large fit={fill} /> : empty(t("tabs.noMedia")))}
         {tab === "manual" &&
           (manualUrl ? (
-            <div className={fill ? "h-full" : "h-[70vh]"}>
+            <div className={fill ? "h-full" : compact ? "h-[60vh]" : "h-[70vh]"}>
               <PdfViewer url={manualUrl} onOpenExternal={openExternal} />
             </div>
           ) : (

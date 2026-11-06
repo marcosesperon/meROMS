@@ -142,7 +142,7 @@ export function MetadataTab({ game, systemPath }: { game: Game; systemPath: stri
       </Section>
 
       <Section title={t("meta.sources")}>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
           {SOURCES.map((s) => {
             const id = linked === s ? gameId : undefined;
             return (
