@@ -86,6 +86,9 @@ interface AppState {
   fullViewOpen: boolean;
   openFullView: () => void;
   closeFullView: () => void;
+  /** Global search palette (⌘K / Ctrl+K or the magnifier in the sidebar) */
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
   /** Paths of the games in the order the grid/table shows them (previous/next in the full view) */
   visibleOrder: string[];
   setVisibleOrder: (paths: string[]) => void;
@@ -377,6 +380,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   fullViewOpen: false,
   openFullView: () => set({ fullViewOpen: true }),
   closeFullView: () => set({ fullViewOpen: false }),
+  searchOpen: false,
+  setSearchOpen: (open) => set({ searchOpen: open }),
   visibleOrder: [],
   setVisibleOrder: (paths) => set({ visibleOrder: paths }),
   multiSelect: false,

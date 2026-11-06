@@ -861,3 +861,17 @@ export async function rawGameFields(systemPath: string, gamePath: string): Promi
 export async function openManual(path: string): Promise<void> {
   return invoke("open_manual", { path });
 }
+
+// Global search (search.rs): games of every system of the active profile
+export interface SearchHit {
+  system_path: string;
+  system_name: string;
+  system_full_name: string;
+  game_path: string;
+  name: string;
+  cover: string | null;
+}
+
+export async function searchGames(systemPaths: string[], query: string): Promise<SearchHit[]> {
+  return invoke("search_games", { systemPaths, query });
+}

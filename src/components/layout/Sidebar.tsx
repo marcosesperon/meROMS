@@ -1,7 +1,8 @@
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
-import { SettingsIcon } from "../common/Icons";
+import { SearchIcon, SettingsIcon } from "../common/Icons";
+import { SEARCH_SHORTCUT } from "../common/GlobalSearch";
 import { Tooltip } from "../common/Tooltip";
 
 export function Sidebar() {
@@ -9,6 +10,7 @@ export function Sidebar() {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const selectSystem = useAppStore((s) => s.selectSystem);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
+  const setSearchOpen = useAppStore((s) => s.setSearchOpen);
   const loading = useAppStore((s) => s.loading);
   const scanProgress = useAppStore((s) => s.scanProgress);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
@@ -27,6 +29,21 @@ export function Sidebar() {
 
   return (
     <aside className="w-28 shrink-0 overflow-hidden bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
+      {/* Buscador global: un juego entre todos los sistemas (también con Cmd+K / Ctrl+K) */}
+      {systems.length > 0 && (
+        <div className="border-b border-zinc-800 h-12 shrink-0 flex items-center justify-center">
+          <Tooltip text={t("globalSearch.open", { shortcut: SEARCH_SHORTCUT })}>
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label={t("globalSearch.open", { shortcut: SEARCH_SHORTCUT })}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-md transition-colors"
+            >
+              <SearchIcon size={16} />
+              <span className="text-[10px] font-mono text-zinc-500">{SEARCH_SHORTCUT}</span>
+            </button>
+          </Tooltip>
+        </div>
+      )}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
           <div className="px-4 py-6 flex flex-col items-center gap-3">

@@ -42,6 +42,7 @@ async function openSystem(name: string, view: ViewMode) {
   if (!system) throw new Error(`No system ${name}`);
   s.closeFullView();
   s.closeEditor();
+  s.setSearchOpen(false);
   if (s.selectedSystem?.path !== system.path) {
     s.selectSystem(system);
     await waitFor(() => useAppStore.getState().games.length > 0 && !useAppStore.getState().loading);
@@ -78,6 +79,22 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
       pickGame(byPath("./Alex Kidd in Miracle World.sms"));
       await sleep(500);
       await click("status-menu");
+    },
+  },
+  {
+    // Buscador global (⌘K) con «al»: resultados de varios sistemas
+    name: "search",
+    run: async () => {
+      await openSystem("cps1", "grid");
+      useAppStore.getState().setSearchOpen(true);
+      await waitFor(() => !!document.querySelector('[data-shot="global-search"]'), 3000);
+      const input = document.querySelector<HTMLInputElement>('[data-shot="global-search"]');
+      if (input) {
+        // Escribir como lo haría el usuario (React escucha el evento «input»)
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, "al");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      await sleep(1500);
     },
   },
   { name: "table", run: async () => { await openSystem("mastersystem", "table"); pickGame(byPath("./Alex Kidd in Miracle World.sms")); } },

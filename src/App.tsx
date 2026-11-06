@@ -40,6 +40,7 @@ import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
 import { shotsRunning, startShots } from "./dev/shots";
+import { GlobalSearch } from "./components/common/GlobalSearch";
 import { DonationModal } from "./components/common/DonationModal";
 import { UpdateBanner } from "./components/common/UpdateBanner";
 import { UpdateModal } from "./components/common/UpdateModal";
@@ -223,6 +224,20 @@ function App() {
     }, 2000);
     return () => clearTimeout(timer);
   }, [settingsLoaded, hasUsableProfile]);
+
+  // Global search: Cmd+K / Ctrl+K anywhere (also while typing in a field), unless another
+  // window is open on top; the same keys close it
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() !== "k" || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      const { searchOpen, setSearchOpen, systems } = useAppStore.getState();
+      if (!searchOpen && (document.querySelector(".fixed.inset-0:not([data-full-view])") || systems.length === 0)) return;
+      e.preventDefault();
+      setSearchOpen(!searchOpen);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Development only: screenshots for the website (MEROMS_SHOTS=1 pnpm tauri dev, src/dev/shots.ts)
   useEffect(() => {
@@ -533,6 +548,9 @@ function App() {
       <DonationModal open={showDonation} onClose={() => setShowDonation(false)} />
 
       <UpdateModal />
+
+      {/* Global search (Cmd+K / Ctrl+K) */}
+      <GlobalSearch />
     </MainLayout>
   );
 }
