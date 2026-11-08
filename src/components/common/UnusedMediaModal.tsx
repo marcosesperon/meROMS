@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, trashMedia, type DamagedMedia, type PlaceholderGroup } from "../../commands";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 import type { ScrapePolicy } from "../../types";
 import { DATA_FIELDS } from "./ScrapePolicyEditor";
 import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMediaFile } from "../../types";
@@ -62,7 +64,9 @@ export function UnusedMediaModal({
   // Empty, not a real image/video, or cut short (a download left halfway)
   const [damaged, setDamaged] = useState<DamagedMedia[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [scanning, setScanning] = useState(false);
+  // Las cinco búsquedas van una detrás de otra con el mismo progreso (y un solo Cancelar)
+  const scanTask = useTask();
+  const scanning = scanTask.running;
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -76,19 +80,26 @@ export function UnusedMediaModal({
       return;
     }
     scan();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath, gamePath]);
 
   async function scan() {
-    setScanning(true);
     try {
-      const [result, dupes, refs, fillers, broken_files] = await Promise.all([
-        gamePath ? findGameLeftoverMedia(systemPath, gamePath) : findUnusedMedia(systemPath),
-        findRepeatedMedia(systemPath, gamePath),
-        findBrokenMediaRefs(systemPath, gamePath),
+      // Una detrás de otra: así la barra cuenta lo que se está haciendo, no cinco cosas a la vez
+      const found = await scanTask.run(async (task) => {
+        const result = gamePath ? await findGameLeftoverMedia(systemPath, gamePath) : await findUnusedMedia(systemPath, task);
+        const dupes = await findRepeatedMedia(systemPath, gamePath, task);
+        const refs = await findBrokenMediaRefs(systemPath, gamePath, task);
         // Los rellenos solo se ven mirando el sistema entero
-        gamePath ? Promise.resolve([] as PlaceholderGroup[]) : findPlaceholderMedia(systemPath),
-        findDamagedMedia(systemPath, gamePath),
-      ]);
+        const fillers = gamePath ? ([] as PlaceholderGroup[]) : await findPlaceholderMedia(systemPath, task);
+        const broken_files = await findDamagedMedia(systemPath, gamePath, task);
+        return [result, dupes, refs, fillers, broken_files] as const;
+      });
+      // Cancelado: no hay nada que enseñar
+      if (!found) return onClose();
+      const [result, dupes, refs, fillers, broken_files] = found;
       setFiles(result);
       setRepeated(dupes);
       setBroken(refs);
@@ -105,8 +116,6 @@ export function UnusedMediaModal({
       );
     } catch (e) {
       console.error("Scan failed:", e);
-    } finally {
-      setScanning(false);
     }
   }
 
@@ -237,9 +246,7 @@ export function UnusedMediaModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">
-              {t("cleanup.scanning")}
-            </div>
+            <TaskProgress progress={scanTask.progress} label={t("cleanup.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : allItems.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
               {gamePath ? t("gameTools.cleanNothing") : t("cleanup.noUnused")}

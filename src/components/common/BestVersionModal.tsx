@@ -5,6 +5,8 @@ import { bestVersions, moveGames, removeGamesWithFiles, saveGamelist, type Versi
 import { useAppStore } from "../../store/useAppStore";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface BestVersionModalProps {
   open: boolean;
@@ -35,7 +37,9 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
   const [groups, setGroups] = useState<VersionGroup[]>([]);
   // Elegida de cada grupo (índice del grupo → ruta del juego)
   const [chosen, setChosen] = useState<Record<number, string>>({});
-  const [loading, setLoading] = useState(false);
+  // La búsqueda: con progreso y Cancelar
+  const scanTask = useTask();
+  const scanning = scanTask.running;
   const [busy, setBusy] = useState(false);
   const [action, setAction] = useState<Action>("hide");
   const [folder, setFolder] = useState(() => t("best.defaultFolder"));
@@ -46,14 +50,18 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
       setChosen({});
       return;
     }
-    setLoading(true);
-    bestVersions(systemPath)
+    scanTask
+      .run((task) => bestVersions(systemPath, task))
       .then((g) => {
+        // Cancelado: no hay nada que enseñar
+        if (!g) return onClose();
         setGroups(g);
         setChosen(Object.fromEntries(g.map((group, i) => [i, group.versions.find((v) => v.chosen)?.game_path ?? ""])));
       })
-      .catch((e) => showMessage(String(e), "error"))
-      .finally(() => setLoading(false));
+      .catch((e) => showMessage(String(e), "error"));
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   // Las que sobran: todas menos la elegida de cada grupo
@@ -117,14 +125,14 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("best.title")}</h3>
           <p className="text-xs text-zinc-500 mt-1">{t("best.help")}</p>
-          {!loading && groups.length > 0 && (
+          {!scanning && groups.length > 0 && (
             <p className="text-sm text-zinc-400 mt-2">{t("best.summary", { groups: groups.length, others: others.length })}</p>
           )}
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
-          {loading ? (
-            <p className="py-12 text-center text-zinc-500">{t("best.loading")}</p>
+          {scanning ? (
+            <TaskProgress progress={scanTask.progress} label={t("best.loading")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : groups.length === 0 ? (
             <p className="py-12 text-center text-sm text-zinc-500">{t("best.none")}</p>
           ) : (

@@ -26,6 +26,8 @@ export function TaskProgress({ progress, label, onCancel, cancelling, compact }:
   // Una clave sin traducir vuelve tal cual: entonces mejor el texto general
   const title = phaseText && phaseText !== phaseKey ? phaseText : label ?? t("task.working");
   const known = !!progress && progress.total > 0;
+  // De una ruta, solo el nombre del fichero (lo que importa; la ruta entera, al pasar el ratón)
+  const itemText = progress?.item ? progress.item.split(/[\\/]/).pop() || progress.item : "";
   const percent = known ? Math.min(100, (progress!.current / progress!.total) * 100) : 0;
 
   return (
@@ -47,7 +49,7 @@ export function TaskProgress({ progress, label, onCancel, cancelling, compact }:
         )}
       </div>
       <p className="text-[11px] text-zinc-500 font-mono truncate min-h-[1.25em]" title={progress?.item}>
-        {progress?.item || " "}
+        {itemText || "\u00a0"}
       </p>
       {onCancel && (
         <div className="flex justify-end">

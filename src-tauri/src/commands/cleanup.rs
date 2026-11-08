@@ -8,6 +8,8 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MEDIA_KINDS};
 use crate::models::GameList;
 
+use super::progress::Progress;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UnusedMediaFile {
     /// Absolute path to the file
@@ -108,25 +110,33 @@ fn scan_media_files(dir: &Path) -> Vec<(String, String, u64)> {
 /// - Classic: files in the media folders not referenced by any game in the gamelist.
 /// - ES-DE: files whose name matches no ROM (ES-DE matches media by ROM name).
 #[tauri::command(async)]
-pub fn find_unused_media(app: tauri::AppHandle, system_path: String) -> Result<Vec<UnusedMediaFile>, String> {
+pub fn find_unused_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<UnusedMediaFile>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
+    let progress = Progress::new(&app, task);
     let mut unused = match layout {
-        Layout::Classic => find_unused_classic(&layout, &system, &system_path)?,
-        Layout::Esde(_) => find_unused_esde(&layout, &system)?,
+        Layout::Classic => find_unused_classic(&layout, &system, &system_path, &progress)?,
+        Layout::Esde(_) => find_unused_esde(&layout, &system, &progress)?,
     };
     unused.sort_by(|a, b| a.relative.cmp(&b.relative));
     Ok(unused)
 }
 
-fn find_unused_esde(layout: &Layout, system: &SystemRef) -> Result<Vec<UnusedMediaFile>, String> {
-    let gamelist = crate::commands::gamelist::read_gamelist(layout, system)?;
+fn find_unused_esde(layout: &Layout, system: &SystemRef, progress: &Progress) -> Result<Vec<UnusedMediaFile>, String> {
+    let gamelist = crate::commands::gamelist::read_gamelist_with(layout, system, progress)?;
     let rom_stems = rom_stems(system, &gamelist);
+    progress.check()?;
+    progress.phase("media");
     let index = MediaIndex::build(layout, system);
     let media_base = layout.media_type_dir(system, "");
+    let total: usize = MEDIA_KINDS.iter().filter(|k| k.in_esde).map(|k| index.files_of(k).count()).sum();
 
     let mut unused = Vec::new();
+    let mut done = 0;
     for kind in MEDIA_KINDS.iter().filter(|k| k.in_esde) {
         for (stem, file) in index.files_of(kind) {
+            progress.check()?;
+            done += 1;
+            progress.step("files", done, total, &file.to_string_lossy());
             if rom_stems.contains(stem) {
                 continue;
             }
@@ -171,23 +181,25 @@ fn collect_rom_stems(root: &Path, dir: &Path, stems: &mut HashSet<PathBuf>) {
     }
 }
 
-fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str) -> Result<Vec<UnusedMediaFile>, String> {
+fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str, progress: &Progress) -> Result<Vec<UnusedMediaFile>, String> {
     let sys_path = Path::new(system_path);
 
     // Load gamelist
-    let gamelist = crate::commands::gamelist::read_gamelist(layout, system)?;
+    let gamelist = crate::commands::gamelist::read_gamelist_with(layout, system, progress)?;
     let referenced = collect_referenced_paths(&gamelist, sys_path);
 
     let mut unused = Vec::new();
 
-    // Scan all known media directories
-    for subdir in MEDIA_DIRS {
+    // Scan all known media directories (la barra avanza por carpeta; debajo, el fichero en curso)
+    for (d, subdir) in MEDIA_DIRS.iter().enumerate() {
         let dir = sys_path.join(subdir);
         if !dir.exists() {
             continue;
         }
 
         for (abs_path, _ext, size) in scan_media_files(&dir) {
+            progress.check()?;
+            progress.step("media", d + 1, MEDIA_DIRS.len(), &abs_path);
             let canonical = fs::canonicalize(&abs_path)
                 .map(|p| p.to_string_lossy().to_string())
                 .unwrap_or_else(|_| abs_path.clone());
@@ -374,19 +386,25 @@ const KEEP_ORDER: &[&str] = &["image", "boxart", "boxback", "titleshot", "thumbn
 /// Juegos que tienen exactamente el mismo fichero (byte a byte) en más de un tipo de medio.
 /// Con `game_path`, solo ese juego (desde el detalle).
 #[tauri::command(async)]
-pub fn find_repeated_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
+pub fn find_repeated_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-    Ok(find_repeated(&layout, &system, &games, game_path.as_deref()))
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    find_repeated(&layout, &system, &games, game_path.as_deref(), &progress)
 }
 
-fn find_repeated(layout: &Layout, system: &SystemRef, games: &[crate::models::Game], only: Option<&str>) -> Vec<RepeatedMedia> {
+fn find_repeated(layout: &Layout, system: &SystemRef, games: &[crate::models::Game], only: Option<&str>, progress: &Progress) -> Result<Vec<RepeatedMedia>, String> {
+    progress.phase("media");
     let index = MediaIndex::build(layout, system);
     // Lo habitual del sistema (siempre con todos los juegos, aunque se mire uno solo)
+    progress.phase("images");
     let (cover_profile, shot_profile) = super::media_kinds::usual_sizes(layout, system, games);
     let mut out = Vec::new();
 
-    for game in games.iter().filter(|g| only.is_none_or(|p| p == g.path)) {
+    let wanted: Vec<_> = games.iter().filter(|g| only.is_none_or(|p| p == g.path)).collect();
+    for (i, game) in wanted.iter().enumerate() {
+        progress.check()?;
+        progress.step("hashing", i + 1, wanted.len(), game.name.as_deref().unwrap_or(&game.path));
         // Fichero actual de cada tipo de imagen, agrupando por tamaño en bytes (barato) y,
         // solo si coincide, por la huella MD5 del contenido
         let mut files: Vec<(&'static str, PathBuf, u64)> = Vec::new();
@@ -443,7 +461,7 @@ fn find_repeated(layout: &Layout, system: &SystemRef, games: &[crate::models::Ga
             });
         }
     }
-    out
+    Ok(out)
 }
 
 fn file_md5(path: &Path) -> Option<String> {
@@ -465,12 +483,13 @@ pub struct BrokenMediaRef {
 /// Campos de medios que apuntan a ficheros que no existen (solo clásica: en ES-DE la
 /// gamelist no guarda rutas de medios). Con `game_path`, solo ese juego.
 #[tauri::command(async)]
-pub fn find_broken_media_refs(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
+pub fn find_broken_media_refs(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !layout.writes_media_tags() {
         return Ok(Vec::new());
     }
-    let gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let progress = Progress::new(&app, task);
+    let gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     Ok(broken_refs(&system, &gamelist, game_path.as_deref()))
 }
 
@@ -664,7 +683,7 @@ mod tests {
         touch(&media.join("covers/Huerfano.png"));
         touch(&media.join("fanart/Huerfano.jpg"));
 
-        let unused = find_unused_esde(&layout, &system).unwrap();
+        let unused = find_unused_esde(&layout, &system, &Progress::none()).unwrap();
         let mut names: Vec<_> = unused.iter().map(|u| u.relative.clone()).collect();
         names.sort();
         assert_eq!(names, vec!["covers/Huerfano.png", "fanart/Huerfano.jpg"]);
@@ -685,7 +704,7 @@ mod tests {
         };
         crate::commands::gamelist::write_gamelist(&Layout::Classic, &system, &gamelist).unwrap();
 
-        let unused = find_unused_classic(&Layout::Classic, &system, system.rom_dir.to_str().unwrap()).unwrap();
+        let unused = find_unused_classic(&Layout::Classic, &system, system.rom_dir.to_str().unwrap(), &Progress::none()).unwrap();
         assert!(unused.is_empty(), "fanart is referenced, so it is not unused: {:?}", unused);
     }
 
@@ -724,7 +743,7 @@ mod tests {
         png(&media_dir.join("screenshots/e.png"), 300, 420, 2);
         games.push(game("./e.zip"));
 
-        let found = find_repeated(&layout, &system, &games, None);
+        let found = find_repeated(&layout, &system, &games, None, &Progress::none()).unwrap();
         assert_eq!(found.len(), 4);
         assert!(found.iter().all(|r| r.keep_field == "image" && r.remove.len() == 1 && r.remove[0].field == "thumbnail"));
     }
@@ -746,7 +765,7 @@ mod tests {
         png(&media_dir.join("screenshots/x.png"), 256, 224, 9);
         games.push(game("./x.sfc"));
 
-        let found = find_repeated(&layout, &system, &games, Some("./x.sfc"));
+        let found = find_repeated(&layout, &system, &games, Some("./x.sfc"), &Progress::none()).unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].keep_field, "thumbnail");
         assert_eq!(found[0].remove[0].field, "image");

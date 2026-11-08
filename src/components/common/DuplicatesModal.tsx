@@ -5,6 +5,8 @@ import { askConfirm, showMessage } from "../../utils/dialogs";
 import type { DuplicateGroup } from "../../commands";
 import type { Game } from "../../types";
 import type { TranslationKeys } from "../../i18n/en";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface DuplicatesModalProps {
   open: boolean;
@@ -22,7 +24,9 @@ export function DuplicatesModal({
   const { t } = useTranslation();
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [scanning, setScanning] = useState(false);
+  // Buscar duplicados: con progreso y Cancelar
+  const scanTask = useTask();
+  const scanning = scanTask.running;
   const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
@@ -32,18 +36,20 @@ export function DuplicatesModal({
       return;
     }
     scan();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   async function scan() {
-    setScanning(true);
     try {
-      const result = await findDuplicates(systemPath);
+      const result = await scanTask.run((task) => findDuplicates(systemPath, task));
+      // Cancelado: no hay nada que enseñar
+      if (!result) return onClose();
       setGroups(result);
       setSelected(new Set());
     } catch (e) {
       console.error("Duplicate scan failed:", e);
-    } finally {
-      setScanning(false);
     }
   }
 
@@ -107,9 +113,7 @@ export function DuplicatesModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">
-              {t("duplicates.scanning")}
-            </div>
+            <TaskProgress progress={scanTask.progress} label={t("duplicates.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : groups.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
               {t("duplicates.noDuplicates")}

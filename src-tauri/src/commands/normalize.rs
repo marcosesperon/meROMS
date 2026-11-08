@@ -18,6 +18,8 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MediaKind};
 use crate::models::{AppSettings, Game};
 
+use super::progress::Progress;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum NormalizeStatus {
@@ -56,14 +58,20 @@ pub fn plan_media_normalization(
     app: tauri::AppHandle,
     system_path: String,
     game_path: Option<String>,
+    task: Option<String>,
 ) -> Result<Vec<NormalizeItem>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let mut games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    let progress = Progress::new(&app, task);
+    let mut games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
     if let Some(only) = &game_path {
         games.retain(|g| &g.path == only);
     }
-    Ok(plan(&layout, &system, &settings, &games))
+    progress.check()?;
+    progress.phase("media");
+    let items = plan(&layout, &system, &settings, &games);
+    progress.check()?;
+    Ok(items)
 }
 
 #[tauri::command(async)]

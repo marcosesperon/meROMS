@@ -19,6 +19,8 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex};
 use crate::models::Game;
 
+use super::progress::Progress;
+
 /// Con cuántos juegos distintos un fichero idéntico cuenta como relleno
 pub const PLACEHOLDER_MIN_GAMES: usize = 5;
 
@@ -141,19 +143,23 @@ pub fn forget_placeholders() -> Result<(), String> {
 
 /// Rellenos del sistema: ficheros idénticos en PLACEHOLDER_MIN_GAMES juegos distintos o más
 #[tauri::command(async)]
-pub fn find_placeholder_media(app: tauri::AppHandle, system_path: String) -> Result<Vec<PlaceholderGroup>, String> {
+pub fn find_placeholder_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<PlaceholderGroup>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-    Ok(find_placeholders(&layout, &system, &games))
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    find_placeholders(&layout, &system, &games, &progress)
 }
 
-fn find_placeholders(layout: &Layout, system: &SystemRef, games: &[Game]) -> Vec<PlaceholderGroup> {
+fn find_placeholders(layout: &Layout, system: &SystemRef, games: &[Game], progress: &Progress) -> Result<Vec<PlaceholderGroup>, String> {
+    progress.phase("media");
     let index = MediaIndex::build(layout, system);
 
     // Todos los ficheros de media de cada juego, agrupados por tamaño (no se lee nada aún)
     let mut by_size: HashMap<u64, Vec<(PathBuf, &'static str, &Game)>> = HashMap::new();
     let mut seen: HashSet<(PathBuf, &str, &str)> = HashSet::new();
-    for game in games {
+    for (i, game) in games.iter().enumerate() {
+        progress.check()?;
+        progress.step("sizes", i + 1, games.len(), game.name.as_deref().unwrap_or(&game.path));
         for kind in media::MEDIA_KINDS {
             let Some(path) = super::media_kinds::current_file(layout, system, &index, game, kind) else { continue };
             // Un mismo fichero apuntado desde varios juegos (clásica) cuenta para cada uno,
@@ -170,14 +176,17 @@ fn find_placeholders(layout: &Layout, system: &SystemRef, games: &[Game]) -> Vec
 
     let distinct_games = |files: &[(PathBuf, &str, &Game)]| files.iter().map(|(_, _, g)| g.path.as_str()).collect::<HashSet<_>>().len();
     let mut groups = Vec::new();
-    for (size, files) in by_size {
-        // Solo se calcula el MD5 si hay bastantes juegos con ese tamaño exacto
-        if distinct_games(&files) < PLACEHOLDER_MIN_GAMES {
-            continue;
-        }
+    // Solo se calcula el MD5 si hay bastantes juegos con ese tamaño exacto
+    let candidates: Vec<_> = by_size.into_iter().filter(|(_, files)| distinct_games(files) >= PLACEHOLDER_MIN_GAMES).collect();
+    let to_hash: usize = candidates.iter().map(|(_, files)| files.len()).sum();
+    let mut hashed = 0;
+    for (size, files) in candidates {
         let mut by_hash: HashMap<String, Vec<(PathBuf, &str, &Game)>> = HashMap::new();
         let mut hashes: HashMap<PathBuf, Option<String>> = HashMap::new();
         for (path, field, game) in files {
+            progress.check()?;
+            hashed += 1;
+            progress.step("hashing", hashed, to_hash, &path.to_string_lossy());
             let hash = hashes
                 .entry(path.clone())
                 .or_insert_with(|| fs::read(&path).ok().map(|b| md5_hex(&b)))
@@ -210,7 +219,7 @@ fn find_placeholders(layout: &Layout, system: &SystemRef, games: &[Game]) -> Vec
         }
     }
     groups.sort_by(|a, b| b.games.cmp(&a.games));
-    groups
+    Ok(groups)
 }
 
 #[cfg(test)]
@@ -247,7 +256,7 @@ mod tests {
         write(&tmp.path().join("media/snes/covers/e.png"), b"caratula");
         write(&tmp.path().join("media/snes/covers/f.png"), b"caratula");
 
-        let found = find_placeholders(&layout, &system, &list);
+        let found = find_placeholders(&layout, &system, &list, &Progress::none()).unwrap();
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].games, 5);
         assert_eq!(found[0].fields, vec!["boxback".to_string()]);

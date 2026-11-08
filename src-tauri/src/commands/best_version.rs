@@ -10,6 +10,8 @@ use serde::Serialize;
 
 use crate::models::Game;
 
+use super::progress::Progress;
+
 /// Lo que dicen las etiquetas del nombre de una ROM
 #[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct VersionTags {
@@ -249,10 +251,13 @@ fn group_versions(games: &[Game], dat_groups: &HashMap<String, String>, regions:
 
 /// Grupos de versiones del sistema, con la preferida propuesta
 #[tauri::command(async)]
-pub fn best_versions(app: tauri::AppHandle, system_path: String) -> Result<Vec<VersionGroup>, String> {
+pub fn best_versions(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<VersionGroup>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    progress.check()?;
+    progress.phase("games");
     let dat_groups = super::dat::version_groups(&app, &system, &games)?;
     let mut groups = group_versions(&games, &dat_groups, &settings.scrape_regions(), &settings.scrape_languages());
     groups.sort_by_key(|g| g.title.to_lowercase());

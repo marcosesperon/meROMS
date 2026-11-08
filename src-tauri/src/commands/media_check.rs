@@ -12,6 +12,8 @@ use serde::Serialize;
 
 use crate::media::{self, MediaIndex};
 
+use super::progress::Progress;
+
 /// Por qué un fichero de media está mal
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -154,14 +156,19 @@ pub struct DamagedMedia {
 
 /// Media dañada del sistema (o de un juego, con `game_path`)
 #[tauri::command(async)]
-pub fn find_damaged_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<DamagedMedia>, String> {
+pub fn find_damaged_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<DamagedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    progress.phase("media");
     let index = MediaIndex::build(&layout, &system);
     let mut out = Vec::new();
-    for game in games.iter().filter(|g| game_path.as_ref().is_none_or(|p| p == &g.path)) {
+    let wanted: Vec<_> = games.iter().filter(|g| game_path.as_ref().is_none_or(|p| p == &g.path)).collect();
+    for (i, game) in wanted.iter().enumerate() {
+        progress.check()?;
         for kind in media::MEDIA_KINDS {
             let Some(path) = super::media_kinds::current_file(&layout, &system, &index, game, kind) else { continue };
+            progress.step("checking", i + 1, wanted.len(), &path.to_string_lossy());
             let Some(damage) = check_file(&path) else { continue };
             out.push(DamagedMedia {
                 path: path.to_string_lossy().to_string(),

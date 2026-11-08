@@ -14,6 +14,8 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MediaKind};
 use crate::models::Game;
 
+use super::progress::Progress;
+
 /// Dos imágenes son «del mismo tipo» si su forma (ancho/alto) difiere menos de esto…
 const SAME_SHAPE: f64 = 0.06;
 /// …y una no tiene más de este múltiplo del área de la otra.
@@ -97,10 +99,11 @@ pub fn swap_media(
 }
 
 #[tauri::command(async)]
-pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String) -> Result<DetectResult, String> {
+pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<DetectResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-    Ok(detect(&layout, &system, &games))
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    detect(&layout, &system, &games, &progress)
 }
 
 fn swap_in(layout: &Layout, system: &SystemRef, games: &mut [Game], game_paths: &[String], a: &MediaKind, b: &MediaKind) -> SwapResult {
@@ -207,21 +210,22 @@ pub(super) enum Looks {
     Unknown,
 }
 
-fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> DetectResult {
+fn detect(layout: &Layout, system: &SystemRef, games: &[Game], progress: &Progress) -> Result<DetectResult, String> {
     let (Some(cover_kind), Some(shot_kind)) = (media::kind_for_field("image"), media::kind_for_field("thumbnail")) else {
-        return DetectResult { cover_profile: None, screenshot_profile: None, looks_swapped: false, proposals: Vec::new() };
+        return Ok(DetectResult { cover_profile: None, screenshot_profile: None, looks_swapped: false, proposals: Vec::new() });
     };
+    progress.phase("media");
     let index = MediaIndex::build(layout, system);
 
     // Carátula y captura de cada juego, con su tamaño
-    let pairs: Vec<(&Game, Option<MediaFileInfo>, Option<MediaFileInfo>)> = games
-        .iter()
-        .map(|g| {
-            let cover = current_file(layout, system, &index, g, cover_kind).and_then(|p| info(&p));
-            let shot = current_file(layout, system, &index, g, shot_kind).and_then(|p| info(&p));
-            (g, cover, shot)
-        })
-        .collect();
+    let mut pairs: Vec<(&Game, Option<MediaFileInfo>, Option<MediaFileInfo>)> = Vec::with_capacity(games.len());
+    for (i, g) in games.iter().enumerate() {
+        progress.check()?;
+        progress.step("images", i + 1, games.len(), g.name.as_deref().unwrap_or(&g.path));
+        let cover = current_file(layout, system, &index, g, cover_kind).and_then(|p| info(&p));
+        let shot = current_file(layout, system, &index, g, shot_kind).and_then(|p| info(&p));
+        pairs.push((g, cover, shot));
+    }
 
     // Lo habitual de cada carpeta en este sistema
     let cover_profile = profile(pairs.iter().filter_map(|(_, c, _)| c.as_ref()));
@@ -253,12 +257,12 @@ fn detect(layout: &Layout, system: &SystemRef, games: &[Game]) -> DetectResult {
         }
     }
 
-    DetectResult {
+    Ok(DetectResult {
         looks_swapped: whole_system_swapped(cover_profile, shot_profile),
         cover_profile,
         screenshot_profile: shot_profile,
         proposals,
-    }
+    })
 }
 
 /// Tamaños habituales de carátula y de captura en un sistema (también lo usa «Limpiar Media»
@@ -395,7 +399,7 @@ mod tests {
         png(&media.join("screenshots/Grande.png"), 2100, 1551);
         games.push(game("./Grande.sfc"));
 
-        let result = detect(&layout, &system, &games);
+        let result = detect(&layout, &system, &games, &Progress::none()).unwrap();
         assert_eq!(result.cover_profile, Some(MediaProfile { width: 640, height: 468 }));
         assert_eq!(result.screenshot_profile, Some(MediaProfile { width: 256, height: 224 }));
         assert!(!result.looks_swapped);
@@ -421,7 +425,7 @@ mod tests {
         png(&media.join("screenshots/Sola.png"), 456, 640);
         games.push(game("./Sola.sms"));
 
-        let result = detect(&layout, &system, &games);
+        let result = detect(&layout, &system, &games, &Progress::none()).unwrap();
         assert_eq!(found(&result), vec!["./Alf.sms", "./Sola.sms"]);
     }
 
@@ -437,7 +441,7 @@ mod tests {
             png(&media.join(format!("screenshots/{name}.png")), 484, 680);
             games.push(game(&format!("./{name}.sms")));
         }
-        let result = detect(&layout, &system, &games);
+        let result = detect(&layout, &system, &games, &Progress::none()).unwrap();
         assert!(result.looks_swapped);
         assert!(result.proposals.is_empty());
     }
@@ -454,7 +458,7 @@ mod tests {
             png(&media.join(format!("screenshots/{name}.png")), 640, 480);
             games.push(game(&format!("./{name}.cue")));
         }
-        assert!(detect(&layout, &system, &games).proposals.is_empty());
+        assert!(detect(&layout, &system, &games, &Progress::none()).unwrap().proposals.is_empty());
     }
 
     #[test]

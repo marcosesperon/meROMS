@@ -163,8 +163,8 @@ export async function swapMedia(systemPath: string, gamePaths: string[], fieldA:
 }
 
 /** Games whose cover and screenshot look swapped */
-export async function detectSwappedMedia(systemPath: string): Promise<DetectResult> {
-  return invoke("detect_swapped_media", { systemPath });
+export async function detectSwappedMedia(systemPath: string, task?: string): Promise<DetectResult> {
+  return invoke("detect_swapped_media", { systemPath, task });
 }
 
 /** ROM files in the system folder that the gamelist doesn't have */
@@ -194,9 +194,10 @@ export async function addNewRoms(systemPath: string, entries: NewRomEntry[], tas
 }
 
 export async function findUnusedMedia(
-  systemPath: string
+  systemPath: string,
+  task?: string
 ): Promise<UnusedMediaFile[]> {
-  return invoke("find_unused_media", { systemPath });
+  return invoke("find_unused_media", { systemPath, task });
 }
 
 /** Media files named after one game's ROM that the game doesn't use. */
@@ -208,13 +209,13 @@ export async function findGameLeftoverMedia(
 }
 
 /** Same file in more than one media type (optionally only one game) */
-export async function findRepeatedMedia(systemPath: string, gamePath?: string): Promise<RepeatedMedia[]> {
-  return invoke("find_repeated_media", { systemPath, gamePath });
+export async function findRepeatedMedia(systemPath: string, gamePath?: string, task?: string): Promise<RepeatedMedia[]> {
+  return invoke("find_repeated_media", { systemPath, gamePath, task });
 }
 
 /** Gamelist media fields pointing to missing files (Classic; optionally only one game) */
-export async function findBrokenMediaRefs(systemPath: string, gamePath?: string): Promise<BrokenMediaRef[]> {
-  return invoke("find_broken_media_refs", { systemPath, gamePath });
+export async function findBrokenMediaRefs(systemPath: string, gamePath?: string, task?: string): Promise<BrokenMediaRef[]> {
+  return invoke("find_broken_media_refs", { systemPath, gamePath, task });
 }
 
 /** Remove those fields from the gamelist (one save, with backup); returns how many */
@@ -231,9 +232,10 @@ export async function trashMedia(systemPath: string, paths: string[]): Promise<T
 export async function listRenameCandidates(
   systemPath: string,
   source: RenameSource = "title",
-  gamePath?: string
+  gamePath?: string,
+  task?: string
 ): Promise<RenameEntry[]> {
-  return invoke("list_rename_candidates", { systemPath, source, gamePath });
+  return invoke("list_rename_candidates", { systemPath, source, gamePath, task });
 }
 
 /** null = the name can be used; otherwise "invalid" or "exists". */
@@ -401,12 +403,12 @@ export interface DamagedMedia {
   scraper_types: string[];
 }
 
-export async function findDamagedMedia(systemPath: string, gamePath?: string): Promise<DamagedMedia[]> {
-  return invoke("find_damaged_media", { systemPath, gamePath });
+export async function findDamagedMedia(systemPath: string, gamePath?: string, task?: string): Promise<DamagedMedia[]> {
+  return invoke("find_damaged_media", { systemPath, gamePath, task });
 }
 
-export async function findPlaceholderMedia(systemPath: string): Promise<PlaceholderGroup[]> {
-  return invoke("find_placeholder_media", { systemPath });
+export async function findPlaceholderMedia(systemPath: string, task?: string): Promise<PlaceholderGroup[]> {
+  return invoke("find_placeholder_media", { systemPath, task });
 }
 
 /** Add placeholders to the blocklist: the scraper won't save them again. Returns how many were new */
@@ -534,8 +536,8 @@ export interface ChdCandidate {
   blocked: "exists" | null;
 }
 
-export async function listChdCandidates(systemPath: string): Promise<{ supported: boolean; games: ChdCandidate[] }> {
-  return invoke("list_chd_candidates", { systemPath });
+export async function listChdCandidates(systemPath: string, task?: string): Promise<{ supported: boolean; games: ChdCandidate[] }> {
+  return invoke("list_chd_candidates", { systemPath, task });
 }
 
 export interface ChdResult {
@@ -639,8 +641,8 @@ export interface VersionGroup {
 }
 
 /** Groups of versions of the same game (by DAT if any, else by name) with the preferred one proposed */
-export async function bestVersions(systemPath: string): Promise<VersionGroup[]> {
-  return invoke("best_versions", { systemPath });
+export async function bestVersions(systemPath: string, task?: string): Promise<VersionGroup[]> {
+  return invoke("best_versions", { systemPath, task });
 }
 
 /** Translate texts with DeepL to the app language ("es" | "en"); text null = already in that language */
@@ -663,8 +665,8 @@ export async function moveGames(
   return invoke("move_games", { systemPath, gamePaths, destSystemPath, destSubfolder });
 }
 
-export async function datReport(systemPath: string): Promise<DatReport | null> {
-  return invoke("dat_report", { systemPath });
+export async function datReport(systemPath: string, task?: string): Promise<DatReport | null> {
+  return invoke("dat_report", { systemPath, task });
 }
 
 /** "Check by content": computes the missing ROM CRCs (emits dat-crc-progress); returns the files the DAT recognises */
@@ -681,8 +683,8 @@ export interface DuplicateGroup {
   games: Game[];
 }
 
-export async function findDuplicates(systemPath: string): Promise<DuplicateGroup[]> {
-  return invoke("find_duplicates", { systemPath });
+export async function findDuplicates(systemPath: string, task?: string): Promise<DuplicateGroup[]> {
+  return invoke("find_duplicates", { systemPath, task });
 }
 
 export interface RemoveResult {
@@ -702,8 +704,8 @@ export interface DiscGroup {
   files: string[];
 }
 
-export async function detectMultidiscGames(systemPath: string): Promise<DiscGroup[]> {
-  return invoke("detect_multidisc_games", { systemPath });
+export async function detectMultidiscGames(systemPath: string, task?: string): Promise<DiscGroup[]> {
+  return invoke("detect_multidisc_games", { systemPath, task });
 }
 
 export async function generateM3uPlaylists(systemPath: string, groups: DiscGroup[]): Promise<string[]> {
@@ -716,8 +718,8 @@ export async function generateCollection(systemPath: string, name: string, gameP
 }
 
 // Media normalizer (Classic profiles)
-export async function planMediaNormalization(systemPath: string, gamePath?: string): Promise<NormalizeItem[]> {
-  return invoke("plan_media_normalization", { systemPath, gamePath });
+export async function planMediaNormalization(systemPath: string, gamePath?: string, task?: string): Promise<NormalizeItem[]> {
+  return invoke("plan_media_normalization", { systemPath, gamePath, task });
 }
 
 export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[]): Promise<NormalizeResult> {

@@ -5,6 +5,8 @@ import type { DetectResult, MediaFileInfo, MediaProfile, SwapProposal } from "..
 import { resolveImageSrc } from "../../utils/images";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface MediaReviewModalProps {
   open: boolean;
@@ -26,7 +28,9 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   const [items, setItems] = useState<SwapProposal[]>([]);
   const [result, setResult] = useState<DetectResult | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [scanning, setScanning] = useState(false);
+  // La búsqueda: con progreso y Cancelar
+  const scanTask = useTask();
+  const scanning = scanTask.running;
   const [applying, setApplying] = useState(false);
 
   useEffect(() => {
@@ -36,15 +40,19 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
       setSelected(new Set());
       return;
     }
-    setScanning(true);
-    detectSwappedMedia(systemPath)
+    scanTask
+      .run((task) => detectSwappedMedia(systemPath, task))
       .then((detected) => {
+        // Cancelado: no hay nada que enseñar
+        if (!detected) return onClose();
         setResult(detected);
         setItems(detected.proposals);
         setSelected(new Set(detected.proposals.map((i) => i.game_path)));
       })
-      .catch((e) => showMessage(t("mediaKinds.failed", { error: String(e) }), "error"))
-      .finally(() => setScanning(false));
+      .catch((e) => showMessage(t("mediaKinds.failed", { error: String(e) }), "error"));
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   if (!open) return null;
@@ -137,7 +145,7 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
 
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">{t("mediaKinds.scanning")}</div>
+            <TaskProgress progress={scanTask.progress} label={t("mediaKinds.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : items.length === 0 ? (
             <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("mediaKinds.nothing")}</div>
           ) : (

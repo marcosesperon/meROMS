@@ -19,6 +19,8 @@ use crate::models::system::rom_extensions_map;
 
 use super::move_games::{companion_files, sheet_names};
 
+use super::progress::Progress;
+
 /// Extensiones de disco que se convierten
 const DISC_EXTS: &[&str] = &["cue", "gdi", "iso"];
 
@@ -160,10 +162,12 @@ pub struct ChdCandidates {
     pub games: Vec<ChdCandidate>,
 }
 
-fn candidates(layout: &Layout, system: &SystemRef) -> Result<Vec<ChdCandidate>, String> {
-    let list = super::gamelist::read_gamelist(layout, system)?;
+fn candidates(layout: &Layout, system: &SystemRef, progress: &Progress) -> Result<Vec<ChdCandidate>, String> {
+    let list = super::gamelist::read_gamelist_with(layout, system, progress)?;
     let mut out = Vec::new();
-    for game in &list.games {
+    for (i, game) in list.games.iter().enumerate() {
+        progress.check()?;
+        progress.step("games", i + 1, list.games.len(), &game.path);
         let rom = system.rom_dir.join(strip_dot_slash(&game.path));
         if !rom.is_file() {
             continue;
@@ -183,12 +187,13 @@ fn candidates(layout: &Layout, system: &SystemRef) -> Result<Vec<ChdCandidate>, 
 }
 
 #[tauri::command(async)]
-pub fn list_chd_candidates(app: tauri::AppHandle, system_path: String) -> Result<ChdCandidates, String> {
+pub fn list_chd_candidates(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<ChdCandidates, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !supports_chd(&system.name) {
         return Ok(ChdCandidates { supported: false, games: Vec::new() });
     }
-    Ok(ChdCandidates { supported: true, games: candidates(&layout, &system)? })
+    let progress = Progress::new(&app, task);
+    Ok(ChdCandidates { supported: true, games: candidates(&layout, &system, &progress)? })
 }
 
 // ---------- Convertir ----------
@@ -534,7 +539,7 @@ mod tests {
         touch(&sys.rom_dir.join("D.pbp"), "z");
         write_list(&sys, vec![game("./A.cue"), game("./B.iso"), game("./C.m3u"), game("./D.pbp")]);
 
-        let found = candidates(&Layout::Classic, &sys).unwrap();
+        let found = candidates(&Layout::Classic, &sys, &Progress::none()).unwrap();
         let summary: Vec<(&str, Vec<&str>, Option<&str>)> = found.iter().map(|c| (c.path.as_str(), c.discs.iter().map(String::as_str).collect(), c.blocked.as_deref())).collect();
         assert_eq!(summary, vec![("./A.cue", vec!["A.cue"], None), ("./B.iso", vec!["B.iso"], Some("exists")), ("./C.m3u", vec!["C1.cue"], None)]);
         assert_eq!(found[0].size, (b"FILE \"A.bin\" BINARY\n".len() + 4) as u64);

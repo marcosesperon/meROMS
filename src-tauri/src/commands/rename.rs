@@ -10,6 +10,8 @@ use crate::media;
 use crate::models::GameList;
 use crate::rename_rules::CompiledRules;
 
+use super::progress::Progress;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameEntry {
     /// Current relative ROM path (e.g. "./Super Mario World.sfc")
@@ -88,10 +90,12 @@ pub fn list_rename_candidates(
     system_path: String,
     source: Option<RenameSource>,
     game_path: Option<String>,
+    task: Option<String>,
 ) -> Result<Vec<RenameEntry>, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let progress = Progress::new(&app, task);
+    let gamelist = crate::commands::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
     let source = source.unwrap_or_default();
     let wanted = |game: &&crate::models::Game| game_path.as_ref().is_none_or(|only| &game.path == only);
@@ -105,12 +109,14 @@ pub fn list_rename_candidates(
         HashMap::new()
     };
 
-    let mut entries: Vec<RenameEntry> = gamelist
-        .games
-        .iter()
-        .filter(wanted)
-        .map(|game| propose(game, source, &rules, dat_names.get(&rom_of(game)).map(String::as_str)))
-        .collect();
+    let chosen: Vec<_> = gamelist.games.iter().filter(wanted).collect();
+    let mut entries: Vec<RenameEntry> = Vec::with_capacity(chosen.len());
+    for (i, game) in chosen.iter().enumerate() {
+        progress.check()?;
+        progress.step("games", i + 1, chosen.len(), &game.path);
+        entries.push(propose(game, source, &rules, dat_names.get(&rom_of(game)).map(String::as_str)));
+    }
+    progress.phase("checking");
     mark_conflicts(&mut entries, &system.rom_dir);
     mark_track_conflicts(&mut entries, &system.rom_dir);
 

@@ -7,6 +7,8 @@ import { cancelChd, chdStatus, convertToChd, listChdCandidates, type ChdCandidat
 import { useAppStore } from "../../store/useAppStore";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface ChdModalProps {
   open: boolean;
@@ -35,6 +37,8 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
   const [originals, setOriginals] = useState<Originals>("trash");
   const [folder, setFolder] = useState(() => t("chd.defaultFolder"));
   const [progress, setProgress] = useState<Progress | null>(null);
+  // Buscar los juegos que se pueden convertir: con progreso y Cancelar
+  const listTask = useTask();
 
   async function loadStatus() {
     setChdman(await chdStatus().catch(() => ({ path: null, version: null })));
@@ -43,7 +47,9 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
   async function loadGames() {
     setGames(undefined);
     try {
-      const r = await listChdCandidates(systemPath);
+      const r = await listTask.run((task) => listChdCandidates(systemPath, task));
+      // Cancelado: no hay nada que enseñar
+      if (!r) return onClose();
       setGames(r.supported ? r.games : null);
       // Al principio, marcados todos los que se pueden convertir
       setChecked(new Set(r.games.filter((g) => !g.blocked).map((g) => g.path)));
@@ -57,6 +63,8 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
     if (!open) return;
     loadStatus();
     loadGames();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => listTask.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
@@ -160,7 +168,7 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
               </p>
             </div>
           ) : games === undefined ? (
-            <p className="py-12 text-center text-zinc-500">{t("chd.loading")}</p>
+            <TaskProgress progress={listTask.progress} label={t("chd.loading")} onCancel={listTask.cancel} cancelling={listTask.cancelling} />
           ) : games === null ? (
             <p className="py-12 text-center text-sm text-zinc-400">{t("chd.unsupported", { system: systemName })}</p>
           ) : games.length === 0 ? (

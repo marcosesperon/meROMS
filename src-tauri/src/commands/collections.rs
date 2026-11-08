@@ -12,8 +12,8 @@ pub struct DiscGroup {
 
 /// Detect multi-disc games by matching patterns like (Disc 1), (CD1), (Disk 1), etc.
 #[tauri::command(async)]
-pub fn detect_multidisc_games(app: tauri::AppHandle, system_path: String) -> Result<Vec<DiscGroup>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, None)?;
+pub fn detect_multidisc_games(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<DiscGroup>, String> {
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, task)?;
     let mut groups: HashMap<String, Vec<(String, u32)>> = HashMap::new();
 
     for game in &gamelist.games {

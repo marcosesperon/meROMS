@@ -46,8 +46,8 @@ fn normalize_name(name: &str) -> String {
 }
 
 #[tauri::command(async)]
-pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec<DuplicateGroup>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, None)?;
+pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<DuplicateGroup>, String> {
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, task)?;
     let games = &gamelist.games;
     let mut groups: Vec<DuplicateGroup> = Vec::new();
     let mut used_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();

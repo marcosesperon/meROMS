@@ -6,6 +6,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface NormalizeMediaModalProps {
   open: boolean;
@@ -33,7 +35,9 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
   const isEsde = useAppStore((s) => getActiveProfile(s.settings)?.kind === "esde");
   const [items, setItems] = useState<NormalizeItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [scanning, setScanning] = useState(false);
+  // Buscar qué se puede normalizar: con progreso y Cancelar
+  const scanTask = useTask();
+  const scanning = scanTask.running;
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,19 +49,21 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
       return;
     }
     scan();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath, gamePath]);
 
   async function scan() {
-    setScanning(true);
     setError(null);
     try {
-      const plan = await planMediaNormalization(systemPath, gamePath);
+      const plan = await scanTask.run((task) => planMediaNormalization(systemPath, gamePath, task));
+      // Cancelado: no hay nada que enseñar
+      if (!plan) return onClose();
       setItems(plan);
       setSelected(new Set(plan.filter((i) => i.status !== "conflict").map(itemKey)));
     } catch (e) {
       setError(String(e));
-    } finally {
-      setScanning(false);
     }
   }
 
@@ -123,7 +129,7 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
 
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">{t("normalize.scanning")}</div>
+            <TaskProgress progress={scanTask.progress} label={t("normalize.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : error ? (
             <div className="py-12 px-8 text-center text-sm text-red-400">{error}</div>
           ) : items.length === 0 ? (

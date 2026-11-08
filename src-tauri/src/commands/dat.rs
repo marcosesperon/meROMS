@@ -17,6 +17,8 @@ use tauri::Manager;
 use crate::layout::SystemRef;
 use crate::models::Game;
 
+use super::progress::Progress;
+
 /// Un juego del DAT, solo con lo que usa la app
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DatGame {
@@ -270,11 +272,16 @@ pub fn clear_system_dat(app: tauri::AppHandle, system_path: String) -> Result<()
 
 /// Informe del DAT del sistema (None si no tiene).
 #[tauri::command(async)]
-pub fn dat_report(app: tauri::AppHandle, system_path: String) -> Result<Option<DatReport>, String> {
+pub fn dat_report(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Option<DatReport>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
+    let progress = Progress::new(&app, task);
     let Some(dat) = load_dat(&app, &system.name)? else { return Ok(None) };
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    progress.check()?;
+    progress.phase("scanning");
     let files = super::new_roms::rom_files(&system);
+    progress.check()?;
+    progress.phase("games");
     // Solo lo que ya está en caché: el informe nunca calcula (eso es «Comprobar por contenido»)
     let crcs = cached_crcs(&app, &files)?;
     Ok(Some(report(&system, &dat, &games, &files, &crcs)))

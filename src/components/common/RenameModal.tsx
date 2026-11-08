@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
@@ -6,6 +6,8 @@ import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface RenameModalProps {
   open: boolean;
@@ -19,7 +21,16 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const [entries, setEntries] = useState<RenameEntry[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editedNames, setEditedNames] = useState<Record<string, string>>({});
-  const [scanning, setScanning] = useState(false);
+  // Buscar qué se puede renombrar: con progreso y Cancelar
+  const scanTask = useTask();
+  const scanning = scanTask.running;
+  // Cancelar con el botón cierra la ventana; cambiar el origen del nombre también para la búsqueda
+  // anterior, pero entonces sigue la nueva
+  const userCancelled = useRef(false);
+  const cancelScan = () => {
+    userCancelled.current = true;
+    scanTask.cancel();
+  };
   const [renaming, setRenaming] = useState(false);
   const [source, setSource] = useState<RenameSource>("title");
 
@@ -31,6 +42,9 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       return;
     }
     scan();
+    // Al cerrar la ventana (o cambiar el origen del nombre) a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath, source]);
 
   // A conflicting proposal can't be applied unless the user types another name
@@ -39,9 +53,14 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   }
 
   async function scan() {
-    setScanning(true);
+    userCancelled.current = false;
     try {
-      const result = await listRenameCandidates(systemPath, source);
+      const result = await scanTask.run((task) => listRenameCandidates(systemPath, source, undefined, task));
+      // Cancelado: no hay nada que enseñar
+      if (!result) {
+        if (userCancelled.current) onClose();
+        return;
+      }
       setEntries(result);
       // Select those that can be renamed by default (conflicts are left out)
       setSelected(new Set(result.filter((e) => e.can_rename && !e.conflict).map((e) => e.current_path)));
@@ -53,8 +72,6 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       setEditedNames(names);
     } catch (e) {
       console.error("Scan failed:", e);
-    } finally {
-      setScanning(false);
     }
   }
 
@@ -155,9 +172,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">
-              {t("rename.scanning")}
-            </div>
+            <TaskProgress progress={scanTask.progress} label={t("rename.scanning")} onCancel={cancelScan} cancelling={scanTask.cancelling} />
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
               {t(renameSourceText(source).empty)}

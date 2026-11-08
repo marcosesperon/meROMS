@@ -5,6 +5,8 @@ import { useTranslation } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
 import { clearSystemDat, datComputeCrcs, datReport, saveGamelist, setSystemDat, trashFiles, type DatReport } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface DatModalProps {
   open: boolean;
@@ -23,7 +25,9 @@ type Tab = "missing" | "unknown" | "names";
 export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps) {
   const { t } = useTranslation();
   const [report, setReport] = useState<DatReport | null>(null);
-  const [loading, setLoading] = useState(false);
+  // El informe: con progreso y Cancelar
+  const reportTask = useTask();
+  const loading = reportTask.running;
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<Tab>("missing");
   const [withClones, setWithClones] = useState(false);
@@ -33,22 +37,26 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   const [crcProgress, setCrcProgress] = useState<{ current: number; total: number; file: string } | null>(null);
 
   async function load() {
-    setLoading(true);
     try {
-      const r = await datReport(systemPath);
+      // Envuelto: el informe puede ser null (sistema sin DAT), y null en `run` es «cancelado»
+      const res = await reportTask.run(async (task) => ({ found: await datReport(systemPath, task) }));
+      // Cancelado: no hay nada que enseñar
+      if (!res) return onClose();
+      const r = res.found;
       setReport(r);
       setUnknownSel(new Set());
       setNameSel(new Set(r?.names.map((n) => n.game_path) ?? []));
     } catch (e) {
       await showMessage(String(e), "error");
-    } finally {
-      setLoading(false);
     }
   }
 
   useEffect(() => {
     if (open) load();
     else setReport(null);
+    // Al cerrar la ventana a medias, el informe se para
+    return () => reportTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   const missing = useMemo(
@@ -222,7 +230,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
 
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">{t("newRoms.scanning")}</div>
+            <TaskProgress progress={reportTask.progress} label={t("newRoms.scanning")} onCancel={reportTask.cancel} cancelling={reportTask.cancelling} />
           ) : !report ? null : tab === "missing" ? (
             <>
               <div className="px-5 py-2 flex items-center gap-4 border-b border-zinc-700/50 text-xs">

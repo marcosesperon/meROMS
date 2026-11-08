@@ -7,6 +7,8 @@ import {
 } from "../../commands";
 import type { DiscGroup } from "../../commands";
 import type { Game } from "../../types";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface CollectionsModalProps {
   open: boolean;
@@ -28,7 +30,9 @@ export function CollectionsModal({
 
   // M3U state
   const [discGroups, setDiscGroups] = useState<DiscGroup[]>([]);
-  const [detecting, setDetecting] = useState(false);
+  // Buscar juegos de varios discos: con progreso y Cancelar
+  const detectTask = useTask();
+  const detecting = detectTask.running;
   const [m3uResult, setM3uResult] = useState<string[] | null>(null);
 
   // Collection state
@@ -46,17 +50,19 @@ export function CollectionsModal({
       return;
     }
     detectDiscs();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => detectTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   async function detectDiscs() {
-    setDetecting(true);
     try {
-      const result = await detectMultidiscGames(systemPath);
+      const result = await detectTask.run((task) => detectMultidiscGames(systemPath, task));
+      // Cancelado: no hay nada que enseñar
+      if (!result) return onClose();
       setDiscGroups(result);
     } catch (e) {
       console.error("Multi-disc detection failed:", e);
-    } finally {
-      setDetecting(false);
     }
   }
 
@@ -141,9 +147,7 @@ export function CollectionsModal({
           {activeTab === "m3u" ? (
             <div className="p-5">
               {detecting ? (
-                <div className="flex items-center justify-center py-12 text-zinc-500">
-                  {t("collections.detecting")}
-                </div>
+                <TaskProgress progress={detectTask.progress} label={t("collections.detecting")} onCancel={detectTask.cancel} cancelling={detectTask.cancelling} />
               ) : m3uResult ? (
                 <div className="text-sm text-emerald-400">
                   {t("collections.generated", { files: m3uResult.join(", ") })}
