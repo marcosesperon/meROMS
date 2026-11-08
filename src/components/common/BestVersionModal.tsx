@@ -41,6 +41,8 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
   const scanTask = useTask();
   const scanning = scanTask.running;
   const [busy, setBusy] = useState(false);
+  // Mover o mandar a la papelera: con progreso y Cancelar (se para entre juegos y guarda lo hecho)
+  const applyTask = useTask();
   const [action, setAction] = useState<Action>("hide");
   const [folder, setFolder] = useState(() => t("best.defaultFolder"));
 
@@ -89,11 +91,15 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
         });
         message = t("best.doneHide", { count: hide.size });
       } else if (action === "move") {
-        const result = await moveGames(systemPath, others, systemPath, folder.trim());
+        const result = await applyTask.run((task) => moveGames(systemPath, others, systemPath, folder.trim(), task));
+        if (!result) return;
         message = [t("move.moved", { count: result.moved }), ...(result.skipped.length ? ["", t("move.skipped", { count: result.skipped.length }), ...result.skipped] : [])].join("\n");
+        if (applyTask.wasCancelled()) message = t("task.stopped", { done: result.moved, total: others.length }) + "\n\n" + message;
       } else {
-        const result = await removeGamesWithFiles(systemPath, others, false);
+        const result = await applyTask.run((task) => removeGamesWithFiles(systemPath, others, false, task));
+        if (!result) return;
         message = t("best.doneTrash", { count: result.removed });
+        if (applyTask.wasCancelled()) message = t("task.stopped", { done: result.removed, total: others.length }) + "\n\n" + message;
         if (result.failed.length > 0) message += "\n\n" + result.failed.join("\n");
       }
       await reportWithUndo(message);
@@ -131,7 +137,9 @@ export function BestVersionModal({ open, systemPath, onClose, onDone }: BestVers
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
-          {scanning ? (
+          {applyTask.running ? (
+            <TaskProgress progress={applyTask.progress} onCancel={applyTask.cancel} cancelling={applyTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("best.loading")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : groups.length === 0 ? (
             <p className="py-12 text-center text-sm text-zinc-500">{t("best.none")}</p>

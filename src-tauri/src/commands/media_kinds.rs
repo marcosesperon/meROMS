@@ -70,17 +70,19 @@ pub fn swap_media(
     game_paths: Vec<String>,
     field_a: String,
     field_b: String,
+    task: Option<String>,
 ) -> Result<SwapResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
+    let progress = Progress::new(&app, task);
     let a = media::kind_for_field(&field_a).ok_or_else(|| format!("Unknown media field: {}", field_a))?;
     let b = media::kind_for_field(&field_b).ok_or_else(|| format!("Unknown media field: {}", field_b))?;
     if a == b {
         return Ok(SwapResult::default());
     }
-    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let mut gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     let before = gamelist.clone();
     media::journal_begin();
-    let result = swap_in(&layout, &system, &mut gamelist.games, &game_paths, a, b);
+    let result = swap_in(&layout, &system, &mut gamelist.games, &game_paths, a, b, &progress);
     let files = media::journal_take();
     // En ES-DE la gamelist no guarda rutas de medios: no hay nada que reescribir
     if result.swapped > 0 && layout.writes_media_tags() {
@@ -106,10 +108,18 @@ pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String, task: Op
     detect(&layout, &system, &games, &progress)
 }
 
-fn swap_in(layout: &Layout, system: &SystemRef, games: &mut [Game], game_paths: &[String], a: &MediaKind, b: &MediaKind) -> SwapResult {
+fn swap_in(layout: &Layout, system: &SystemRef, games: &mut [Game], game_paths: &[String], a: &MediaKind, b: &MediaKind, progress: &Progress) -> SwapResult {
+    progress.phase("media");
     let index = MediaIndex::build(layout, system);
     let mut result = SwapResult::default();
-    for game in games.iter_mut().filter(|g| game_paths.contains(&g.path)) {
+    let wanted: std::collections::HashSet<&String> = game_paths.iter().collect();
+    let total = games.iter().filter(|g| wanted.contains(&g.path)).count();
+    for (i, game) in games.iter_mut().filter(|g| wanted.contains(&g.path)).enumerate() {
+        // Cancelado: lo intercambiado hasta aquí se guarda (y Deshacer lo cubre)
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("moving", i + 1, total, game.name.as_deref().unwrap_or(&game.path));
         match swap_one(layout, system, &index, game, a, b) {
             Ok(true) => result.swapped += 1,
             Ok(false) => {}
@@ -475,7 +485,7 @@ mod tests {
         let mut games = vec![game("./Alf.sms"), game("./Sola.sms")];
         let (a, b) = kinds();
 
-        let result = swap_in(&layout, &system, &mut games, &["./Alf.sms".into(), "./Sola.sms".into()], a, b);
+        let result = swap_in(&layout, &system, &mut games, &["./Alf.sms".into(), "./Sola.sms".into()], a, b, &Progress::none());
         assert_eq!(result.swapped, 2);
         assert_eq!(fs::read(media.join("covers/Alf.png")).unwrap(), b"caratula");
         assert_eq!(fs::read(media.join("screenshots/Alf.png")).unwrap(), b"captura");
@@ -498,7 +508,7 @@ mod tests {
         let mut games = vec![game("./Alf.sms")];
         let (a, b) = kinds();
 
-        let result = swap_in(&layout, &system, &mut games, &["./Alf.sms".into()], a, b);
+        let result = swap_in(&layout, &system, &mut games, &["./Alf.sms".into()], a, b, &Progress::none());
         assert_eq!(result.swapped, 0);
         assert_eq!(result.skipped.len(), 1);
         assert_eq!(fs::read(media.join("covers/Alf.jpg")).unwrap(), b"a");
@@ -518,7 +528,7 @@ mod tests {
         let mut games = vec![g];
         let (a, b) = kinds();
 
-        let result = swap_in(&Layout::Classic, &system, &mut games, &["./Alf.sms".into()], a, b);
+        let result = swap_in(&Layout::Classic, &system, &mut games, &["./Alf.sms".into()], a, b, &Progress::none());
         assert_eq!(result.swapped, 1);
         assert_eq!(games[0].image.as_deref(), Some("./covers/Alf.png"));
         assert_eq!(games[0].thumbnail.as_deref(), Some("./screenshots/Alf.png"));

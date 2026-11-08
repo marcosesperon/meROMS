@@ -4,6 +4,8 @@ import { swapMedia } from "../../commands";
 import { SWAPPABLE_MEDIA, type Game } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface MediaSwapModalProps {
   open: boolean;
@@ -19,7 +21,9 @@ export function MediaSwapModal({ open, systemPath, games, onClose, onDone }: Med
   const { t } = useTranslation();
   const [fieldA, setFieldA] = useState<string>("image");
   const [fieldB, setFieldB] = useState<string>("thumbnail");
-  const [applying, setApplying] = useState(false);
+  // Intercambiar: con progreso y Cancelar (se para entre juegos; lo hecho se guarda)
+  const applyTask = useTask();
+  const applying = applyTask.running;
 
   useEffect(() => {
     if (open) {
@@ -35,10 +39,11 @@ export function MediaSwapModal({ open, systemPath, games, onClose, onDone }: Med
   async function handleApply() {
     const ok = await askConfirm(t("mediaKinds.swapConfirm", { a: labelOf(fieldA), b: labelOf(fieldB), count: games.length }));
     if (!ok) return;
-    setApplying(true);
     try {
-      const result = await swapMedia(systemPath, games.map((g) => g.path), fieldA, fieldB);
+      const result = await applyTask.run((task) => swapMedia(systemPath, games.map((g) => g.path), fieldA, fieldB, task));
+      if (!result) return;
       let message = t("mediaKinds.done", { swapped: result.swapped });
+      if (applyTask.wasCancelled()) message = t("task.stopped", { done: result.swapped, total: games.length }) + "\n\n" + message;
       if (result.skipped.length > 0) {
         message += "\n\n" + t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
@@ -47,8 +52,6 @@ export function MediaSwapModal({ open, systemPath, games, onClose, onDone }: Med
       onDone();
     } catch (e) {
       await showMessage(t("mediaKinds.failed", { error: String(e) }), "error");
-    } finally {
-      setApplying(false);
     }
   }
 
@@ -73,11 +76,15 @@ export function MediaSwapModal({ open, systemPath, games, onClose, onDone }: Med
           <h3 className="text-base font-semibold text-zinc-100">{t("mediaKinds.swapTitle")}</h3>
           <p className="text-sm text-zinc-400 mt-1">{t("mediaKinds.swapDescription")}</p>
         </div>
-        <div className="px-5 py-5 flex items-center gap-3">
-          {select(fieldA, setFieldA)}
-          <span className="text-zinc-400 text-lg">⇄</span>
-          {select(fieldB, setFieldB)}
-        </div>
+        {applying ? (
+          <TaskProgress progress={applyTask.progress} onCancel={applyTask.cancel} cancelling={applyTask.cancelling} />
+        ) : (
+          <div className="px-5 py-5 flex items-center gap-3">
+            {select(fieldA, setFieldA)}
+            <span className="text-zinc-400 text-lg">⇄</span>
+            {select(fieldB, setFieldB)}
+          </div>
+        )}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
           <button
             onClick={onClose}

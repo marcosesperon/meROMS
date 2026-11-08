@@ -158,8 +158,8 @@ export async function getScrapePolicy(): Promise<ScrapePolicy> {
 }
 
 /** Swap two media types (gamelist fields, e.g. "image" and "thumbnail") in the given games */
-export async function swapMedia(systemPath: string, gamePaths: string[], fieldA: string, fieldB: string): Promise<SwapResult> {
-  return invoke("swap_media", { systemPath, gamePaths, fieldA, fieldB });
+export async function swapMedia(systemPath: string, gamePaths: string[], fieldA: string, fieldB: string, task?: string): Promise<SwapResult> {
+  return invoke("swap_media", { systemPath, gamePaths, fieldA, fieldB, task });
 }
 
 /** Games whose cover and screenshot look swapped */
@@ -173,8 +173,8 @@ export async function listNewRoms(systemPath: string, task?: string): Promise<Ne
 }
 
 /** Move files of the system folder to the system trash (only paths inside that folder) */
-export async function trashFiles(systemPath: string, paths: string[]): Promise<TrashResult> {
-  return invoke("trash_files", { systemPath, paths });
+export async function trashFiles(systemPath: string, paths: string[], task?: string): Promise<TrashResult> {
+  return invoke("trash_files", { systemPath, paths, task });
 }
 
 /** Games of the gamelist whose ROM file/folder no longer exists */
@@ -224,8 +224,8 @@ export async function clearMediaRefs(systemPath: string, refs: BrokenMediaRef[])
 }
 
 /** Send media files of the system to the trash (Classic: clears the gamelist fields using them) */
-export async function trashMedia(systemPath: string, paths: string[]): Promise<TrashResult> {
-  return invoke("trash_media", { systemPath, paths });
+export async function trashMedia(systemPath: string, paths: string[], task?: string): Promise<TrashResult> {
+  return invoke("trash_media", { systemPath, paths, task });
 }
 
 /** With gamePath, only that game is proposed (game detail panel). */
@@ -249,9 +249,10 @@ export async function checkRenameTarget(
 
 export async function renameRoms(
   systemPath: string,
-  renames: RenameRequest[]
+  renames: RenameRequest[],
+  task?: string
 ): Promise<RenameResult> {
-  return invoke("rename_roms", { systemPath, renames });
+  return invoke("rename_roms", { systemPath, renames, task });
 }
 
 // ROM name cleanup rules
@@ -660,9 +661,10 @@ export async function moveGames(
   systemPath: string,
   gamePaths: string[],
   destSystemPath: string,
-  destSubfolder?: string
+  destSubfolder?: string,
+  task?: string
 ): Promise<{ moved: number; skipped: string[] }> {
-  return invoke("move_games", { systemPath, gamePaths, destSystemPath, destSubfolder });
+  return invoke("move_games", { systemPath, gamePaths, destSystemPath, destSubfolder, task });
 }
 
 export async function datReport(systemPath: string, task?: string): Promise<DatReport | null> {
@@ -694,8 +696,8 @@ export interface RemoveResult {
 }
 
 /** Remove games from the gamelist and send their ROM + media to the trash (dryRun: only list) */
-export async function removeGamesWithFiles(systemPath: string, gamePaths: string[], dryRun: boolean): Promise<RemoveResult> {
-  return invoke("remove_games_with_files", { systemPath, gamePaths, dryRun });
+export async function removeGamesWithFiles(systemPath: string, gamePaths: string[], dryRun: boolean, task?: string): Promise<RemoveResult> {
+  return invoke("remove_games_with_files", { systemPath, gamePaths, dryRun, task });
 }
 
 // Collections
@@ -722,8 +724,8 @@ export async function planMediaNormalization(systemPath: string, gamePath?: stri
   return invoke("plan_media_normalization", { systemPath, gamePath, task });
 }
 
-export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[]): Promise<NormalizeResult> {
-  return invoke("apply_media_normalization", { systemPath, items });
+export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[], task?: string): Promise<NormalizeResult> {
+  return invoke("apply_media_normalization", { systemPath, items, task });
 }
 
 // Structure migration (Classic <-> ES-DE). The target always keeps the source's ROM folder.

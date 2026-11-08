@@ -35,7 +35,9 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
   const addTask = useTask();
   const scanning = scanTask.running;
   const adding = addTask.running;
-  const [trashing, setTrashing] = useState(false);
+  // Mandar a la papelera: con progreso y Cancelar (se para entre tandas)
+  const trashTask = useTask();
+  const trashing = trashTask.running;
 
   function scan() {
     scanTask
@@ -104,9 +106,10 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
   async function handleTrash() {
     const paths = roms.filter((r) => selected.has(r.path)).map((r) => r.path);
     if (!(await askConfirm(t("newRoms.trashConfirm", { count: paths.length })))) return;
-    setTrashing(true);
     try {
-      const result = await trashFiles(systemPath, paths);
+      const result = await trashTask.run((task) => trashFiles(systemPath, paths, task));
+      if (!result) return;
+      if (trashTask.wasCancelled()) await showMessage(t("task.stopped", { done: result.trashed, total: paths.length }));
       if (result.failed.length > 0) {
         await showMessage(
           t("newRoms.trashDone", { count: result.trashed }) + "\n\n" + t("newRoms.trashFailed", { count: result.failed.length }) + "\n" + result.failed.join("\n"),
@@ -117,8 +120,6 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
       scan();
     } catch (e) {
       await showMessage(t("newRoms.failed", { error: String(e) }), "error");
-    } finally {
-      setTrashing(false);
     }
   }
 
@@ -165,8 +166,10 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {scanning || adding ? (
-            scanning ? (
+          {scanning || adding || trashing ? (
+            trashing ? (
+              <TaskProgress progress={trashTask.progress} onCancel={trashTask.cancel} cancelling={trashTask.cancelling} />
+            ) : scanning ? (
               <TaskProgress progress={scanTask.progress} label={t("newRoms.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
             ) : (
               <TaskProgress progress={addTask.progress} onCancel={addTask.cancel} cancelling={addTask.cancelling} />

@@ -4,6 +4,8 @@ import { listSubfolders, moveGames } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface MoveGamesModalProps {
   /** ROM folder of the system the games are in */
@@ -29,7 +31,9 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
   const [subfolders, setSubfolders] = useState<string[]>([]);
   const [subfolder, setSubfolder] = useState(ROOT);
   const [newFolder, setNewFolder] = useState("");
-  const [moving, setMoving] = useState(false);
+  // Mover: con progreso y Cancelar (se para entre juegos; lo movido se guarda)
+  const moveTask = useTask();
+  const moving = moveTask.running;
 
   // Subcarpetas del sistema elegido
   useEffect(() => {
@@ -53,10 +57,11 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
   const destSystem = systems.find((s) => s.path === dest);
 
   async function move() {
-    setMoving(true);
     try {
-      const result = await moveGames(systemPath, gamePaths, dest, target || undefined);
+      const result = await moveTask.run((task) => moveGames(systemPath, gamePaths, dest, target || undefined, task));
+      if (!result) return;
       const lines = [t("move.moved", { count: result.moved })];
+      if (moveTask.wasCancelled()) lines.unshift(t("task.stopped", { done: result.moved, total: gamePaths.length }), "");
       if (result.skipped.length > 0) {
         lines.push("", t("move.skipped", { count: result.skipped.length }), ...result.skipped);
       }
@@ -65,8 +70,6 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
       onClose();
     } catch (e) {
       await showMessage(t("move.failed", { error: String(e) }), "error");
-    } finally {
-      setMoving(false);
     }
   }
 
@@ -79,7 +82,8 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
           <h3 className="text-base font-semibold text-zinc-100">{t("move.title", { count: gamePaths.length })}</h3>
           <p className="text-xs text-zinc-500 mt-1">{t("move.help")}</p>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        {moving && <TaskProgress progress={moveTask.progress} onCancel={moveTask.cancel} cancelling={moveTask.cancelling} />}
+        <div className={`px-5 py-4 space-y-4 ${moving ? "hidden" : ""}`}>
           <label className="block">
             <span className="text-xs text-zinc-400">{t("move.system")}</span>
             <select value={dest} onChange={(e) => setDest(e.target.value)} className={`${selectClass} mt-1`}>

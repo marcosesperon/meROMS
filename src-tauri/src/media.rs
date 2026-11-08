@@ -386,6 +386,26 @@ pub fn trash_files(files: &[PathBuf]) -> Vec<(PathBuf, String)> {
         .collect()
 }
 
+/// Ficheros por tanda al mandar muchos a la papelera (cada tanda va de una vez)
+const TRASH_BATCH: usize = 100;
+
+/// Como `trash_files`, pero por tandas: entre una y otra avisa del progreso y, si el usuario ha
+/// cancelado, para. Devuelve cuántos ficheros (del principio de la lista) se han procesado y
+/// los que dieron error.
+pub fn trash_files_in_batches(files: &[PathBuf], progress: &crate::commands::progress::Progress) -> (usize, Vec<(PathBuf, String)>) {
+    let mut errors = Vec::new();
+    let mut done = 0;
+    for batch in files.chunks(TRASH_BATCH) {
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("trashing", done + batch.len(), files.len(), &batch[0].to_string_lossy());
+        errors.extend(trash_files(batch));
+        done += batch.len();
+    }
+    (done, errors)
+}
+
 /// Copia un fichero creando las carpetas que falten. Nunca pisa un destino que ya exista.
 pub fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
     if to.exists() {

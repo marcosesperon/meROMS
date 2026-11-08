@@ -31,7 +31,9 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   // La búsqueda: con progreso y Cancelar
   const scanTask = useTask();
   const scanning = scanTask.running;
-  const [applying, setApplying] = useState(false);
+  // Intercambiar: con progreso y Cancelar (se para entre juegos; lo hecho se guarda)
+  const applyTask = useTask();
+  const applying = applyTask.running;
 
   useEffect(() => {
     if (!open) {
@@ -67,10 +69,12 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   }
 
   async function handleApply() {
-    setApplying(true);
     try {
-      const result = await swapMedia(systemPath, [...selected], "image", "thumbnail");
+      const chosen = [...selected];
+      const result = await applyTask.run((task) => swapMedia(systemPath, chosen, "image", "thumbnail", task));
+      if (!result) return;
       let message = t("mediaKinds.done", { swapped: result.swapped });
+      if (applyTask.wasCancelled()) message = t("task.stopped", { done: result.swapped, total: chosen.length }) + "\n\n" + message;
       if (result.skipped.length > 0) {
         message += "\n\n" + t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
@@ -79,8 +83,6 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
       onDone();
     } catch (e) {
       await showMessage(t("mediaKinds.failed", { error: String(e) }), "error");
-    } finally {
-      setApplying(false);
     }
   }
 
@@ -144,7 +146,9 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {applying ? (
+            <TaskProgress progress={applyTask.progress} onCancel={applyTask.cancel} cancelling={applyTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("mediaKinds.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : items.length === 0 ? (
             <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("mediaKinds.nothing")}</div>

@@ -79,12 +79,14 @@ pub fn apply_media_normalization(
     app: tauri::AppHandle,
     system_path: String,
     items: Vec<NormalizeItem>,
+    task: Option<String>,
 ) -> Result<NormalizeResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let progress = Progress::new(&app, task);
+    let mut gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     let before = gamelist.clone();
     media::journal_begin();
-    let result = apply(&layout, &system, &mut gamelist.games, &items);
+    let result = apply(&layout, &system, &mut gamelist.games, &items, &progress);
     let files = media::journal_take();
     // En ES-DE la gamelist no guarda rutas de medios: reescribirla solo dejaría una copia
     // de seguridad que no sirve para nada
@@ -180,7 +182,7 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
 }
 
 /// Aplica los cambios elegidos y actualiza los campos de los juegos en memoria.
-fn apply(layout: &Layout, system: &SystemRef, games: &mut [Game], items: &[NormalizeItem]) -> NormalizeResult {
+fn apply(layout: &Layout, system: &SystemRef, games: &mut [Game], items: &[NormalizeItem], progress: &Progress) -> NormalizeResult {
     let mut result = NormalizeResult::default();
     let mut moved: HashSet<(PathBuf, PathBuf)> = HashSet::new();
     let mut emptied_dirs: HashSet<PathBuf> = HashSet::new();
@@ -189,7 +191,13 @@ fn apply(layout: &Layout, system: &SystemRef, games: &mut [Game], items: &[Norma
     let mut ordered: Vec<&NormalizeItem> = items.iter().collect();
     ordered.sort_by_key(|i| i.status != NormalizeStatus::Move);
 
-    for item in ordered {
+    let total = ordered.len();
+    for (i, item) in ordered.into_iter().enumerate() {
+        // Cancelado: lo movido hasta aquí se guarda (y Deshacer lo cubre)
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("moving", i + 1, total, &item.from_relative);
         let from = PathBuf::from(&item.from);
         let to = PathBuf::from(&item.to);
 
@@ -313,7 +321,7 @@ mod tests {
         assert_eq!(titleshot.status, NormalizeStatus::Link);
         assert_eq!(items.iter().filter(|i| i.status == NormalizeStatus::Move).count(), 2);
 
-        let result = apply(&Layout::Classic, &system, &mut games, &items);
+        let result = apply(&Layout::Classic, &system, &mut games, &items, &Progress::none());
         assert_eq!((result.moved, result.linked), (2, 1));
         assert_eq!(games[0].titleshot.as_deref(), Some("./titlescreens/Juego.jpg"));
         assert_eq!(games[0].image.as_deref(), Some("./covers/Juego.png"));
@@ -346,7 +354,7 @@ mod tests {
         let items = plan(&Layout::Classic, &system, &AppSettings::default(), &games);
         assert_eq!(items.len(), 1);
         assert_eq!(items[0].status, NormalizeStatus::Link);
-        apply(&Layout::Classic, &system, &mut games, &items);
+        apply(&Layout::Classic, &system, &mut games, &items, &Progress::none());
         assert_eq!(games[0].image.as_deref(), Some("./covers/Juego.png"));
 
         // Y una segunda pasada ya no propone nada
@@ -365,7 +373,7 @@ mod tests {
 
         let items = plan(&Layout::Classic, &system, &AppSettings::default(), &games);
         assert_eq!(items[0].status, NormalizeStatus::Conflict);
-        let result = apply(&Layout::Classic, &system, &mut games, &items);
+        let result = apply(&Layout::Classic, &system, &mut games, &items, &Progress::none());
         assert_eq!(result.skipped.len(), 1);
         assert_eq!(fs::read(system.rom_dir.join("covers/Juego.png")).unwrap(), b"otro");
         assert_eq!(games[0].image.as_deref(), Some("./images/Juego-image.png"));
@@ -383,7 +391,7 @@ mod tests {
 
         let items = plan(&Layout::Classic, &system, &AppSettings::default(), &games);
         assert_eq!(items.len(), 2);
-        let result = apply(&Layout::Classic, &system, &mut games, &items);
+        let result = apply(&Layout::Classic, &system, &mut games, &items, &Progress::none());
         assert_eq!((result.moved, result.linked), (1, 1));
         assert_eq!(games[0].boxart.as_deref(), Some("./covers/Juego.png"));
     }
@@ -423,7 +431,7 @@ mod tests {
         assert!(items.iter().all(|i| i.status == NormalizeStatus::Move));
         assert!(items.iter().any(|i| i.to_relative == "cps1/covers/pang3.jpg"));
 
-        let result = apply(&layout, &system, &mut games, &items);
+        let result = apply(&layout, &system, &mut games, &items, &Progress::none());
         assert_eq!(result.moved, 2);
         let media = tmp.path().join("ES-DE/downloaded_media/cps1");
         assert_eq!(fs::read(media.join("covers/pang3.jpg")).unwrap(), b"caja");

@@ -24,7 +24,9 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
   // Buscar los que faltan (con progreso y Cancelar)
   const scan = useTask();
   const scanning = scan.running;
-  const [removing, setRemoving] = useState(false);
+  // Quitarlos: con progreso y Cancelar (se para entre tandas y guarda lo hecho)
+  const removeTask = useTask();
+  const removing = removeTask.running;
 
   useEffect(() => {
     if (!open) {
@@ -61,11 +63,12 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
 
   async function handleRemove() {
     const paths = [...selected];
-    setRemoving(true);
     try {
       const plan = await removeGamesWithFiles(systemPath, paths, true);
       if (!(await askConfirm(t("missingRoms.confirm", { games: plan.removed, files: plan.files.length })))) return;
-      const result = await removeGamesWithFiles(systemPath, paths, false);
+      const result = await removeTask.run((task) => removeGamesWithFiles(systemPath, paths, false, task));
+      if (!result) return;
+      if (removeTask.wasCancelled()) await showMessage(t("task.stopped", { done: result.removed, total: plan.removed }));
       if (result.failed.length > 0) {
         await showMessage(t("duplicates.removeFailed", { count: result.failed.length }) + "\n" + result.failed.join("\n"), "error");
       }
@@ -73,8 +76,6 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
       onDone();
     } catch (e) {
       await showMessage(String(e), "error");
-    } finally {
-      setRemoving(false);
     }
   }
 
@@ -103,7 +104,9 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {removing ? (
+            <TaskProgress progress={removeTask.progress} onCancel={removeTask.cancel} cancelling={removeTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scan.progress} label={t("newRoms.scanning")} onCancel={scan.cancel} cancelling={scan.cancelling} />
           ) : games.length === 0 ? (
             <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("missingRoms.nothing")}</div>

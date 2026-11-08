@@ -31,7 +31,9 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
     userCancelled.current = true;
     scanTask.cancel();
   };
-  const [renaming, setRenaming] = useState(false);
+  // Renombrar: con progreso y Cancelar (se para entre juegos; lo renombrado se guarda)
+  const renameTask = useTask();
+  const renaming = renameTask.running;
   const [source, setSource] = useState<RenameSource>("title");
 
   useEffect(() => {
@@ -99,7 +101,6 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
 
   async function handleRename() {
     if (selected.size === 0) return;
-    setRenaming(true);
     try {
       const blocked = new Set(entries.filter((e) => isBlocked(e)).map((e) => e.current_path));
       const renames = Array.from(selected)
@@ -110,9 +111,11 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
         }))
         .filter((r) => r.new_name.length > 0);
 
-      const result = await renameRoms(systemPath, renames);
+      const result = await renameTask.run((task) => renameRoms(systemPath, renames, task));
+      if (!result) return;
       loadGames(systemPath);
       let message = t("rename.done", { count: result.renamed });
+      if (renameTask.wasCancelled()) message = t("task.stopped", { done: result.renamed, total: renames.length }) + "\n\n" + message;
       if (result.skipped.length > 0) {
         message += "\n\n" + t("rename.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
@@ -120,8 +123,6 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       onClose();
     } catch (e) {
       await showMessage(t("rename.failed", { error: String(e) }), "error");
-    } finally {
-      setRenaming(false);
     }
   }
 
@@ -171,7 +172,9 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {renaming ? (
+            <TaskProgress progress={renameTask.progress} onCancel={renameTask.cancel} cancelling={renameTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("rename.scanning")} onCancel={cancelScan} cancelling={scanTask.cancelling} />
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">

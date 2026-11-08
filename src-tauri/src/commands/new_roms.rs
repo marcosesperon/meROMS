@@ -126,13 +126,14 @@ pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<New
 /// Manda a la papelera ficheros de la carpeta del sistema (los que no son ROMs válidas).
 /// Por seguridad solo acepta rutas que estén dentro de esa carpeta.
 #[tauri::command(async)]
-pub fn trash_files(system_path: String, paths: Vec<String>) -> Result<TrashResult, String> {
+pub fn trash_files(app: tauri::AppHandle, system_path: String, paths: Vec<String>, task: Option<String>) -> Result<TrashResult, String> {
     let system = SystemRef::from_rom_dir(&system_path);
     let (inside, mut failed) = split_inside(&system, &paths);
-    // Todos de una vez (un solo sonido de papelera en macOS)
-    let errors = media::trash_files(&inside);
+    let progress = Progress::new(&app, task);
+    // Por tandas (cada una de una vez); cancelado a medias, se para tras la tanda en curso
+    let (done, errors) = media::trash_files_in_batches(&inside, &progress);
     failed.extend(errors.iter().map(|(f, e)| format!("{} ({})", f.display(), e)));
-    Ok(TrashResult { trashed: inside.len() - errors.len(), failed })
+    Ok(TrashResult { trashed: done - errors.len(), failed })
 }
 
 /// Separa las rutas que son ficheros dentro de la carpeta del sistema de las que no

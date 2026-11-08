@@ -38,7 +38,9 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
   // Buscar qué se puede normalizar: con progreso y Cancelar
   const scanTask = useTask();
   const scanning = scanTask.running;
-  const [applying, setApplying] = useState(false);
+  // Aplicar: con progreso y Cancelar (se para entre ficheros; lo movido se guarda)
+  const applyTask = useTask();
+  const applying = applyTask.running;
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -84,13 +86,14 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
   }
 
   async function handleApply() {
-    setApplying(true);
     try {
       const chosen = applicable.filter((i) => selected.has(itemKey(i)));
-      const result = await applyMediaNormalization(systemPath, chosen);
+      const result = await applyTask.run((task) => applyMediaNormalization(systemPath, chosen, task));
+      if (!result) return;
       if (onDone) onDone();
       else loadGames(systemPath);
       let message = t("normalize.done", { moved: result.moved, linked: result.linked });
+      if (applyTask.wasCancelled()) message = t("task.stopped", { done: result.moved + result.linked, total: chosen.length }) + "\n\n" + message;
       if (result.skipped.length > 0) {
         message += "\n\n" + t("normalize.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
@@ -98,8 +101,6 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
       onClose();
     } catch (e) {
       await showMessage(t("normalize.failed", { error: String(e) }), "error");
-    } finally {
-      setApplying(false);
     }
   }
 
@@ -128,7 +129,9 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {applying ? (
+            <TaskProgress progress={applyTask.progress} onCancel={applyTask.cancel} cancelling={applyTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("normalize.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : error ? (
             <div className="py-12 px-8 text-center text-sm text-red-400">{error}</div>

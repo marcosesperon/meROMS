@@ -322,19 +322,26 @@ pub fn rename_roms(
     app: tauri::AppHandle,
     system_path: String,
     renames: Vec<RenameRequest>,
+    task: Option<String>,
 ) -> Result<RenameResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let sys_path = system.rom_dir.clone();
+    let progress = Progress::new(&app, task);
 
     // write_gamelist() backs the gamelist up before saving
-    let mut gamelist = crate::commands::gamelist::read_gamelist(&layout, &system)?;
+    let mut gamelist = crate::commands::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     // Para «Deshacer»: la gamelist de antes y el diario de ficheros movidos
     let before = gamelist.clone();
     media::journal_begin();
     let mut done: Vec<(String, String)> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
 
-    for req in &renames {
+    for (i, req) in renames.iter().enumerate() {
+        // Cancelado: se para aquí y se guarda lo ya renombrado (Deshacer lo cubre)
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("renaming", i + 1, renames.len(), &req.current_path);
         let old_rel = req.current_path.strip_prefix("./").unwrap_or(&req.current_path);
         let old_rom = Path::new(old_rel);
         let ext = old_rom
@@ -409,6 +416,7 @@ pub fn rename_roms(
         }
     }
 
+    progress.phase("saving");
     crate::commands::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     update_references(&layout, &system, &done);
 

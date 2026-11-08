@@ -27,7 +27,9 @@ export function DuplicatesModal({
   // Buscar duplicados: con progreso y Cancelar
   const scanTask = useTask();
   const scanning = scanTask.running;
-  const [removing, setRemoving] = useState(false);
+  // Mandar a la papelera: con progreso y Cancelar (se para entre tandas y guarda lo hecho)
+  const removeTask = useTask();
+  const removing = removeTask.running;
 
   useEffect(() => {
     if (!open) {
@@ -64,14 +66,16 @@ export function DuplicatesModal({
 
   async function handleRemove() {
     if (selected.size === 0) return;
-    setRemoving(true);
     try {
       const paths = [...selected];
       // First the list of files, to say what will go to the trash
       const plan = await removeGamesWithFiles(systemPath, paths, true);
       const ok = await askConfirm(t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length }));
       if (!ok) return;
-      const removal = await removeGamesWithFiles(systemPath, paths, false);
+      const removal = await removeTask.run((task) => removeGamesWithFiles(systemPath, paths, false, task));
+      if (!removal) return;
+      // Parado a medias: lo enviado se queda enviado y la gamelist ya lo refleja
+      if (removeTask.wasCancelled()) await showMessage(t("task.stopped", { done: removal.removed, total: plan.removed }));
       if (removal.failed.length > 0) {
         await showMessage(
           t("duplicates.removeFailed", { count: removal.failed.length }) + "\n" + removal.failed.join("\n"),
@@ -86,8 +90,6 @@ export function DuplicatesModal({
     } catch (e) {
       console.error("Remove failed:", e);
       await showMessage(String(e), "error");
-    } finally {
-      setRemoving(false);
     }
   }
 
@@ -112,7 +114,9 @@ export function DuplicatesModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {removing ? (
+            <TaskProgress progress={removeTask.progress} onCancel={removeTask.cancel} cancelling={removeTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("duplicates.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : groups.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">

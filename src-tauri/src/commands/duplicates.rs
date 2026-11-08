@@ -5,6 +5,8 @@ use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MEDIA_KINDS};
 use crate::models::game::Game;
 
+use super::progress::Progress;
+
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct DuplicateGroup {
     /// Why they are grouped: "screenscraper_id" | "hash" | "similar_name" (translated in the UI)
@@ -128,6 +130,36 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<
     Ok(groups)
 }
 
+/// Juegos por tanda al mandarlos a la papelera (cada tanda va de una vez)
+const REMOVE_BATCH: usize = 25;
+
+/// Manda a la papelera los ficheros de una tanda de juegos. Normalmente todos de una vez; si
+/// eso falla, uno a uno, para que un juego cuya ROM no se pueda mandar se quede en la gamelist.
+fn remove_batch(batch: &[(String, Option<PathBuf>, Vec<PathBuf>)], removed_paths: &mut HashSet<String>, failed: &mut Vec<String>) {
+    let all: Vec<PathBuf> = batch.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter()).cloned()).collect();
+    if all.is_empty() || trash::delete_all(&all).is_ok() {
+        removed_paths.extend(batch.iter().map(|(game_path, _, _)| game_path.clone()));
+        return;
+    }
+    for (game_path, rom, media_files) in batch {
+        // The ROM first: if it can't go to the trash, the game stays
+        if let Some(rom) = rom {
+            if !rom.exists() {
+                // Already sent by the bulk attempt before it failed
+            } else if let Err(e) = trash::delete(rom) {
+                failed.push(format!("{} ({})", rom.display(), e));
+                continue;
+            }
+        }
+        removed_paths.insert(game_path.clone());
+        for file in media_files.iter().filter(|f| f.exists()) {
+            if let Err(e) = trash::delete(file) {
+                failed.push(format!("{} ({})", file.display(), e));
+            }
+        }
+    }
+}
+
 /// Remove duplicates for good: take the games out of the gamelist and send their ROM file and
 /// all their media to the trash. With `dry_run` nothing is touched: it only lists the files
 /// (the UI shows the count before asking for confirmation).
@@ -138,9 +170,11 @@ pub fn remove_games_with_files(
     system_path: String,
     game_paths: Vec<String>,
     dry_run: bool,
+    task: Option<String>,
 ) -> Result<RemoveResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
+    let progress = Progress::new(&app, task);
+    let mut gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     let plan = files_to_remove(&layout, &system, &gamelist.games, &game_paths);
 
     let mut result = RemoveResult::default();
@@ -151,32 +185,20 @@ pub fn remove_games_with_files(
     }
 
     let mut removed_paths: HashSet<String> = HashSet::new();
-    // Normally everything goes to the trash in one go (one trash sound on macOS)
-    let all: Vec<PathBuf> = plan.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter()).cloned()).collect();
-    if !all.is_empty() && trash::delete_all(&all).is_ok() {
-        removed_paths.extend(plan.iter().map(|(game_path, _, _)| game_path.clone()));
-    } else {
-        // If that fails, one by one so that a game whose ROM can't be trashed stays
-        for (game_path, rom, media_files) in &plan {
-            // The ROM first: if it can't go to the trash, the game stays
-            if let Some(rom) = rom {
-                if !rom.exists() {
-                    // Already sent by the bulk attempt before it failed
-                } else if let Err(e) = trash::delete(rom) {
-                    result.failed.push(format!("{} ({})", rom.display(), e));
-                    continue;
-                }
-            }
-            removed_paths.insert(game_path.clone());
-            for file in media_files.iter().filter(|f| f.exists()) {
-                if let Err(e) = trash::delete(file) {
-                    result.failed.push(format!("{} ({})", file.display(), e));
-                }
-            }
+    // Por tandas de juegos: cada tanda va a la papelera de una vez (pocos sonidos en macOS) y,
+    // entre una y otra, se avisa del progreso y se mira si el usuario ha cancelado
+    let mut done_games = 0;
+    for batch in plan.chunks(REMOVE_BATCH) {
+        if progress.cancelled() {
+            break;
         }
+        done_games += batch.len();
+        progress.step("trashing", done_games, plan.len(), &batch[0].0);
+        remove_batch(batch, &mut removed_paths, &mut result.failed);
     }
 
     if !removed_paths.is_empty() {
+        progress.phase("saving");
         gamelist.games.retain(|g| !removed_paths.contains(&g.path));
         // write_gamelist() backs up the gamelist first
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;

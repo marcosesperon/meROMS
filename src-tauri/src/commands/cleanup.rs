@@ -553,17 +553,20 @@ fn clear_refs(system: &SystemRef, gamelist: &mut GameList, refs: &[BrokenMediaRe
 /// sistema o de su carpeta de medios. En clásica vacía los campos de la gamelist que apuntaban
 /// a ellos (con copia de seguridad).
 #[tauri::command(async)]
-pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String>) -> Result<TrashMediaResult, String> {
+pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String>, task: Option<String>) -> Result<TrashMediaResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let (allowed, mut failed) = allowed_media_paths(&layout, &system, &paths);
+    let progress = Progress::new(&app, task);
 
-    // Todos de una vez (un solo sonido de papelera en macOS)
-    let errors = media::trash_files(&allowed);
+    // Por tandas (cada una de una vez: pocos sonidos de papelera en macOS); cancelado a medias,
+    // lo enviado se queda enviado y sus campos se limpian igual
+    let (done, errors) = media::trash_files_in_batches(&allowed, &progress);
     failed.extend(errors.iter().map(|(f, e)| format!("{} ({})", f.display(), e)));
     let not_trashed: HashSet<&PathBuf> = errors.iter().map(|(f, _)| f).collect();
-    let trashed: HashSet<PathBuf> = allowed.iter().filter(|f| !not_trashed.contains(f)).cloned().collect();
+    let trashed: HashSet<PathBuf> = allowed[..done].iter().filter(|f| !not_trashed.contains(f)).cloned().collect();
 
     if layout.writes_media_tags() && !trashed.is_empty() {
+        progress.phase("saving");
         let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
         if clear_fields_pointing_to(&system, &mut gamelist, &trashed) {
             super::gamelist::write_gamelist(&layout, &system, &gamelist)?;

@@ -13,6 +13,8 @@ use crate::layout::{strip_dot_slash, Layout, SystemRef};
 use crate::media::{self, MediaIndex};
 use crate::models::{Game, GameList};
 
+use super::progress::Progress;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct MoveResult {
     pub moved: usize,
@@ -185,13 +187,20 @@ fn move_between(
     dst_list: &mut GameList,
     game_paths: &[String],
     subfolder: &str,
+    progress: &Progress,
 ) -> (Vec<(String, String)>, Vec<String>) {
+    progress.phase("media");
     let index = MediaIndex::build(layout, from);
     let same_system = from.rom_dir == to.rom_dir;
     let mut moved: Vec<(String, String)> = Vec::new();
     let mut skipped = Vec::new();
 
-    for path in game_paths {
+    for (i, path) in game_paths.iter().enumerate() {
+        // Cancelado: se para entre un juego y otro; lo movido se guarda (y Deshacer lo cubre)
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("moving", i + 1, game_paths.len(), path);
         let Some(pos) = src_list.games.iter().position(|g| &g.path == path) else { continue };
         let game = src_list.games[pos].clone();
         let name = game.name.clone().unwrap_or_else(|| game.path.clone());
@@ -324,8 +333,10 @@ pub fn move_games(
     game_paths: Vec<String>,
     dest_system_path: String,
     dest_subfolder: Option<String>,
+    task: Option<String>,
 ) -> Result<MoveResult, String> {
     let (layout, from) = super::system_context(&app, &system_path)?;
+    let progress = Progress::new(&app, task);
     let to = SystemRef::from_rom_dir(&dest_system_path);
     if !to.rom_dir.is_dir() {
         return Err(format!("Destination system not found: {}", dest_system_path));
@@ -340,9 +351,10 @@ pub fn move_games(
 
     let before = src_list.clone();
     media::journal_begin();
-    let (moved, skipped) = move_between(&layout, &from, &to, &mut src_list, &mut dst_list, &game_paths, &sub);
+    let (moved, skipped) = move_between(&layout, &from, &to, &mut src_list, &mut dst_list, &game_paths, &sub, &progress);
     let files = media::journal_take();
     if !moved.is_empty() {
+        progress.phase("saving");
         super::gamelist::write_gamelist(&layout, &from, &src_list)?;
         if !same {
             super::gamelist::write_gamelist(&layout, &to, &dst_list)?;
@@ -390,7 +402,7 @@ mod tests {
         src.games[0].image = Some("./covers/Tetris.png".into());
         let mut dst = GameList::default();
 
-        let (moved, skipped) = move_between(&Layout::Classic, &from, &to, &mut src, &mut dst, &["./Tetris.gb".into()], "");
+        let (moved, skipped) = move_between(&Layout::Classic, &from, &to, &mut src, &mut dst, &["./Tetris.gb".into()], "", &Progress::none());
         assert_eq!(moved.len(), 1, "{:?}", skipped);
         assert!(to.rom_dir.join("Tetris.gb").is_file());
         assert!(to.rom_dir.join("covers/Tetris.png").is_file());
@@ -399,6 +411,26 @@ mod tests {
         assert_eq!(dst.games[0].path, "./Tetris.gb");
         assert_eq!(dst.games[0].image.as_deref(), Some("./covers/Tetris.png"));
         assert_eq!(dst.games[0].name.as_deref(), Some("Juego ./Tetris.gb"), "data travels with it");
+    }
+
+    #[test]
+    fn cancelled_move_stops_before_the_next_game() {
+        let tmp = tempfile::tempdir().unwrap();
+        let from = SystemRef::from_rom_dir(tmp.path().join("gbc"));
+        let to = SystemRef::from_rom_dir(tmp.path().join("gb"));
+        fs::create_dir_all(&to.rom_dir).unwrap();
+        touch(&from.rom_dir.join("Tetris.gb"), "rom");
+        let mut src = list(&["./Tetris.gb"]);
+        let mut dst = GameList::default();
+
+        // El usuario ha pulsado Cancelar: no se mueve nada y la gamelist queda como estaba
+        let progress = Progress::for_task("t-move-cancel");
+        crate::commands::progress::cancel_task("t-move-cancel".into());
+        let (moved, _) = move_between(&Layout::Classic, &from, &to, &mut src, &mut dst, &["./Tetris.gb".into()], "", &progress);
+        assert!(moved.is_empty());
+        assert!(from.rom_dir.join("Tetris.gb").is_file());
+        assert_eq!(src.games.len(), 1);
+        assert!(dst.games.is_empty());
     }
 
     #[test]
@@ -411,7 +443,7 @@ mod tests {
         let mut src = list(&["./Zelda.sfc"]);
         let mut dst = GameList::default();
 
-        let (moved, _) = move_between(&layout, &sys, &sys, &mut src, &mut dst, &["./Zelda.sfc".into()], "RPG/");
+        let (moved, _) = move_between(&layout, &sys, &sys, &mut src, &mut dst, &["./Zelda.sfc".into()], "RPG/", &Progress::none());
         assert_eq!(moved, vec![("./Zelda.sfc".to_string(), "./RPG/Zelda.sfc".to_string())]);
         assert!(sys.rom_dir.join("RPG/Zelda.sfc").is_file());
         // ES-DE busca la media repitiendo la subcarpeta
@@ -434,7 +466,7 @@ mod tests {
         let mut src = list(&["./Juego.cue", "./Otro.cue"]);
         let mut dst = GameList::default();
 
-        let (moved, skipped) = move_between(&Layout::Classic, &from, &to, &mut src, &mut dst, &["./Juego.cue".into(), "./Otro.cue".into()], "");
+        let (moved, skipped) = move_between(&Layout::Classic, &from, &to, &mut src, &mut dst, &["./Juego.cue".into(), "./Otro.cue".into()], "", &Progress::none());
         assert_eq!(moved.len(), 1);
         assert!(to.rom_dir.join("Juego (Track 2).bin").is_file());
         assert_eq!(skipped.len(), 1);

@@ -68,6 +68,8 @@ export function UnusedMediaModal({
   const scanTask = useTask();
   const scanning = scanTask.running;
   const [deleting, setDeleting] = useState(false);
+  // Mandar a la papelera: con progreso y Cancelar (se para entre tandas; lo enviado, enviado queda)
+  const trashTask = useTask();
 
   useEffect(() => {
     if (!open) {
@@ -164,7 +166,9 @@ export function UnusedMediaModal({
       const lines: string[] = [];
       let failed = false;
       if (paths.length > 0) {
-        const result = await trashMedia(systemPath, paths);
+        const result = await trashTask.run((task) => trashMedia(systemPath, paths, task));
+        if (!result) return;
+        if (trashTask.wasCancelled()) lines.push(t("task.stopped", { done: result.trashed, total: paths.length }), "");
         lines.push(t("cleanup.deleted", { count: result.trashed }));
         if (result.failed.length > 0) {
           failed = true;
@@ -245,7 +249,9 @@ export function UnusedMediaModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
+          {trashTask.running ? (
+            <TaskProgress progress={trashTask.progress} onCancel={trashTask.cancel} cancelling={trashTask.cancelling} />
+          ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("cleanup.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
           ) : allItems.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">

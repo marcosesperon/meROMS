@@ -29,6 +29,8 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   const reportTask = useTask();
   const loading = reportTask.running;
   const [busy, setBusy] = useState(false);
+  // Mandar a la papelera los ficheros que el DAT no conoce: con progreso y Cancelar
+  const trashTask = useTask();
   const [tab, setTab] = useState<Tab>("missing");
   const [withClones, setWithClones] = useState(false);
   const [unknownSel, setUnknownSel] = useState<Set<string>>(new Set());
@@ -109,7 +111,9 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
     if (!(await askConfirm(t("newRoms.trashConfirm", { count: paths.length })))) return;
     setBusy(true);
     try {
-      const result = await trashFiles(systemPath, paths);
+      const result = await trashTask.run((task) => trashFiles(systemPath, paths, task));
+      if (!result) return;
+      if (trashTask.wasCancelled()) await showMessage(t("task.stopped", { done: result.trashed, total: paths.length }));
       if (result.failed.length > 0) {
         await showMessage(t("newRoms.trashFailed", { count: result.failed.length }) + "\n" + result.failed.join("\n"), "error");
       }
@@ -229,7 +233,9 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
+          {trashTask.running ? (
+            <TaskProgress progress={trashTask.progress} onCancel={trashTask.cancel} cancelling={trashTask.cancelling} />
+          ) : loading ? (
             <TaskProgress progress={reportTask.progress} label={t("newRoms.scanning")} onCancel={reportTask.cancel} cancelling={reportTask.cancelling} />
           ) : !report ? null : tab === "missing" ? (
             <>
