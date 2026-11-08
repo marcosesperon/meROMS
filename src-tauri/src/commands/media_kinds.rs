@@ -287,6 +287,23 @@ pub(super) fn usual_sizes(layout: &Layout, system: &SystemRef, games: &[Game]) -
     (profile(covers.iter()), profile(shots.iter()))
 }
 
+/// La forma que más se repite en un medio (campo de la gamelist: `image`, `thumbnail`…) del
+/// sistema, para dar esa forma a las tarjetas de la cuadrícula. `None` si no hay bastantes
+/// imágenes de ese tipo (o es un vídeo/PDF): entonces la cuadrícula usa su tabla fija.
+#[tauri::command(async)]
+pub fn usual_media_shape(app: tauri::AppHandle, system_path: String, field: String) -> Result<Option<MediaProfile>, String> {
+    let (layout, system) = super::system_context(&app, &system_path)?;
+    let Some(kind) = media::kind_for_field(&field) else { return Ok(None) };
+    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    Ok(usual_shape(&layout, &system, &games, kind))
+}
+
+fn usual_shape(layout: &Layout, system: &SystemRef, games: &[Game], kind: &MediaKind) -> Option<MediaProfile> {
+    let index = MediaIndex::build(layout, system);
+    let images: Vec<MediaFileInfo> = games.iter().filter_map(|g| current_file(layout, system, &index, g, kind).and_then(|p| info(&p))).collect();
+    profile(images.iter())
+}
+
 /// Qué parece una imagen comparada con los tamaños habituales («no se sabe» si encaja con
 /// los dos o con ninguno)
 pub(super) fn looks_like(i: &MediaFileInfo, cover: Option<MediaProfile>, shot: Option<MediaProfile>) -> Looks {
@@ -383,6 +400,25 @@ mod tests {
 
     fn found(result: &DetectResult) -> Vec<&str> {
         result.proposals.iter().map(|p| p.game_path.as_str()).collect()
+    }
+
+    #[test]
+    fn la_forma_de_la_tarjeta_es_la_que_mas_se_repite() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/n64"));
+        let media = tmp.path().join("ES-DE/downloaded_media/n64");
+        let (cover, shot) = kinds();
+        let mut games = Vec::new();
+        // Tres carátulas europeas apaisadas (de tamaños parecidos) y una americana vertical
+        for (name, w, h) in [("A", 640, 470), ("B", 642, 468), ("C", 640, 471), ("D", 300, 420)] {
+            png(&media.join(format!("covers/{name}.png")), w, h);
+            games.push(game(&format!("./{name}.z64")));
+        }
+        let shape = usual_shape(&layout, &system, &games, cover).unwrap();
+        assert!(shape.width > shape.height, "apaisada: {:?}", (shape.width, shape.height));
+        // Sin capturas no hay forma: la cuadrícula usa la tabla
+        assert!(usual_shape(&layout, &system, &games, shot).is_none());
     }
 
     #[test]

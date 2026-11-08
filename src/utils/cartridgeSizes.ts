@@ -163,6 +163,22 @@ export function getSystemAspectRatio(
 }
 
 /**
+ * Forma de las tarjetas de la cuadrícula de un sistema, en este orden: la proporción puesta a
+ * mano en Ajustes → Sistemas, la forma que más se repite en el medio que enseña la cuadrícula
+ * (medida en los ficheros del sistema: `usual_media_shape`) y, si no hay, la tabla de arriba.
+ */
+export function cardAspectRatio(
+  systemName: string,
+  customRatios?: Record<string, string>,
+  measured?: { width: number; height: number } | null,
+): string {
+  const name = systemName.toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (customRatios?.[name]) return customRatios[name];
+  if (measured && measured.width > 0 && measured.height > 0) return `${measured.width}/${measured.height}`;
+  return getSystemAspectRatio(systemName);
+}
+
+/**
  * Get the minimum card width (in px) for the grid based on aspect ratio.
  * Wider aspect ratios get wider cards, taller ones stay narrow.
  */
@@ -170,7 +186,11 @@ export function getSystemCardWidth(
   systemName: string,
   customRatios?: Record<string, string>,
 ): number {
-  const ratioStr = getSystemAspectRatio(systemName, customRatios);
+  return cardWidthFor(getSystemAspectRatio(systemName, customRatios));
+}
+
+/** Ancho mínimo (px) de la tarjeta para una proporción «ancho/alto» */
+export function cardWidthFor(ratioStr: string): number {
   const parts = ratioStr.split("/").map(Number);
   const ar = parts.length === 2 ? parts[0] / parts[1] : 0.75;
 

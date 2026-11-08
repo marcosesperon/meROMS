@@ -104,6 +104,10 @@ interface AppState {
   datMarks: Map<string, commands.DatMark> | null;
   /** Media fields pointing to files that don't exist (Classic only), keys from `brokenKey` */
   brokenMedia: Set<string>;
+  /** Forma que más se repite en el medio de la cuadrícula de este sistema (la de sus tarjetas) */
+  mediaShape: { system: string; field: string; width: number; height: number } | null;
+  /** Vuelve a medir esa forma (al cargar un sistema o al cambiar el medio de la cuadrícula) */
+  refreshMediaShape: (systemPath: string) => void;
   /** Game statuses of the selected system (only games that have one), by game path */
   statuses: Map<string, commands.GameStatus>;
   /** Change the status of some games (saved by meROMS; "completed" also in the gamelist) */
@@ -325,6 +329,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ brokenMedia: new Set(refs.map((r) => brokenKey(r.game_path, r.field, r.value))) });
         })
         .catch(() => set({ brokenMedia: new Set() }));
+      // Forma de las tarjetas de la cuadrícula (puede haber cambiado tras scrapear)
+      get().refreshMediaShape(systemPath);
       // Estados de juego: después de leer la gamelist (lo marcado «completed» en ES-DE se adopta)
       commands
         .getGameStatuses(systemPath)
@@ -404,6 +410,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedPaths: (paths) => set({ selectedPaths: paths }),
   datMarks: null,
   brokenMedia: new Set(),
+  mediaShape: null,
+  refreshMediaShape: (systemPath: string) => {
+    const field = get().settings.grid_media_field || "image";
+    commands
+      .usualMediaShape(systemPath, field)
+      .then((shape) => {
+        // Si mientras tanto se ha cambiado de sistema o de medio, esta respuesta ya no vale
+        const now = get();
+        if (now.selectedSystem?.path !== systemPath || (now.settings.grid_media_field || "image") !== field) return;
+        set({ mediaShape: shape ? { system: systemPath, field, width: shape.width, height: shape.height } : null });
+      })
+      .catch(() => set({ mediaShape: null }));
+  },
   statuses: new Map(),
   setStatuses: async (gamePaths, change) => {
     const { selectedSystem } = get();

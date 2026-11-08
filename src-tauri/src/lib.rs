@@ -164,6 +164,7 @@ pub fn run() {
             new_roms::trash_files,
             media_kinds::swap_media,
             media_kinds::detect_swapped_media,
+            media_kinds::usual_media_shape,
             migrate::plan_migration,
             migrate::run_migration,
             duplicates::find_duplicates,

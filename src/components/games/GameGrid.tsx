@@ -3,7 +3,7 @@ import { useListKeyboard } from "../../hooks/useListKeyboard";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
-import { getSystemCardWidth, extractCustomRatios } from "../../utils/cartridgeSizes";
+import { cardAspectRatio, cardWidthFor, extractCustomRatios } from "../../utils/cartridgeSizes";
 import { sortGames } from "../../utils/playStats";
 import { LetterBar } from "./LetterBar";
 
@@ -17,7 +17,21 @@ interface GameGridProps {
 export function GameGrid({ games }: GameGridProps) {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const systemConfigs = useAppStore((s) => s.settings.system_configs);
-  const cardWidth = getSystemCardWidth(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
+  // Forma de las tarjetas: a mano en Ajustes, la que más se repite en el medio que se enseña
+  // (medida por el store al cargar el sistema) o la tabla fija
+  const gridField = useAppStore((s) => s.settings.grid_media_field) || "image";
+  const mediaShape = useAppStore((s) => s.mediaShape);
+  const refreshMediaShape = useAppStore((s) => s.refreshMediaShape);
+  const measured = mediaShape && mediaShape.system === selectedSystem?.path && mediaShape.field === gridField ? mediaShape : null;
+  const aspectRatio = cardAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs), measured);
+  const cardWidth = cardWidthFor(aspectRatio);
+  // Al cambiar el medio de la cuadrícula en Ajustes, se mide el nuevo
+  useEffect(() => {
+    if (selectedSystem && (mediaShape?.system !== selectedSystem.path || mediaShape?.field !== gridField)) {
+      refreshMediaShape(selectedSystem.path);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSystem?.path, gridField]);
   // Orden elegido junto al cambio de vista (por defecto, por nombre o «nombre para ordenar»
   // como ES-DE; los que no tienen el dato del orden van al final)
   const gridSort = useAppStore((s) => s.settings.grid_sort);
@@ -63,7 +77,7 @@ export function GameGrid({ games }: GameGridProps) {
           }}
         >
           {sorted.map((game, i) => (
-            <GameCard key={keys[i]} game={game} />
+            <GameCard key={keys[i]} game={game} aspectRatio={aspectRatio} />
           ))}
         </div>
       </div>

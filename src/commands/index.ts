@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -884,4 +884,9 @@ export async function searchGames(systemPaths: string[], query: string): Promise
 /** Asks a long process to stop (between one game and the next); see `useTask` */
 export async function cancelTask(task: string): Promise<void> {
   return invoke("cancel_task", { task });
+}
+
+/** The most common shape of a media type (gamelist field) in the system, for the grid cards; null = not enough images */
+export async function usualMediaShape(systemPath: string, field: string): Promise<MediaProfile | null> {
+  return invoke("usual_media_shape", { systemPath, field });
 }

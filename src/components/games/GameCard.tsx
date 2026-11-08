@@ -3,7 +3,6 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { resolveImageSrc } from "../../utils/images";
 import { formatRating } from "../../utils/format";
-import { getSystemAspectRatio, extractCustomRatios } from "../../utils/cartridgeSizes";
 import { StarIcon } from "../common/Icons";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
@@ -12,9 +11,11 @@ import { statusBadge, statusText } from "../../utils/gameStatus";
 
 interface GameCardProps {
   game: Game;
+  /** Forma de la tarjeta («ancho/alto»), la misma para todo el sistema (la calcula GameGrid) */
+  aspectRatio: string;
 }
 
-export function GameCard({ game }: GameCardProps) {
+export function GameCard({ game, aspectRatio }: GameCardProps) {
   const selectedGame = useAppStore((s) => s.selectedGame);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   // ROM no longer on disk: dimmed card with a "No ROM" label
@@ -35,8 +36,6 @@ export function GameCard({ game }: GameCardProps) {
     selectedSystem?.path || ""
   );
 
-  const systemConfigs = useAppStore((s) => s.settings.system_configs);
-  const aspectRatio = getSystemAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs));
 
   const selected = multiSelect ? checked : selectedGame?.path === game.path;
   const status = useAppStore((s) => s.statuses.get(game.path));
