@@ -35,6 +35,7 @@ pub mod scraper_launchbox;
 pub mod scraper_tgdb;
 pub mod settings;
 pub mod systems;
+pub mod transfer_profile;
 pub mod translate;
 pub mod undo;
 

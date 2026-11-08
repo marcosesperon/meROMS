@@ -1009,6 +1009,26 @@ const en = {
   "task.phase.moving": "Moving...",
   "task.phase.writing": "Writing files...",
   "task.stopped": "Stopped: {done} of {total} done. What was done is saved.",
+
+  // Take a system to another profile
+  "transfer.button": "Take to another profile...",
+  "transfer.title": "Take {system} to another profile",
+  "transfer.help": "ROMs (with their disc files), media, gamelist and collections go to the other profile's folders, with its structure. Nothing is ever overwritten: games the other profile already has are skipped. Files that belong to no game of the gamelist stay here.",
+  "transfer.profile": "Destination profile",
+  "transfer.move": "Move",
+  "transfer.copy": "Copy",
+  "transfer.moveHelp": "Moving leaves the games only in the other profile.",
+  "transfer.copyHelp": "Copying leaves them in both profiles.",
+  "transfer.summary": "{count} games will go to:",
+  "transfer.startMove": "Move",
+  "transfer.startCopy": "Copy",
+  "transfer.confirmMove": "Move the {count} games of {system} to the profile \"{profile}\" ({kind})? They will no longer be in this profile.",
+  "transfer.done": "{count} games taken to {path}.",
+  "transfer.unsupported": "{count} media files of types the other structure doesn't have stayed here.",
+  "transfer.filesLeft": "{count} files of the system folder belong to no game of the gamelist and stayed here.",
+  "transfer.skipped": "Not taken ({count}):",
+  "transfer.failed": "Couldn't take the system: {error}",
+  "transfer.noTargets": "There's no other complete profile with a different ROM folder. Create one in Settings > Profiles.",
 } as const;
 
 export default en;

@@ -1011,6 +1011,26 @@ const es: Record<TranslationKeys, string> = {
   "task.phase.moving": "Moviendo…",
   "task.phase.writing": "Escribiendo ficheros…",
   "task.stopped": "Detenido: hechos {done} de {total}. Lo hecho queda guardado.",
+
+  // Llevar un sistema a otro perfil
+  "transfer.button": "Llevar a otro perfil…",
+  "transfer.title": "Llevar {system} a otro perfil",
+  "transfer.help": "Las ROMs (con sus ficheros de disco), los medios, la gamelist y las colecciones pasan a las carpetas del otro perfil, con su estructura. Nunca se sobrescribe nada: los juegos que el otro perfil ya tiene se saltan. Los ficheros que no son de ningún juego de la gamelist se quedan aquí.",
+  "transfer.profile": "Perfil de destino",
+  "transfer.move": "Mover",
+  "transfer.copy": "Copiar",
+  "transfer.moveHelp": "Al mover, los juegos quedan solo en el otro perfil.",
+  "transfer.copyHelp": "Al copiar, quedan en los dos perfiles.",
+  "transfer.summary": "{count} juegos irán a:",
+  "transfer.startMove": "Mover",
+  "transfer.startCopy": "Copiar",
+  "transfer.confirmMove": "¿Mover los {count} juegos de {system} al perfil «{profile}» ({kind})? Dejarán de estar en este perfil.",
+  "transfer.done": "{count} juegos llevados a {path}.",
+  "transfer.unsupported": "{count} medios de tipos que la otra estructura no tiene se han quedado aquí.",
+  "transfer.filesLeft": "{count} ficheros de la carpeta del sistema no son de ningún juego de la gamelist y se han quedado aquí.",
+  "transfer.skipped": "No llevados ({count}):",
+  "transfer.failed": "No se pudo llevar el sistema: {error}",
+  "transfer.noTargets": "No hay otro perfil completo con otra carpeta de ROMs. Créalo en Ajustes > Perfiles.",
 };
 
 export default es;

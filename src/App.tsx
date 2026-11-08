@@ -41,6 +41,7 @@ import { donationPromptDue } from "./utils/links";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
+import { TransferProfileModal } from "./components/common/TransferProfileModal";
 import { DonationModal } from "./components/common/DonationModal";
 import { UpdateBanner } from "./components/common/UpdateBanner";
 import { UpdateModal } from "./components/common/UpdateModal";
@@ -89,6 +90,7 @@ function App() {
   const [showMissingRoms, setShowMissingRoms] = useState(false);
   const [showScrapeAll, setShowScrapeAll] = useState(false);
   const [showDat, setShowDat] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const setDatMarks = useAppStore((s) => s.setDatMarks);
   // Bumped when the DAT changes, so the marks are reloaded
   const [datVersion, setDatVersion] = useState(0);
@@ -186,6 +188,10 @@ function App() {
   // Only once the saved settings are read: before that they are empty and would always look unusable.
   const activeProfile = getActiveProfile(settings);
   const hasUsableProfile = isProfileComplete(activeProfile);
+  // Hay otro perfil completo, con otra carpeta de ROMs, al que llevar un sistema
+  const hasTransferTarget = (settings.profiles ?? []).some(
+    (p) => p.id !== activeProfile?.id && isProfileComplete(p) && p.rom_root_path !== activeProfile?.rom_root_path
+  );
   useEffect(() => {
     if (settingsLoaded && !hasUsableProfile) {
       setShowSettings(true);
@@ -324,6 +330,8 @@ function App() {
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
                   { label: t("exportDevice.button"), onClick: () => setShowExportDevice(true) },
                   { label: t("compare.button"), onClick: () => setShowCompare(true) },
+                  // Llevar el sistema a otro perfil (solo si hay otro perfil al que llevarlo)
+                  ...(hasTransferTarget ? [{ label: t("transfer.button"), onClick: () => setShowTransfer(true) }] : []),
                 ]}
               />
               {hasCredentials && (
@@ -540,6 +548,7 @@ function App() {
       {/* Global search (Cmd+K / Ctrl+K) */}
       <GlobalSearch />
       <ResultDialog />
+      <TransferProfileModal open={showTransfer} system={selectedSystem} onClose={() => setShowTransfer(false)} />
     </MainLayout>
   );
 }

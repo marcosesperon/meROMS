@@ -890,3 +890,17 @@ export async function cancelTask(task: string): Promise<void> {
 export async function usualMediaShape(systemPath: string, field: string): Promise<MediaProfile | null> {
   return invoke("usual_media_shape", { systemPath, field });
 }
+
+/** Result of "Move/copy to another profile" */
+export interface TransferResult {
+  transferred: number;
+  skipped: string[];
+  media_unsupported: number;
+  files_left: number;
+  destination: string;
+}
+
+/** Takes a whole system (ROMs, media, gamelist, collections) to another saved profile */
+export async function transferSystem(systemPath: string, targetProfile: string, mode: MigrationMode, task?: string): Promise<TransferResult> {
+  return invoke("transfer_system", { systemPath, targetProfile, mode, task });
+}
