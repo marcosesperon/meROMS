@@ -109,8 +109,8 @@ export function UnusedMediaModal({
       setDamaged(broken_files);
       setSelected(
         new Set([
-          // Los sobrantes que son de una ROM empiezan sin marcar: mejor recuperarlos con «Normalizar»
-          ...result.filter((f) => !f.owner).map((f) => f.path),
+          // Los sobrantes que «Normalizar» recuperaría empiezan sin marcar
+          ...result.filter((f) => !f.recoverable).map((f) => f.path),
           ...dupes.flatMap((r) => r.remove.map((f) => f.path)),
           ...refs.map(refKey),
           ...fillers.map(placeholderKey),
@@ -217,7 +217,9 @@ export function UnusedMediaModal({
   // estructura clásica en la carpeta de ROMs, sin ROM o de una ROM
   const plainFiles = files.filter((f) => !f.leftover);
   const orphanLeftovers = files.filter((f) => f.leftover && !f.owner);
-  const ownedLeftovers = files.filter((f) => f.leftover && f.owner);
+  // De una ROM: copias de algo que ES-DE ya tiene (sobran) o medios que «Normalizar» recupera
+  const copyLeftovers = files.filter((f) => f.leftover && f.owner && !f.recoverable);
+  const ownedLeftovers = files.filter((f) => f.leftover && f.recoverable);
   const fileRow = (file: UnusedMediaFile) => (
     <label
       key={file.path}
@@ -322,7 +324,18 @@ export function UnusedMediaModal({
                 </>
               )}
 
-              {/* …y los que sí son de una ROM (desmarcados: «Normalizar media» los recupera) */}
+              {/* De una ROM, pero ES-DE ya tiene ese medio: copias viejas (marcados) */}
+              {copyLeftovers.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.leftoverCopySection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.leftoverCopyHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">{copyLeftovers.map((file) => fileRow(file))}</div>
+                </>
+              )}
+
+              {/* …y los que «Normalizar media» recuperaría (desmarcados) */}
               {ownedLeftovers.length > 0 && (
                 <>
                   <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">

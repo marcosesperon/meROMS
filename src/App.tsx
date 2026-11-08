@@ -40,6 +40,7 @@ import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
+import { ResultDialog } from "./components/common/ResultDialog";
 import { DonationModal } from "./components/common/DonationModal";
 import { UpdateBanner } from "./components/common/UpdateBanner";
 import { UpdateModal } from "./components/common/UpdateModal";
@@ -538,6 +539,7 @@ function App() {
 
       {/* Global search (Cmd+K / Ctrl+K) */}
       <GlobalSearch />
+      <ResultDialog />
     </MainLayout>
   );
 }

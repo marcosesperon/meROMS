@@ -21,9 +21,13 @@ pub struct UnusedMediaFile {
     /// ES-DE: fichero de la estructura clásica que sigue en la carpeta de ROMs (images/, videos/…)
     #[serde(default)]
     pub leftover: bool,
-    /// De esos, la ROM de la que es (por nombre): «Normalizar media» lo puede recuperar
+    /// De esos, la ROM de la que es (por nombre)
     #[serde(default)]
     pub owner: Option<String>,
+    /// …y si «Normalizar media» lo movería (ES-DE aún no tiene ese medio). Con dueño y sin
+    /// esto, es una copia vieja de algo que ES-DE ya tiene: sobra
+    #[serde(default)]
+    pub recoverable: bool,
 }
 
 /// Media subdirectories to scan for unused files.
@@ -125,7 +129,8 @@ pub fn find_unused_media(app: tauri::AppHandle, system_path: String, task: Optio
             let mut found = find_unused_esde(&layout, &system, &progress)?;
             // Y lo que sobra de la estructura clásica dentro de la carpeta de ROMs
             let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-            found.extend(find_esde_leftovers(&system, &games, &progress)?);
+            let settings = super::settings::get_settings(app.clone())?;
+            found.extend(find_esde_leftovers(&layout, &system, &settings, &games, &progress)?);
             found
         }
     };
@@ -162,6 +167,7 @@ fn find_unused_esde(layout: &Layout, system: &SystemRef, progress: &Progress) ->
                 size: fs::metadata(file).map(|m| m.len()).unwrap_or(0),
                 leftover: false,
                 owner: None,
+                recoverable: false,
             });
         }
     }
@@ -184,7 +190,15 @@ fn rom_stems(system: &SystemRef, gamelist: &GameList) -> HashSet<PathBuf> {
 /// del sistema (images/, videos/, covers/, media/…). ES-DE no los usa. Cada uno sale con la ROM
 /// de la que es (`owner`), comparando su nombre sin el sufijo antiguo (-image, -thumb, -video…)
 /// con las ROMs de la gamelist y los ficheros de ROM de la carpeta; sin dueño, no es de nadie.
-fn find_esde_leftovers(system: &SystemRef, games: &[crate::models::Game], progress: &Progress) -> Result<Vec<UnusedMediaFile>, String> {
+/// De los que tienen dueño, `recoverable` = el plan de «Normalizar media» lo movería (así las
+/// dos herramientas dicen lo mismo); si no, ES-DE ya tiene ese medio y el sobrante es una copia.
+fn find_esde_leftovers(
+    layout: &Layout,
+    system: &SystemRef,
+    settings: &crate::models::AppSettings,
+    games: &[crate::models::Game],
+    progress: &Progress,
+) -> Result<Vec<UnusedMediaFile>, String> {
     progress.phase("scanning");
     // Nombre (en minúsculas) → ROM: primero las de la gamelist, después los ficheros sueltos
     let mut owners: HashMap<String, String> = HashMap::new();
@@ -201,6 +215,23 @@ fn find_esde_leftovers(system: &SystemRef, games: &[crate::models::Game], progre
                 .or_insert_with(|| format!("./{}", rel.to_string_lossy().replace('\\', "/")));
         }
     }
+    // Lo que «Normalizar media» movería. Las ROMs de la carpeta que aún no están en la gamelist
+    // cuentan como un juego más: sus medios se recuperan en cuanto se añaden con «ROMs nuevas»
+    let canon = |p: &Path| p.canonicalize().unwrap_or_else(|_| p.to_path_buf());
+    let in_gamelist: HashSet<&str> = games.iter().map(|g| g.path.as_str()).collect();
+    let mut all_games = games.to_vec();
+    all_games.extend(
+        owners
+            .values()
+            .filter(|p| !in_gamelist.contains(p.as_str()))
+            .map(|p| crate::models::Game { path: p.clone(), ..Default::default() }),
+    );
+    let recoverable: HashSet<PathBuf> = super::normalize::plan(layout, system, settings, &all_games)
+        .into_iter()
+        .filter(|item| item.status == super::normalize::NormalizeStatus::Move)
+        .map(|item| canon(Path::new(&item.from)))
+        .collect();
+
     // Sufijos antiguos, los más largos primero («-box-back» antes que «-back»)
     let mut suffixes: Vec<String> = super::images::legacy_targets()
         .into_iter()
@@ -233,6 +264,7 @@ fn find_esde_leftovers(system: &SystemRef, games: &[crate::models::Game], progre
             let stem = path.file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
             let base = suffixes.iter().find_map(|suf| stem.strip_suffix(suf.as_str())).unwrap_or(&stem);
             let owner = owners.get(base).or_else(|| owners.get(&stem)).cloned();
+            let recoverable = owner.is_some() && recoverable.contains(&canon(&path));
             out.push(UnusedMediaFile {
                 relative: path
                     .strip_prefix(&system.rom_dir)
@@ -242,6 +274,7 @@ fn find_esde_leftovers(system: &SystemRef, games: &[crate::models::Game], progre
                 size,
                 leftover: true,
                 owner,
+                recoverable,
             });
         }
     }
@@ -299,6 +332,7 @@ fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str, p
                     size,
                     leftover: false,
                     owner: None,
+                    recoverable: false,
                 });
             }
         }
@@ -437,6 +471,7 @@ fn unused_file(path: &Path, base: &Path) -> UnusedMediaFile {
         size: fs::metadata(path).map(|m| m.len()).unwrap_or(0),
         leftover: false,
         owner: None,
+        recoverable: false,
     }
 }
 
@@ -790,18 +825,21 @@ mod tests {
         touch(&system.rom_dir.join("videos/Sin Entrada-video.mp4"));
         touch(&system.rom_dir.join("otra/Borgman.png")); // no es una carpeta de medios clásica
         let games = vec![crate::models::Game { path: "./Aleste.sms".into(), ..Default::default() }];
+        // ES-DE ya tiene la captura de Aleste: la vieja «-thumb» es una copia que sobra
+        let layout = esde(tmp.path());
+        touch(&layout.media_file_path(&system, "screenshots", "./Aleste.sms", "png"));
 
-        let found = find_esde_leftovers(&system, &games, &Progress::none()).unwrap();
-        let mut got: Vec<(String, Option<String>)> = found.iter().map(|u| (u.relative.clone(), u.owner.clone())).collect();
+        let found = find_esde_leftovers(&layout, &system, &crate::models::AppSettings::default(), &games, &Progress::none()).unwrap();
+        let mut got: Vec<(String, Option<String>, bool)> = found.iter().map(|u| (u.relative.clone(), u.owner.clone(), u.recoverable)).collect();
         got.sort();
         assert!(found.iter().all(|u| u.leftover));
         assert_eq!(
             got,
             vec![
-                ("images/Aleste-image.png".to_string(), Some("./Aleste.sms".to_string())),
-                ("images/Aleste-thumb.png".to_string(), Some("./Aleste.sms".to_string())),
-                ("images/Borgman-image.png".to_string(), None),
-                ("videos/Sin Entrada-video.mp4".to_string(), Some("./Sin Entrada.sms".to_string())),
+                ("images/Aleste-image.png".to_string(), Some("./Aleste.sms".to_string()), true),
+                ("images/Aleste-thumb.png".to_string(), Some("./Aleste.sms".to_string()), false),
+                ("images/Borgman-image.png".to_string(), None, false),
+                ("videos/Sin Entrada-video.mp4".to_string(), Some("./Sin Entrada.sms".to_string()), true),
             ]
         );
     }

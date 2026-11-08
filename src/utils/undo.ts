@@ -1,9 +1,9 @@
-import { ask } from "@tauri-apps/plugin-dialog";
 import { translate } from "../i18n";
 import { undoLast } from "../commands";
 import { useAppStore } from "../store/useAppStore";
 import { bumpMediaVersion } from "./images";
 import { showMessage } from "./dialogs";
+import { askUndo } from "../components/common/ResultDialog";
 
 // «Deshacer» la última operación que movió o renombró ficheros (Renombrar, Mover a…,
 // Normalizar, Intercambiar tipos). Solo se recuerda la última; la guarda Rust.
@@ -30,7 +30,8 @@ export async function runUndo() {
 
 /**
  * Aviso del resultado de una operación deshacible: con «Deshacer» si hay algo que deshacer.
- * El botón principal es «Deshacer» y el otro «Aceptar»: cerrar el aviso nunca deshace.
+ * Va en una ventana propia (`ResultDialog`): «Aceptar» es el botón principal y cerrar el aviso
+ * (Intro, Esc, la X) nunca deshace. El diálogo nativo de Windows dejaba «Deshacer» por defecto.
  */
 export async function reportWithUndo(message: string) {
   const { refreshUndo } = useAppStore.getState();
@@ -39,11 +40,5 @@ export async function reportWithUndo(message: string) {
     await showMessage(message);
     return;
   }
-  const undo = await ask(message, {
-    title: "meROMS",
-    kind: "info",
-    okLabel: translate("undo.undo"),
-    cancelLabel: translate("dialog.ok"),
-  });
-  if (undo) await runUndo();
+  if (await askUndo(message)) await runUndo();
 }
