@@ -255,6 +255,10 @@ export interface UnusedMediaFile {
   path: string;
   relative: string;
   size: number;
+  /** ES-DE: Classic-structure media still in the ROM folder (images/, videos/...) */
+  leftover: boolean;
+  /** For those, the ROM it belongs to by name ("Normalize media" can recover it) */
+  owner: string | null;
 }
 
 export interface BackupEntry {

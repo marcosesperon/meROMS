@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -18,6 +18,12 @@ pub struct UnusedMediaFile {
     pub relative: String,
     /// File size in bytes
     pub size: u64,
+    /// ES-DE: fichero de la estructura clásica que sigue en la carpeta de ROMs (images/, videos/…)
+    #[serde(default)]
+    pub leftover: bool,
+    /// De esos, la ROM de la que es (por nombre): «Normalizar media» lo puede recuperar
+    #[serde(default)]
+    pub owner: Option<String>,
 }
 
 /// Media subdirectories to scan for unused files.
@@ -115,7 +121,13 @@ pub fn find_unused_media(app: tauri::AppHandle, system_path: String, task: Optio
     let progress = Progress::new(&app, task);
     let mut unused = match layout {
         Layout::Classic => find_unused_classic(&layout, &system, &system_path, &progress)?,
-        Layout::Esde(_) => find_unused_esde(&layout, &system, &progress)?,
+        Layout::Esde(_) => {
+            let mut found = find_unused_esde(&layout, &system, &progress)?;
+            // Y lo que sobra de la estructura clásica dentro de la carpeta de ROMs
+            let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+            found.extend(find_esde_leftovers(&system, &games, &progress)?);
+            found
+        }
     };
     unused.sort_by(|a, b| a.relative.cmp(&b.relative));
     Ok(unused)
@@ -148,6 +160,8 @@ fn find_unused_esde(layout: &Layout, system: &SystemRef, progress: &Progress) ->
                 path: file.to_string_lossy().to_string(),
                 relative,
                 size: fs::metadata(file).map(|m| m.len()).unwrap_or(0),
+                leftover: false,
+                owner: None,
             });
         }
     }
@@ -164,6 +178,74 @@ fn rom_stems(system: &SystemRef, gamelist: &GameList) -> HashSet<PathBuf> {
         .collect();
     collect_rom_stems(&system.rom_dir, &system.rom_dir, &mut stems);
     stems
+}
+
+/// ES-DE: ficheros de medios de la estructura clásica que siguen dentro de la carpeta de ROMs
+/// del sistema (images/, videos/, covers/, media/…). ES-DE no los usa. Cada uno sale con la ROM
+/// de la que es (`owner`), comparando su nombre sin el sufijo antiguo (-image, -thumb, -video…)
+/// con las ROMs de la gamelist y los ficheros de ROM de la carpeta; sin dueño, no es de nadie.
+fn find_esde_leftovers(system: &SystemRef, games: &[crate::models::Game], progress: &Progress) -> Result<Vec<UnusedMediaFile>, String> {
+    progress.phase("scanning");
+    // Nombre (en minúsculas) → ROM: primero las de la gamelist, después los ficheros sueltos
+    let mut owners: HashMap<String, String> = HashMap::new();
+    for game in games {
+        let stem = crate::layout::rom_media_stem(system, &game.path);
+        if let Some(name) = stem.file_name() {
+            owners.entry(name.to_string_lossy().to_lowercase()).or_insert_with(|| game.path.clone());
+        }
+    }
+    for file in super::new_roms::rom_files(system) {
+        if let (Some(name), Ok(rel)) = (file.file_stem(), file.strip_prefix(&system.rom_dir)) {
+            owners
+                .entry(name.to_string_lossy().to_lowercase())
+                .or_insert_with(|| format!("./{}", rel.to_string_lossy().replace('\\', "/")));
+        }
+    }
+    // Sufijos antiguos, los más largos primero («-box-back» antes que «-back»)
+    let mut suffixes: Vec<String> = super::images::legacy_targets()
+        .into_iter()
+        .flat_map(|(_, _, sufs)| sufs.into_iter().map(str::to_lowercase))
+        .collect();
+    suffixes.sort_by_key(|s| std::cmp::Reverse(s.len()));
+    suffixes.dedup();
+
+    // Carpetas clásicas que puede haber en la carpeta de ROMs (sin repetir ficheros)
+    let mut folders: Vec<String> = MEDIA_DIRS.iter().map(|d| d.to_string()).collect();
+    for (dirs, _, _) in super::images::legacy_targets() {
+        folders.extend(dirs.iter().map(|d| d.to_string()));
+    }
+    folders.sort();
+    folders.dedup();
+    let mut seen: HashSet<PathBuf> = HashSet::new();
+    let mut out = Vec::new();
+    for (d, folder) in folders.iter().enumerate() {
+        let dir = system.rom_dir.join(folder);
+        if !dir.is_dir() {
+            continue;
+        }
+        for (abs, _ext, size) in scan_media_files(&dir) {
+            progress.check()?;
+            progress.step("media", d + 1, folders.len(), &abs);
+            let path = PathBuf::from(&abs);
+            if !seen.insert(path.canonicalize().unwrap_or_else(|_| path.clone())) {
+                continue;
+            }
+            let stem = path.file_stem().map(|s| s.to_string_lossy().to_lowercase()).unwrap_or_default();
+            let base = suffixes.iter().find_map(|suf| stem.strip_suffix(suf.as_str())).unwrap_or(&stem);
+            let owner = owners.get(base).or_else(|| owners.get(&stem)).cloned();
+            out.push(UnusedMediaFile {
+                relative: path
+                    .strip_prefix(&system.rom_dir)
+                    .map(|p| p.to_string_lossy().to_string())
+                    .unwrap_or_else(|_| abs.clone()),
+                path: abs,
+                size,
+                leftover: true,
+                owner,
+            });
+        }
+    }
+    Ok(out)
 }
 
 fn collect_rom_stems(root: &Path, dir: &Path, stems: &mut HashSet<PathBuf>) {
@@ -215,6 +297,8 @@ fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str, p
                     path: abs_path,
                     relative,
                     size,
+                    leftover: false,
+                    owner: None,
                 });
             }
         }
@@ -351,6 +435,8 @@ fn unused_file(path: &Path, base: &Path) -> UnusedMediaFile {
             .map(|p| p.to_string_lossy().to_string())
             .unwrap_or_else(|_| path.to_string_lossy().to_string()),
         size: fs::metadata(path).map(|m| m.len()).unwrap_or(0),
+        leftover: false,
+        owner: None,
     }
 }
 
@@ -690,6 +776,34 @@ mod tests {
         let mut names: Vec<_> = unused.iter().map(|u| u.relative.clone()).collect();
         names.sort();
         assert_eq!(names, vec!["covers/Huerfano.png", "fanart/Huerfano.jpg"]);
+    }
+
+    #[test]
+    fn esde_leftovers_in_the_rom_folder_say_whose_rom_they_are() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("ROMs/mastersystem"));
+        touch(&system.rom_dir.join("Aleste.sms"));
+        touch(&system.rom_dir.join("Sin Entrada.sms")); // ROM sin entrada en la gamelist
+        touch(&system.rom_dir.join("images/Aleste-image.png"));
+        touch(&system.rom_dir.join("images/Aleste-thumb.png"));
+        touch(&system.rom_dir.join("images/Borgman-image.png"));
+        touch(&system.rom_dir.join("videos/Sin Entrada-video.mp4"));
+        touch(&system.rom_dir.join("otra/Borgman.png")); // no es una carpeta de medios clásica
+        let games = vec![crate::models::Game { path: "./Aleste.sms".into(), ..Default::default() }];
+
+        let found = find_esde_leftovers(&system, &games, &Progress::none()).unwrap();
+        let mut got: Vec<(String, Option<String>)> = found.iter().map(|u| (u.relative.clone(), u.owner.clone())).collect();
+        got.sort();
+        assert!(found.iter().all(|u| u.leftover));
+        assert_eq!(
+            got,
+            vec![
+                ("images/Aleste-image.png".to_string(), Some("./Aleste.sms".to_string())),
+                ("images/Aleste-thumb.png".to_string(), Some("./Aleste.sms".to_string())),
+                ("images/Borgman-image.png".to_string(), None),
+                ("videos/Sin Entrada-video.mp4".to_string(), Some("./Sin Entrada.sms".to_string())),
+            ]
+        );
     }
 
     #[test]

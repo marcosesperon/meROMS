@@ -109,7 +109,8 @@ export function UnusedMediaModal({
       setDamaged(broken_files);
       setSelected(
         new Set([
-          ...result.map((f) => f.path),
+          // Los sobrantes que son de una ROM empiezan sin marcar: mejor recuperarlos con «Normalizar»
+          ...result.filter((f) => !f.owner).map((f) => f.path),
           ...dupes.flatMap((r) => r.remove.map((f) => f.path)),
           ...refs.map(refKey),
           ...fillers.map(placeholderKey),
@@ -212,6 +213,31 @@ export function UnusedMediaModal({
     t(d.damage === "empty" ? "cleanup.damageEmpty" : d.damage === "not_media" ? "cleanup.damageNotMedia" : "cleanup.damageTruncated");
 
   const totalSize = allItems.reduce((sum, f) => sum + f.size, 0);
+  // Los ficheros sin usar, en tres grupos: los de siempre y (ES-DE) los sobrantes de la
+  // estructura clásica en la carpeta de ROMs, sin ROM o de una ROM
+  const plainFiles = files.filter((f) => !f.leftover);
+  const orphanLeftovers = files.filter((f) => f.leftover && !f.owner);
+  const ownedLeftovers = files.filter((f) => f.leftover && f.owner);
+  const fileRow = (file: UnusedMediaFile) => (
+    <label
+      key={file.path}
+      className="flex items-center gap-3 px-5 py-2 cursor-pointer transition-colors hover:bg-zinc-700/30"
+    >
+      <input
+        type="checkbox"
+        checked={selected.has(file.path)}
+        onChange={() => toggleFile(file.path)}
+        className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
+      />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm text-zinc-300 truncate" title={file.relative}>
+          {file.relative}
+        </span>
+        {file.owner && <span className="block text-xs text-zinc-500 font-mono truncate">{t("cleanup.leftoverOwner", { rom: file.owner })}</span>}
+      </span>
+      <span className="text-xs text-zinc-500 shrink-0">{formatSize(file.size)}</span>
+    </label>
+  );
   const selectedSize = allItems.filter((f) => selected.has(f.path)).reduce((sum, f) => sum + f.size, 0);
   const kindLabel = (field: string) => {
     // "image" is labelled "Cover / Screenshot" in the editor (Classic): here it's just the cover
@@ -280,30 +306,32 @@ export function UnusedMediaModal({
               </div>
 
               {/* Unused files */}
-              {files.length > 0 && (
+              {plainFiles.length > 0 && (
                 <p className="px-5 pt-3 pb-1 text-xs font-semibold text-zinc-400">{t("cleanup.unusedSection")}</p>
               )}
-              <div className="divide-y divide-zinc-700/30">
-                {files.map((file) => (
-                  <label
-                    key={file.path}
-                    className="flex items-center gap-3 px-5 py-2 hover:bg-zinc-750 cursor-pointer transition-colors hover:bg-zinc-700/30"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(file.path)}
-                      onChange={() => toggleFile(file.path)}
-                      className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
-                    />
-                    <span className="text-sm text-zinc-300 truncate flex-1" title={file.relative}>
-                      {file.relative}
-                    </span>
-                    <span className="text-xs text-zinc-500 shrink-0">
-                      {formatSize(file.size)}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <div className="divide-y divide-zinc-700/30">{plainFiles.map((file) => fileRow(file))}</div>
+
+              {/* ES-DE: lo que queda de la estructura clásica en la carpeta de ROMs, sin ROM (marcados) */}
+              {orphanLeftovers.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.leftoverSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.leftoverHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">{orphanLeftovers.map((file) => fileRow(file))}</div>
+                </>
+              )}
+
+              {/* …y los que sí son de una ROM (desmarcados: «Normalizar media» los recupera) */}
+              {ownedLeftovers.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.leftoverOwnedSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.leftoverOwnedHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">{ownedLeftovers.map((file) => fileRow(file))}</div>
+                </>
+              )}
 
               {/* Same file in several media types: the extra copies (the one that stays is named) */}
               {repeated.length > 0 && (
