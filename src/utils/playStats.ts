@@ -20,11 +20,20 @@ export function isPlayed(game: Game): boolean {
   return num(game.playcount) > 0 || !!game.lastplayed?.trim();
 }
 
-/** Nombre para ordenar, como hace ES-DE: «nombre para ordenar» si lo tiene */
-const byName = (a: Game, b: Game) =>
-  (a.sortname || a.name || a.path).localeCompare(b.sortname || b.name || b.path, undefined, { numeric: true, sensitivity: "base" });
+const compareText = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
 
-export type GridSort = "name" | "most_played" | "recent" | "playtime" | "release" | "rating";
+/** Por el título, como la columna Nombre de la tabla */
+export const nameText = (g: Game) => g.name || g.path;
+const byName = (a: Game, b: Game) => compareText(nameText(a), nameText(b));
+
+/**
+ * Como ordena ES-DE: el «nombre para ordenar» (sortname) si lo tiene. Aparte de «Nombre»
+ * porque hay gamelists (p. ej. de ARRM) con sortname «001 =- Juego» que no siguen el título.
+ */
+export const sortnameText = (g: Game) => g.sortname || g.name || g.path;
+const bySortname = (a: Game, b: Game) => compareText(sortnameText(a), sortnameText(b));
+
+export type GridSort = "name" | "sortname" | "most_played" | "recent" | "playtime" | "release" | "rating";
 
 /**
  * Criterios de orden de la cuadrícula. `key` da el valor (mayor primero); los juegos sin dato
@@ -32,6 +41,7 @@ export type GridSort = "name" | "most_played" | "recent" | "playtime" | "release
  */
 export const GRID_SORTS: { id: GridSort; label: TranslationKeys; key?: (g: Game) => number | string }[] = [
   { id: "name", label: "sort.name" },
+  { id: "sortname", label: "sort.sortname" },
   { id: "most_played", label: "sort.mostPlayed", key: (g) => num(g.playcount) },
   { id: "recent", label: "sort.recent", key: (g) => g.lastplayed ?? "" },
   { id: "playtime", label: "sort.playtime", key: (g) => num(g.gametime) },
@@ -40,6 +50,7 @@ export const GRID_SORTS: { id: GridSort; label: TranslationKeys; key?: (g: Game)
 ];
 
 export function sortGames(games: Game[], sort: GridSort | undefined): Game[] {
+  if (sort === "sortname") return [...games].sort(bySortname);
   const key = GRID_SORTS.find((s) => s.id === sort)?.key;
   if (!key) return [...games].sort(byName);
   const empty = (v: number | string) => v === 0 || v === "";

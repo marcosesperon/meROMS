@@ -526,6 +526,7 @@ const es: Record<TranslationKeys, string> = {
   "filter.playedNo": "Sin jugar",
   "sort.title": "Ordenar la cuadrícula",
   "sort.name": "Nombre",
+  "sort.sortname": "Nombre para ordenar",
   "sort.mostPlayed": "Más jugados",
   "sort.recent": "Jugados recientemente",
   "sort.playtime": "Más tiempo jugado",

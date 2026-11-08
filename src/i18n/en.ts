@@ -524,6 +524,7 @@ const en = {
   "filter.playedNo": "Never played",
   "sort.title": "Sort the grid",
   "sort.name": "Name",
+  "sort.sortname": "Sort name",
   "sort.mostPlayed": "Most played",
   "sort.recent": "Recently played",
   "sort.playtime": "Most time played",

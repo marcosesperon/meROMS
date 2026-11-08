@@ -5,11 +5,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
 import { cardAspectRatio, cardWidthFor } from "../../utils/cartridgeSizes";
 import { effectiveGridField, getSystemView } from "../../utils/systemView";
-import { sortGames } from "../../utils/playStats";
+import { nameText, sortGames, sortnameText } from "../../utils/playStats";
 import { LetterBar } from "./LetterBar";
-
-// Texto por el que se ordena por nombre (como `sortGames`): de él sale la letra de la barra
-const sortText = (g: Game) => g.sortname || g.name || g.path;
 
 interface GameGridProps {
   games: Game[];
@@ -52,7 +49,9 @@ export function GameGrid({ games }: GameGridProps) {
   // El orden que se ve, para el anterior/siguiente de la ficha a pantalla completa
   const setVisibleOrder = useAppStore((s) => s.setVisibleOrder);
   useEffect(() => setVisibleOrder(sorted.map((g) => g.path)), [sorted, setVisibleOrder]);
-  const byName = !gridSort || gridSort === "name";
+  // Barra de letras: con los dos órdenes por nombre, sacando la letra del texto por el que se ordena
+  const byName = !gridSort || gridSort === "name" || gridSort === "sortname";
+  const letterText = gridSort === "sortname" ? sortnameText : nameText;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -84,7 +83,7 @@ export function GameGrid({ games }: GameGridProps) {
         </div>
       </div>
       {/* Saltar a letra: solo con la lista por nombre (con otro orden las letras van salteadas) */}
-      {byName && <LetterBar games={sorted} nameOf={sortText} containerRef={scrollRef} />}
+      {byName && <LetterBar games={sorted} nameOf={letterText} containerRef={scrollRef} />}
     </div>
   );
 }
