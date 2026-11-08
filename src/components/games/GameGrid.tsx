@@ -22,6 +22,17 @@ export function GameGrid({ games }: GameGridProps) {
   // como ES-DE; los que no tienen el dato del orden van al final)
   const gridSort = useAppStore((s) => s.settings.grid_sort);
   const sorted = useMemo(() => sortGames(games, gridSort), [games, gridSort]);
+  // Clave de cada tarjeta: su ruta. Hay gamelists con la misma ruta en varias entradas (p. ej.
+  // una por región) y, con claves repetidas, React se lía al cambiar la lista y deja tarjetas
+  // viejas a la vista; a la segunda y siguientes se les añade «#2», «#3»…
+  const keys = useMemo(() => {
+    const seen = new Map<string, number>();
+    return sorted.map((g) => {
+      const n = (seen.get(g.path) ?? 0) + 1;
+      seen.set(g.path, n);
+      return n === 1 ? g.path : `${g.path}#${n}`;
+    });
+  }, [sorted]);
   // El orden que se ve, para el anterior/siguiente de la ficha a pantalla completa
   const setVisibleOrder = useAppStore((s) => s.setVisibleOrder);
   useEffect(() => setVisibleOrder(sorted.map((g) => g.path)), [sorted, setVisibleOrder]);
@@ -51,8 +62,8 @@ export function GameGrid({ games }: GameGridProps) {
             gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
           }}
         >
-          {sorted.map((game) => (
-            <GameCard key={game.path} game={game} />
+          {sorted.map((game, i) => (
+            <GameCard key={keys[i]} game={game} />
           ))}
         </div>
       </div>
