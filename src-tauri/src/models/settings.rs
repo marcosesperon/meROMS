@@ -192,6 +192,23 @@ impl AppSettings {
         changed
     }
 
+    /// La proporción por sistema de la antigua pestaña Ajustes → Sistemas (común a todos los
+    /// perfiles) pasa a la vista de ese sistema en cada perfil, sin pisar lo que ya tenga, y se
+    /// vacía. Devuelve true si cambió algo.
+    pub fn migrate_system_configs(&mut self) -> bool {
+        let Some(configs) = self.system_configs.take() else { return false };
+        for (key, cfg) in &configs {
+            let Some(ratio) = cfg.aspect_ratio.as_ref().filter(|r| !r.is_empty()) else { continue };
+            for profile in &mut self.profiles {
+                let view = profile.system_views.get_or_insert_with(Default::default).entry(super::profile::system_key(key)).or_default();
+                if view.aspect_ratio.is_none() {
+                    view.aspect_ratio = Some(ratio.clone());
+                }
+            }
+        }
+        true
+    }
+
     /// The profile currently in use, if any.
     pub fn active_profile(&self) -> Option<&Profile> {
         let id = self.active_profile_id.as_ref()?;
@@ -418,6 +435,26 @@ mod tests {
         assert!(settings.profiles.is_empty());
         settings.migrate_legacy();
         assert_eq!(settings.profiles.len(), 1);
+    }
+
+    #[test]
+    fn system_ratios_move_to_every_profile_without_overwriting() {
+        let mut settings = AppSettings::default();
+        settings.profiles = vec![Profile::default_classic("/a", None), Profile::default_classic("/b", None)];
+        settings.profiles[1].id = "otro".into();
+        // El segundo perfil ya tenía su propia forma para SNES: no se pisa
+        settings.profiles[1].system_views = Some(
+            [("snes".to_string(), crate::models::profile::SystemView { aspect_ratio: Some("3/4".into()), ..Default::default() })].into_iter().collect(),
+        );
+        settings.system_configs = Some([("snes".to_string(), SystemConfig { aspect_ratio: Some("4/3".into()) })].into_iter().collect());
+
+        assert!(settings.migrate_system_configs());
+        assert!(settings.system_configs.is_none());
+        let ratio = |i: usize| settings.profiles[i].system_views.as_ref().unwrap()["snes"].aspect_ratio.clone();
+        assert_eq!(ratio(0).as_deref(), Some("4/3"));
+        assert_eq!(ratio(1).as_deref(), Some("3/4"));
+        // La segunda vez ya no hay nada que pasar
+        assert!(!settings.migrate_system_configs());
     }
 }
 

@@ -8,6 +8,7 @@ import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
+import { effectiveGridField } from "../../utils/systemView";
 
 interface GameCardProps {
   game: Game;
@@ -23,7 +24,8 @@ export function GameCard({ game, aspectRatio }: GameCardProps) {
   const multiSelect = useAppStore((s) => s.multiSelect);
   const checked = useAppStore((s) => s.selectedPaths.has(game.path));
   const { t } = useTranslation();
-  const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
+  // El medio de la cuadrícula de este sistema (el suyo en el perfil o el global)
+  const gridMediaField = useAppStore((s) => effectiveGridField(s.settings, s.selectedSystem?.name));
 
   // Use configured media field, with fallback chain
   const mediaValue =

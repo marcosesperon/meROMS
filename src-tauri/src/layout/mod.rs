@@ -209,6 +209,7 @@ mod tests {
             last_system: None,
             bios_dir: None,
             saves_dir: None,
+            system_views: None,
         }
     }
 

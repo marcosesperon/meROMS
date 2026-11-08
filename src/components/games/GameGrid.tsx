@@ -3,7 +3,8 @@ import { useListKeyboard } from "../../hooks/useListKeyboard";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
-import { cardAspectRatio, cardWidthFor, extractCustomRatios } from "../../utils/cartridgeSizes";
+import { cardAspectRatio, cardWidthFor } from "../../utils/cartridgeSizes";
+import { effectiveGridField, getSystemView } from "../../utils/systemView";
 import { sortGames } from "../../utils/playStats";
 import { LetterBar } from "./LetterBar";
 
@@ -16,16 +17,17 @@ interface GameGridProps {
 
 export function GameGrid({ games }: GameGridProps) {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
-  const systemConfigs = useAppStore((s) => s.settings.system_configs);
-  // Forma de las tarjetas: a mano en Ajustes, la que más se repite en el medio que se enseña
-  // (medida por el store al cargar el sistema) o la tabla fija
-  const gridField = useAppStore((s) => s.settings.grid_media_field) || "image";
+  const settings = useAppStore((s) => s.settings);
+  // Forma de las tarjetas: la elegida para el sistema en el perfil, la que más se repite en el
+  // medio que se enseña (medida por el store al cargar el sistema) o la tabla fija
+  const view = getSystemView(settings, selectedSystem?.name);
+  const gridField = effectiveGridField(settings, selectedSystem?.name);
   const mediaShape = useAppStore((s) => s.mediaShape);
   const refreshMediaShape = useAppStore((s) => s.refreshMediaShape);
   const measured = mediaShape && mediaShape.system === selectedSystem?.path && mediaShape.field === gridField ? mediaShape : null;
-  const aspectRatio = cardAspectRatio(selectedSystem?.name || "", extractCustomRatios(systemConfigs), measured);
+  const aspectRatio = cardAspectRatio(selectedSystem?.name || "", view.aspect_ratio, measured);
   const cardWidth = cardWidthFor(aspectRatio);
-  // Al cambiar el medio de la cuadrícula en Ajustes, se mide el nuevo
+  // Al cambiar el medio de la cuadrícula (en Ajustes o en el sistema), se mide el nuevo
   useEffect(() => {
     if (selectedSystem && (mediaShape?.system !== selectedSystem.path || mediaShape?.field !== gridField)) {
       refreshMediaShape(selectedSystem.path);

@@ -144,9 +144,6 @@ const es: Record<TranslationKeys, string> = {
   "settings.clickAction_full": "Abrir la ficha a pantalla completa",
   "settings.clickActionHelp": "El doble clic abre siempre el editor. La ficha a pantalla completa también se abre con el botón de ampliar del panel derecho.",
   "settings.aspectRatios": "Proporción de Cuadrícula",
-  "settings.arSystem": "Sistema",
-  "settings.arDefault": "Predeterminado",
-  "settings.arCustom": "Personalizado",
   "settings.save": "Guardar Ajustes",
   "settings.language": "Idioma",
   "settings.exportSettings": "Exportar Ajustes",
@@ -201,7 +198,6 @@ const es: Record<TranslationKeys, string> = {
   // Settings tabs
   "settings.tabGeneral": "General",
   "settings.tabMedia": "Rutas de Media",
-  "settings.tabSystems": "Sistemas",
   "settings.tabAbout": "Acerca de",
   // Pestaña Acerca de
   "about.madeBy": "Hecho por {author}",
@@ -238,9 +234,6 @@ const es: Record<TranslationKeys, string> = {
   "donation.thanks": "¡Gracias!",
   "donation.later": "Ahora no",
   "donation.donate": "Hacer donación",
-  "settings.systemsHelp": "Configura los ajustes de visualización para cada sistema detectado.",
-  "settings.systemsSearch": "Buscar sistemas…",
-  "settings.systemsNoMatch": "Ningún sistema coincide con la búsqueda.",
 
   // Media config
   "media.title": "Archivos de Media",
@@ -1030,6 +1023,23 @@ const es: Record<TranslationKeys, string> = {
   "transfer.skipped": "No llevados ({count}):",
   "transfer.failed": "No se pudo llevar el sistema: {error}",
   "transfer.noTargets": "No hay otro perfil completo con otra carpeta de ROMs. Créalo en Ajustes > Perfiles.",
+
+  // Vista de cada sistema (en el perfil)
+  "systemView.button": "Cómo se ve este sistema",
+  "systemView.title": "Cómo se ve {system}",
+  "systemView.help": "Se guarda para este sistema en el perfil actual. Los cambios se aplican al momento.",
+  "systemView.auto": "Automático ({what})",
+  "systemView.gridMedia": "Medio de la cuadrícula",
+  "systemView.gridMediaHelp": "Lo que enseña cada tarjeta. Automático = el de Ajustes > General.",
+  "systemView.ratio": "Forma de la tarjeta",
+  "systemView.ratioHelp": "Automático = la forma que más se repite en ese medio en este sistema.",
+  "systemView.cover": "Portada en el detalle del juego",
+  "systemView.coverHelp": "La imagen de delante en el detalle del juego. Un juego que no la tenga usa el orden automático.",
+  "systemView.coverAuto": "carátula, si no caja 3D",
+  "systemView.hero": "Fondo de la cabecera del detalle",
+  "systemView.heroHelp": "La imagen grande de detrás. Un juego que no la tenga usa el orden automático.",
+  "systemView.heroAuto": "fanart, captura, pantalla de título",
+  "systemView.reset": "Todo automático",
 };
 
 export default es;

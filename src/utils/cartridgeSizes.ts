@@ -135,59 +135,30 @@ const SYSTEM_ASPECT_RATIOS: Record<string, readonly [number, number]> = {
 const DEFAULT_RATIO: readonly [number, number] = [3, 4];
 
 /**
- * Get the built-in default aspect ratio for a system.
- * Returns [width, height] tuple.
- */
-export function getDefaultSystemRatio(systemName: string): readonly [number, number] {
-  const name = systemName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  return SYSTEM_ASPECT_RATIOS[name] ?? DEFAULT_RATIO;
-}
-
-/**
  * Get the aspect ratio CSS string for a system's grid cards.
  * Uses custom override if provided, otherwise falls back to built-in defaults.
  * Returns a string like "3/4" for use in style={{ aspectRatio: "3/4" }}
  */
-export function getSystemAspectRatio(
-  systemName: string,
-  customRatios?: Record<string, string>,
-): string {
+export function getSystemAspectRatio(systemName: string): string {
   const name = systemName.toLowerCase().replace(/[^a-z0-9]/g, "");
-
-  // Check custom override
-  if (customRatios?.[name]) {
-    return customRatios[name];
-  }
-
   const ratio = SYSTEM_ASPECT_RATIOS[name] ?? DEFAULT_RATIO;
   return `${ratio[0]}/${ratio[1]}`;
 }
 
 /**
- * Forma de las tarjetas de la cuadrícula de un sistema, en este orden: la proporción puesta a
- * mano en Ajustes → Sistemas, la forma que más se repite en el medio que enseña la cuadrícula
- * (medida en los ficheros del sistema: `usual_media_shape`) y, si no hay, la tabla de arriba.
+ * Forma de las tarjetas de la cuadrícula de un sistema, en este orden: la elegida para el
+ * sistema en el perfil (su ventanita de ajustes), la forma que más se repite en el medio que
+ * enseña la cuadrícula (medida en los ficheros del sistema: `usual_media_shape`) y, si no
+ * hay, la tabla de arriba.
  */
 export function cardAspectRatio(
   systemName: string,
-  customRatios?: Record<string, string>,
+  chosen?: string,
   measured?: { width: number; height: number } | null,
 ): string {
-  const name = systemName.toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (customRatios?.[name]) return customRatios[name];
+  if (chosen) return chosen;
   if (measured && measured.width > 0 && measured.height > 0) return `${measured.width}/${measured.height}`;
   return getSystemAspectRatio(systemName);
-}
-
-/**
- * Get the minimum card width (in px) for the grid based on aspect ratio.
- * Wider aspect ratios get wider cards, taller ones stay narrow.
- */
-export function getSystemCardWidth(
-  systemName: string,
-  customRatios?: Record<string, string>,
-): number {
-  return cardWidthFor(getSystemAspectRatio(systemName, customRatios));
 }
 
 /** Ancho mínimo (px) de la tarjeta para una proporción «ancho/alto» */
@@ -200,16 +171,4 @@ export function cardWidthFor(ratioStr: string): number {
   if (ar >= 1) return 220;        // square-ish
   if (ar >= 0.8) return 180;      // nearly square (jewel cases)
   return 160;                     // tall portrait (standard boxes)
-}
-
-/** Extract a flat aspect ratio map from SystemConfig records */
-export function extractCustomRatios(
-  configs?: Record<string, { aspect_ratio?: string }>,
-): Record<string, string> | undefined {
-  if (!configs) return undefined;
-  const map: Record<string, string> = {};
-  for (const [k, v] of Object.entries(configs)) {
-    if (v.aspect_ratio) map[k] = v.aspect_ratio;
-  }
-  return Object.keys(map).length > 0 ? map : undefined;
 }

@@ -41,6 +41,33 @@ pub struct Profile {
     /// Saves folder (save games and states); None = the usual one next to the ROM folder
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub saves_dir: Option<String>,
+    /// Cómo se ve cada sistema en este perfil (clave: el nombre del sistema en minúsculas y sin
+    /// símbolos, `system_key`). Lo que falta es «automático».
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system_views: Option<std::collections::HashMap<String, SystemView>>,
+}
+
+/// Vista de un sistema en un perfil: lo que se elige en su ventanita de ajustes. Cada campo
+/// vacío = automático.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SystemView {
+    /// Medio de la cuadrícula (campo de la gamelist: `image`, `thumbnail`…); si no, el global
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grid_media: Option<String>,
+    /// Forma de la tarjeta («3/4»); si no, la medida de los medios o la tabla fija
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub aspect_ratio: Option<String>,
+    /// Medio de la portada del detalle; si no (o el juego no lo tiene), carátula y caja 3D
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cover: Option<String>,
+    /// Medio del fondo de la cabecera del detalle; si no, fanart, captura, pantalla de título
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hero: Option<String>,
+}
+
+/// Clave de un sistema en `system_views` (la misma que usaba la antigua tabla de proporciones)
+pub fn system_key(name: &str) -> String {
+    name.to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric()).collect()
 }
 
 impl Profile {
@@ -62,6 +89,7 @@ impl Profile {
             last_system: None,
             bios_dir: None,
             saves_dir: None,
+            system_views: None,
         }
     }
 }

@@ -23,6 +23,7 @@ import { formatPlayTime } from "../../utils/playStats";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
 import { statusBadge, statusText } from "../../utils/gameStatus";
+import { effectiveGridField } from "../../utils/systemView";
 
 // Texto de la columna Nombre (de él sale la letra de la barra)
 const nameText = (g: Game) => g.name || g.path;
@@ -70,7 +71,7 @@ function ToggleCell({
 
 /** Miniatura de una fila: el medio de la cuadrícula (o carátula / captura); nada si no hay o falla */
 function RowThumb({ game }: { game: Game }) {
-  const gridMediaField = useAppStore((s) => s.settings.grid_media_field) || "image";
+  const gridMediaField = useAppStore((s) => effectiveGridField(s.settings, s.selectedSystem?.name));
   const systemPath = useAppStore((s) => s.selectedSystem?.path) || "";
   const [failed, setFailed] = useState(false);
   const value = (game as unknown as Record<string, string | undefined>)[gridMediaField] || game.image || game.thumbnail;

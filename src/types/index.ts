@@ -116,6 +116,8 @@ export interface Profile {
   bios_dir?: string;
   /** Saves folder (save games and states); missing = the usual one next to the ROM folder */
   saves_dir?: string;
+  /** How each system looks in this profile (key: `systemKey(name)`); missing = automatic */
+  system_views?: Record<string, SystemView>;
 }
 
 /** Systems of the active profile that are in the other structure, and where to migrate them from */
@@ -183,6 +185,18 @@ export interface AppSettings {
   language?: string;
   /** Per-system configuration (aspect ratio, etc.) keyed by normalized system name */
   system_configs?: Record<string, SystemConfig>;
+}
+
+/** A system's view in a profile (its settings window); every missing field = automatic */
+export interface SystemView {
+  /** Grid media (gamelist field); missing = the global grid_media_field */
+  grid_media?: string;
+  /** Card shape ("3/4"); missing = measured from the media, else the fixed table */
+  aspect_ratio?: string;
+  /** Detail cover media; missing (or the game lacks it) = box art, then 3D box */
+  cover?: string;
+  /** Detail header background media; missing = fanart, screenshot, title screen */
+  hero?: string;
 }
 
 export interface SystemConfig {

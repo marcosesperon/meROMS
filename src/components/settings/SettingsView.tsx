@@ -11,7 +11,6 @@ import {
 import { MediaConfigTab } from "./MediaConfigTab";
 import { ProfilesTab } from "./ProfilesTab";
 import { RenameRulesTab } from "./RenameRulesTab";
-import { SystemsConfigTab } from "./SystemsConfigTab";
 import { AboutTab } from "./AboutTab";
 import { PlaceholdersSetting } from "./PlaceholdersSetting";
 import { LaunchBoxSetting } from "./LaunchBoxSetting";
@@ -26,7 +25,7 @@ import type { AppSettings, Profile } from "../../types";
 
 type AppSettingsSort = AppSettings["gamelist_sort"];
 
-type SettingsTab = "profiles" | "general" | "media" | "rules" | "systems" | "about";
+type SettingsTab = "profiles" | "general" | "media" | "rules" | "about";
 
 interface SettingsViewProps {
   open: boolean;
@@ -36,7 +35,6 @@ interface SettingsViewProps {
 export function SettingsView({ open, onClose }: SettingsViewProps) {
   const settings = useAppStore((s) => s.settings);
   const updateSettings = useAppStore((s) => s.updateSettings);
-  const systems = useAppStore((s) => s.systems);
   const { t } = useTranslation();
   const locale = useI18nStore((s) => s.locale);
   const setLocale = useI18nStore((s) => s.setLocale);
@@ -164,7 +162,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
     { id: "general", label: t("settings.tabGeneral") },
     { id: "media", label: t("settings.tabMedia") },
     { id: "rules", label: t("settings.tabRules") },
-    { id: "systems", label: t("settings.tabSystems") },
     { id: "about", label: t("settings.tabAbout") },
   ];
 
@@ -499,18 +496,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
             />
           )}
 
-          {activeTab === "systems" && (
-            <SystemsConfigTab
-              systems={systems}
-              systemConfigs={form.system_configs || {}}
-              onChange={(configs) =>
-                setForm({
-                  ...form,
-                  system_configs: Object.keys(configs).length > 0 ? configs : undefined,
-                })
-              }
-            />
-          )}
 
           {activeTab === "about" && (
             <AboutTab

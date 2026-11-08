@@ -8,6 +8,7 @@ import { formatPlayTime } from "../utils/playStats";
 import { getFlag } from "../utils/flags";
 import { statusText } from "../utils/gameStatus";
 import { useTranslation } from "../i18n";
+import { getSystemView } from "../utils/systemView";
 
 // Medios que salen en la galería, en este orden (el vídeo va primero si hay)
 const GALLERY: { field: keyof Game; label: TranslationKey }[] = [
@@ -59,8 +60,14 @@ export function useGameDetails(game: Game) {
   // Lo que ya se ve arriba (la carátula y la imagen de fondo de la cabecera): si no hay nada
   // más, el visor solo repetiría lo mismo y no se enseña
   const firstShown = (fields: (keyof Game)[]) => fields.find((f) => !!src(game[f] as string | undefined)) ?? null;
-  const coverField = firstShown(["image", "boxart"]);
-  const sceneField = firstShown(["fanart", "thumbnail", "titleshot"]);
+  // Portada y fondo: primero el medio elegido para el sistema en el perfil (su ventanita de
+  // ajustes) y, si el juego no lo tiene, el orden de siempre
+  // (se leen los dos textos sueltos: un objeto nuevo en cada lectura del store repintaría sin fin)
+  const chosenCover = useAppStore((s) => getSystemView(s.settings, s.selectedSystem?.name).cover);
+  const chosenHero = useAppStore((s) => getSystemView(s.settings, s.selectedSystem?.name).hero);
+  const chosen = (field: string | undefined) => (field ? [field as keyof Game] : []);
+  const coverField = firstShown([...chosen(chosenCover), "image", "boxart"]);
+  const sceneField = firstShown([...chosen(chosenHero), "fanart", "thumbnail", "titleshot"]);
   const onlyShownAbove = media.every((m) => m.field === coverField || m.field === sceneField);
 
   // Cabecera: fanart; si no hay, una captura (la portada ya va aparte, delante).
@@ -68,7 +75,8 @@ export function useGameDetails(game: Game) {
   const cover = coverField ? src(game[coverField] as string) : undefined;
   const scene = sceneField ? src(game[sceneField] as string) : undefined;
   const hero = scene ?? cover;
-  const heroStyle = sceneField === "fanart" ? "" : scene ? "[image-rendering:pixelated]" : "blur-2xl saturate-150 scale-125 opacity-70";
+  // Capturas y pantallas de título, con píxeles nítidos; sin fondo, la portada difuminada
+  const heroStyle = !scene ? "blur-2xl saturate-150 scale-125 opacity-70" : sceneField === "thumbnail" || sceneField === "titleshot" ? "[image-rendering:pixelated]" : "";
 
   // Estado de juego (meROMS): «Terminado · Jugando»
   const { t } = useTranslation();

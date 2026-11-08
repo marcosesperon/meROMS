@@ -142,9 +142,6 @@ const en = {
   "settings.clickAction_full": "Open the full-screen page",
   "settings.clickActionHelp": "Double click always opens the editor. The full-screen page can also be opened with the expand button in the right panel.",
   "settings.aspectRatios": "Grid Aspect Ratio",
-  "settings.arSystem": "System",
-  "settings.arDefault": "Default",
-  "settings.arCustom": "Custom",
   "settings.save": "Save Settings",
   "settings.language": "Language",
   "settings.exportSettings": "Export Settings",
@@ -199,7 +196,6 @@ const en = {
   // Settings tabs
   "settings.tabGeneral": "General",
   "settings.tabMedia": "Media Paths",
-  "settings.tabSystems": "Systems",
   "settings.tabAbout": "About",
   // About tab
   "about.madeBy": "Made by {author}",
@@ -236,9 +232,6 @@ const en = {
   "donation.thanks": "Thank you!",
   "donation.later": "Not now",
   "donation.donate": "Donate",
-  "settings.systemsHelp": "Configure display settings for each detected system.",
-  "settings.systemsSearch": "Search systems...",
-  "settings.systemsNoMatch": "No system matches the search.",
 
   // Media config
   "media.title": "Media Files",
@@ -1028,6 +1021,23 @@ const en = {
   "transfer.skipped": "Not taken ({count}):",
   "transfer.failed": "Couldn't take the system: {error}",
   "transfer.noTargets": "There's no other complete profile with a different ROM folder. Create one in Settings > Profiles.",
+
+  // Per-system view (in the profile)
+  "systemView.button": "How this system looks",
+  "systemView.title": "How {system} looks",
+  "systemView.help": "Saved for this system in the current profile. Changes apply at once.",
+  "systemView.auto": "Automatic ({what})",
+  "systemView.gridMedia": "Grid media",
+  "systemView.gridMediaHelp": "What each card shows. Automatic = the one in Settings > General.",
+  "systemView.ratio": "Card shape",
+  "systemView.ratioHelp": "Automatic = the most common shape of that media in this system.",
+  "systemView.cover": "Cover in the game details",
+  "systemView.coverHelp": "The image at the front of the game details. A game without it uses the automatic order.",
+  "systemView.coverAuto": "box art, then 3D box",
+  "systemView.hero": "Header background in the game details",
+  "systemView.heroHelp": "The big image behind. A game without it uses the automatic order.",
+  "systemView.heroAuto": "fanart, screenshot, title screen",
+  "systemView.reset": "All automatic",
 } as const;
 
 export default en;

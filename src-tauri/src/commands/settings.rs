@@ -25,7 +25,9 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
         .map_err(|e| format!("Failed to parse settings: {}", e))?;
 
     // Old settings files have no profiles: convert them once and persist the result
-    if settings.migrate_legacy() {
+    // (y la proporción por sistema de la antigua pestaña Sistemas pasa a cada perfil)
+    let legacy = settings.migrate_legacy();
+    if settings.migrate_system_configs() || legacy {
         save_settings(app, settings.clone())?;
     }
     // Las escrituras de gamelist no reciben los ajustes: el orden se les deja a mano
@@ -61,5 +63,6 @@ pub fn import_settings(file_path: String) -> Result<AppSettings, String> {
         .map_err(|e| format!("Invalid settings file: {}", e))?;
     // Exports made before profiles existed are migrated the same way
     settings.migrate_legacy();
+    settings.migrate_system_configs();
     Ok(settings)
 }
