@@ -158,7 +158,7 @@ pub struct BiosListStatus {
     pub files: usize,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn bios_status(app: tauri::AppHandle) -> BiosListStatus {
     let list = load_list(&app);
     BiosListStatus {
@@ -189,7 +189,7 @@ pub async fn bios_download(app: tauri::AppHandle) -> Result<BiosListStatus, Stri
     Ok(bios_status(app))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn bios_delete(app: tauri::AppHandle) -> Result<(), String> {
     let file = list_file(&app)?;
     if file.exists() {
@@ -214,7 +214,7 @@ pub fn bios_dir(profile: &Profile) -> Option<PathBuf> {
 }
 
 /// Carpeta que se propone si el perfil no tiene una (para enseñarla en Ajustes)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn suggested_bios_dir(profile: Profile) -> Option<String> {
     let mut p = profile;
     p.bios_dir = None;

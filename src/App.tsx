@@ -36,7 +36,6 @@ import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
-import { listen } from "@tauri-apps/api/event";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
 import { shotsRunning, startShots } from "./dev/shots";
@@ -56,7 +55,6 @@ function App() {
   const settingsLoaded = useAppStore((s) => s.settingsLoaded);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const loadGames = useAppStore((s) => s.loadGames);
-  const setScanProgress = useAppStore((s) => s.setScanProgress);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
   const migrationPreset = useAppStore((s) => s.migrationPreset);
   const openPresetMigration = useAppStore((s) => s.openPresetMigration);
@@ -107,17 +105,6 @@ function App() {
 
   useEffect(() => {
     loadSettings();
-    const unlisten = listen<{ current: number; total: number; current_name: string }>(
-      "scan-progress",
-      (event) => {
-        setScanProgress({
-          current: event.payload.current,
-          total: event.payload.total,
-          currentName: event.payload.current_name,
-        });
-      }
-    );
-    return () => { unlisten.then((fn) => fn()); };
   }, []);
 
   // Recount whenever the games change (system loaded, ROMs added, renamed, removed...)

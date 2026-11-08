@@ -22,7 +22,7 @@ pub struct MoveResult {
 
 /// Subcarpetas de ROMs de un sistema (sin las de media, ocultas ni las propias de ES-DE),
 /// en ruta relativa con «/»
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_subfolders(system_path: String) -> Result<Vec<String>, String> {
     let system = SystemRef::from_rom_dir(&system_path);
     let skipped = super::new_roms::skipped_dirs();
@@ -317,7 +317,7 @@ pub(super) fn update_collections(layout: &Layout, from: &SystemRef, to: &SystemR
 }
 
 /// Mueve juegos a otro sistema o subcarpeta. Escribe las dos gamelists (con copia de seguridad).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn move_games(
     app: tauri::AppHandle,
     system_path: String,

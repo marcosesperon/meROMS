@@ -7,11 +7,18 @@ use crate::models::system::extensions_for_system;
 use crate::models::{Game, GameList};
 use crate::models::Folder;
 use crate::parser;
+use super::progress::Progress;
 
 /// Read a system's gamelist wherever the layout keeps it.
 /// In ES-DE the XML has no media tags, so media fields are filled in memory by ROM name;
 /// the rest of the app then works exactly as with the Classic structure.
 pub fn read_gamelist(layout: &Layout, system: &SystemRef) -> Result<GameList, String> {
+    read_gamelist_with(layout, system, &Progress::none())
+}
+
+/// `read_gamelist` avisando de la fase (leer el XML; en ES-DE, buscar la media de cada juego)
+pub fn read_gamelist_with(layout: &Layout, system: &SystemRef, progress: &Progress) -> Result<GameList, String> {
+    progress.phase("reading");
     let gamelist_path = layout.gamelist_path(system);
 
     let mut gamelist = if gamelist_path.exists() {
@@ -23,6 +30,7 @@ pub fn read_gamelist(layout: &Layout, system: &SystemRef) -> Result<GameList, St
     };
 
     if !layout.writes_media_tags() {
+        progress.phase("media");
         media::hydrate_gamelist(layout, system, &mut gamelist);
     }
     Ok(gamelist)
@@ -121,13 +129,14 @@ fn write_gamelist_file(
     })
 }
 
-#[tauri::command]
-pub fn load_gamelist(app: tauri::AppHandle, system_path: String) -> Result<GameList, String> {
+#[tauri::command(async)]
+pub fn load_gamelist(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<GameList, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    read_gamelist(&layout, &system)
+    let progress = Progress::new(&app, task);
+    read_gamelist_with(&layout, &system, &progress)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_gamelist(app: tauri::AppHandle, system_path: String, gamelist: GameList) -> Result<(), String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     write_gamelist(&layout, &system, &gamelist)
@@ -146,21 +155,23 @@ fn update_gamelist(
     Ok(gamelist)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn add_game(app: tauri::AppHandle, system_path: String, game: Game) -> Result<GameList, String> {
     update_gamelist(&app, &system_path, |gl| gl.games.push(game))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_game(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<GameList, String> {
     update_gamelist(&app, &system_path, |gl| gl.games.retain(|g| g.path != game_path))
 }
 
 /// Scans the system folder for ROM files based on the folder name,
 /// generates a gamelist.xml with one entry per ROM, and saves it.
-#[tauri::command]
-pub fn generate_gamelist(app: tauri::AppHandle, system_path: String) -> Result<GameList, String> {
+#[tauri::command(async)]
+pub fn generate_gamelist(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<GameList, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
+    let progress = Progress::new(&app, task);
+    progress.phase("scanning");
     let path = Path::new(&system_path);
     let folder_name = path
         .file_name()
@@ -169,14 +180,19 @@ pub fn generate_gamelist(app: tauri::AppHandle, system_path: String) -> Result<G
 
     let extensions = extensions_for_system(folder_name);
 
-    let entries = fs::read_dir(path)
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
+    let entries: Vec<_> = fs::read_dir(path)
+        .map_err(|e| format!("Failed to read directory: {}", e))?
+        .collect();
+    let total = entries.len();
 
     let mut games: Vec<Game> = Vec::new();
 
-    for entry in entries {
+    for (i, entry) in entries.into_iter().enumerate() {
+        // Cancelado: no se escribe nada (la gamelist aún no existía)
+        progress.check()?;
         let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
         let file_path = entry.path();
+        progress.step("files", i + 1, total, &entry.file_name().to_string_lossy());
 
         if !file_path.is_file() {
             continue;
@@ -230,9 +246,11 @@ pub fn generate_gamelist(app: tauri::AppHandle, system_path: String) -> Result<G
     });
 
     let gamelist = GameList { games, ..Default::default() };
+    progress.check()?;
+    progress.phase("saving");
     write_gamelist(&layout, &system, &gamelist)?;
     // Re-read so ES-DE media fields are filled in for the UI
-    read_gamelist(&layout, &system)
+    read_gamelist_with(&layout, &system, &progress)
 }
 
 /// Looks for an existing cover: first the unified `covers/<ROM>.<ext>`,
@@ -274,12 +292,12 @@ fn find_existing_image(layout: &Layout, system: &SystemRef, rom_path: &str) -> O
     None
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn add_folder(app: tauri::AppHandle, system_path: String, folder: Folder) -> Result<GameList, String> {
     update_gamelist(&app, &system_path, |gl| gl.folders.push(folder))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_folder(app: tauri::AppHandle, system_path: String, folder_path: String) -> Result<GameList, String> {
     update_gamelist(&app, &system_path, |gl| gl.folders.retain(|f| f.path != folder_path))
 }

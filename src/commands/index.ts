@@ -22,12 +22,12 @@ export async function detectEsdePaths(esdeHome: string): Promise<EsdeDetectedPat
   return invoke("detect_esde_paths", { esdeHome });
 }
 
-export async function scanSystems(rootPath: string): Promise<SystemInfo[]> {
-  return invoke("scan_systems", { rootPath });
+export async function scanSystems(rootPath: string, task?: string): Promise<SystemInfo[]> {
+  return invoke("scan_systems", { rootPath, task });
 }
 
-export async function loadGamelist(systemPath: string): Promise<GameList> {
-  return invoke("load_gamelist", { systemPath });
+export async function loadGamelist(systemPath: string, task?: string): Promise<GameList> {
+  return invoke("load_gamelist", { systemPath, task });
 }
 
 export async function saveGamelist(
@@ -52,9 +52,10 @@ export async function removeGame(
 }
 
 export async function generateGamelist(
-  systemPath: string
+  systemPath: string,
+  task?: string
 ): Promise<GameList> {
-  return invoke("generate_gamelist", { systemPath });
+  return invoke("generate_gamelist", { systemPath, task });
 }
 
 /** Which scrapers can be used (ScreenScraper developer credentials may be built into the app) */
@@ -167,8 +168,8 @@ export async function detectSwappedMedia(systemPath: string): Promise<DetectResu
 }
 
 /** ROM files in the system folder that the gamelist doesn't have */
-export async function listNewRoms(systemPath: string): Promise<NewRom[]> {
-  return invoke("list_new_roms", { systemPath });
+export async function listNewRoms(systemPath: string, task?: string): Promise<NewRom[]> {
+  return invoke("list_new_roms", { systemPath, task });
 }
 
 /** Move files of the system folder to the system trash (only paths inside that folder) */
@@ -183,13 +184,13 @@ export interface MissingRoms {
   all_missing: boolean;
 }
 
-export async function listMissingRoms(systemPath: string): Promise<MissingRoms> {
-  return invoke("list_missing_roms", { systemPath });
+export async function listMissingRoms(systemPath: string, task?: string): Promise<MissingRoms> {
+  return invoke("list_missing_roms", { systemPath, task });
 }
 
 /** Add ROMs to the gamelist with the given names; returns how many were added */
-export async function addNewRoms(systemPath: string, entries: NewRomEntry[]): Promise<number> {
-  return invoke("add_new_roms", { systemPath, entries });
+export async function addNewRoms(systemPath: string, entries: NewRomEntry[], task?: string): Promise<number> {
+  return invoke("add_new_roms", { systemPath, entries, task });
 }
 
 export async function findUnusedMedia(
@@ -874,4 +875,9 @@ export interface SearchHit {
 
 export async function searchGames(systemPaths: string[], query: string): Promise<SearchHit[]> {
   return invoke("search_games", { systemPaths, query });
+}
+
+/** Asks a long process to stop (between one game and the next); see `useTask` */
+export async function cancelTask(task: string): Promise<void> {
+  return invoke("cancel_task", { task });
 }

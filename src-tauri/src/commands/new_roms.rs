@@ -17,6 +17,8 @@ use crate::models::system::extensions_for_system;
 use crate::models::{AppSettings, Game};
 use crate::rename_rules::CompiledRules;
 
+use super::progress::Progress;
+
 /// Extensiones que seguro que no son ROMs: ni se ofrecen en «otras extensiones».
 const NOT_ROM_EXTENSIONS: &[&str] = &[
     "xml", "txt", "nfo", "cfg", "ini", "json", "md", "pdf", "log", "db", "dat", "html", "htm",
@@ -56,13 +58,18 @@ pub struct NewRomEntry {
     pub name: String,
 }
 
-#[tauri::command]
-pub fn list_new_roms(app: tauri::AppHandle, system_path: String) -> Result<Vec<NewRom>, String> {
+#[tauri::command(async)]
+pub fn list_new_roms(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<NewRom>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    progress.check()?;
+    progress.phase("scanning");
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
-    Ok(find_new_roms(&system, &games, &rules))
+    let found = find_new_roms(&system, &games, &rules);
+    progress.check()?;
+    Ok(found)
 }
 
 /// Juego de la gamelist cuya ROM ya no está en disco
@@ -80,29 +87,36 @@ pub struct MissingRoms {
 }
 
 /// Juegos de la gamelist cuya ROM (fichero o carpeta) no existe.
-#[tauri::command]
-pub fn list_missing_roms(app: tauri::AppHandle, system_path: String) -> Result<MissingRoms, String> {
+#[tauri::command(async)]
+pub fn list_missing_roms(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<MissingRoms, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-    Ok(find_missing(&system, &games))
+    let progress = Progress::new(&app, task);
+    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    find_missing(&system, &games, &progress)
 }
 
-fn find_missing(system: &SystemRef, games: &[Game]) -> MissingRoms {
-    let missing: Vec<MissingRom> = games
-        .iter()
-        .filter(|g| !g.path.trim().is_empty() && !media::resolve_media_path(system, &g.path).exists())
-        .map(|g| MissingRom { path: g.path.clone(), name: g.name.clone().unwrap_or_else(|| g.path.clone()) })
-        .collect();
-    MissingRoms { all_missing: !games.is_empty() && missing.len() == games.len(), games: missing }
+fn find_missing(system: &SystemRef, games: &[Game], progress: &Progress) -> Result<MissingRoms, String> {
+    let mut missing: Vec<MissingRom> = Vec::new();
+    for (i, g) in games.iter().enumerate() {
+        progress.check()?;
+        progress.step("games", i + 1, games.len(), &g.path);
+        if !g.path.trim().is_empty() && !media::resolve_media_path(system, &g.path).exists() {
+            missing.push(MissingRom { path: g.path.clone(), name: g.name.clone().unwrap_or_else(|| g.path.clone()) });
+        }
+    }
+    Ok(MissingRoms { all_missing: !games.is_empty() && missing.len() == games.len(), games: missing })
 }
 
-#[tauri::command]
-pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<NewRomEntry>) -> Result<usize, String> {
+#[tauri::command(async)]
+pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<NewRomEntry>, task: Option<String>) -> Result<usize, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
-    let mut gamelist = super::gamelist::read_gamelist(&layout, &system)?;
-    let added = add_to(&layout, &system, &settings, &mut gamelist.games, &entries);
+    let progress = Progress::new(&app, task);
+    let mut gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
+    // Cancelado a medias: se guardan las que ya se han añadido
+    let added = add_to(&layout, &system, &settings, &mut gamelist.games, &entries, &progress);
     if added > 0 {
+        progress.phase("saving");
         // write_gamelist() hace la copia de seguridad antes de escribir
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
     }
@@ -111,7 +125,7 @@ pub fn add_new_roms(app: tauri::AppHandle, system_path: String, entries: Vec<New
 
 /// Manda a la papelera ficheros de la carpeta del sistema (los que no son ROMs válidas).
 /// Por seguridad solo acepta rutas que estén dentro de esa carpeta.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn trash_files(system_path: String, paths: Vec<String>) -> Result<TrashResult, String> {
     let system = SystemRef::from_rom_dir(&system_path);
     let (inside, mut failed) = split_inside(&system, &paths);
@@ -228,10 +242,14 @@ fn used_by_others(files: &[PathBuf]) -> HashSet<PathBuf> {
 
 /// Añade las entradas que aún no estén en la gamelist. En clásica enlaza los medios que ya
 /// haya para esa ROM (ES-DE los encuentra solo por el nombre). Devuelve cuántas se añadieron.
-fn add_to(layout: &Layout, system: &SystemRef, settings: &AppSettings, games: &mut Vec<Game>, entries: &[NewRomEntry]) -> usize {
+fn add_to(layout: &Layout, system: &SystemRef, settings: &AppSettings, games: &mut Vec<Game>, entries: &[NewRomEntry], progress: &Progress) -> usize {
     let mut present: HashSet<PathBuf> = games.iter().map(|g| media::resolve_media_path(system, &g.path)).collect();
     let mut added = 0;
-    for entry in entries {
+    for (i, entry) in entries.iter().enumerate() {
+        if progress.cancelled() {
+            break;
+        }
+        progress.step("games", i + 1, entries.len(), &entry.path);
         if !present.insert(media::resolve_media_path(system, &entry.path)) {
             continue; // ya estaba (o venía repetida)
         }
@@ -393,7 +411,7 @@ mod tests {
             NewRomEntry { path: "./Sin Nombre.sms".into(), name: "  ".into() },
         ];
 
-        let added = add_to(&Layout::Classic, &system, &AppSettings::default(), &mut games, &entries);
+        let added = add_to(&Layout::Classic, &system, &AppSettings::default(), &mut games, &entries, &Progress::none());
         assert_eq!(added, 2);
         assert_eq!(games.len(), 3);
         assert_eq!(games[0].name.as_deref(), Some("./Vieja.sms"));
@@ -410,7 +428,7 @@ mod tests {
         fs::create_dir_all(system.rom_dir.join("Carpeta.ps3")).unwrap(); // ROM que es una carpeta
         let games = vec![game("./Esta.sms"), game("./Carpeta.ps3"), game("./Borrada.sms")];
 
-        let result = find_missing(&system, &games);
+        let result = find_missing(&system, &games, &Progress::none()).unwrap();
         assert_eq!(result.games.len(), 1);
         assert_eq!(result.games[0].path, "./Borrada.sms");
         assert!(!result.all_missing);
@@ -420,9 +438,9 @@ mod tests {
     fn all_missing_means_the_folder_is_probably_not_there() {
         let tmp = tempfile::tempdir().unwrap();
         let system = SystemRef::from_rom_dir(tmp.path().join("disco-desconectado"));
-        let result = find_missing(&system, &[game("./A.sms"), game("./B.sms")]);
+        let result = find_missing(&system, &[game("./A.sms"), game("./B.sms")], &Progress::none()).unwrap();
         assert_eq!(result.games.len(), 2);
         assert!(result.all_missing);
-        assert!(!find_missing(&system, &[]).all_missing);
+        assert!(!find_missing(&system, &[], &Progress::none()).unwrap().all_missing);
     }
 }

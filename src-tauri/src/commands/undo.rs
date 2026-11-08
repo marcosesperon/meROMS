@@ -97,7 +97,7 @@ pub struct UndoInfo {
 }
 
 /// Qué se puede deshacer ahora (None = nada)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn undo_status() -> Option<UndoInfo> {
     let last = LAST.lock().ok()?;
     let op = last.as_ref()?;
@@ -203,7 +203,7 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
 }
 
 /// Deshace la última operación y la olvida
-#[tauri::command]
+#[tauri::command(async)]
 pub fn undo_last(app: tauri::AppHandle) -> Result<UndoResult, String> {
     let op = LAST.lock().map_err(|e| e.to_string())?.take().ok_or("Nothing to undo")?;
     // Por si una operación anterior falló a medias y dejó el diario abierto: deshacer no se apunta

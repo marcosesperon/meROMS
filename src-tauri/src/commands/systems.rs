@@ -2,18 +2,13 @@ use std::fs;
 use std::path::Path;
 
 use serde::Serialize;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
+
+use super::progress::Progress;
 
 use crate::layout::SystemRef;
 use crate::models::system::{extensions_for_system, system_full_name, SystemInfo};
 use crate::parser;
-
-#[derive(Clone, Serialize)]
-pub struct ScanProgress {
-    pub current: usize,
-    pub total: usize,
-    pub current_name: String,
-}
 
 /// Count ROM files in a directory based on the system's known extensions.
 fn count_roms(dir: &Path, folder_name: &str) -> usize {
@@ -38,8 +33,10 @@ fn count_roms(dir: &Path, folder_name: &str) -> usize {
         .count()
 }
 
-#[tauri::command]
-pub fn scan_systems(root_path: String, app: AppHandle) -> Result<Vec<SystemInfo>, String> {
+#[tauri::command(async)]
+pub fn scan_systems(root_path: String, app: AppHandle, task: Option<String>) -> Result<Vec<SystemInfo>, String> {
+    let progress = Progress::new(&app, task);
+    progress.phase("scanning");
     let root = Path::new(&root_path);
     if !root.is_dir() {
         return Err(format!("Path is not a directory: {}", root_path));
@@ -76,12 +73,8 @@ pub fn scan_systems(root_path: String, app: AppHandle) -> Result<Vec<SystemInfo>
             .unwrap_or(&name)
             .to_string();
 
-        // Emit progress event
-        let _ = app.emit("scan-progress", ScanProgress {
-            current: i + 1,
-            total,
-            current_name: full_name.clone(),
-        });
+        // Por dónde va (se ve en la barra lateral mientras tanto)
+        progress.step("systems", i + 1, total, &full_name);
 
         // Classic: <system>/gamelist.xml — ES-DE: <ES-DE>/gamelists/<system>/gamelist.xml
         let gamelist_path = layout.gamelist_path(&SystemRef::from_rom_dir(&path));
@@ -138,7 +131,7 @@ pub struct SystemLocations {
     pub collections_dir: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn system_locations(app: AppHandle, system_path: String) -> Result<SystemLocations, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     Ok(locations(&layout, &system))

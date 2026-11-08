@@ -107,7 +107,7 @@ fn scan_media_files(dir: &Path) -> Vec<(String, String, u64)> {
 /// Find media files nobody uses:
 /// - Classic: files in the media folders not referenced by any game in the gamelist.
 /// - ES-DE: files whose name matches no ROM (ES-DE matches media by ROM name).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_unused_media(app: tauri::AppHandle, system_path: String) -> Result<Vec<UnusedMediaFile>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let mut unused = match layout {
@@ -217,7 +217,7 @@ fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str) -
 ///   ES-DE shows (same extension preference as `MediaIndex`, e.g. the .jpg next to a .png).
 /// - Classic: files in the media folders named after the ROM (or with an old suffix such as
 ///   "-image") that no media field of any game points to.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_game_leftover_media(
     app: tauri::AppHandle,
     system_path: String,
@@ -373,7 +373,7 @@ const KEEP_ORDER: &[&str] = &["image", "boxart", "boxback", "titleshot", "thumbn
 
 /// Juegos que tienen exactamente el mismo fichero (byte a byte) en más de un tipo de medio.
 /// Con `game_path`, solo ese juego (desde el detalle).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_repeated_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;
@@ -464,7 +464,7 @@ pub struct BrokenMediaRef {
 
 /// Campos de medios que apuntan a ficheros que no existen (solo clásica: en ES-DE la
 /// gamelist no guarda rutas de medios). Con `game_path`, solo ese juego.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_broken_media_refs(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !layout.writes_media_tags() {
@@ -501,7 +501,7 @@ fn is_remote(value: &str) -> bool {
 
 /// Quita de la gamelist los campos indicados, si siguen apuntando a un fichero que no existe
 /// (una sola escritura, con copia de seguridad). Devuelve cuántos se quitaron.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_media_refs(app: tauri::AppHandle, system_path: String, refs: Vec<BrokenMediaRef>) -> Result<usize, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !layout.writes_media_tags() {
@@ -533,7 +533,7 @@ fn clear_refs(system: &SystemRef, gamelist: &mut GameList, refs: &[BrokenMediaRe
 /// Manda medios a la papelera (no usados o repetidos). Solo acepta ficheros de la carpeta del
 /// sistema o de su carpeta de medios. En clásica vacía los campos de la gamelist que apuntaban
 /// a ellos (con copia de seguridad).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String>) -> Result<TrashMediaResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let (allowed, mut failed) = allowed_media_paths(&layout, &system, &paths);

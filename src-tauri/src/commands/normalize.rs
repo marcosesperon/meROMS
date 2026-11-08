@@ -51,7 +51,7 @@ pub struct NormalizeResult {
 }
 
 /// Con `game_path` solo se planifica ese juego (desde el detalle del juego).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn plan_media_normalization(
     app: tauri::AppHandle,
     system_path: String,
@@ -66,7 +66,7 @@ pub fn plan_media_normalization(
     Ok(plan(&layout, &system, &settings, &games))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn apply_media_normalization(
     app: tauri::AppHandle,
     system_path: String,

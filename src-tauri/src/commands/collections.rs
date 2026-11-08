@@ -11,9 +11,9 @@ pub struct DiscGroup {
 }
 
 /// Detect multi-disc games by matching patterns like (Disc 1), (CD1), (Disk 1), etc.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn detect_multidisc_games(app: tauri::AppHandle, system_path: String) -> Result<Vec<DiscGroup>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path)?;
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, None)?;
     let mut groups: HashMap<String, Vec<(String, u32)>> = HashMap::new();
 
     for game in &gamelist.games {
@@ -75,7 +75,7 @@ pub fn detect_multidisc_games(app: tauri::AppHandle, system_path: String) -> Res
 }
 
 /// Generate .m3u playlist files for multi-disc game groups
-#[tauri::command]
+#[tauri::command(async)]
 pub fn generate_m3u_playlists(
     system_path: String,
     groups: Vec<DiscGroup>,
@@ -106,7 +106,7 @@ pub fn generate_m3u_playlists(
 /// - Classic: in the system folder, with gamelist-style paths (`./game.zip`), replacing the file.
 /// - ES-DE: in `<ES-DE>/collections`, with `%ROMPATH%/<system>/game.zip` entries. ES-DE
 ///   collections span systems, so new entries are merged into an existing file instead.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn generate_collection(
     app: tauri::AppHandle,
     system_path: String,

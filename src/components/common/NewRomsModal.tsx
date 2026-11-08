@@ -3,6 +3,8 @@ import { useTranslation } from "../../i18n";
 import { addNewRoms, listNewRoms, trashFiles } from "../../commands";
 import type { NewRom } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface NewRomsModalProps {
   open: boolean;
@@ -28,20 +30,24 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
   const [names, setNames] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scrape, setScrape] = useState(true);
-  const [scanning, setScanning] = useState(false);
-  const [adding, setAdding] = useState(false);
+  // Buscar las ROMs nuevas y añadirlas: procesos con progreso y Cancelar
+  const scanTask = useTask();
+  const addTask = useTask();
+  const scanning = scanTask.running;
+  const adding = addTask.running;
   const [trashing, setTrashing] = useState(false);
 
   function scan() {
-    setScanning(true);
-    listNewRoms(systemPath)
+    scanTask
+      .run((task) => listNewRoms(systemPath, task))
       .then((found) => {
+        // Cancelado: no hay nada que enseñar
+        if (!found) return onClose();
         setRoms(found);
         setNames(Object.fromEntries(found.map((r) => [r.path, r.proposed_name])));
         setSelected(new Set(found.filter((r) => r.known_extension).map((r) => r.path)));
       })
-      .catch((e) => showMessage(t("newRoms.failed", { error: String(e) }), "error"))
-      .finally(() => setScanning(false));
+      .catch((e) => showMessage(t("newRoms.failed", { error: String(e) }), "error"));
   }
 
   useEffect(() => {
@@ -53,6 +59,9 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
     }
     setScrape(true);
     scan();
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scanTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   const known = useMemo(() => roms.filter((r) => r.known_extension), [roms]);
@@ -73,15 +82,21 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
     const entries = roms
       .filter((r) => selected.has(r.path))
       .map((r) => ({ path: r.path, name: names[r.path] ?? r.proposed_name }));
-    setAdding(true);
+    let stopped = false;
     try {
-      await addNewRoms(systemPath, entries);
+      const added = await addTask.run(async (task) => {
+        const n = await addNewRoms(systemPath, entries, task);
+        stopped = n < entries.length && addTask.wasCancelled();
+        return n;
+      });
+      // Cancelado a medias: las ya añadidas están guardadas (son las primeras de la lista)
+      if (stopped && added !== null) {
+        await showMessage(t("task.stopped", { done: added, total: entries.length }));
+      }
       onClose();
-      onAdded(entries.map((e) => e.path), canScrape && scrape);
+      onAdded(entries.slice(0, added ?? 0).map((e) => e.path), canScrape && scrape && !stopped);
     } catch (e) {
       await showMessage(t("newRoms.failed", { error: String(e) }), "error");
-    } finally {
-      setAdding(false);
     }
   }
 
@@ -150,8 +165,12 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">{t("newRoms.scanning")}</div>
+          {scanning || adding ? (
+            scanning ? (
+              <TaskProgress progress={scanTask.progress} label={t("newRoms.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
+            ) : (
+              <TaskProgress progress={addTask.progress} onCancel={addTask.cancel} cancelling={addTask.cancelling} />
+            )
           ) : roms.length === 0 ? (
             <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("newRoms.nothing")}</div>
           ) : (

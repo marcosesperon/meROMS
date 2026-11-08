@@ -113,7 +113,7 @@ fn add_entries(list: &mut Vec<PlaceholderEntry>, entries: Vec<PlaceholderEntry>)
 }
 
 /// Apunta rellenos en la lista negra (tras borrarlos en «Limpiar media»). Devuelve cuántos nuevos.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn learn_placeholders(entries: Vec<PlaceholderEntry>) -> Result<usize, String> {
     with_list(|list| {
         let added = add_entries(list, entries);
@@ -123,13 +123,13 @@ pub fn learn_placeholders(entries: Vec<PlaceholderEntry>) -> Result<usize, Strin
 }
 
 /// Cuántos rellenos hay aprendidos (Ajustes)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn placeholder_count() -> usize {
     with_list(|list| list.len())
 }
 
 /// Olvida todos los rellenos aprendidos (Ajustes)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn forget_placeholders() -> Result<(), String> {
     with_list(|list| {
         list.clear();
@@ -140,7 +140,7 @@ pub fn forget_placeholders() -> Result<(), String> {
 // ---------- Búsqueda en un sistema ----------
 
 /// Rellenos del sistema: ficheros idénticos en PLACEHOLDER_MIN_GAMES juegos distintos o más
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_placeholder_media(app: tauri::AppHandle, system_path: String) -> Result<Vec<PlaceholderGroup>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;

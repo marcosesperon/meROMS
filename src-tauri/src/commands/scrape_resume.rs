@@ -79,7 +79,7 @@ pub fn remove(file: &Path, key: &str) -> Result<(), String> {
 }
 
 /// Run of this system left halfway, if any
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_scrape_resume(app: tauri::AppHandle, system_path: String) -> Result<Option<ScrapeResumeInfo>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     Ok(get(&resume_file(&app)?, &key(&layout, &system)).map(|e| ScrapeResumeInfo {

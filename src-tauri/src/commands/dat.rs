@@ -247,7 +247,7 @@ fn summary(dat: &Dat) -> DatSummary {
 }
 
 /// Asocia un DAT al sistema: lo lee y guarda la copia resumida.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_system_dat(app: tauri::AppHandle, system_path: String, dat_path: String) -> Result<DatSummary, String> {
     let system = SystemRef::from_rom_dir(&system_path);
     let xml = fs::read_to_string(&dat_path).map_err(|e| format!("Failed to read {}: {}", dat_path, e))?;
@@ -259,7 +259,7 @@ pub fn set_system_dat(app: tauri::AppHandle, system_path: String, dat_path: Stri
 }
 
 /// Quita el DAT del sistema.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_system_dat(app: tauri::AppHandle, system_path: String) -> Result<(), String> {
     let file = dat_file(&app, &SystemRef::from_rom_dir(&system_path).name)?;
     if file.exists() {
@@ -269,7 +269,7 @@ pub fn clear_system_dat(app: tauri::AppHandle, system_path: String) -> Result<()
 }
 
 /// Informe del DAT del sistema (None si no tiene).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn dat_report(app: tauri::AppHandle, system_path: String) -> Result<Option<DatReport>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let Some(dat) = load_dat(&app, &system.name)? else { return Ok(None) };

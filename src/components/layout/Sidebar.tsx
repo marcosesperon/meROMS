@@ -4,6 +4,7 @@ import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
 import { SearchIcon, SettingsIcon } from "../common/Icons";
 import { SEARCH_SHORTCUT } from "../common/GlobalSearch";
 import { Tooltip } from "../common/Tooltip";
+import { TaskProgress } from "../common/TaskProgress";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -25,7 +26,7 @@ export function Sidebar() {
     ? systems.filter((s) => countOf(s) > 0 || s.path === selectedSystem?.path)
     : systems;
 
-  const isScanning = loading && scanProgress !== null;
+  const isScanning = loading && (scanProgress !== null || systems.length === 0);
 
   return (
     <aside className="w-28 shrink-0 overflow-hidden bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
@@ -46,31 +47,9 @@ export function Sidebar() {
       )}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
-          <div className="px-4 py-6 flex flex-col items-center gap-3">
-            {/* Spinner */}
-            <svg className="animate-spin h-8 w-8 text-indigo-400" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-
-            {/* Progress text */}
-            <p className="text-xs text-zinc-400 text-center">
-              {t("sidebar.scanning")}
-            </p>
-            <p className="text-sm text-zinc-200 text-center truncate w-full">
-              {scanProgress.currentName}
-            </p>
-
-            {/* Progress bar */}
-            <div className="w-full bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="bg-indigo-500 h-full rounded-full transition-all duration-200"
-                style={{ width: `${(scanProgress.current / scanProgress.total) * 100}%` }}
-              />
-            </div>
-            <p className="text-[10px] text-zinc-500">
-              {scanProgress.current} / {scanProgress.total}
-            </p>
+          // Escaneando: qué sistema está leyendo y cuántos van (la barra es estrecha: compacto)
+          <div className="px-2 py-4">
+            <TaskProgress progress={scanProgress} label={t("sidebar.scanning")} compact />
           </div>
         ) : visibleSystems.length === 0 ? (
           // Sin sistemas que enseñar la barra queda vacía: lo explica la pantalla del centro

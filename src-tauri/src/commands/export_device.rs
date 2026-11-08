@@ -374,7 +374,7 @@ fn diff(system_path: &str, system: &str, local: &[Game], device: &[Game]) -> Vec
 }
 
 /// Lo que cambió en el destino (en los sistemas de la biblioteca que también están allí)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn pull_changes(app: tauri::AppHandle, dest: String, systems: Vec<String>) -> Result<Vec<DeviceChange>, String> {
     let layout = super::active_layout(&app)?;
     let (dst_layout, rom_root) = dest_layout(&layout, Path::new(&dest));
@@ -391,7 +391,7 @@ pub fn pull_changes(app: tauri::AppHandle, dest: String, systems: Vec<String>) -
 }
 
 /// Escribe en la biblioteca los cambios elegidos (una escritura por sistema, con copia)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn apply_pull(app: tauri::AppHandle, changes: Vec<DeviceChange>) -> Result<usize, String> {
     let layout = super::active_layout(&app)?;
     let mut by_system: HashMap<String, Vec<DeviceChange>> = HashMap::new();

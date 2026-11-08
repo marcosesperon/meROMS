@@ -61,7 +61,7 @@ pub struct SwapProposal {
     pub screenshot: Option<MediaFileInfo>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn swap_media(
     app: tauri::AppHandle,
     system_path: String,
@@ -96,7 +96,7 @@ pub fn swap_media(
     Ok(result)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String) -> Result<DetectResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;

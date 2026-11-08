@@ -153,7 +153,7 @@ pub struct DamagedMedia {
 }
 
 /// Media dañada del sistema (o de un juego, con `game_path`)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_damaged_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>) -> Result<Vec<DamagedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let games = super::gamelist::read_gamelist(&layout, &system)?.games;

@@ -90,7 +90,7 @@ pub struct ChdStatus {
     pub version: Option<String>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn chd_status(app: tauri::AppHandle) -> Result<ChdStatus, String> {
     let exe = find_chdman(configured_path(&app)?.as_deref());
     let version = exe.as_deref().and_then(chdman_version);
@@ -182,7 +182,7 @@ fn candidates(layout: &Layout, system: &SystemRef) -> Result<Vec<ChdCandidate>, 
     Ok(out)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_chd_candidates(app: tauri::AppHandle, system_path: String) -> Result<ChdCandidates, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !supports_chd(&system.name) {

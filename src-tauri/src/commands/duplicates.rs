@@ -45,9 +45,9 @@ fn normalize_name(name: &str) -> String {
     s.trim().to_string()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec<DuplicateGroup>, String> {
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path)?;
+    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, None)?;
     let games = &gamelist.games;
     let mut groups: Vec<DuplicateGroup> = Vec::new();
     let mut used_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
@@ -132,7 +132,7 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String) -> Result<Vec
 /// all their media to the trash. With `dry_run` nothing is touched: it only lists the files
 /// (the UI shows the count before asking for confirmation).
 /// A game whose ROM can't be trashed stays in the gamelist, so no ROM is left without entry.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_games_with_files(
     app: tauri::AppHandle,
     system_path: String,

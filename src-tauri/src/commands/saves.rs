@@ -60,7 +60,7 @@ fn usual_dirs(profile: &Profile) -> Vec<PathBuf> {
 }
 
 /// Carpeta que se propone en Ajustes si el perfil no tiene una
-#[tauri::command]
+#[tauri::command(async)]
 pub fn suggested_saves_dir(profile: Profile) -> Option<String> {
     let usual = usual_dirs(&profile);
     usual.iter().find(|d| d.is_dir()).or(usual.first()).map(|d| d.to_string_lossy().to_string())
@@ -139,7 +139,7 @@ fn context(app: &tauri::AppHandle, system_path: &str) -> Result<(Profile, String
     Ok((profile, system))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_saves(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<GameSaves, String> {
     let (profile, system) = context(&app, &system_path)?;
     let Some(dir) = saves_dir(&profile) else { return Ok(GameSaves { dir: None, files: Vec::new() }) };
@@ -156,7 +156,7 @@ fn inside(dir: &Path, file: &Path) -> bool {
 }
 
 /// Manda a la papelera una partida o un estado (y la miniatura del estado)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn trash_save(app: tauri::AppHandle, file: String) -> Result<(), String> {
     let settings = super::settings::get_settings(app.clone())?;
     let profile = settings.active_profile().cloned().ok_or("No active profile")?;
@@ -175,7 +175,7 @@ pub fn trash_save(app: tauri::AppHandle, file: String) -> Result<(), String> {
 
 /// Copia de seguridad de todos los datos guardados del juego en un .zip dentro de `dest`.
 /// Devuelve la ruta del .zip.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn backup_saves(app: tauri::AppHandle, system_path: String, game_path: String, dest: String) -> Result<String, String> {
     let (profile, system) = context(&app, &system_path)?;
     let dir = saves_dir(&profile).ok_or("No saves folder")?;
@@ -209,7 +209,7 @@ fn write_zip(zip_path: &Path, files: &[SaveFile]) -> Result<(), String> {
 
 /// Trae una partida o un estado de fuera con el nombre del juego (misma extensión). Va a la
 /// subcarpeta del sistema si existe; si no, a la raíz. Nunca sobrescribe.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_save(app: tauri::AppHandle, system_path: String, game_path: String, file: String) -> Result<String, String> {
     let (profile, system) = context(&app, &system_path)?;
     let dir = saves_dir(&profile).ok_or("No saves folder")?;

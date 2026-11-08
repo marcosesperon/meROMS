@@ -248,7 +248,7 @@ fn group_versions(games: &[Game], dat_groups: &HashMap<String, String>, regions:
 }
 
 /// Grupos de versiones del sistema, con la preferida propuesta
-#[tauri::command]
+#[tauri::command(async)]
 pub fn best_versions(app: tauri::AppHandle, system_path: String) -> Result<Vec<VersionGroup>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;

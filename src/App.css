@@ -72,3 +72,9 @@ textarea,
   background: var(--color-zinc-600);
   background-clip: padding-box;
 }
+
+/* Barra de progreso sin total (TaskProgress): un trozo que va de un lado a otro */
+@keyframes task-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}

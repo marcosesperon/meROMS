@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "../common/TaskProgress";
 import { useAppStore } from "../../store/useAppStore";
 import { useGames } from "../../hooks/useGames";
 import { useFilteredGames } from "../../hooks/useFilteredGames";
@@ -23,7 +25,10 @@ export function GameListView() {
   const setActiveFolderPath = useAppStore((s) => s.setActiveFolderPath);
   const { loading } = useGames();
   const filteredGames = useFilteredGames();
-  const [generating, setGenerating] = useState(false);
+  // Generar la gamelist (con progreso y Cancelar) y lo que avisa la carga de un sistema
+  const generateTask = useTask();
+  const generating = generateTask.running;
+  const loadProgress = useAppStore((s) => s.loadProgress);
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const { t } = useTranslation();
 
@@ -33,16 +38,16 @@ export function GameListView() {
 
   async function handleGenerate() {
     if (!selectedSystem) return;
-    setGenerating(true);
+    const systemPath = selectedSystem.path;
     try {
-      const result = await generateGamelist(selectedSystem.path);
+      const result = await generateTask.run((task) => generateGamelist(systemPath, task));
+      // Cancelado: no se ha escrito nada
+      if (!result) return;
       setGames(result.games);
       loadSystems();
     } catch (e) {
       console.error("Failed to generate gamelist:", e);
       await showMessage(t("generate.failed", { error: String(e) }), "error");
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -57,8 +62,18 @@ export function GameListView() {
     <>
       <Header />
       {loading || generating ? (
-        <div className="flex-1 flex items-center justify-center text-zinc-500">
-          {generating ? t("gameList.generating") : t("gameList.loading")}
+        <div className="flex-1 flex items-center justify-center">
+          {generating ? (
+            <TaskProgress
+              progress={generateTask.progress}
+              label={t("gameList.generating")}
+              onCancel={generateTask.cancel}
+              cancelling={generateTask.cancelling}
+            />
+          ) : (
+            // Cargar un sistema no se cancela: es lo que se va a ver
+            <TaskProgress progress={loadProgress} label={t("gameList.loading")} />
+          )}
         </div>
       ) : games.length === 0 && noGamelist ? (
         <EmptyState

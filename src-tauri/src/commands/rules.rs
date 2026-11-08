@@ -11,19 +11,19 @@ pub struct RuleTestResult {
     pub errors: Vec<RuleError>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_default_rename_rules() -> Vec<RenameRule> {
     default_rules()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn test_rename_rules(name: String, rules: Vec<RenameRule>) -> RuleTestResult {
     let compiled = CompiledRules::new(&rules);
     RuleTestResult { result: compiled.apply(&name), errors: compiled.errors }
 }
 
 /// Importa un rules.json (el formato de ES-DE-Roms-Renamer o uno exportado por meROMS).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_rename_rules(file_path: String) -> Result<Vec<RenameRule>, String> {
     let content = fs::read_to_string(&file_path).map_err(|e| format!("Failed to read rules file: {}", e))?;
     let file: RulesFile = serde_json::from_str(&content).map_err(|e| format!("Invalid rules file: {}", e))?;
@@ -32,7 +32,7 @@ pub fn import_rename_rules(file_path: String) -> Result<Vec<RenameRule>, String>
 
 /// Exporta en el formato rules.json original. Solo van las reglas activas y sin el campo
 /// «enabled», porque el script original las aplicaría todas aunque estuvieran apagadas.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_rename_rules(rules: Vec<RenameRule>, dest_path: String) -> Result<(), String> {
     #[derive(Serialize)]
     struct OriginalRule<'a> {

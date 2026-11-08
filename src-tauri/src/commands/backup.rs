@@ -75,7 +75,7 @@ fn prune_backups(backup_dir: &Path) {
 }
 
 /// List all available backups for a system, newest first.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_backups(app: tauri::AppHandle, system_path: String) -> Result<Vec<BackupEntry>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let backup_dir = layout.backups_dir(&system);
@@ -135,7 +135,7 @@ pub fn list_backups(app: tauri::AppHandle, system_path: String) -> Result<Vec<Ba
 
 /// Restore a backup by copying it back as gamelist.xml.
 /// Creates a backup of the current gamelist.xml first.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn restore_backup(app: tauri::AppHandle, system_path: String, backup_filename: String) -> Result<(), String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let backup_path = backup_file_path(&layout, &system, &backup_filename)?;
@@ -155,7 +155,7 @@ pub fn restore_backup(app: tauri::AppHandle, system_path: String, backup_filenam
 }
 
 /// Delete a specific backup file.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn delete_backup(app: tauri::AppHandle, system_path: String, backup_filename: String) -> Result<(), String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let backup_path = backup_file_path(&layout, &system, &backup_filename)?;

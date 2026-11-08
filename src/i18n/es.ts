@@ -980,6 +980,28 @@ const es: Record<TranslationKeys, string> = {
   "structure.mark": "En estructura {kind}: se puede migrar",
   "structure.presetSystems": "Sistemas a migrar: {systems}",
   "structure.finish": "Hecho",
+
+  // Procesos largos (TaskProgress)
+  "task.working": "Trabajando…",
+  "task.count": "{current} de {total}",
+  "task.cancel": "Cancelar",
+  "task.cancelling": "Cancelando…",
+  "task.phase.scanning": "Mirando las carpetas…",
+  "task.phase.systems": "Leyendo los sistemas…",
+  "task.phase.reading": "Leyendo la gamelist…",
+  "task.phase.games": "Recorriendo los juegos…",
+  "task.phase.files": "Recorriendo los ficheros…",
+  "task.phase.media": "Mirando la media…",
+  "task.phase.sizes": "Leyendo tamaños…",
+  "task.phase.hashing": "Comparando contenidos…",
+  "task.phase.images": "Leyendo el tamaño de las imágenes…",
+  "task.phase.checking": "Revisando ficheros…",
+  "task.phase.saving": "Guardando la gamelist…",
+  "task.phase.trashing": "Enviando a la papelera…",
+  "task.phase.renaming": "Renombrando…",
+  "task.phase.moving": "Moviendo…",
+  "task.phase.writing": "Escribiendo ficheros…",
+  "task.stopped": "Detenido: hechos {done} de {total}. Lo hecho queda guardado.",
 };
 
 export default es;

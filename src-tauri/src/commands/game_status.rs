@@ -208,7 +208,7 @@ pub fn forget(rom_dir: &Path, game_paths: &[String]) {
 // ---------- Comandos ----------
 
 /// Estados de los juegos de un sistema (solo los que tienen alguno), por ruta de juego
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_game_statuses(app: tauri::AppHandle, system_path: String) -> Result<HashMap<String, GameStatus>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let gamelist = super::gamelist::read_gamelist(&layout, &system)?;
@@ -217,7 +217,7 @@ pub fn get_game_statuses(app: tauri::AppHandle, system_path: String) -> Result<H
 
 /// Cambia el estado de unos juegos y lleva `<completed>` a la gamelist (con copia) si cambia.
 /// Devuelve el estado nuevo de cada uno.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_game_statuses(
     app: tauri::AppHandle,
     system_path: String,

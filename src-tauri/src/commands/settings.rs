@@ -13,7 +13,7 @@ fn settings_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(dir.join("settings.json"))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
     let path = settings_path(&app)?;
     if !path.exists() {
@@ -33,7 +33,7 @@ pub fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
     Ok(settings)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn save_settings(app: tauri::AppHandle, settings: AppSettings) -> Result<(), String> {
     let path = settings_path(&app)?;
     let content = serde_json::to_string_pretty(&settings)
@@ -44,7 +44,7 @@ pub fn save_settings(app: tauri::AppHandle, settings: AppSettings) -> Result<(),
     Ok(())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_settings(app: tauri::AppHandle, dest_path: String) -> Result<(), String> {
     let settings = get_settings(app)?;
     let content = serde_json::to_string_pretty(&settings)
@@ -53,7 +53,7 @@ pub fn export_settings(app: tauri::AppHandle, dest_path: String) -> Result<(), S
         .map_err(|e| format!("Failed to write export file: {}", e))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_settings(file_path: String) -> Result<AppSettings, String> {
     let content = fs::read_to_string(&file_path)
         .map_err(|e| format!("Failed to read import file: {}", e))?;

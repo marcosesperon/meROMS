@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listMissingRoms, removeGamesWithFiles, type MissingRoms } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { useTask } from "../../hooks/useTask";
+import { TaskProgress } from "./TaskProgress";
 
 interface MissingRomsModalProps {
   open: boolean;
@@ -19,7 +21,9 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
   const { t } = useTranslation();
   const [data, setData] = useState<MissingRoms | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [scanning, setScanning] = useState(false);
+  // Buscar los que faltan (con progreso y Cancelar)
+  const scan = useTask();
+  const scanning = scan.running;
   const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
@@ -28,15 +32,19 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
       setSelected(new Set());
       return;
     }
-    setScanning(true);
-    listMissingRoms(systemPath)
+    scan
+      .run((task) => listMissingRoms(systemPath, task))
       .then((found) => {
+        // Cancelado: no hay nada que enseñar
+        if (!found) return onClose();
         setData(found);
         // Si faltan todas, mejor no dejarlas marcadas: casi seguro que el disco no está conectado
         setSelected(found.all_missing ? new Set() : new Set(found.games.map((g) => g.path)));
       })
-      .catch((e) => showMessage(String(e), "error"))
-      .finally(() => setScanning(false));
+      .catch((e) => showMessage(String(e), "error"));
+    // Al cerrar la ventana a medias, la búsqueda se para
+    return () => scan.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
   if (!open) return null;
@@ -96,7 +104,7 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
 
         <div className="flex-1 overflow-y-auto">
           {scanning ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500">{t("newRoms.scanning")}</div>
+            <TaskProgress progress={scan.progress} label={t("newRoms.scanning")} onCancel={scan.cancel} cancelling={scan.cancelling} />
           ) : games.length === 0 ? (
             <div className="py-12 px-8 text-center text-sm text-zinc-500">{t("missingRoms.nothing")}</div>
           ) : (

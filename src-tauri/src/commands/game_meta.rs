@@ -54,7 +54,7 @@ pub struct Hashes {
     pub sha1: String,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn game_files(system_path: String, game_path: String) -> Result<GameFiles, String> {
     let rom = Path::new(&system_path).join(strip_dot_slash(&game_path));
     let name = rom.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
@@ -148,7 +148,7 @@ pub async fn game_hashes(system_path: String, game_path: String) -> Result<Optio
 }
 
 /// Qué dice el DAT del sistema de esta ROM (None si el sistema no tiene DAT)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn dat_game_info(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<Option<super::dat::DatMatch>, String> {
     let (_, system) = super::system_context(&app, &system_path)?;
     let rom = system.rom_dir.join(strip_dot_slash(&game_path));
@@ -157,7 +157,7 @@ pub fn dat_game_info(app: tauri::AppHandle, system_path: String, game_path: Stri
 
 /// «Abrir con…» del visor de manuales: abre el PDF con el programa del sistema. Solo PDF que
 /// existan (así la app no necesita permiso para abrir cualquier ruta)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn open_manual(app: tauri::AppHandle, path: String) -> Result<(), String> {
     use tauri_plugin_opener::OpenerExt;
     let file = Path::new(&path);
@@ -170,7 +170,7 @@ pub fn open_manual(app: tauri::AppHandle, path: String) -> Result<(), String> {
 
 /// Los campos del `<game>` tal cual están en el gamelist.xml: atributos (con «@» delante) y
 /// cada elemento hijo con su texto, en su orden
-#[tauri::command]
+#[tauri::command(async)]
 pub fn raw_game_fields(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<Vec<(String, String)>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let path = layout.gamelist_path(&system);

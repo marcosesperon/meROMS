@@ -8,7 +8,7 @@ use crate::models::{Profile, StructureKind};
 
 /// Lee las rutas de ROMs y medios de una carpeta de ES-DE (su es_settings.xml)
 /// para rellenar un perfil ES-DE desde la pantalla de ajustes.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn detect_esde_paths(esde_home: String) -> Result<EsdeDetectedPaths, String> {
     let home = Path::new(&esde_home);
     if !home.is_dir() {
@@ -30,7 +30,7 @@ pub struct PendingStructure {
 /// - Classic profile: no gamelist.xml in the system folder, but an ES-DE one in an ES-DE
 ///   that uses the same ROM folder (saved ES-DE profiles first, then ~/ES-DE).
 /// Systems with data in both structures are left alone.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn detect_pending_structure(app: tauri::AppHandle) -> Result<Option<PendingStructure>, String> {
     let settings = super::settings::get_settings(app)?;
     let Some(active) = settings.active_profile() else { return Ok(None) };

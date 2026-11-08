@@ -277,7 +277,7 @@ pub fn is_downloaded(app: &tauri::AppHandle) -> bool {
     data_dir(app).ok().and_then(|d| read_meta(&d)).is_some()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn launchbox_status(app: tauri::AppHandle) -> Result<LaunchBoxStatus, String> {
     let meta = read_meta(&data_dir(&app)?);
     Ok(LaunchBoxStatus {
@@ -288,7 +288,7 @@ pub fn launchbox_status(app: tauri::AppHandle) -> Result<LaunchBoxStatus, String
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn launchbox_delete(app: tauri::AppHandle) -> Result<(), String> {
     let dir = data_dir(&app)?;
     if dir.exists() {

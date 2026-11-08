@@ -14,6 +14,7 @@ import { translate, useI18nStore } from "../i18n";
 import { showMessage } from "../utils/dialogs";
 import { brokenKey } from "../utils/mediaFilter";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
+import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
 // once per profile activation and not on every rescan
@@ -123,9 +124,9 @@ interface AppState {
   setCurrentView: (view: CurrentView) => void;
   loading: boolean;
 
-  // Scan progress
-  scanProgress: { current: number; total: number; currentName: string } | null;
-  setScanProgress: (progress: { current: number; total: number; currentName: string } | null) => void;
+  // Progreso del escaneo de sistemas (barra lateral) y de la carga de un sistema (centro)
+  scanProgress: TaskProgressInfo | null;
+  loadProgress: TaskProgressInfo | null;
 
   // Filters
   filters: {
@@ -243,7 +244,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!profile || !isProfileComplete(profile)) return;
     try {
       set({ loading: true, scanProgress: null });
-      const systems = await commands.scanSystems(profile.rom_root_path);
+      const task = newTaskId();
+      const stop = subscribeTask(task, (p) => set({ scanProgress: p }));
+      const systems = await commands.scanSystems(profile.rom_root_path, task).finally(stop);
       set({ systems, loading: false, scanProgress: null });
       // Reopen the last system of this profile (if nothing is open and it still exists)
       const last = profile.last_system && systems.find((s) => s.name === profile.last_system);
@@ -289,8 +292,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       // Spinner only when there's nothing on screen yet (a system just picked). A reload after
       // scraping, renaming, etc. keeps the list mounted, so the scroll position isn't lost.
-      if (get().games.length === 0) set({ loading: true });
-      const gamelist = await commands.loadGamelist(systemPath);
+      if (get().games.length === 0) set({ loading: true, loadProgress: null });
+      const task = newTaskId();
+      const stop = subscribeTask(task, (p) => set({ loadProgress: p }));
+      const gamelist = await commands.loadGamelist(systemPath, task).finally(() => {
+        stop();
+        set({ loadProgress: null });
+      });
       const { systems, selectedSystem } = get();
       const count = gamelist.games.length;
       const updatedSystems = systems.map((s) =>
@@ -444,7 +452,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Scan progress
   scanProgress: null,
-  setScanProgress: (progress) => set({ scanProgress: progress }),
+  loadProgress: null,
 
   // Filters
   filters: {},

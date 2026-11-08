@@ -653,14 +653,14 @@ pub struct ScrapeOrder {
 }
 
 /// Region and language order the scraper uses right now (saved, or defaults from the app language)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_scrape_order(app: tauri::AppHandle) -> Result<ScrapeOrder, String> {
     let settings = crate::commands::settings::get_settings(app)?;
     Ok(ScrapeOrder { regions: settings.scrape_regions(), languages: settings.scrape_languages() })
 }
 
 /// What the scraper may update right now (saved, or derived from the old media list)
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_scrape_policy(app: tauri::AppHandle) -> Result<crate::models::settings::ScrapePolicy, String> {
     Ok(crate::commands::settings::get_settings(app)?.scrape_policy())
 }
@@ -679,7 +679,7 @@ pub struct ScraperStatus {
 
 /// What scrapers are available (the UI shows the ScreenScraper account fields and the scrape
 /// buttons from this, since the built-in credentials aren't visible in the settings).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scraper_status(app: tauri::AppHandle) -> Result<ScraperStatus, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
     Ok(ScraperStatus {

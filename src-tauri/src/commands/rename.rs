@@ -82,7 +82,7 @@ fn sanitize_filename(name: &str) -> String {
 /// List ROMs with a proposed new name, from the gamelist title or the cleanup rules.
 /// With `game_path` only that game is proposed (game detail panel): the other ROMs keep
 /// their names, so only files already on disk can clash with it.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_rename_candidates(
     app: tauri::AppHandle,
     system_path: String,
@@ -185,7 +185,7 @@ fn mark_conflicts(entries: &mut [RenameEntry], rom_dir: &Path) {
 /// Check a name typed by hand for one ROM (game detail panel).
 /// Returns None if it can be used, or why not: "invalid" (empty or with characters not
 /// allowed in file names) or "exists" (another file already has that name).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn check_rename_target(
     app: tauri::AppHandle,
     system_path: String,
@@ -311,7 +311,7 @@ pub struct RenameRequest {
 /// Rename ROM files and update all references in gamelist.xml.
 /// Media are renamed too: the unified `<folder>/<ROM name>.<ext>` files in both structures,
 /// plus (Classic) any other file the gamelist points to that is named after the ROM.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn rename_roms(
     app: tauri::AppHandle,
     system_path: String,

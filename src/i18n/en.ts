@@ -978,6 +978,28 @@ const en = {
   "structure.mark": "In {kind} structure: can be migrated",
   "structure.presetSystems": "Systems to migrate: {systems}",
   "structure.finish": "Done",
+
+  // Long processes (TaskProgress)
+  "task.working": "Working...",
+  "task.count": "{current} of {total}",
+  "task.cancel": "Cancel",
+  "task.cancelling": "Cancelling...",
+  "task.phase.scanning": "Looking at the folders...",
+  "task.phase.systems": "Reading systems...",
+  "task.phase.reading": "Reading the gamelist...",
+  "task.phase.games": "Going through the games...",
+  "task.phase.files": "Going through the files...",
+  "task.phase.media": "Looking at the media...",
+  "task.phase.sizes": "Reading file sizes...",
+  "task.phase.hashing": "Comparing contents...",
+  "task.phase.images": "Reading image sizes...",
+  "task.phase.checking": "Checking files...",
+  "task.phase.saving": "Saving the gamelist...",
+  "task.phase.trashing": "Sending to the trash...",
+  "task.phase.renaming": "Renaming...",
+  "task.phase.moving": "Moving...",
+  "task.phase.writing": "Writing files...",
+  "task.stopped": "Stopped: {done} of {total} done. What was done is saved.",
 } as const;
 
 export default en;

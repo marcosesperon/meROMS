@@ -8,7 +8,7 @@ use crate::media::{self, MediaIndex, MEDIA_KINDS};
 /// Copy a user-picked file as a game's media, using the unified naming
 /// `<media folder>/<ROM name>.<ext>` of the active structure.
 /// Returns the value to store in the game field (relative in Classic, absolute in ES-DE).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_game_media(
     app: tauri::AppHandle,
     system_path: String,
@@ -37,7 +37,7 @@ pub fn set_game_media(
     Ok(media::media_ref(&layout, &system, &dest))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn switch_image_type(
     app: tauri::AppHandle,
     system_path: String,
@@ -94,7 +94,7 @@ pub fn switch_image_type(
 /// Returns a map of game_field → path for each match found.
 /// - ES-DE: only the unified `<folder>/<ROM name>.<ext>` (that's all ES-DE reads).
 /// - Classic: the unified name first, then legacy folders/suffixes left by other scrapers.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn scan_game_media(
     app: tauri::AppHandle,
     system_path: String,
