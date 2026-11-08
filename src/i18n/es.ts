@@ -755,7 +755,6 @@ const es: Record<TranslationKeys, string> = {
   "profiles.defaultName": "Nuevo perfil",
   "profiles.active": "Activo",
   "profiles.incomplete": "incompleto",
-  "profiles.activate": "Usar este perfil",
   "profiles.delete": "Borrar perfil",
   "profiles.portableDetected": "Instalación portable de ES-DE: datos en {path}",
   "profiles.migrateUnsaved": "Hay ajustes sin guardar. ¿Guardarlos y continuar?",

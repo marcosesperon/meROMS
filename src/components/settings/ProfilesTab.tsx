@@ -13,7 +13,7 @@ interface ProfilesTabProps {
   onChange: (profiles: Profile[], activeProfileId?: string) => void;
   /** Abrir la migración de estructura con este perfil como origen */
   onMigrate: (profile: Profile) => void;
-  /** Usar este perfil ya: se guardan los ajustes y pasa a ser el activo */
+  /** Poner un perfil en uso (al pulsarlo en la lista): se guardan los ajustes y pasa a ser el activo */
   onActivate: (profileId: string) => void;
 }
 
@@ -105,6 +105,9 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
               setEditingId(p.id);
               setDetected(null);
               setDetectError(null);
+              // Pulsar un perfil lo pone en uso al momento (guarda y vuelve a escanear). Uno
+              // incompleto solo se selecciona para rellenarlo; el activo, solo se selecciona
+              if (p.id !== activeProfileId && isProfileComplete(p)) onActivate(p.id);
             }}
             className={`w-full text-left px-3 py-2 rounded border transition-colors ${
               p.id === editingId
@@ -249,17 +252,6 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
           />
 
           <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
-            {editing.id !== activeProfileId && (
-              // Se aplica al momento (antes solo cambiaba el formulario y había que pulsar
-              // «Guardar Ajustes»). Sin carpetas no se puede usar.
-              <button
-                onClick={() => onActivate(editing.id)}
-                disabled={!isProfileComplete(editing)}
-                className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {t("profiles.activate")}
-              </button>
-            )}
             {/* Sin carpetas no hay nada que migrar */}
             <button
               onClick={() => onMigrate(editing)}

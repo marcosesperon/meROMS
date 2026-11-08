@@ -753,7 +753,6 @@ const en = {
   "profiles.defaultName": "New profile",
   "profiles.active": "Active",
   "profiles.incomplete": "incomplete",
-  "profiles.activate": "Use this profile",
   "profiles.delete": "Delete profile",
   "profiles.portableDetected": "Portable ES-DE install: data in {path}",
   "profiles.migrateUnsaved": "There are unsaved settings. Save them and continue?",
