@@ -7,6 +7,7 @@ import type { MigrationMode, MigrationProgress, MigrationReport, PendingStructur
 import { useAppStore } from "../../store/useAppStore";
 import { createProfile, getActiveProfile, isDefaultEsdeMedia } from "../../utils/profiles";
 import { askConfirm } from "../../utils/dialogs";
+import { TaskProgress } from "./TaskProgress";
 
 interface MigrationModalProps {
   open: boolean;
@@ -241,18 +242,12 @@ export function MigrationModal({ open, onClose, preset, sourceProfile }: Migrati
           )}
 
           {step === "running" && (
-            <div className="py-8 space-y-3">
-              <p className="text-sm text-zinc-300 text-center">
-                {t("migration.running")} {progress?.system ?? ""}
-              </p>
-              <div className="w-full bg-zinc-900 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-indigo-500 h-full transition-all duration-200"
-                  style={{ width: progress ? `${(progress.current / progress.total) * 100}%` : "0%" }}
-                />
-              </div>
-              {progress && <p className="text-xs text-zinc-500 text-center">{progress.current} / {progress.total}</p>}
-            </div>
+            // Sistema N de M y, debajo, el fichero de medios que se está pasando (sin Cancelar: una
+            // migración a medias dejaría la biblioteca repartida entre dos estructuras)
+            <TaskProgress
+              progress={progress ? { phase: "", current: progress.current, total: progress.total, item: progress.file || progress.system } : null}
+              label={`${t("migration.running")} ${progress?.system ?? ""}`}
+            />
           )}
 
           {(step === "preview" || step === "done") && report && totals && (

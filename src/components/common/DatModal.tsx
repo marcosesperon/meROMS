@@ -192,15 +192,10 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
                 <p className="text-amber-300">{t("dat.noCrcs")}</p>
               ) : crcProgress ? (
                 <div className="flex-1 min-w-0">
-                  <div className="w-full bg-zinc-700 rounded-full h-1.5">
-                    <div
-                      className="bg-indigo-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${crcProgress.total ? Math.round((crcProgress.current / crcProgress.total) * 100) : 0}%` }}
-                    />
-                  </div>
-                  <p className="text-zinc-500 mt-1 truncate">
-                    {crcProgress.current} / {crcProgress.total} — {crcProgress.file}
-                  </p>
+                  <TaskProgress
+                    progress={{ phase: "hashing", current: crcProgress.current, total: crcProgress.total, item: crcProgress.file }}
+                    compact
+                  />
                 </div>
               ) : (
                 <>

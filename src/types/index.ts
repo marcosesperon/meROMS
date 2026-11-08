@@ -439,6 +439,8 @@ export interface MigrationProgress {
   current: number;
   total: number;
   system: string;
+  /** Media file being copied/moved ("" when a system starts) */
+  file: string;
 }
 
 export type ViewMode = "table" | "grid";
