@@ -12,6 +12,7 @@ const DVD_BOX = [27, 38] as const;        // DVD-style case (PS2/Wii/Xbox)
 const BLURAY_BOX = [27, 33] as const;     // Blu-ray case (PS3/PS4/PS5)
 const JEWEL_CASE = [1, 1] as const;       // CD jewel case front (square)
 const HANDHELD_BOX = [27, 32] as const;   // Handheld game box
+const UMD_BOX = [7, 12] as const;         // UMD case (PSP): tall and narrow
 const SQUARE = [1, 1] as const;           // Square (PC Engine, etc.)
 
 const SYSTEM_ASPECT_RATIOS: Record<string, readonly [number, number]> = {
@@ -59,7 +60,7 @@ const SYSTEM_ASPECT_RATIOS: Record<string, readonly [number, number]> = {
   ps3: BLURAY_BOX,
   ps4: BLURAY_BOX,
   ps5: BLURAY_BOX,
-  psp: HANDHELD_BOX,
+  psp: UMD_BOX,
   vita: HANDHELD_BOX,
   psvita: HANDHELD_BOX,
 

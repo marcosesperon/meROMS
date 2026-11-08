@@ -239,6 +239,8 @@ const es: Record<TranslationKeys, string> = {
   "donation.later": "Ahora no",
   "donation.donate": "Hacer donación",
   "settings.systemsHelp": "Configura los ajustes de visualización para cada sistema detectado.",
+  "settings.systemsSearch": "Buscar sistemas…",
+  "settings.systemsNoMatch": "Ningún sistema coincide con la búsqueda.",
 
   // Media config
   "media.title": "Archivos de Media",

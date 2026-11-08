@@ -237,6 +237,8 @@ const en = {
   "donation.later": "Not now",
   "donation.donate": "Donate",
   "settings.systemsHelp": "Configure display settings for each detected system.",
+  "settings.systemsSearch": "Search systems...",
+  "settings.systemsNoMatch": "No system matches the search.",
 
   // Media config
   "media.title": "Media Files",
