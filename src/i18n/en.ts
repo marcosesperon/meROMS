@@ -734,6 +734,7 @@ const en = {
   "info.screenshot": "Screenshot",
   "info.information": "Information",
   "info.collapse": "Hide panel",
+  "info.close": "Close panel",
   "info.expand": "Show panel",
   "info.pickGame": "Pick a game to see its details.",
   "info.games": "Games",

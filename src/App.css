@@ -95,3 +95,62 @@ textarea,
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
+
+/* Barra deslizante del carrusel: fina y translúcida, lo recorrido más claro (--progress lo pone
+   el componente) y un punto blanco que crece al pasar el ratón o al arrastrar */
+.carousel-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55) var(--progress, 0%), rgba(255, 255, 255, 0.14) var(--progress, 0%));
+  outline: none;
+  cursor: pointer;
+}
+.carousel-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s;
+}
+.carousel-range:hover::-webkit-slider-thumb,
+.carousel-range:active::-webkit-slider-thumb {
+  transform: scale(1.33);
+}
+.carousel-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+}
+
+/* Destello del carrusel: una franja de luz que cruza el frente de la caja que llega al centro */
+@keyframes box-glint {
+  0% { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
+}
+.box3d-glint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  /* la franja (degradado) la pone GameBox3D */
+  animation: box-glint 0.7s ease-out 1 both;
+}
+
+/* Las imágenes no se pueden coger y arrastrar (carátulas, cajas, logos…); main.tsx lo frena
+   también por si algún webview no hace caso a esta propiedad */
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}

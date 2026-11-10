@@ -11,6 +11,13 @@ if (!import.meta.env.DEV) {
   });
 }
 
+// Images can't be dragged out (covers, boxes, logos…): App.css turns it off with
+// -webkit-user-drag, and this catches any webview that ignores it. Dropping files from outside
+// is a different event (drop) and still works.
+document.addEventListener("dragstart", (e) => {
+  if (e.target instanceof HTMLImageElement) e.preventDefault();
+});
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <App />

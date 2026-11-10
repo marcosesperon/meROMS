@@ -45,6 +45,14 @@ export function systemGradient(name: string): string {
   return `linear-gradient(135deg, ${from}cc, ${to}99)`;
 }
 
+/**
+ * Fondo de la lista de juegos (carrusel y cuadrícula): el degradado del sistema con un brillo
+ * suave arriba al centro, sobre un casi negro (los colores del degradado son algo transparentes)
+ */
+export function systemBackdrop(name: string): string {
+  return `radial-gradient(ellipse at 50% 35%, rgba(255,255,255,0.10), transparent 60%), ${systemGradient(name)}, #0e0d0c`;
+}
+
 /** Elige el texto del idioma de la app */
 export function localize(value: Localized | undefined, locale: string): string | undefined {
   if (value === undefined) return undefined;

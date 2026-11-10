@@ -19,7 +19,12 @@ interface GameBox3DProps {
   bothSpines?: boolean;
   /** Sombra en el suelo (el carrusel pone su propio reflejo) */
   shadow?: boolean;
+  /** Destello sobre el frente: cada vez que cambia este número, una franja de luz lo cruza */
+  glint?: number;
 }
+
+/** Franja de luz del destello: blanca en el centro y desvanecida a los lados */
+const GLINT = "linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.25) 70%, transparent)";
 
 /**
  * Una caja de juego en 3D hecha con CSS: el frente con la carátula, el lomo a la izquierda (del
@@ -27,7 +32,7 @@ interface GameBox3DProps {
  * arriba con el logo) y el canto de arriba. La forma del frente es la de la tarjeta; el grosor y
  * el material, los de la caja de verdad del sistema (utils/boxStyles).
  */
-export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate, bothSpines = false, shadow = true }: GameBox3DProps) {
+export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate, bothSpines = false, shadow = true, glint }: GameBox3DProps) {
   const style = useMemo(() => boxStyleFor(system), [system]);
   const [failed, setFailed] = useState(false);
   const cover = coverSrc && !failed ? coverSrc : null;
@@ -160,6 +165,8 @@ export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate,
               style={{ background: "linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 35%, transparent 55%)" }}
             />
           )}
+          {/* Destello (carrusel): con la key cambiada, la animación vuelve a empezar */}
+          {glint !== undefined && glint > 0 && <div key={glint} className="box3d-glint" style={{ background: GLINT }} />}
           {/* El cartón: un pelín de luz en el borde, como el doblez de la caja */}
           {!style.plastic && <div className="absolute inset-0 pointer-events-none border border-white/10" style={{ borderRadius: radius }} />}
         </div>

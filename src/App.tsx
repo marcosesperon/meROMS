@@ -96,6 +96,9 @@ function App() {
   const [datVersion, setDatVersion] = useState(0);
   const multiSelect = useAppStore((s) => s.multiSelect);
   const viewMode = useAppStore((s) => s.viewMode);
+  const clickAction = useAppStore((s) => s.settings.click_action);
+  const carouselPanelOpen = useAppStore((s) => s.carouselPanelOpen);
+  const setCarouselPanelOpen = useAppStore((s) => s.setCarouselPanelOpen);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
   const [showSettings, setShowSettings] = useState(false);
@@ -357,8 +360,14 @@ function App() {
           )}
         </div>
         {/* Multi-select mode: the right panel edits every selected game at once. The carousel
-            uses the whole width: no panel there (its collapsed state is left as it was) */}
+            with "click opens the full view" uses the whole width: no panel there (its collapsed
+            state is left as it was) */}
         {selectedSystem && viewMode !== "carousel" && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
+        {/* Carousel with "show it in the panel": only after a click on the centre box, and its
+            button closes it (until the next click) */}
+        {selectedSystem && viewMode === "carousel" && clickAction !== "full" && carouselPanelOpen && (
+          <GameInfoPanel onClose={() => setCarouselPanelOpen(false)} />
+        )}
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}
       <GameFullView />

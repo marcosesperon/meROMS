@@ -736,6 +736,7 @@ const es: Record<TranslationKeys, string> = {
   "info.screenshot": "Captura",
   "info.information": "Información",
   "info.collapse": "Ocultar panel",
+  "info.close": "Cerrar panel",
   "info.expand": "Mostrar panel",
   "info.pickGame": "Elige un juego para ver su ficha.",
   "info.games": "Juegos",

@@ -46,9 +46,10 @@ import {
  * lectura. Para cambiar datos está «Editar», que abre el editor de siempre.
  * Sin juego seleccionado enseña un resumen del sistema.
  */
-export function GameInfoPanel() {
+export function GameInfoPanel({ onClose }: { onClose?: () => void } = {}) {
   const game = useAppStore((s) => s.selectedGame);
-  const collapsed = useAppStore((s) => s.infoPanelCollapsed);
+  // Con onClose (carrusel) el botón lo cierra del todo y el plegado de siempre no cuenta
+  const collapsed = useAppStore((s) => s.infoPanelCollapsed) && !onClose;
   const toggleInfoPanel = useAppStore((s) => s.toggleInfoPanel);
   const { t } = useTranslation();
 
@@ -69,8 +70,8 @@ export function GameInfoPanel() {
   return (
     <aside className="w-[420px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden relative">
       <button
-        onClick={toggleInfoPanel}
-        title={t("info.collapse")}
+        onClick={onClose ?? toggleInfoPanel}
+        title={t(onClose ? "info.close" : "info.collapse")}
         className="absolute top-3 left-3 z-20 w-7 h-7 rounded-full bg-black/50 text-zinc-300 hover:text-white hover:bg-black/70 text-lg leading-none"
       >
         ›

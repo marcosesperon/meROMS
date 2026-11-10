@@ -6,13 +6,14 @@ import { GameBox3D } from "./GameBox3D";
 import { cardAspectRatio } from "../../utils/cartridgeSizes";
 import { getSystemView, shapeField } from "../../utils/systemView";
 import { nameText, sortGames, sortnameText } from "../../utils/playStats";
-import { systemGradient } from "../../utils/systemInfo";
+import { systemBackdrop } from "../../utils/systemInfo";
 import { resolveImageSrc } from "../../utils/images";
 import { formatRating } from "../../utils/format";
 import { getFlag } from "../../utils/flags";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { StarIcon } from "../common/Icons";
 import { LetterRow } from "./LetterRow";
+import { clickGame, doubleClickGame } from "../../utils/gameClick";
 
 /** Cajas que se pintan a cada lado del centro (las demás no existen: va igual con miles) */
 const WINDOW = 12;
@@ -75,25 +76,38 @@ export function GameCarousel({ games }: { games: Game[] }) {
   useEffect(() => {
     if (center > last) setCenter(Math.max(last, 0));
   }, [center, last]);
+  // Destello: qué caja brilla y un número que sube cada vez (para que la animación empiece de
+  // nuevo); solo la caja que se ha quedado en el centro, no las que pasan por él
+  const [glint, setGlint] = useState({ index: -1, count: 0 });
   // Parado un momento en un juego: se selecciona (yendo rápido no se recarga el panel a cada paso)
+  // y su caja brilla una vez
   useEffect(() => {
     const game = sorted[center];
     if (!game) return;
     const timer = window.setTimeout(() => {
+      setGlint((g) => ({ index: center, count: g.count + 1 }));
       const { selectedGame, selectGame } = useAppStore.getState();
       if (selectedGame?.path !== game.path) selectGame(game);
     }, SELECT_DELAY);
     return () => window.clearTimeout(timer);
   }, [center, sorted]);
 
-  // Ficha completa de un juego (clic en la caja del centro o Intro); el editor, desde ella
-  const openFull = (game: Game) => {
-    const { selectGame, openFullView } = useAppStore.getState();
-    selectGame(game);
-    openFullView();
+  // Clic en la caja del centro: como en la cuadrícula y, con «panel», además abre el panel
+  const clickCentre = (game: Game) => {
+    clickGame(game);
+    const { settings, setCarouselPanelOpen } = useAppStore.getState();
+    if (settings.click_action !== "full") setCarouselPanelOpen(true);
   };
 
-  // Teclado: ← → Inicio Fin e Intro (ficha completa), salvo escribiendo o con una ventana abierta
+  // Intro, como «Al pulsar un juego»: ficha completa o, con el panel, el editor (como la cuadrícula)
+  const openWithEnter = (game: Game) => {
+    const { selectGame, openFullView, openEditor, settings } = useAppStore.getState();
+    selectGame(game);
+    if (settings.click_action === "full") openFullView();
+    else openEditor();
+  };
+
+  // Teclado: ← → Inicio Fin e Intro, salvo escribiendo o con una ventana abierta
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -110,7 +124,7 @@ export function GameCarousel({ games }: { games: Game[] }) {
         const game = sorted[now];
         if (!game) return;
         e.preventDefault();
-        openFull(game);
+        openWithEnter(game);
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -181,7 +195,7 @@ export function GameCarousel({ games }: { games: Game[] }) {
   return (
     // «isolate»: los z-index de las cajas (hasta 100) se quedan dentro del carrusel; sin él se
     // pintaban por encima de las ventanas (z-50), como el editor
-    <div className="flex-1 relative isolate overflow-hidden select-none bg-zinc-950" style={{ background: `radial-gradient(ellipse at 50% 35%, rgba(255,255,255,0.10), transparent 60%), ${systemGradient(systemName)}, #0e0d0c` }}>
+    <div className="flex-1 relative isolate overflow-hidden select-none bg-zinc-950" style={{ background: systemBackdrop(systemName) }}>
       <div ref={stageRef} className="absolute inset-0">
         {size.width > 0 &&
           visible.map((i) => {
@@ -192,8 +206,10 @@ export function GameCarousel({ games }: { games: Game[] }) {
               <div
                 key={`${i}:${game.path}`}
                 className="absolute cursor-pointer"
-                // Una de los lados viene al centro; la del centro abre su ficha completa
-                onClick={() => (d === 0 ? openFull(game) : go(i))}
+                // Una de los lados viene al centro; la del centro, como un clic en la cuadrícula
+                // (ficha completa si así está en Ajustes; doble clic, el editor)
+                onClick={() => (d === 0 ? clickCentre(game) : go(i))}
+                onDoubleClick={() => d === 0 && doubleClickGame(game)}
                 style={{
                   left: "50%",
                   top: boxTop,
@@ -217,6 +233,7 @@ export function GameCarousel({ games }: { games: Game[] }) {
                   rotate={p.angle}
                   bothSpines
                   shadow={false}
+                  glint={d === 0 && glint.index === i ? glint.count : undefined}
                 />
               </div>
             );
@@ -237,7 +254,9 @@ export function GameCarousel({ games }: { games: Game[] }) {
               max={last}
               value={center}
               onChange={(e) => go(Number(e.target.value))}
-              className="flex-1 accent-indigo-500 cursor-pointer"
+              className="carousel-range flex-1"
+              // Hasta dónde va lo recorrido (lo pinta App.css más claro)
+              style={{ "--progress": `${last > 0 ? (center / last) * 100 : 0}%` } as React.CSSProperties}
               title={t("carousel.jump")}
             />
           )}

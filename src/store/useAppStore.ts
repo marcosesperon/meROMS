@@ -119,6 +119,10 @@ interface AppState {
   setMissingRomPaths: (paths: Set<string>) => void;
   /** Right-hand game info panel folded away (remembered between sessions) */
   infoPanelCollapsed: boolean;
+  /** Carousel with "click shows it in the panel": the panel is open (a click on the centre box
+   *  opens it, its close button hides it); not saved, off on entering the carousel or a system */
+  carouselPanelOpen: boolean;
+  setCarouselPanelOpen: (open: boolean) => void;
   /** Sidebar shows only systems with games (default) or every system folder */
   onlySystemsWithGames: boolean;
   toggleOnlySystemsWithGames: () => void;
@@ -284,6 +288,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       multiSelect: false,
       selectedPaths: new Set(),
       statuses: new Map(),
+      carouselPanelOpen: false,
     });
     get().loadGames(system.path);
   },
@@ -386,7 +391,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   // UI
   viewMode: "grid",
   setViewMode: (mode: ViewMode) => {
-    set({ viewMode: mode });
+    set({ viewMode: mode, carouselPanelOpen: false });
     get().patchSettings({ last_view: mode });
   },
   editorOpen: false,
@@ -452,6 +457,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
+  carouselPanelOpen: false,
+  setCarouselPanelOpen: (open) => set({ carouselPanelOpen: open }),
   // Stored as "show all" so that the default (nothing stored) is "only with games"
   onlySystemsWithGames: !readFlag(ALL_SYSTEMS_KEY),
   toggleOnlySystemsWithGames: () => {

@@ -7,6 +7,7 @@ import { cardAspectRatio, cardWidthFor } from "../../utils/cartridgeSizes";
 import { boxes3dOn, getSystemView, shapeField } from "../../utils/systemView";
 import { nameText, sortGames, sortnameText } from "../../utils/playStats";
 import { LetterBar } from "./LetterBar";
+import { systemBackdrop } from "../../utils/systemInfo";
 
 interface GameGridProps {
   games: Game[];
@@ -71,7 +72,8 @@ export function GameGrid({ games }: GameGridProps) {
   });
 
   return (
-    <div className="flex-1 flex overflow-hidden">
+    // Fondo con los colores del sistema (como el carrusel); fijo, las tarjetas se desplazan encima
+    <div className="flex-1 flex overflow-hidden" style={{ background: systemBackdrop(selectedSystem?.name || "") }}>
       <div ref={scrollRef} className="overflow-auto flex-1 p-5">
         <div
           ref={gridRef}

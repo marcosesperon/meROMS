@@ -123,7 +123,8 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
           {game.name || game.path}
         </p>
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <span className="text-[11px] text-zinc-500 truncate">{subtitle || game.genre || ""}</span>
+          {/* Algo más claro que el gris de siempre: va sobre los colores del sistema */}
+          <span className="text-[11px] text-zinc-400 truncate">{subtitle || game.genre || ""}</span>
           <span className="flex items-center gap-1 shrink-0">
             {getFlag(game.lang) && (
               <span className="text-xs" title={game.lang}>{getFlag(game.lang)}</span>
