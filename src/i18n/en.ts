@@ -136,6 +136,8 @@ const en = {
   "settings.tgdbHelp": "Free API key from thegamesdb.net (1500 req/month). Used when ScreenScraper is not configured.",
   "settings.mediaTitle": "Media to Download",
   "settings.gridMedia": "Grid View Media",
+  "settings.boxes3d": "Show the grid as 3D game boxes",
+  "settings.boxes3dHelp": "Each card becomes a box like the real one of its system (cardboard, DVD case, Blu-ray, CD jewel case...) built from the box art, with the title on the spine. Games without box art get a generic box of the system. Each system can change it in its view settings.",
   "settings.gridMediaHelp": "Choose which media type to display as the main image in grid view. Falls back to image/thumbnail if not available.",
   "settings.clickAction": "On click on a game",
   "settings.clickAction_panel": "Show it in the right panel",
@@ -153,6 +155,8 @@ const en = {
   // View Toggle
   "view.table": "Table",
   "view.grid": "Grid",
+  "view.carousel": "Carousel",
+  "carousel.jump": "Jump through the list",
 
   // Search
   "search.placeholder": "Search games...",
@@ -1030,6 +1034,10 @@ const en = {
   "systemView.auto": "Automatic ({what})",
   "systemView.gridMedia": "Grid media",
   "systemView.gridMediaHelp": "What each card shows. Automatic = the one in Settings > General.",
+  "systemView.box3d": "3D boxes",
+  "systemView.box3dHelp": "Cards as 3D game boxes. Automatic = the switch in Settings > General.",
+  "systemView.box3dOn": "Yes",
+  "systemView.box3dOff": "No",
   "systemView.ratio": "Card shape",
   "systemView.ratioHelp": "Automatic = the most common shape of that media in this system.",
   "systemView.cover": "Cover in the game details",

@@ -9,14 +9,17 @@ import { DatTag } from "../common/DatTag";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { effectiveGridField } from "../../utils/systemView";
+import { GameBox3D } from "./GameBox3D";
 
 interface GameCardProps {
   game: Game;
   /** Forma de la tarjeta («ancho/alto»), la misma para todo el sistema (la calcula GameGrid) */
   aspectRatio: string;
+  /** Dibujar la tarjeta como una caja 3D (con la carátula 2D, o la genérica del sistema) */
+  box3d?: boolean;
 }
 
-export function GameCard({ game, aspectRatio }: GameCardProps) {
+export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   const selectedGame = useAppStore((s) => s.selectedGame);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   // ROM no longer on disk: dimmed card with a "No ROM" label
@@ -40,6 +43,8 @@ export function GameCard({ game, aspectRatio }: GameCardProps) {
 
 
   const selected = multiSelect ? checked : selectedGame?.path === game.path;
+  // En la caja 3D va siempre la carátula 2D, sea cual sea el medio de la cuadrícula
+  const coverSrc = box3d ? resolveImageSrc(game.image, selectedSystem?.path || "") : null;
   const status = useAppStore((s) => s.statuses.get(game.path));
   const badge = statusBadge(status);
   const year = game.releasedate?.slice(0, 4);
@@ -56,7 +61,7 @@ export function GameCard({ game, aspectRatio }: GameCardProps) {
       } ${romMissing ? "opacity-50" : ""}`}
     >
       <div
-        className="relative bg-zinc-800 rounded-md flex items-center justify-center overflow-hidden shadow-lg shadow-black/40"
+        className={`relative rounded-md flex items-center justify-center ${box3d ? "" : "bg-zinc-800 overflow-hidden shadow-lg shadow-black/40"}`}
         style={{ aspectRatio }}
       >
         {multiSelect && (
@@ -86,7 +91,15 @@ export function GameCard({ game, aspectRatio }: GameCardProps) {
             )}
           </div>
         )}
-        {imageSrc ? (
+        {box3d ? (
+          <GameBox3D
+            system={selectedSystem?.name || ""}
+            coverSrc={coverSrc || null}
+            title={game.name || game.path}
+            aspectRatio={aspectRatio}
+            front={selected}
+          />
+        ) : imageSrc ? (
           <img
             src={imageSrc}
             alt={game.name || game.path}

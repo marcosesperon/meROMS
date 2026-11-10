@@ -79,13 +79,21 @@ export function SystemViewModal({ open, system, onClose }: SystemViewModalProps)
         </div>
         <div className="px-5 py-4 space-y-4">
           {row(t("systemView.gridMedia"), t("systemView.gridMediaHelp"), select(view.grid_media, (v) => set({ grid_media: v }), globalGrid, mediaOptions))}
+          {row(
+            t("systemView.box3d"),
+            t("systemView.box3dHelp"),
+            select(view.box3d, (v) => set({ box3d: (v || undefined) as SystemView["box3d"] }), t(settings.grid_boxes_3d ? "systemView.box3dOn" : "systemView.box3dOff"), [
+              { value: "on", label: t("systemView.box3dOn") },
+              { value: "off", label: t("systemView.box3dOff") },
+            ])
+          )}
           {row(t("systemView.ratio"), t("systemView.ratioHelp"), select(view.aspect_ratio, (v) => set({ aspect_ratio: v }), measured, RATIOS))}
           {row(t("systemView.cover"), t("systemView.coverHelp"), select(view.cover, (v) => set({ cover: v }), t("systemView.coverAuto"), mediaOptions))}
           {row(t("systemView.hero"), t("systemView.heroHelp"), select(view.hero, (v) => set({ hero: v }), t("systemView.heroAuto"), mediaOptions))}
         </div>
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
           <button
-            onClick={() => set({ grid_media: undefined, aspect_ratio: undefined, cover: undefined, hero: undefined })}
+            onClick={() => set({ grid_media: undefined, box3d: undefined, aspect_ratio: undefined, cover: undefined, hero: undefined })}
             disabled={Object.keys(view).length === 0}
             className="px-4 py-2 text-sm text-zinc-300 rounded border border-zinc-600 hover:bg-zinc-700 disabled:opacity-40"
           >

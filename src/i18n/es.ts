@@ -138,6 +138,8 @@ const es: Record<TranslationKeys, string> = {
   "settings.tgdbHelp": "Clave API gratuita de thegamesdb.net (1500 peticiones/mes). Se usa cuando ScreenScraper no está configurado.",
   "settings.mediaTitle": "Media a Descargar",
   "settings.gridMedia": "Media en Vista Cuadrícula",
+  "settings.boxes3d": "Ver la cuadrícula como cajas de juego en 3D",
+  "settings.boxes3dHelp": "Cada tarjeta pasa a ser una caja como la de verdad de su sistema (cartón, estuche DVD, Blu-ray, caja de CD…) montada con la carátula y con el título en el lomo. Los juegos sin carátula llevan una caja genérica del sistema. Cada sistema puede cambiarlo en sus ajustes de vista.",
   "settings.gridMediaHelp": "Elige qué tipo de media mostrar como imagen principal en la vista de cuadrícula. Si no está disponible, se usará image/thumbnail.",
   "settings.clickAction": "Al pulsar un juego",
   "settings.clickAction_panel": "Mostrarlo en el panel derecho",
@@ -155,6 +157,8 @@ const es: Record<TranslationKeys, string> = {
   // View Toggle
   "view.table": "Tabla",
   "view.grid": "Cuadrícula",
+  "view.carousel": "Carrusel",
+  "carousel.jump": "Saltar por la lista",
 
   // Search
   "search.placeholder": "Buscar juegos...",
@@ -1032,6 +1036,10 @@ const es: Record<TranslationKeys, string> = {
   "systemView.auto": "Automático ({what})",
   "systemView.gridMedia": "Medio de la cuadrícula",
   "systemView.gridMediaHelp": "Lo que enseña cada tarjeta. Automático = el de Ajustes > General.",
+  "systemView.box3d": "Cajas 3D",
+  "systemView.box3dHelp": "Tarjetas como cajas de juego en 3D. Automático = el interruptor de Ajustes > General.",
+  "systemView.box3dOn": "Sí",
+  "systemView.box3dOff": "No",
   "systemView.ratio": "Forma de la tarjeta",
   "systemView.ratioHelp": "Automático = la forma que más se repite en ese medio en este sistema.",
   "systemView.cover": "Portada en el detalle del juego",

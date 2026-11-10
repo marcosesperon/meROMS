@@ -407,6 +407,19 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 <p className="text-xs text-zinc-500 mt-2">
                   {t("settings.gridMediaHelp")}
                 </p>
+                {/* Cajas 3D: cada sistema puede cambiarlo en su vista (botón de deslizadores) */}
+                <label className="flex items-start gap-2 mt-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!form.grid_boxes_3d}
+                    onChange={(e) => setForm({ ...form, grid_boxes_3d: e.target.checked ? true : undefined })}
+                    className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                  />
+                  <span>
+                    <span className="block text-sm text-zinc-300">{t("settings.boxes3d")}</span>
+                    <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.boxes3dHelp")}</span>
+                  </span>
+                </label>
               </section>
 
               {/* What a click on a game does: right panel or the full-screen page */}

@@ -63,6 +63,9 @@ pub struct SystemView {
     /// Medio del fondo de la cabecera del detalle; si no, fanart, captura, pantalla de título
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hero: Option<String>,
+    /// Cajas 3D en la cuadrícula: «on» / «off»; si no, lo de Ajustes > General
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub box3d: Option<String>,
 }
 
 /// Clave de un sistema en `system_views` (la misma que usaba la antigua tabla de proporciones)

@@ -85,6 +85,9 @@ pub struct AppSettings {
     pub media_paths: Option<Vec<MediaPathConfig>>,
     // Which game media field to display in grid view (e.g., "image", "thumbnail", "mix")
     pub grid_media_field: Option<String>,
+    // Grid cards drawn as 3D game boxes (each system can override it in its view)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grid_boxes_3d: Option<bool>,
     // App language: "es", "en", etc.
     pub language: Option<String>,
     // Per-system configuration keyed by normalized system name

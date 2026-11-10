@@ -1,4 +1,4 @@
-import type { AppSettings, SystemView } from "../types";
+import type { AppSettings, SystemView, ViewMode } from "../types";
 import { useAppStore } from "../store/useAppStore";
 import { getActiveProfile } from "./profiles";
 
@@ -20,6 +20,21 @@ export function getSystemView(settings: AppSettings, systemName: string | undefi
 /** Medio que enseña la cuadrícula de un sistema: el suyo o, si no tiene, el global */
 export function effectiveGridField(settings: AppSettings, systemName: string | undefined): string {
   return getSystemView(settings, systemName).grid_media || settings.grid_media_field || "image";
+}
+
+/** Si la cuadrícula de un sistema enseña cajas 3D: lo elegido en el sistema o, si no, lo global */
+export function boxes3dOn(settings: AppSettings, systemName: string | undefined): boolean {
+  const own = getSystemView(settings, systemName).box3d;
+  return own ? own === "on" : !!settings.grid_boxes_3d;
+}
+
+/**
+ * Medio cuya forma se mide para las tarjetas: con cajas 3D (en la cuadrícula o en el carrusel)
+ * el frente es siempre la carátula 2D, así que se mide esa; si no, el medio de la cuadrícula
+ */
+export function shapeField(settings: AppSettings, systemName: string | undefined, viewMode: ViewMode): string {
+  if (viewMode === "carousel" || boxes3dOn(settings, systemName)) return "image";
+  return effectiveGridField(settings, systemName);
 }
 
 /** Cambia la vista de un sistema en el perfil activo (se guarda sola, con una pequeña espera) */

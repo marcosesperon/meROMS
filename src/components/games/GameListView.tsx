@@ -8,6 +8,7 @@ import { useTranslation } from "../../i18n";
 import { generateGamelist } from "../../commands";
 import { GameTable } from "./GameTable";
 import { GameGrid } from "./GameGrid";
+import { GameCarousel } from "./GameCarousel";
 import { EmptyState } from "../common/EmptyState";
 import { WelcomeScreen } from "../common/WelcomeScreen";
 import { Header } from "../layout/Header";
@@ -147,6 +148,8 @@ export function GameListView() {
           {/* Games */}
           {viewMode === "table" ? (
             <GameTable games={filteredGames} />
+          ) : viewMode === "carousel" ? (
+            <GameCarousel games={filteredGames} />
           ) : (
             <GameGrid games={filteredGames} />
           )}

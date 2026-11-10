@@ -78,3 +78,20 @@ textarea,
   0% { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
 }
+
+/* Cajas 3D de la cuadrícula (GameBox3D): giradas enseñando el lomo; de frente al pasar el ratón
+   o con el juego seleccionado */
+.box3d {
+  transform-style: preserve-3d;
+  transform: rotateY(32deg) rotateX(-4deg);
+  transition: transform 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.group:hover .box3d,
+.box3d[data-front="true"] {
+  transform: rotateY(0deg) rotateX(0deg);
+}
+.box3d-face {
+  position: absolute;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

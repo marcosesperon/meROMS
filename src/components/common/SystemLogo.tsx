@@ -30,7 +30,7 @@ const LOGO_ALIASES: Record<string, string> = {
 };
 
 /** Logo URL for a system folder: its own file, or its base system's for a known variant */
-function logoUrl(name: string): string | undefined {
+export function logoUrl(name: string): string | undefined {
   const key = name.toLowerCase();
   return logoMap[key] ?? logoMap[LOGO_ALIASES[key] ?? ""];
 }

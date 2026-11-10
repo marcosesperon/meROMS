@@ -158,7 +158,7 @@ export interface AppSettings {
   /** Table view: visible columns in order with their widths (same for every system) */
   table_columns?: { id: string; width?: number }[];
   /** Last list view */
-  last_view?: "grid" | "table";
+  last_view?: "grid" | "table" | "carousel";
   /** Grid order (missing = by name) */
   grid_sort?: "name" | "sortname" | "most_played" | "recent" | "playtime" | "release" | "rating";
   /** Clic en un juego: enseñarlo en el panel derecho ("panel", por defecto) o abrir la ficha a pantalla completa */
@@ -181,6 +181,8 @@ export interface AppSettings {
   gamelist_sort?: "name" | "path";
   media_paths?: MediaPathConfig[];
   grid_media_field?: string;
+  /** Grid cards drawn as 3D game boxes (each system can override it in its view) */
+  grid_boxes_3d?: boolean;
   /** App language: "es", "en", etc. */
   language?: string;
   /** Per-system configuration (aspect ratio, etc.) keyed by normalized system name */
@@ -197,6 +199,8 @@ export interface SystemView {
   cover?: string;
   /** Detail header background media; missing = fanart, screenshot, title screen */
   hero?: string;
+  /** 3D boxes in the grid: "on" / "off"; missing = the global grid_boxes_3d */
+  box3d?: "on" | "off";
 }
 
 export interface SystemConfig {
@@ -463,7 +467,7 @@ export interface MigrationProgress {
   file: string;
 }
 
-export type ViewMode = "table" | "grid";
+export type ViewMode = "table" | "grid" | "carousel";
 export type CurrentView = "browser" | "settings";
 
 export const AVAILABLE_MEDIA_TYPES = [

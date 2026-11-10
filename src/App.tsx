@@ -95,6 +95,7 @@ function App() {
   // Bumped when the DAT changes, so the marks are reloaded
   const [datVersion, setDatVersion] = useState(0);
   const multiSelect = useAppStore((s) => s.multiSelect);
+  const viewMode = useAppStore((s) => s.viewMode);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
   const setMissingRomPaths = useAppStore((s) => s.setMissingRomPaths);
   const [showSettings, setShowSettings] = useState(false);
@@ -355,8 +356,9 @@ function App() {
             </div>
           )}
         </div>
-        {/* Multi-select mode: the right panel edits every selected game at once */}
-        {selectedSystem && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
+        {/* Multi-select mode: the right panel edits every selected game at once. The carousel
+            uses the whole width: no panel there (its collapsed state is left as it was) */}
+        {selectedSystem && viewMode !== "carousel" && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}
       <GameFullView />

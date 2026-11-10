@@ -63,8 +63,8 @@ export function Header() {
           >
             <FilterIcon size={18} />
           </button>
-          {/* Orden de la cuadrícula (la tabla ordena por sus columnas) */}
-          {viewMode === "grid" && (
+          {/* Orden de la cuadrícula y del carrusel (la tabla ordena por sus columnas) */}
+          {viewMode !== "table" && (
             <select
               value={gridSort ?? "name"}
               onChange={(e) => patchSettings({ grid_sort: e.target.value as GridSort })}

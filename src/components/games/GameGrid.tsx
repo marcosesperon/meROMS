@@ -4,7 +4,7 @@ import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
 import { cardAspectRatio, cardWidthFor } from "../../utils/cartridgeSizes";
-import { effectiveGridField, getSystemView } from "../../utils/systemView";
+import { boxes3dOn, getSystemView, shapeField } from "../../utils/systemView";
 import { nameText, sortGames, sortnameText } from "../../utils/playStats";
 import { LetterBar } from "./LetterBar";
 
@@ -18,12 +18,15 @@ export function GameGrid({ games }: GameGridProps) {
   // Forma de las tarjetas: la elegida para el sistema en el perfil, la que más se repite en el
   // medio que se enseña (medida por el store al cargar el sistema) o la tabla fija
   const view = getSystemView(settings, selectedSystem?.name);
-  const gridField = effectiveGridField(settings, selectedSystem?.name);
+  // Medio cuya forma se mide (con cajas 3D, la carátula 2D, que es lo que va al frente)
+  const gridField = shapeField(settings, selectedSystem?.name, "grid");
   const mediaShape = useAppStore((s) => s.mediaShape);
   const refreshMediaShape = useAppStore((s) => s.refreshMediaShape);
   const measured = mediaShape && mediaShape.system === selectedSystem?.path && mediaShape.field === gridField ? mediaShape : null;
   const aspectRatio = cardAspectRatio(selectedSystem?.name || "", view.aspect_ratio, measured);
   const cardWidth = cardWidthFor(aspectRatio);
+  // Cajas 3D: lo elegido en el sistema o, si no, lo de Ajustes > General
+  const box3d = boxes3dOn(settings, selectedSystem?.name);
   // Al cambiar el medio de la cuadrícula (en Ajustes o en el sistema), se mide el nuevo
   useEffect(() => {
     if (selectedSystem && (mediaShape?.system !== selectedSystem.path || mediaShape?.field !== gridField)) {
@@ -78,7 +81,7 @@ export function GameGrid({ games }: GameGridProps) {
           }}
         >
           {sorted.map((game, i) => (
-            <GameCard key={keys[i]} game={game} aspectRatio={aspectRatio} />
+            <GameCard key={keys[i]} game={game} aspectRatio={aspectRatio} box3d={box3d} />
           ))}
         </div>
       </div>

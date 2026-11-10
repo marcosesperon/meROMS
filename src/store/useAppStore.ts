@@ -15,7 +15,7 @@ import { showMessage } from "../utils/dialogs";
 import { brokenKey } from "../utils/mediaFilter";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
-import { effectiveGridField } from "../utils/systemView";
+import { shapeField } from "../utils/systemView";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
 // once per profile activation and not on every rescan
@@ -413,13 +413,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   brokenMedia: new Set(),
   mediaShape: null,
   refreshMediaShape: (systemPath: string) => {
-    const field = effectiveGridField(get().settings, get().selectedSystem?.name);
+    const field = shapeField(get().settings, get().selectedSystem?.name, get().viewMode);
     commands
       .usualMediaShape(systemPath, field)
       .then((shape) => {
         // Si mientras tanto se ha cambiado de sistema o de medio, esta respuesta ya no vale
         const now = get();
-        if (now.selectedSystem?.path !== systemPath || effectiveGridField(now.settings, now.selectedSystem?.name) !== field) return;
+        if (now.selectedSystem?.path !== systemPath || shapeField(now.settings, now.selectedSystem?.name, now.viewMode) !== field) return;
         set({ mediaShape: shape ? { system: systemPath, field, width: shape.width, height: shape.height } : null });
       })
       .catch(() => set({ mediaShape: null }));

@@ -10,6 +10,8 @@ export function ViewToggle() {
   const modes: { mode: ViewMode; label: string; icon: string }[] = [
     { mode: "table", label: t("view.table"), icon: "☰" },
     { mode: "grid", label: t("view.grid"), icon: "⊞" },
+    // Carrusel: cajas 3D en fila (GameCarousel)
+    { mode: "carousel", label: t("view.carousel"), icon: "◫" },
   ];
 
   return (
