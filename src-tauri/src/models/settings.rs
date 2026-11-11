@@ -58,6 +58,12 @@ pub struct AppSettings {
     // Click on a game: "panel" (show it in the right panel, None) | "full" (full-screen game page)
     #[serde(default)]
     pub click_action: Option<String>,
+    // Carousel effects (floor reflection + glint): "auto" (None) | "on" | "off"
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carousel_effects: Option<String>,
+    // "auto" found this computer too slow for them (remembered, so it doesn't measure again)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub carousel_effects_slow: Option<bool>,
     // Donation prompt: unix seconds of the first launch, then of the last time it was shown
     #[serde(default)]
     pub donation_prompt_at: Option<i64>,

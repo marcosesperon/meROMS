@@ -4,7 +4,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { GameBox3D } from "./GameBox3D";
 import { cardAspectRatio } from "../../utils/cartridgeSizes";
-import { getSystemView, shapeField } from "../../utils/systemView";
+import { carouselEffectsOn, getSystemView, shapeField } from "../../utils/systemView";
+import { useCarouselPerf } from "../../hooks/useCarouselPerf";
 import { nameText, sortGames, sortnameText } from "../../utils/playStats";
 import { systemBackdrop } from "../../utils/systemInfo";
 import { resolveImageSrc } from "../../utils/images";
@@ -91,6 +92,10 @@ export function GameCarousel({ games }: { games: Game[] }) {
     }, SELECT_DELAY);
     return () => window.clearTimeout(timer);
   }, [center, sorted]);
+
+  // Reflejo y destello: fuera en equipos lentos (Ajustes; en «Automático» se mide aquí al moverse)
+  const effects = carouselEffectsOn(settings);
+  useCarouselPerf(center, effects && (settings.carousel_effects ?? "auto") === "auto");
 
   // Clic en la caja del centro: como en la cuadrícula y, con «panel», además abre el panel
   const clickCentre = (game: Game) => {
@@ -221,7 +226,9 @@ export function GameCarousel({ games }: { games: Game[] }) {
                   filter: p.light < 1 ? `brightness(${p.light})` : undefined,
                   transition: "transform 0.35s cubic-bezier(0.2, 0.7, 0.3, 1), filter 0.35s",
                   // Reflejo en el suelo, pegado a la base (la caja ocupa el 84 % del alto, centrada)
-                  WebkitBoxReflect: `below ${-boxH * 0.16}px linear-gradient(transparent 72%, rgba(255,255,255,0.22))`,
+                  WebkitBoxReflect: effects
+                    ? `below ${-boxH * 0.16}px linear-gradient(transparent 72%, rgba(255,255,255,0.22))`
+                    : undefined,
                 }}
               >
                 <GameBox3D
@@ -233,7 +240,7 @@ export function GameCarousel({ games }: { games: Game[] }) {
                   rotate={p.angle}
                   bothSpines
                   shadow={false}
-                  glint={d === 0 && glint.index === i ? glint.count : undefined}
+                  glint={effects && d === 0 && glint.index === i ? glint.count : undefined}
                 />
               </div>
             );

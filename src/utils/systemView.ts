@@ -29,6 +29,16 @@ export function boxes3dOn(settings: AppSettings, systemName: string | undefined)
 }
 
 /**
+ * Si el carrusel pinta sus efectos (reflejo en el suelo y destello de la caja del centro):
+ * «Siempre» o «Nunca» mandan; en «Automático», salvo que la medición haya visto el equipo lento
+ */
+export function carouselEffectsOn(settings: AppSettings): boolean {
+  const mode = settings.carousel_effects ?? "auto";
+  if (mode === "auto") return !settings.carousel_effects_slow;
+  return mode === "on";
+}
+
+/**
  * Medio cuya forma se mide para las tarjetas: con cajas 3D (en la cuadrícula o en el carrusel)
  * el frente es siempre la carátula 2D, así que se mide esa; si no, el medio de la cuadrícula
  */

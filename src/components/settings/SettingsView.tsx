@@ -22,6 +22,7 @@ import { getScrapeOrder, getScrapePolicy } from "../../commands";
 import { ScrapeOrderEditor } from "./ScrapeOrderEditor";
 import { MigrationModal } from "../common/MigrationModal";
 import type { AppSettings, Profile } from "../../types";
+import { resetCarouselPerf } from "../../hooks/useCarouselPerf";
 
 type AppSettingsSort = AppSettings["gamelist_sort"];
 
@@ -420,6 +421,32 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.boxes3dHelp")}</span>
                   </span>
                 </label>
+              </section>
+
+              {/* Efectos del carrusel: en «Automático» la app los apaga sola si el equipo va lento */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("settings.carouselEffects")}</h3>
+                <select
+                  value={form.carousel_effects ?? "auto"}
+                  onChange={(e) => {
+                    const mode = e.target.value as "auto" | "on" | "off";
+                    // Volver a «Automático» mide otra vez desde cero
+                    if (mode === "auto") resetCarouselPerf();
+                    setForm({
+                      ...form,
+                      carousel_effects: mode === "auto" ? undefined : mode,
+                      carousel_effects_slow: mode === "auto" ? undefined : form.carousel_effects_slow,
+                    });
+                  }}
+                  className="w-full max-w-xs bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="auto">
+                    {t(form.carousel_effects_slow ? "settings.carouselEffects_autoSlow" : "settings.carouselEffects_auto")}
+                  </option>
+                  <option value="on">{t("settings.carouselEffects_on")}</option>
+                  <option value="off">{t("settings.carouselEffects_off")}</option>
+                </select>
+                <p className="text-xs text-zinc-500 mt-2">{t("settings.carouselEffectsHelp")}</p>
               </section>
 
               {/* What a click on a game does: right panel or the full-screen page */}

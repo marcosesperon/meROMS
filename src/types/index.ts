@@ -163,6 +163,10 @@ export interface AppSettings {
   grid_sort?: "name" | "sortname" | "most_played" | "recent" | "playtime" | "release" | "rating";
   /** Clic en un juego: enseñarlo en el panel derecho ("panel", por defecto) o abrir la ficha a pantalla completa */
   click_action?: "panel" | "full";
+  /** Carousel effects (floor reflection + glint): "auto" (missing) measures the computer, "on" always, "off" never */
+  carousel_effects?: "auto" | "on" | "off";
+  /** "auto" found this computer too slow for them (remembered, so it doesn't measure again) */
+  carousel_effects_slow?: boolean;
   /** Donation prompt: unix seconds of the first launch, then of the last time it was shown */
   donation_prompt_at?: number;
   /** Look for a new version at start and once a day (missing = yes) */
