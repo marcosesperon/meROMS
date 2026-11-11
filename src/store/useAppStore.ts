@@ -88,6 +88,9 @@ interface AppState {
   fullViewOpen: boolean;
   openFullView: () => void;
   closeFullView: () => void;
+  /** Couch mode: the carousel full screen, driven with a gamepad (CouchMode; not saved) */
+  couchMode: boolean;
+  setCouchMode: (on: boolean) => void;
   /** Global search palette (⌘K / Ctrl+K or the magnifier in the sidebar) */
   searchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
@@ -400,6 +403,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   fullViewOpen: false,
   openFullView: () => set({ fullViewOpen: true }),
   closeFullView: () => set({ fullViewOpen: false }),
+  couchMode: false,
+  setCouchMode: (on) => set({ couchMode: on }),
   searchOpen: false,
   setSearchOpen: (open) => set({ searchOpen: open }),
   visibleOrder: [],

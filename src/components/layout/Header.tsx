@@ -4,7 +4,7 @@ import { useTranslation } from "../../i18n";
 import { SearchBar } from "../common/SearchBar";
 import { ViewToggle } from "../common/ViewToggle";
 import { SystemLogo } from "../common/SystemLogo";
-import { FilterIcon, SlidersIcon } from "../common/Icons";
+import { FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
 import { SystemViewModal } from "../common/SystemViewModal";
 import { FilterBar } from "../common/FilterBar";
 import { GRID_SORTS, type GridSort } from "../../utils/playStats";
@@ -93,6 +93,15 @@ export function Header() {
             <SlidersIcon size={18} />
           </button>
           <ViewToggle />
+          {/* Modo sofá: el carrusel a pantalla completa para manejarlo con un mando (también Start) */}
+          <button
+            onClick={() => useAppStore.getState().setCouchMode(true)}
+            data-shot="couch-mode"
+            className="p-2 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
+            title={t("couch.button")}
+          >
+            <GamepadIcon size={18} />
+          </button>
         </div>
       </header>
       {showFilters && <FilterBar />}

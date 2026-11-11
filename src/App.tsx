@@ -38,6 +38,8 @@ import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
 import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
+import { CouchMode } from "./components/couch/CouchMode";
+import { useGamepad } from "./hooks/useGamepad";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
@@ -96,6 +98,10 @@ function App() {
   const [datVersion, setDatVersion] = useState(0);
   const multiSelect = useAppStore((s) => s.multiSelect);
   const viewMode = useAppStore((s) => s.viewMode);
+  // Couch mode: the list and the panels aren't drawn underneath (they'd answer the same keys
+  // and play a second video); the gamepad is read from here (Start enters it from anywhere)
+  const couchMode = useAppStore((s) => s.couchMode) && !!selectedSystem;
+  useGamepad();
   const clickAction = useAppStore((s) => s.settings.click_action);
   const carouselPanelOpen = useAppStore((s) => s.carouselPanelOpen);
   const setCarouselPanelOpen = useAppStore((s) => s.setCarouselPanelOpen);
@@ -285,7 +291,7 @@ function App() {
               </button>
             </div>
           )}
-          <GameListView />
+          {!couchMode && <GameListView />}
           {selectedSystem && (
             <div className="px-6 h-12 shrink-0 border-t border-zinc-800 bg-zinc-900 flex items-center gap-2">
               {newRomsCount > 0 && (
@@ -362,12 +368,15 @@ function App() {
         {/* Multi-select mode: the right panel edits every selected game at once. The carousel
             with "click opens the full view" uses the whole width: no panel there (its collapsed
             state is left as it was) */}
-        {selectedSystem && viewMode !== "carousel" && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
+        {selectedSystem && !couchMode && viewMode !== "carousel" && (multiSelect ? <BulkEditPanel /> : <GameInfoPanel />)}
         {/* Carousel with "show it in the panel": only after a click on the centre box, and its
             button closes it (until the next click) */}
-        {selectedSystem && viewMode === "carousel" && clickAction !== "full" && carouselPanelOpen && (
+        {selectedSystem && !couchMode && viewMode === "carousel" && clickAction !== "full" && carouselPanelOpen && (
           <GameInfoPanel onClose={() => setCarouselPanelOpen(false)} />
         )}
+
+      {/* Couch mode: the carousel full screen for a gamepad (under the full view, which A opens) */}
+      {couchMode && <CouchMode />}
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}
       <GameFullView />

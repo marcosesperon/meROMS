@@ -5,6 +5,7 @@ import { SearchIcon, SettingsIcon } from "../common/Icons";
 import { SEARCH_SHORTCUT } from "../common/GlobalSearch";
 import { Tooltip } from "../common/Tooltip";
 import { TaskProgress } from "../common/TaskProgress";
+import { sidebarSystems } from "../../utils/systems";
 
 export function Sidebar() {
   const systems = useAppStore((s) => s.systems);
@@ -19,12 +20,7 @@ export function Sidebar() {
   const toggleOnlyWithGames = useAppStore((s) => s.toggleOnlySystemsWithGames);
   const { t } = useTranslation();
 
-  // Juegos de un sistema: los de su gamelist o, si no tiene, las ROMs de la carpeta
-  const countOf = (s: (typeof systems)[number]) => (s.has_gamelist ? s.game_count : s.rom_count);
-  // El sistema elegido se queda en la lista aunque se quede sin juegos
-  const visibleSystems = onlyWithGames
-    ? systems.filter((s) => countOf(s) > 0 || s.path === selectedSystem?.path)
-    : systems;
+  const visibleSystems = sidebarSystems(systems, onlyWithGames, selectedSystem?.path);
 
   const isScanning = loading && (scanProgress !== null || systems.length === 0);
 

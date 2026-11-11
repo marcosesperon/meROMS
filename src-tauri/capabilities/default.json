@@ -10,6 +10,8 @@
     "fs:default",
     "updater:default",
     "process:allow-restart",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
     "fs:allow-read",
     {
       "identifier": "fs:scope",

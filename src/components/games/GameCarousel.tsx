@@ -15,6 +15,7 @@ import { getFlag } from "../../utils/flags";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { StarIcon } from "../common/Icons";
 import { LetterRow } from "./LetterRow";
+import { letterOf } from "../../utils/letters";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
 
 /** Cajas que se pintan a cada lado del centro (las demás no existen: va igual con miles) */
@@ -36,7 +37,7 @@ const BOTTOM = 150;
  * del centro es el seleccionado (el panel de la derecha lo enseña). Se mueve con ← →, Inicio/Fin,
  * la rueda o el trackpad, un clic en una caja de los lados o la barra de abajo.
  */
-export function GameCarousel({ games }: { games: Game[] }) {
+export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dentro del modo sofá: la caja del centro abre siempre la ficha */ couch?: boolean }) {
   const { t } = useTranslation();
   const settings = useAppStore((s) => s.settings);
   const selectedSystem = useAppStore((s) => s.selectedSystem);
@@ -105,6 +106,7 @@ export function GameCarousel({ games }: { games: Game[] }) {
 
   // Clic en la caja del centro: como en la cuadrícula y, con «panel», además abre el panel
   const clickCentre = (game: Game) => {
+    if (couch) return openFull(game);
     clickGame(game);
     const { settings, setCarouselPanelOpen } = useAppStore.getState();
     if (settings.click_action !== "full") setCarouselPanelOpen(true);
@@ -114,8 +116,33 @@ export function GameCarousel({ games }: { games: Game[] }) {
   const openWithEnter = (game: Game) => {
     const { selectGame, openFullView, openEditor, settings } = useAppStore.getState();
     selectGame(game);
-    if (settings.click_action === "full") openFullView();
+    if (couch || settings.click_action === "full") openFullView();
     else openEditor();
+  };
+  const openFull = (game: Game) => {
+    useAppStore.getState().selectGame(game);
+    useAppStore.getState().openFullView();
+  };
+
+  // Primer juego de la letra anterior o siguiente (LT/RT del mando, [ ] del teclado); si la lista
+  // no va por nombre las letras irían salteadas: salta de 10 en 10
+  const jumpLetter = (dir: 1 | -1) => {
+    const now = centerRef.current;
+    if (!byName) return go(now + dir * 10);
+    const nameOf = gridSort === "sortname" ? sortnameText : nameText;
+    const letter = (i: number) => letterOf(nameOf(sorted[i]) || "");
+    const here = letter(now);
+    if (dir > 0) {
+      for (let i = now + 1; i <= last; i++) if (letter(i) !== here) return go(i);
+    } else {
+      // Hacia atrás: se salta lo que queda de esta letra y se va al primero de la anterior
+      let i = now - 1;
+      while (i >= 0 && letter(i) === here) i--;
+      if (i < 0) return go(0);
+      const target = letter(i);
+      while (i > 0 && letter(i - 1) === target) i--;
+      go(i);
+    }
   };
 
   // Teclado: ← → Inicio Fin e Intro, salvo escribiendo o con una ventana abierta
@@ -126,6 +153,12 @@ export function GameCarousel({ games }: { games: Game[] }) {
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest("input:not([type='range']), textarea, select, [contenteditable='true']")) return;
       if (document.querySelector(".fixed.inset-0")) return;
+      // Con el modo sofá abierto, solo atiende el carrusel del modo sofá
+      if (useAppStore.getState().couchMode !== couch) return;
+      if (e.key === "[" || e.key === "]") {
+        e.preventDefault();
+        return jumpLetter(e.key === "]" ? 1 : -1);
+      }
       const now = centerRef.current;
       const moves: Record<string, number> = { ArrowLeft: now - 1, ArrowRight: now + 1, Home: 0, End: Number.MAX_SAFE_INTEGER };
       if (e.key in moves) {
@@ -207,7 +240,11 @@ export function GameCarousel({ games }: { games: Game[] }) {
   return (
     // «isolate»: los z-index de las cajas (hasta 100) se quedan dentro del carrusel; sin él se
     // pintaban por encima de las ventanas (z-50), como el editor
-    <div className="flex-1 relative isolate overflow-hidden select-none bg-zinc-950" style={{ background: systemBackdrop(systemName) }}>
+    // En el modo sofá, sin fondo propio: el de la pantalla ya es el del sistema
+    <div
+      className={`flex-1 relative isolate overflow-hidden select-none ${couch ? "" : "bg-zinc-950"}`}
+      style={{ background: couch ? undefined : systemBackdrop(systemName) }}
+    >
       <div ref={stageRef} className="absolute inset-0">
         {size.width > 0 &&
           visible.map((i) => {
