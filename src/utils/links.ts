@@ -5,6 +5,8 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 export const REPOSITORY_URL = "https://github.com/marcosesperon/meROMS";
 export const WEBSITE_URL = "https://marcosesperon.github.io/meROMS/";
 export const DONATION_URL = "https://buymeacoffee.com/marcosesperon";
+/** Where the RetroAchievements web API key is (account settings) */
+export const RA_SETTINGS_URL = "https://retroachievements.org/settings";
 /** El nombre del autor va tal cual: no se traduce */
 export const AUTHOR = "Marcos Esperón";
 

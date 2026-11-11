@@ -183,6 +183,9 @@ export interface AppSettings {
   chdman_path?: string;
   /** DeepL API key, to translate descriptions */
   deepl_apikey?: string;
+  /** RetroAchievements user name and web API key (retroachievements.org -> Settings) */
+  ra_user?: string;
+  ra_apikey?: string;
   /** Order of the games when a gamelist is written (missing = as they are) */
   gamelist_sort?: "name" | "path";
   media_paths?: MediaPathConfig[];

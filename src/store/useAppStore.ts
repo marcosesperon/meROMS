@@ -129,6 +129,10 @@ interface AppState {
   mediaShape: { system: string; field: string; width: number; height: number } | null;
   /** Vuelve a medir esa forma (al cargar un sistema o al cambiar el medio de la cuadrícula) */
   refreshMediaShape: (systemPath: string) => void;
+  /** RetroAchievements marks of the selected system ("Check achievements"), by game path */
+  raMarks: Map<string, commands.RaMark>;
+  /** Reads them again (after "Check achievements") */
+  refreshRaMarks: () => void;
   /** Game statuses of the selected system (only games that have one), by game path */
   statuses: Map<string, commands.GameStatus>;
   /** Change the status of some games (saved by meROMS; "completed" also in the gamelist) */
@@ -174,6 +178,8 @@ interface AppState {
     played?: "played" | "unplayed";
     /** Game status: a play status, "playing", "backlog" or "none" (no status at all) */
     status?: string;
+    /** RetroAchievements: games with achievements (any version) / with a compatible ROM */
+    ra?: "with" | "compatible";
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;
@@ -320,6 +326,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Another system: multi-select starts off and empty
       multiSelect: false,
       selectedPaths: new Set(),
+      raMarks: new Map(),
       statuses: new Map(),
       carouselPanelOpen: false,
     });
@@ -370,6 +377,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         .catch(() => set({ brokenMedia: new Set() }));
       // Forma de las tarjetas de la cuadrícula (puede haber cambiado tras scrapear)
       get().refreshMediaShape(systemPath);
+      // RetroAchievements: lo que dejó «Comprobar logros» en este sistema (insignia y filtro)
+      get().refreshRaMarks();
       // Estados de juego: después de leer la gamelist (lo marcado «completed» en ES-DE se adopta)
       commands
         .getGameStatuses(systemPath)
@@ -467,6 +476,17 @@ export const useAppStore = create<AppState>((set, get) => ({
           ? { ...selectedGame, playcount: updated.playcount, lastplayed: updated.lastplayed, gametime: updated.gametime }
           : selectedGame,
     });
+  },
+  raMarks: new Map(),
+  refreshRaMarks: () => {
+    const systemPath = get().selectedSystem?.path;
+    if (!systemPath) return;
+    commands
+      .raSystemMarks(systemPath)
+      .then((map) => {
+        if (get().selectedSystem?.path === systemPath) set({ raMarks: new Map(Object.entries(map)) });
+      })
+      .catch(() => set({ raMarks: new Map() }));
   },
   randomOpen: false,
   setRandomOpen: (open) => set({ randomOpen: open }),

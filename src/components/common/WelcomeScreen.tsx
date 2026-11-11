@@ -8,6 +8,7 @@ import appIcon from "../../../src-tauri/icons/source/meroms.svg";
 import { LibraryStats } from "../stats/LibraryStats";
 import { HomeHero } from "../stats/HomeHero";
 import { SystemTiles } from "../stats/SystemTiles";
+import { RaProfileCard } from "../stats/RaProfileCard";
 import { libraryStats, type LibraryStats as Stats } from "../../commands";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
@@ -55,6 +56,7 @@ export function WelcomeScreen() {
         <div className="max-w-6xl mx-auto px-6 py-6 space-y-7">
           <HomeHero stats={stats} version={version} />
           <SystemTiles stats={stats?.systems ?? null} />
+          <RaProfileCard />
           {stats ? (
             <LibraryStats stats={stats} paths={paths} fullName={fullName} />
           ) : paths.length > 0 ? (

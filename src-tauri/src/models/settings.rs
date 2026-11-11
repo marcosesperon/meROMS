@@ -90,6 +90,11 @@ pub struct AppSettings {
     pub chdman_path: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
+    // RetroAchievements: user name and web API key (retroachievements.org → Settings)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ra_user: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub ra_apikey: Option<String>,
     // Media path configuration
     pub media_paths: Option<Vec<MediaPathConfig>>,
     // Which game media field to display in grid view (e.g., "image", "thumbnail", "mix")

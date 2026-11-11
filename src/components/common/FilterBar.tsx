@@ -68,7 +68,8 @@ export function FilterBar() {
     filters.hideClones ||
     filters.missingMedia ||
     filters.played ||
-    filters.status;
+    filters.status ||
+    filters.ra;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -167,6 +168,19 @@ export function FilterBar() {
         {STATUS_FLAGS.map((f) => (
           <option key={f.key} value={f.key}>{t(f.label)}</option>
         ))}
+      </select>
+
+      {/* RetroAchievements (tras «Comprobar logros» en Herramientas) */}
+      <select
+        value={filters.ra || ""}
+        onChange={(e) => setFilters({ ra: (e.target.value || undefined) as "with" | "compatible" | undefined })}
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
+        title={t("ra.filterHelp")}
+      >
+        <option value="">{t("ra.filter")}: —</option>
+        <option value="with">{t("ra.filterWith")}</option>
+        <option value="compatible">{t("ra.filterCompatible")}</option>
       </select>
 
       {/* Toggle buttons */}

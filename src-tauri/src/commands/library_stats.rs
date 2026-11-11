@@ -243,7 +243,7 @@ fn cover_of(game: &Game) -> Option<String> {
 /// llegan a `MOSAIC`, otras de la biblioteca al azar (`seed` cambia cada vez)
 fn mosaic(most: &[TopGame], recent: &[TopGame], mut covers: Vec<CoverRef>, seed: u64) -> Vec<CoverRef> {
     let mut out: Vec<CoverRef> = Vec::new();
-    let mut push = |c: CoverRef, out: &mut Vec<CoverRef>| {
+    let push = |c: CoverRef, out: &mut Vec<CoverRef>| {
         if out.len() < MOSAIC && !out.contains(&c) {
             out.push(c);
         }

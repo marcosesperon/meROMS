@@ -46,6 +46,7 @@ import { PlayingBanner } from "./components/play/PlayingBanner";
 import { LaunchProblemModal } from "./components/play/LaunchProblemModal";
 import { SystemViewModal } from "./components/common/SystemViewModal";
 import { RandomGameModal } from "./components/random/RandomGameModal";
+import { RaCheckModal } from "./components/common/RaCheckModal";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
@@ -99,6 +100,7 @@ function App() {
   const [showScrapeAll, setShowScrapeAll] = useState(false);
   const [showDat, setShowDat] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [showRaCheck, setShowRaCheck] = useState(false);
   const setDatMarks = useAppStore((s) => s.setDatMarks);
   // Bumped when the DAT changes, so the marks are reloaded
   const [datVersion, setDatVersion] = useState(0);
@@ -365,6 +367,7 @@ function App() {
                   { label: t("chd.button"), onClick: () => setShowChd(true) },
                   { label: t("dat.button"), onClick: () => setShowDat(true), separatorBefore: true },
                   { label: t("bios.button"), onClick: () => setShowBios(true) },
+                  { label: t("ra.toolsButton"), onClick: () => setShowRaCheck(true) },
                   { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
                   { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
                   { label: t("export.button"), onClick: () => setShowExportModal(true) },
@@ -412,6 +415,7 @@ function App() {
       <PlayingBanner />
       <LaunchProblemModal />
       <RandomGameModal />
+      {showRaCheck && <RaCheckModal onClose={() => setShowRaCheck(false)} />}
       <SystemViewModal open={systemViewOpen} system={selectedSystem} onClose={() => setSystemViewOpen(false)} />
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}

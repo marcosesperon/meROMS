@@ -23,6 +23,7 @@ import { ScrapeOrderEditor } from "./ScrapeOrderEditor";
 import { MigrationModal } from "../common/MigrationModal";
 import type { AppSettings, Profile } from "../../types";
 import { resetCarouselPerf } from "../../hooks/useCarouselPerf";
+import { RetroAchievementsSettings } from "./RetroAchievementsSettings";
 
 type AppSettingsSort = AppSettings["gamelist_sort"];
 
@@ -494,6 +495,9 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </select>
                 <p className="text-xs text-zinc-500 mt-2">{t("settings.gamelistSortHelp")}</p>
               </section>
+
+              {/* RetroAchievements: user and web API key */}
+              <RetroAchievementsSettings form={form} setForm={setForm} />
 
               {/* DeepL key to translate descriptions */}
               <section>

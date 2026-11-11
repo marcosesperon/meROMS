@@ -1048,3 +1048,85 @@ export interface LibraryGame {
 export async function libraryGames(systemPaths: string[]): Promise<LibraryGame[]> {
   return invoke("library_games", { systemPaths });
 }
+
+// RetroAchievements (retroachievements.rs): the user's profile, a game's achievements and progress,
+// and "Check achievements" for a whole system
+
+export interface RaProfile {
+  user: string;
+  user_pic: string;
+  points: number;
+  true_points: number;
+  rank: number | null;
+  total_ranked: number | null;
+  recent_games: { game_id: number; title: string; console: string; icon: string; last_played: string; achievements_total: number }[];
+  recent_achievements: { title: string; description: string; points: number; badge: string; game_title: string; date: string; hardcore: boolean }[];
+}
+
+export interface RaAchievement {
+  id: number;
+  title: string;
+  description: string;
+  points: number;
+  badge: string;
+  badge_locked: string;
+  earned: string | null;
+  earned_hardcore: string | null;
+  order: number;
+}
+
+export interface RaGameReport {
+  /** RetroAchievements has this console */
+  known_console: boolean;
+  /** Its hash can be computed (not a disc system yet) */
+  hashable: boolean;
+  hash: string | null;
+  /** "hash" = compatible ROM; "name" = the game has achievements, another version; "none" */
+  matched: "hash" | "name" | "none";
+  game: {
+    id: number;
+    title: string;
+    icon: string;
+    points: number;
+    num_achievements: number;
+    awarded: number;
+    awarded_hardcore: number;
+    achievements: RaAchievement[];
+  } | null;
+}
+
+/** A game's mark after "Check achievements" (badge and filter) */
+export interface RaMark {
+  status: "compatible" | "other" | "none" | "unsupported";
+  ra_id: number | null;
+  achievements: number;
+  awarded: number;
+}
+
+export interface RaCheckSummary {
+  total: number;
+  compatible: number;
+  other: number;
+  none: number;
+  unsupported: number;
+}
+
+export async function raCheckAccount(): Promise<RaProfile> {
+  return invoke("ra_check_account");
+}
+
+export async function raProfile(): Promise<RaProfile> {
+  return invoke("ra_profile");
+}
+
+export async function raGame(systemPath: string, gamePath: string): Promise<RaGameReport> {
+  return invoke("ra_game", { systemPath, gamePath });
+}
+
+export async function raCheckSystem(systemPath: string, task?: string): Promise<RaCheckSummary> {
+  return invoke("ra_check_system", { systemPath, task });
+}
+
+export async function raSystemMarks(systemPath: string): Promise<Record<string, RaMark>> {
+  return invoke("ra_system_marks", { systemPath });
+}

@@ -13,6 +13,7 @@ pub mod gamelist;
 pub mod launch;
 pub mod library_stats;
 pub mod rename;
+pub mod retroachievements;
 pub mod rules;
 pub mod images;
 pub mod media_check;

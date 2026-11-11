@@ -5,6 +5,7 @@ mod media;
 mod models;
 mod parser;
 mod rename_rules;
+mod retroachievements;
 mod rom_hash;
 
 use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, transfer_profile, translate, undo};
@@ -139,6 +140,11 @@ pub fn run() {
             commands::library_stats::library_disk_usage,
             commands::library_stats::library_disk_cached,
             commands::library_stats::library_games,
+            commands::retroachievements::ra_check_account,
+            commands::retroachievements::ra_profile,
+            commands::retroachievements::ra_game,
+            commands::retroachievements::ra_check_system,
+            commands::retroachievements::ra_system_marks,
             game_status::set_game_statuses,
             saves::suggested_saves_dir,
             saves::list_saves,

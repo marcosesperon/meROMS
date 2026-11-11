@@ -4,7 +4,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { resolveImageSrc } from "../../utils/images";
 import { formatRating } from "../../utils/format";
-import { StarIcon } from "../common/Icons";
+import { StarIcon, TrophyIcon } from "../common/Icons";
+import { raBadge } from "../../utils/retroachievements";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
 import { clickGame, doubleClickGame } from "../../utils/gameClick";
@@ -48,6 +49,8 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   // En la caja 3D va siempre la carátula 2D, sea cual sea el medio de la cuadrícula
   const coverSrc = box3d ? resolveImageSrc(game.image, selectedSystem?.path || "") : null;
   const status = useAppStore((s) => s.statuses.get(game.path));
+  // RetroAchievements («Comprobar logros»): trofeo abajo a la derecha
+  const ra = raBadge(useAppStore((s) => s.raMarks.get(game.path)));
   const badge = statusBadge(status);
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
@@ -84,6 +87,17 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
             }`}
           >
             {checked ? "✓" : ""}
+          </div>
+        )}
+        {/* RetroAchievements: dorado = ROM compatible; gris = tiene logros, pero otra versión */}
+        {ra && !multiSelect && (
+          <div
+            data-ra-badge={ra.compatible ? "compatible" : "other"}
+            title={t(ra.compatible ? "ra.badgeCompatible" : "ra.badgeOther")}
+            className="absolute bottom-1.5 right-1.5 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/65 text-[10px] font-semibold"
+          >
+            <TrophyIcon size={11} className={ra.color} />
+            {ra.percent !== null && <span className="text-zinc-100 tabular-nums">{ra.percent}%</span>}
           </div>
         )}
         {/* Clon / BIOS según el DAT del sistema */}

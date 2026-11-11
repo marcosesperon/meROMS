@@ -10,12 +10,14 @@ import { PdfViewer } from "../common/PdfViewer";
 import { GameMediaViewer } from "./GameMediaViewer";
 import { SavesTab } from "./SavesTab";
 import { MetadataTab } from "./MetadataTab";
+import { AchievementsTab } from "./AchievementsTab";
 
-type Tab = "media" | "manual" | "saves" | "meta";
+type Tab = "media" | "manual" | "saves" | "ra" | "meta";
 const TABS: { id: Tab; label: TranslationKeys }[] = [
   { id: "media", label: "tabs.media" },
   { id: "manual", label: "tabs.manual" },
   { id: "saves", label: "tabs.saves" },
+  { id: "ra", label: "tabs.achievements" },
   { id: "meta", label: "tabs.metadata" },
 ];
 
@@ -33,8 +35,8 @@ interface GameTabsProps {
 }
 
 /**
- * Pestañas de la ficha a pantalla completa: medios, manual (visor de PDF), datos guardados y
- * metadatos. La elegida se mantiene al pasar de un juego a otro.
+ * Pestañas de la ficha a pantalla completa: medios, manual (visor de PDF), datos guardados,
+ * logros (RetroAchievements) y metadatos. La elegida se mantiene al pasar de un juego a otro.
  */
 export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fill = false, compact = false }: GameTabsProps) {
   const { t } = useTranslation();
@@ -84,6 +86,7 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
             empty(t("tabs.noManual"))
           ))}
         {tab === "saves" && <SavesTab game={game} systemPath={systemPath} />}
+        {tab === "ra" && <AchievementsTab game={game} systemPath={systemPath} />}
         {tab === "meta" && <MetadataTab game={game} systemPath={systemPath} />}
       </div>
     </div>

@@ -14,7 +14,8 @@ import type { Game } from "../../types";
 import { formatRating, formatReleaseDate } from "../../utils/format";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
-import { StarIcon, StarOutlineIcon, EyeSlashIcon, ChildIcon } from "../common/Icons";
+import { StarIcon, StarOutlineIcon, EyeSlashIcon, ChildIcon, TrophyIcon } from "../common/Icons";
+import { raBadge } from "../../utils/retroachievements";
 import { getFlag } from "../../utils/flags";
 import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
@@ -121,6 +122,7 @@ export function GameTable({ games }: GameTableProps) {
   const selectedPaths = useAppStore((s) => s.selectedPaths);
   const selectedGame = useAppStore((s) => s.selectedGame);
   const statuses = useAppStore((s) => s.statuses);
+  const raMarks = useAppStore((s) => s.raMarks);
   const { t } = useTranslation();
 
   // Todas las columnas posibles; las que se ven (y en qué orden) salen de Ajustes
@@ -268,6 +270,29 @@ export function GameTable({ games }: GameTableProps) {
         size: 150,
         minSize: 80,
       }),
+      // RetroAchievements («Comprobar logros»): trofeo y progreso; se ordena por el progreso
+      columnHelper.accessor(
+        (g) => {
+          const b = raBadge(raMarks.get(g.path));
+          return b ? (b.compatible ? 1000 : 0) + (b.percent ?? 0) : -1;
+        },
+        {
+          id: "ra",
+          header: t("ra.column"),
+          cell: (i) => {
+            const b = raBadge(raMarks.get(i.row.original.path));
+            if (!b) return "";
+            return (
+              <span className="flex items-center gap-1.5" title={t(b.compatible ? "ra.badgeCompatible" : "ra.badgeOther")}>
+                <TrophyIcon size={13} className={b.color} />
+                {b.percent !== null && <span className="tabular-nums">{b.percent}%</span>}
+              </span>
+            );
+          },
+          size: 80,
+          minSize: 60,
+        },
+      ),
       columnHelper.accessor("arcadesystemname", { header: t("table.arcadesystem"), cell: (i) => i.getValue() || "", size: 110, minSize: 70 }),
       columnHelper.accessor("sortname", { header: t("form.sortname"), cell: (i) => i.getValue() || "", size: 180, minSize: 80 }),
       columnHelper.accessor("path", {
@@ -291,7 +316,7 @@ export function GameTable({ games }: GameTableProps) {
         minSize: 50,
       }),
     ],
-    [t, statuses]
+    [t, statuses, raMarks]
   );
 
   // Columnas visibles: miniatura y nombre siempre (congeladas), y el resto en el orden guardado

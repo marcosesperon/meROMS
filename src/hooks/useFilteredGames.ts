@@ -19,6 +19,7 @@ export function useFilteredGames(): Game[] {
   const activeFolderPath = useAppStore((s) => s.activeFolderPath);
   const datMarks = useAppStore((s) => s.datMarks);
   const statuses = useAppStore((s) => s.statuses);
+  const raMarks = useAppStore((s) => s.raMarks);
   const brokenMedia = useAppStore((s) => s.brokenMedia);
 
   return useMemo(() => {
@@ -95,6 +96,15 @@ export function useFilteredGames(): Game[] {
       });
     }
 
+    // RetroAchievements («Comprobar logros»): con logros (cualquier versión) o con ROM compatible
+    if (filters.ra) {
+      const wanted = filters.ra;
+      result = result.filter((g) => {
+        const status = raMarks.get(g.path)?.status;
+        return wanted === "compatible" ? status === "compatible" : status === "compatible" || status === "other";
+      });
+    }
+
     return result;
-  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses, raMarks]);
 }
