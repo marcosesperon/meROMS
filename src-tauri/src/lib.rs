@@ -138,6 +138,7 @@ pub fn run() {
             commands::library_stats::library_stats,
             commands::library_stats::library_disk_usage,
             commands::library_stats::library_disk_cached,
+            commands::library_stats::library_games,
             game_status::set_game_statuses,
             saves::suggested_saves_dir,
             saves::list_saves,

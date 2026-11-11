@@ -102,6 +102,9 @@ interface AppState {
   playGame: (game: Game) => Promise<void>;
   /** The emulator closed: forget the running game and take the new play stats */
   gameExited: (exited: commands.GameExited) => void;
+  /** "Which game?" window (random pick with a roulette; RandomGameModal) */
+  randomOpen: boolean;
+  setRandomOpen: (open: boolean) => void;
   /** The system's view window (sliders button in the header; also «Configure emulator») */
   systemViewOpen: boolean;
   setSystemViewOpen: (open: boolean) => void;
@@ -465,6 +468,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           : selectedGame,
     });
   },
+  randomOpen: false,
+  setRandomOpen: (open) => set({ randomOpen: open }),
   systemViewOpen: false,
   setSystemViewOpen: (open) => set({ systemViewOpen: open }),
   searchOpen: false,

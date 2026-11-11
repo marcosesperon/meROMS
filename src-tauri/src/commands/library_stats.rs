@@ -114,6 +114,52 @@ pub fn library_stats(app: tauri::AppHandle, system_paths: Vec<String>, task: Opt
     Ok(stats)
 }
 
+/// Un juego de la biblioteca para el sorteo de «¿A qué juego?» (solo lo que hace falta)
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LibraryGame {
+    pub system_path: String,
+    pub system_name: String,
+    pub game_path: String,
+    pub name: String,
+    pub cover: Option<String>,
+    /// Año (de la fecha de salida)
+    pub year: Option<String>,
+    pub genre: Option<String>,
+    pub played: bool,
+    pub favorite: bool,
+}
+
+/// Todos los juegos de los sistemas dados, sin los ocultos (para sortear en la pantalla de inicio)
+#[tauri::command(async)]
+pub fn library_games(app: tauri::AppHandle, system_paths: Vec<String>) -> Result<Vec<LibraryGame>, String> {
+    let layout = super::active_layout(&app)?;
+    let mut out = Vec::new();
+    for path in &system_paths {
+        let system = SystemRef::from_rom_dir(path);
+        let games = gamelist::read_gamelist(&layout, &system)?.games;
+        out.extend(games.iter().filter_map(|g| library_game(&system, g)));
+    }
+    Ok(out)
+}
+
+fn library_game(system: &SystemRef, game: &Game) -> Option<LibraryGame> {
+    if game.hidden.as_deref() == Some("true") {
+        return None;
+    }
+    let text = |v: &Option<String>| v.clone().filter(|s| !s.trim().is_empty());
+    Some(LibraryGame {
+        system_path: system.rom_dir.to_string_lossy().to_string(),
+        system_name: system.name.clone(),
+        game_path: game.path.clone(),
+        name: text(&game.name).unwrap_or_else(|| game.path.clone()),
+        cover: cover_of(game),
+        year: game.releasedate.as_deref().filter(|d| d.len() >= 4).map(|d| d[..4].to_string()),
+        genre: text(&game.genre),
+        played: number(&game.playcount) > 0 || game.lastplayed.is_some(),
+        favorite: game.favorite.as_deref() == Some("true"),
+    })
+}
+
 /// Mide el espacio de ROMs y medios de los sistemas dados y lo guarda para el perfil activo
 #[tauri::command(async)]
 pub fn library_disk_usage(app: tauri::AppHandle, system_paths: Vec<String>, task: Option<String>) -> Result<DiskUsage, String> {
@@ -365,6 +411,24 @@ mod tests {
         assert_eq!(most[0].playcount, 11);
         let recent = top_by(&games, |a, b| b.lastplayed.cmp(&a.lastplayed), |g| g.lastplayed.is_some());
         assert_eq!(recent[0].lastplayed.as_deref(), Some("20261112T100000"));
+    }
+
+    #[test]
+    fn juegos_para_sortear() {
+        let system = SystemRef::from_rom_dir("/roms/snes");
+        let mut hidden = game("./h.sfc");
+        hidden.hidden = Some("true".into());
+        assert_eq!(library_game(&system, &hidden), None);
+        let mut g = game("./a.sfc");
+        g.favorite = Some("true".into());
+        g.releasedate = Some("19921121T000000".into());
+        g.genre = Some("Platform".into());
+        g.lastplayed = Some("20261111T100000".into());
+        let entry = library_game(&system, &g).unwrap();
+        assert_eq!((entry.year.as_deref(), entry.genre.as_deref()), (Some("1992"), Some("Platform")));
+        assert!(entry.played && entry.favorite);
+        let fresh = library_game(&system, &game("./b.sfc")).unwrap();
+        assert!(!fresh.played && !fresh.favorite && fresh.year.is_none());
     }
 
     #[test]

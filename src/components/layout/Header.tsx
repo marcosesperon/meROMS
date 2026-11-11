@@ -4,7 +4,7 @@ import { useTranslation } from "../../i18n";
 import { SearchBar } from "../common/SearchBar";
 import { ViewToggle } from "../common/ViewToggle";
 import { SystemLogo } from "../common/SystemLogo";
-import { FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
+import { DiceIcon, FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
 import { FilterBar } from "../common/FilterBar";
 import { GRID_SORTS, type GridSort } from "../../utils/playStats";
 
@@ -67,6 +67,15 @@ export function Header() {
             title="Filters"
           >
             <FilterIcon size={18} />
+          </button>
+          {/* «¿A qué juego?»: uno al azar entre los que se ven (también Cmd/Ctrl+R) */}
+          <button
+            onClick={() => useAppStore.getState().setRandomOpen(true)}
+            data-shot="random"
+            className="p-2 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
+            title={t("random.button")}
+          >
+            <DiceIcon size={18} />
           </button>
           {/* Orden de la cuadrícula y del carrusel (la tabla ordena por sus columnas) */}
           {viewMode !== "table" && (

@@ -45,6 +45,7 @@ import type { GameExited } from "./commands";
 import { PlayingBanner } from "./components/play/PlayingBanner";
 import { LaunchProblemModal } from "./components/play/LaunchProblemModal";
 import { SystemViewModal } from "./components/common/SystemViewModal";
+import { RandomGameModal } from "./components/random/RandomGameModal";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
@@ -258,6 +259,20 @@ function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // "Which game?": Cmd+R / Ctrl+R anywhere (the browser's reload is cancelled), unless another
+  // window is open on top (the full view doesn't count)
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key.toLowerCase() !== "r" || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey) return;
+      e.preventDefault();
+      const { randomOpen, setRandomOpen, systems } = useAppStore.getState();
+      if (randomOpen || systems.length === 0 || document.querySelector(".fixed.inset-0:not([data-full-view])")) return;
+      setRandomOpen(true);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   // Development only: screenshots for the website (MEROMS_SHOTS=1 pnpm tauri dev, src/dev/shots.ts)
   useEffect(() => {
     if (settingsLoaded) startShots();
@@ -396,6 +411,7 @@ function App() {
       {/* Play: "Playing X..." while an emulator is open, and what's missing when it can't start */}
       <PlayingBanner />
       <LaunchProblemModal />
+      <RandomGameModal />
       <SystemViewModal open={systemViewOpen} system={selectedSystem} onClose={() => setSystemViewOpen(false)} />
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}

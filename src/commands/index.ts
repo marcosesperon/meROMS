@@ -1031,3 +1031,20 @@ export async function libraryDiskUsage(systemPaths: string[], task?: string): Pr
 export async function libraryDiskCached(): Promise<DiskUsage | null> {
   return invoke("library_disk_cached");
 }
+
+/** A library game for "Which game?" (start screen draw); hidden games are left out */
+export interface LibraryGame {
+  system_path: string;
+  system_name: string;
+  game_path: string;
+  name: string;
+  cover: string | null;
+  year: string | null;
+  genre: string | null;
+  played: boolean;
+  favorite: boolean;
+}
+
+export async function libraryGames(systemPaths: string[]): Promise<LibraryGame[]> {
+  return invoke("library_games", { systemPaths });
+}

@@ -163,6 +163,8 @@ const COUCH_KEYS: Record<string, () => void> = {
   S: () => toggleOnlyFavorites(),
   x: () => playSelected(),
   X: () => playSelected(),
+  r: () => useAppStore.getState().setRandomOpen(true),
+  R: () => useAppStore.getState().setRandomOpen(true),
 };
 
 /** La leyenda de abajo: botón del mando, tecla equivalente y qué hace */
@@ -174,6 +176,7 @@ const LEGEND = [
   { pad: "LT / RT", key: "[ / ]", label: "couch.letter" },
   { pad: "Y", key: "F", label: "couch.favorite" },
   { pad: "Select", key: "S", label: "couch.onlyFavoritesToggle" },
+  { pad: "R3", key: "R", label: "random.short" },
 ] as const;
 const SYSTEMS_LEGEND = [
   { pad: "A", key: "↵", label: "couch.enter" },

@@ -18,6 +18,7 @@ const BUTTON_KEYS: Record<number, string> = {
   6: "[", // LT: letra anterior
   7: "]", // RT: letra siguiente
   8: "s", // Select: todos / solo favoritos
+  11: "r", // stick derecho pulsado (R3): «¿A qué juego?»
   14: "ArrowLeft", // cruceta ←
   15: "ArrowRight", // cruceta →
 };
