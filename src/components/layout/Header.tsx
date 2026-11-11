@@ -35,11 +35,16 @@ export function Header() {
     filters.hideClones;
 
   return (
-    <div>
-      {/* Si no cabe en una línea, los controles bajan a una segunda fila (el nombre no se parte) */}
-      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+    // «@container»: la cabecera mira su propio ancho (con o sin el panel derecho), no el de la ventana
+    <div className="@container">
+      {/* Una sola fila: el nombre se corta con «…» y el buscador encoge; solo si ni así cabe
+          (por debajo de ~800 px) los controles bajan a una segunda fila */}
+      <header className="flex flex-nowrap @max-[800px]:flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+        {/* Ocupa lo que necesita; si no hay sitio, después de encoger el buscador, corta el nombre */}
         <div className="flex items-center gap-4 min-w-0 max-w-full">
-          <SystemLogo name={selectedSystem.name} width={110} maxHeight={34} />
+          <div className="shrink-0">
+            <SystemLogo name={selectedSystem.name} width={110} maxHeight={34} />
+          </div>
           <div className="min-w-0">
             <h2 className="text-lg font-bold tracking-tight text-zinc-100 whitespace-nowrap truncate">
               {selectedSystem.full_name}
@@ -49,7 +54,8 @@ export function Header() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
+        {/* Se queda con el resto: el buscador crece hasta 256 px y es lo primero que encoge */}
+        <div className="flex flex-1 items-center justify-end gap-3 [&>*:not(input)]:shrink-0">
           <SearchBar />
           <button
             onClick={() => setShowFilters((v) => !v)}

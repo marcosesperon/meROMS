@@ -7,12 +7,13 @@ export function SearchBar() {
   const { t } = useTranslation();
 
   return (
+    // Encoge si falta sitio en la cabecera (de 256 px hasta 140 px)
     <input
       type="text"
       placeholder={t("search.placeholder")}
       value={searchQuery}
       onChange={(e) => setSearchQuery(e.target.value)}
-      className="bg-zinc-800 border border-zinc-600 rounded px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 w-64"
+      className="bg-zinc-800 border border-zinc-600 rounded px-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 w-0 flex-1 min-w-[140px] max-w-64"
     />
   );
 }
