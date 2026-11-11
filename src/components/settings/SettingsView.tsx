@@ -421,6 +421,19 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                     <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.boxes3dHelp")}</span>
                   </span>
                 </label>
+                {/* La caja se abre y enseña el vídeo al quedarse quieto en ella (activado si no está) */}
+                <label className="flex items-start gap-2 mt-4 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.box_video !== false}
+                    onChange={(e) => setForm({ ...form, box_video: e.target.checked ? undefined : false })}
+                    className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                  />
+                  <span>
+                    <span className="block text-sm text-zinc-300">{t("settings.boxVideo")}</span>
+                    <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.boxVideoHelp")}</span>
+                  </span>
+                </label>
               </section>
 
               {/* Efectos del carrusel: en «Automático» la app los apaga sola si el equipo va lento */}

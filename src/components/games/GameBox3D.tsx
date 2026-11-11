@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { boxStyleFor, cachedSpineColor, spineColor, SPINE_FALLBACK, textColorOn } from "../../utils/boxStyles";
 import { getSystemInfo, systemGradient } from "../../utils/systemInfo";
 import { logoUrl } from "../common/SystemLogo";
@@ -21,10 +21,22 @@ interface GameBox3DProps {
   shadow?: boolean;
   /** Destello sobre el frente: cada vez que cambia este número, una franja de luz lo cruza */
   glint?: number;
+  /** Vídeo del juego ya resuelto a URL: con `open`, la caja se abre y lo enseña dentro */
+  videoSrc?: string | null;
+  /** Abrir la caja (la tapa gira sobre el lomo) y poner el vídeo; sin vídeo no se abre */
+  open?: boolean;
+  /**
+   * Cuánto se corre la caja abierta, en anchos de caja: 0.5 = abierta centrada en su sitio (lo
+   * normal), 1 = toda hacia la derecha, 0 = toda hacia la izquierda (en los bordes de la cuadrícula)
+   */
+  openShift?: number;
 }
 
 /** Franja de luz del destello: blanca en el centro y desvanecida a los lados */
 const GLINT = "linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.25) 70%, transparent)";
+
+/** Volumen del vídeo de la caja abierta (bajito: sale solo al pararse en un juego) */
+const BOX_VIDEO_VOLUME = 0.3;
 
 /**
  * Una caja de juego en 3D hecha con CSS: el frente con la carátula, el lomo a la izquierda (del
@@ -32,7 +44,20 @@ const GLINT = "linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 30%, r
  * arriba con el logo) y el canto de arriba. La forma del frente es la de la tarjeta; el grosor y
  * el material, los de la caja de verdad del sistema (utils/boxStyles).
  */
-export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate, bothSpines = false, shadow = true, glint }: GameBox3DProps) {
+export function GameBox3D({
+  system,
+  coverSrc,
+  title,
+  aspectRatio,
+  front,
+  rotate,
+  bothSpines = false,
+  shadow = true,
+  glint,
+  videoSrc,
+  open = false,
+  openShift = 0.5,
+}: GameBox3DProps) {
   const style = useMemo(() => boxStyleFor(system), [system]);
   const [failed, setFailed] = useState(false);
   const cover = coverSrc && !failed ? coverSrc : null;
@@ -62,6 +87,11 @@ export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate,
   const logo = logoUrl(system);
   const radius = `${style.radius}% / ${style.radius * ratio}%`;
   const logoFilter = style.darkLogo ? "brightness(0) opacity(0.7)" : undefined;
+
+  // Caja abierta: solo con un vídeo que se pueda cargar (si falla, se vuelve a cerrar)
+  const [videoFailed, setVideoFailed] = useState(false);
+  useEffect(() => setVideoFailed(false), [videoSrc]);
+  const isOpen = open && !!videoSrc && !videoFailed;
 
   const spineFace = (side: "left" | "right") => (
     <div
@@ -105,7 +135,15 @@ export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate,
   );
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center" style={{ perspective: "800px" }}>
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      style={{
+        perspective: "800px",
+        // Abierta mide el doble (la tapa queda a la izquierda): se corre para quedar centrada
+        transform: isOpen ? `translateX(${openShift * 84}%)` : undefined,
+        transition: "transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1)",
+      }}
+    >
       {/* Sombra en el suelo, sin girar */}
       {shadow && <div className="absolute left-[14%] right-[6%] bottom-[4%] h-[5%] rounded-[50%] bg-black/70 blur-md" />}
       {/* Más pequeña que la tarjeta: girada y con el lomo tiene que seguir cabiendo */}
@@ -132,45 +170,111 @@ export function GameBox3D({ system, coverSrc, title, aspectRatio, front, rotate,
           }}
         />
 
-        {/* Frente */}
+        {/* Interior de la caja: lo que queda a la vista a la derecha al abrir la tapa */}
+        {isOpen && (
+          <div
+            className="box3d-face inset-0"
+            style={{ borderRadius: radius, background: "#0b0b0d", transform: "translateZ(-2px)" }}
+          />
+        )}
+
+        {/* Tapa: el frente por fuera y el plástico por dentro; al abrirse gira 180° sobre el lomo
+            (borde izquierdo) hacia ti y queda tumbada a la izquierda */}
         <div
-          className="box3d-face inset-0 overflow-hidden shadow-xl shadow-black/50"
+          className="absolute inset-0"
           style={{
-            borderRadius: radius,
-            background: style.plastic ?? "#1c1c1f",
-            // Canto de plástico alrededor de la carátula; el cartón va a sangre
-            padding: style.plastic && style.family !== "jewel" ? "2.5%" : 0,
+            transformStyle: "preserve-3d",
+            transformOrigin: "left center",
+            transform: isOpen ? "rotateY(-180deg)" : undefined,
+            // Al cerrar, primero se va el vídeo y luego vuelve la tapa
+            transition: `transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) ${isOpen ? "0s" : "0.2s"}`,
           }}
         >
-          {cover ? (
-            <img
-              src={cover}
-              alt={title}
-              loading="lazy"
-              className="w-full h-full object-cover"
-              style={{ borderRadius: style.plastic ? `${style.radius * 0.6}%` : undefined }}
-              onError={() => setFailed(true)}
-            />
-          ) : (
-            <GenericFront system={system} title={title} logo={logo} band={style.band} logoFilter={logoFilter} />
-          )}
-          {/* Bisagra de la caja de CD, a la izquierda del frente */}
-          {style.family === "jewel" && (
-            <div className="absolute inset-y-0 left-0 w-[7%] bg-gradient-to-r from-black/55 via-white/15 to-black/30 border-r border-white/20" />
-          )}
-          {/* Brillo del plástico */}
-          {style.gloss && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{ background: "linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 35%, transparent 55%)" }}
-            />
-          )}
-          {/* Destello (carrusel): con la key cambiada, la animación vuelve a empezar */}
-          {glint !== undefined && glint > 0 && <div key={glint} className="box3d-glint" style={{ background: GLINT }} />}
-          {/* El cartón: un pelín de luz en el borde, como el doblez de la caja */}
-          {!style.plastic && <div className="absolute inset-0 pointer-events-none border border-white/10" style={{ borderRadius: radius }} />}
+          {/* Cara de dentro de la tapa (vuelta del revés: se ve cuando la tapa está abierta) */}
+          <div className="box3d-face inset-0" style={{ borderRadius: radius, background: "#0b0b0d", transform: "rotateY(180deg)" }} />
+
+          {/* Frente */}
+          <div
+            className="box3d-face inset-0 overflow-hidden shadow-xl shadow-black/50"
+            style={{
+              borderRadius: radius,
+              background: style.plastic ?? "#1c1c1f",
+              // Canto de plástico alrededor de la carátula; el cartón va a sangre
+              padding: style.plastic && style.family !== "jewel" ? "2.5%" : 0,
+            }}
+          >
+            {cover ? (
+              <img
+                src={cover}
+                alt={title}
+                loading="lazy"
+                className="w-full h-full object-cover"
+                style={{ borderRadius: style.plastic ? `${style.radius * 0.6}%` : undefined }}
+                onError={() => setFailed(true)}
+              />
+            ) : (
+              <GenericFront system={system} title={title} logo={logo} band={style.band} logoFilter={logoFilter} />
+            )}
+            {/* Bisagra de la caja de CD, a la izquierda del frente */}
+            {style.family === "jewel" && (
+              <div className="absolute inset-y-0 left-0 w-[7%] bg-gradient-to-r from-black/55 via-white/15 to-black/30 border-r border-white/20" />
+            )}
+            {/* Brillo del plástico */}
+            {style.gloss && (
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: "linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.05) 35%, transparent 55%)" }}
+              />
+            )}
+            {/* Destello (carrusel): con la key cambiada, la animación vuelve a empezar */}
+            {glint !== undefined && glint > 0 && <div key={glint} className="box3d-glint" style={{ background: GLINT }} />}
+            {/* El cartón: un pelín de luz en el borde, como el doblez de la caja */}
+            {!style.plastic && <div className="absolute inset-0 pointer-events-none border border-white/10" style={{ borderRadius: radius }} />}
+          </div>
         </div>
+
+        {/* Vídeo: ocupa la caja abierta entera (tapa + interior), un pelín por delante */}
+        {isOpen && videoSrc && <BoxVideo src={videoSrc} onFailed={() => setVideoFailed(true)} />}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Vídeo de la caja abierta: aparece cuando la tapa ya está casi abierta, con sonido bajo. Si el
+ * sistema no deja arrancar un vídeo con sonido sin un clic antes, arranca sin sonido.
+ */
+function BoxVideo({ src, onFailed }: { src: string; onFailed: () => void }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    video.volume = BOX_VIDEO_VOLUME;
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => {});
+    });
+    // Aparece con la tapa casi abierta (gira en 0,6 s)
+    const timer = window.setTimeout(() => setShown(true), 450);
+    return () => window.clearTimeout(timer);
+  }, [src]);
+
+  return (
+    // El hueco va en un div: un <video> con posición absoluta se quedaba a su tamaño original
+    // (arriba a la izquierda) en vez de llenar la caja abierta
+    <div
+      className="absolute top-0 h-full bg-black rounded-[3px] overflow-hidden pointer-events-none"
+      style={{
+        left: "-100%",
+        width: "200%",
+        transform: "translateZ(2px)",
+        opacity: shown ? 1 : 0,
+        transition: "opacity 0.25s",
+      }}
+    >
+      <video ref={ref} src={src} data-box-video loop playsInline onError={onFailed} className="block w-full h-full object-contain" />
     </div>
   );
 }

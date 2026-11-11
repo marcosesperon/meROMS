@@ -147,6 +147,8 @@ const es: Record<TranslationKeys, string> = {
   "settings.carouselEffects_on": "Siempre",
   "settings.carouselEffects_off": "Nunca",
   "settings.carouselEffectsHelp": "El reflejo de las cajas en el suelo y el destello de la caja del centro. Piden una gráfica buena: en Automático, meROMS los apaga solo si en este equipo el carrusel va a tirones, y lo recuerda. Elige otra vez Automático para volver a medir.",
+  "settings.boxVideo": "Abrir la caja y ver el vídeo al pararse en un juego",
+  "settings.boxVideoHelp": "Con cajas 3D (cuadrícula y carrusel): tras 2 segundos quieto en un juego con vídeo, su caja se abre como un estuche de DVD y lo reproduce dentro, con el volumen bajo.",
   "settings.clickAction": "Al pulsar un juego",
   "settings.clickAction_panel": "Mostrarlo en el panel derecho",
   "settings.clickAction_full": "Abrir la ficha a pantalla completa",

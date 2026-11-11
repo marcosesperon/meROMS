@@ -64,6 +64,9 @@ pub struct AppSettings {
     // "auto" found this computer too slow for them (remembered, so it doesn't measure again)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub carousel_effects_slow: Option<bool>,
+    // 3D boxes open and play the game's video after 2 s still on them (None = yes)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub box_video: Option<bool>,
     // Donation prompt: unix seconds of the first launch, then of the last time it was shown
     #[serde(default)]
     pub donation_prompt_at: Option<i64>,

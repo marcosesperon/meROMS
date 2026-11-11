@@ -167,6 +167,8 @@ export interface AppSettings {
   carousel_effects?: "auto" | "on" | "off";
   /** "auto" found this computer too slow for them (remembered, so it doesn't measure again) */
   carousel_effects_slow?: boolean;
+  /** 3D boxes (grid and carousel) open and play the game's video after 2 s still on them (missing = yes) */
+  box_video?: boolean;
   /** Donation prompt: unix seconds of the first launch, then of the last time it was shown */
   donation_prompt_at?: number;
   /** Look for a new version at start and once a day (missing = yes) */

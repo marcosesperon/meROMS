@@ -145,6 +145,8 @@ const en = {
   "settings.carouselEffects_on": "Always",
   "settings.carouselEffects_off": "Never",
   "settings.carouselEffectsHelp": "The reflection of the boxes on the floor and the light sweep on the centre box. They need a good graphics card: in Automatic, meROMS turns them off by itself if the carousel moves jerkily on this computer, and remembers it. Choose Automatic again to measure once more.",
+  "settings.boxVideo": "Open the box and play the video when stopping on a game",
+  "settings.boxVideoHelp": "With 3D boxes (grid and carousel): after 2 seconds still on a game that has a video, its box opens like a DVD case and plays the video inside, at a low volume.",
   "settings.clickAction": "On click on a game",
   "settings.clickAction_panel": "Show it in the right panel",
   "settings.clickAction_full": "Open the full-screen page",

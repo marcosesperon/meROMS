@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
@@ -10,6 +11,7 @@ import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { effectiveGridField } from "../../utils/systemView";
 import { GameBox3D } from "./GameBox3D";
+import { useOpenAfter } from "../../hooks/useOpenAfter";
 
 interface GameCardProps {
   game: Game;
@@ -50,17 +52,28 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
 
+  // Caja 3D: con el ratón quieto encima 2 s, se abre y enseña el vídeo del juego
+  const boxVideo = useAppStore((s) => s.settings.box_video !== false);
+  const videoSrc = box3d && boxVideo && !multiSelect ? resolveImageSrc(game.video, selectedSystem?.path || "") : null;
+  const [hovering, setHovering] = useState(false);
+  const open = useOpenAfter(hovering && !!videoSrc);
+  const { slotRef, shift } = useOpenShift(open);
+
   return (
     <div
       data-game-path={game.path}
       // Clic: marcar (selección múltiple) o enseñar el juego; doble clic: el editor (utils/gameClick)
       onClick={() => clickGame(game)}
       onDoubleClick={() => doubleClickGame(game)}
-      className={`group rounded-lg p-2 cursor-pointer scroll-mt-5 transition-colors ${
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      // Abierta, la caja pasa por encima de las tarjetas de al lado
+      className={`group relative ${open ? "z-20" : ""} rounded-lg p-2 cursor-pointer scroll-mt-5 transition-colors ${
         selected ? "bg-zinc-800 ring-2 ring-indigo-500" : "hover:bg-zinc-800/70"
       } ${romMissing ? "opacity-50" : ""}`}
     >
       <div
+        ref={slotRef}
         className={`relative rounded-md flex items-center justify-center ${box3d ? "" : "bg-zinc-800 overflow-hidden shadow-lg shadow-black/40"}`}
         style={{ aspectRatio }}
       >
@@ -98,6 +111,9 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
             title={game.name || game.path}
             aspectRatio={aspectRatio}
             front={selected}
+            videoSrc={videoSrc}
+            open={open}
+            openShift={shift}
           />
         ) : imageSrc ? (
           <img
@@ -139,4 +155,28 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
       </div>
     </div>
   );
+}
+
+/**
+ * Hacia dónde se abre la caja de una tarjeta: abierta mide el doble, así que normalmente queda
+ * centrada en su sitio (0.5), pero en la primera o la última columna se corre hacia dentro para
+ * no salirse de la cuadrícula. Se mide al abrirse, antes de pintar.
+ */
+function useOpenShift(open: boolean) {
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [shift, setShift] = useState(0.5);
+  useLayoutEffect(() => {
+    const slot = slotRef.current;
+    const area = slot?.closest(".overflow-auto");
+    if (!open || !slot || !area) return;
+    const card = slot.getBoundingClientRect();
+    const bounds = area.getBoundingClientRect();
+    // La caja ocupa el 84 % de la tarjeta y empieza en el 12 % (GameBox3D: centrada y corrida un 8 %)
+    const boxW = card.width * 0.84;
+    const boxLeft = card.left + card.width * 0.12;
+    const roomLeft = boxLeft - bounds.left;
+    const roomRight = bounds.right - (boxLeft + boxW);
+    setShift(Math.min(Math.max(0.5, 1 - roomLeft / boxW), Math.max(0, roomRight / boxW)));
+  }, [open]);
+  return { slotRef, shift };
 }

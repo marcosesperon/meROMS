@@ -6,6 +6,7 @@ import { GameBox3D } from "./GameBox3D";
 import { cardAspectRatio } from "../../utils/cartridgeSizes";
 import { carouselEffectsOn, getSystemView, shapeField } from "../../utils/systemView";
 import { useCarouselPerf } from "../../hooks/useCarouselPerf";
+import { useOpenAfter } from "../../hooks/useOpenAfter";
 import { nameText, sortGames, sortnameText } from "../../utils/playStats";
 import { systemBackdrop } from "../../utils/systemInfo";
 import { resolveImageSrc } from "../../utils/images";
@@ -97,6 +98,11 @@ export function GameCarousel({ games }: { games: Game[] }) {
   const effects = carouselEffectsOn(settings);
   useCarouselPerf(center, effects && (settings.carousel_effects ?? "auto") === "auto");
 
+  // La caja del centro, quieta 2 s, se abre y enseña el vídeo del juego (si tiene y está activado)
+  const centreVideo =
+    settings.box_video !== false && sorted[center] ? resolveImageSrc(sorted[center].video, selectedSystem?.path || "") || null : null;
+  const centreOpen = useOpenAfter(!!centreVideo, center);
+
   // Clic en la caja del centro: como en la cuadrícula y, con «panel», además abre el panel
   const clickCentre = (game: Game) => {
     clickGame(game);
@@ -183,7 +189,8 @@ export function GameCarousel({ games }: { games: Game[] }) {
     if (d === 0) return { x: 0, scale: 1, angle: 0, light: 1 };
     const side = Math.sign(d);
     return {
-      x: side * (firstGap + (Math.abs(d) - 1) * stackStep),
+      // Con la del centro abierta (el doble de ancha), las de los lados se apartan medio ancho
+      x: side * (firstGap + (Math.abs(d) - 1) * stackStep + (centreOpen ? boxW * 0.42 : 0)),
       scale: SIDE_SCALE,
       angle: side < 0 ? SIDE_ANGLE : -SIDE_ANGLE,
       light: Math.max(0.35, 0.85 - 0.05 * Math.abs(d)),
@@ -241,6 +248,8 @@ export function GameCarousel({ games }: { games: Game[] }) {
                   bothSpines
                   shadow={false}
                   glint={effects && d === 0 && glint.index === i ? glint.count : undefined}
+                  videoSrc={d === 0 ? centreVideo : null}
+                  open={d === 0 && centreOpen}
                 />
               </div>
             );
