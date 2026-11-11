@@ -205,6 +205,11 @@ pub fn forget(rom_dir: &Path, game_paths: &[String]) {
     });
 }
 
+/// Estados de una lista de juegos de un sistema (para las estadísticas de la biblioteca)
+pub fn statuses_of(rom_dir: &Path, games: &[Game]) -> Result<HashMap<String, GameStatus>, String> {
+    with_store(|store| statuses_for(store, rom_dir, games))
+}
+
 // ---------- Comandos ----------
 
 /// Estados de los juegos de un sistema (solo los que tienen alguno), por ruta de juego

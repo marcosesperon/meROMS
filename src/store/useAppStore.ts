@@ -65,6 +65,8 @@ interface AppState {
   selectedSystem: SystemInfo | null;
   loadSystems: () => Promise<void>;
   selectSystem: (system: SystemInfo) => void;
+  /** Back to the start screen (no system chosen; the profile's last system is kept) */
+  goHome: () => void;
 
   // Games
   games: Game[];
@@ -281,6 +283,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ loading: false, scanProgress: null });
     }
   },
+  goHome: () =>
+    set({
+      selectedSystem: null,
+      selectedGame: null,
+      games: [],
+      folders: [],
+      searchQuery: "",
+      filters: {},
+      multiSelect: false,
+      selectedPaths: new Set(),
+      fullViewOpen: false,
+      editorOpen: false,
+    }),
   selectSystem: (system: SystemInfo) => {
     // Remember it for this profile (reopened next time)
     const { settings, patchSettings } = get();

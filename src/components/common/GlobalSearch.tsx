@@ -5,6 +5,7 @@ import { searchGames, type SearchHit } from "../../commands";
 import { resolveImageSrc } from "../../utils/images";
 import { SearchIcon } from "./Icons";
 import { SystemLogo } from "./SystemLogo";
+import { goToGame } from "../../utils/goToGame";
 
 /** El atajo tal como se escribe en cada sistema */
 export const SEARCH_SHORTCUT = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘K" : "Ctrl+K";
@@ -81,35 +82,9 @@ function SearchPalette() {
     listRef.current?.querySelector(`[data-hit="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [active]);
 
-  async function choose(hit: SearchHit) {
+  function choose(hit: SearchHit) {
     setSearchOpen(false);
-    const store = useAppStore.getState();
-    const system = store.systems.find((s) => s.path === hit.system_path);
-    if (!system) return;
-    store.closeFullView();
-    store.closeEditor();
-    if (store.multiSelect) store.setMultiSelect(false);
-    if (store.selectedSystem?.path !== system.path) {
-      store.selectSystem(system);
-      // Esperar a que estén sus juegos (como mucho unos segundos)
-      const end = Date.now() + 8000;
-      while (Date.now() < end) {
-        const s = useAppStore.getState();
-        if (s.games.length > 0 && !s.loading && s.selectedSystem?.path === system.path) break;
-        await new Promise((r) => setTimeout(r, 80));
-      }
-    }
-    // El juego puede estar oculto por la búsqueda o los filtros de ese sistema: se quitan
-    const s = useAppStore.getState();
-    s.setSearchQuery("");
-    s.clearFilters();
-    const game = s.games.find((g) => g.path === hit.game_path);
-    if (!game) return;
-    s.selectGame(game);
-    setTimeout(() => {
-      document.querySelector(`[data-game-path="${CSS.escape(game.path)}"]`)?.scrollIntoView({ block: "center" });
-    }, 150);
-    if (s.settings.click_action === "full") s.openFullView();
+    goToGame(hit.system_path, hit.game_path);
   }
 
   function onKeyDown(e: React.KeyboardEvent) {

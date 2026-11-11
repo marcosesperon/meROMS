@@ -972,3 +972,62 @@ export async function stopGame(): Promise<void> {
 export async function appExecutable(path: string): Promise<string> {
   return invoke("app_executable", { path });
 }
+
+// Library statistics (library_stats.rs): the start screen's panel
+
+export interface SystemStats {
+  path: string;
+  name: string;
+  games: number;
+  favorites: number;
+  hidden: number;
+  /** Games whose ROM is gone */
+  missing: number;
+  played: number;
+  playcount: number;
+  /** Seconds played */
+  gametime: number;
+  /** Games per play status (incomplete, finished...) and flag (playing, backlog) */
+  statuses: Record<string, number>;
+  /** Games with each media type (by gamelist field: image, video...) */
+  media: Record<string, number>;
+}
+
+export interface TopGame {
+  system_path: string;
+  system_name: string;
+  game_path: string;
+  name: string;
+  playcount: number;
+  gametime: number;
+  lastplayed: string | null;
+  /** Its cover (gamelist `image`: relative to the system folder or absolute) */
+  cover: string | null;
+}
+
+export interface LibraryStats {
+  systems: SystemStats[];
+  most_played: TopGame[];
+  recent: TopGame[];
+  /** Covers for the start screen's mosaic: most played and recent first, then random ones */
+  mosaic: { system_path: string; image: string }[];
+}
+
+/** Disk space measured for a profile (bytes; measured_at = Unix seconds) */
+export interface DiskUsage {
+  measured_at: number;
+  systems: { path: string; roms: number; media: number }[];
+}
+
+export async function libraryStats(systemPaths: string[], task?: string): Promise<LibraryStats> {
+  return invoke("library_stats", { systemPaths, task });
+}
+
+/** Measures ROM and media space (slow: walks every folder) and saves it for the active profile */
+export async function libraryDiskUsage(systemPaths: string[], task?: string): Promise<DiskUsage> {
+  return invoke("library_disk_usage", { systemPaths, task });
+}
+
+export async function libraryDiskCached(): Promise<DiskUsage | null> {
+  return invoke("library_disk_cached");
+}
