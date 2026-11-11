@@ -10,6 +10,7 @@ pub mod duplicates;
 pub mod export;
 pub mod export_device;
 pub mod gamelist;
+pub mod launch;
 pub mod rename;
 pub mod rules;
 pub mod images;

@@ -904,3 +904,71 @@ export interface TransferResult {
 export async function transferSystem(systemPath: string, targetProfile: string, mode: MigrationMode, task?: string): Promise<TransferResult> {
   return invoke("transfer_system", { systemPath, targetProfile, mode, task });
 }
+
+// Play (launch.rs): launch a game with ES-DE's configuration or the system's own command
+
+/** What's missing to launch: an emulator or a core, and where it was looked for */
+export interface LaunchMissing {
+  kind: "emulator" | "core";
+  name: string;
+  searched: string[];
+}
+
+/** How a game would be launched: the final command, or what's missing */
+export interface LaunchPlan {
+  /** ES-DE emulator label (null with the own command) */
+  label: string | null;
+  custom: boolean;
+  command: string | null;
+  start_dir: string | null;
+  missing: LaunchMissing | null;
+  /** ES-DE doesn't know the system and there's no own command */
+  no_config: boolean;
+}
+
+export interface LaunchOptions {
+  /** ES-DE knows the system (otherwise only the own command) */
+  known: boolean;
+  options: { label: string; available: boolean }[];
+  /** The one chosen in the gamelist (<alternativeEmulator>) */
+  current: string | null;
+}
+
+/** Sent when the emulator closes (`game-exited`) */
+export interface GameExited {
+  system_path: string;
+  game_path: string;
+  seconds: number;
+  /** The play counted (long enough) and was saved */
+  counted: boolean;
+  game: Game | null;
+  error: string | null;
+}
+
+export async function resolveLaunch(systemPath: string, gamePath: string): Promise<LaunchPlan> {
+  return invoke("resolve_launch", { systemPath, gamePath });
+}
+
+export async function launchOptions(systemPath: string): Promise<LaunchOptions> {
+  return invoke("launch_options", { systemPath });
+}
+
+/** ES-DE emulator for the system (null = the default), saved in the gamelist */
+export async function setSystemEmulator(systemPath: string, label: string | null): Promise<void> {
+  return invoke("set_system_emulator", { systemPath, label });
+}
+
+/** Starts the game; `game-exited` comes when the emulator closes */
+export async function launchGame(systemPath: string, gamePath: string): Promise<void> {
+  return invoke("launch_game", { systemPath, gamePath });
+}
+
+/** Closes the running emulator */
+export async function stopGame(): Promise<void> {
+  return invoke("stop_game");
+}
+
+/** A hand-picked emulator: on macOS, the executable inside a .app; otherwise the same path */
+export async function appExecutable(path: string): Promise<string> {
+  return invoke("app_executable", { path });
+}

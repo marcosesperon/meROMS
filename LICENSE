@@ -37,3 +37,12 @@ Attribution-NonCommercial-ShareAlike (CC BY-NC-SA):
 
 Many were recoloured to plain white to match the app. They may be used and
 changed for non-commercial purposes, with credit, under the same license.
+
+ES-DE launch configuration
+
+The files in src-tauri/resources/esde/ (es_systems.xml and es_find_rules.xml for
+each operating system) are copied unchanged from ES-DE (EmulationStation Desktop
+Edition), https://gitlab.com/es-de/emulationstation-de, and are used to launch
+games the same way ES-DE does. ES-DE is released under the MIT License:
+Copyright (c) 2024-2026 Northwestern Software AB, (c) 2020-2024 Leon Styhre,
+(c) 2014 Alec Lofquist. Its full license text is in src-tauri/resources/esde/LICENSE.

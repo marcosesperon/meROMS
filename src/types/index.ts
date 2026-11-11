@@ -207,6 +207,8 @@ export interface SystemView {
   hero?: string;
   /** 3D boxes in the grid: "on" / "off"; missing = the global grid_boxes_3d */
   box3d?: "on" | "off";
+  /** Own command to launch its games (with ES-DE's variables); missing = ES-DE's */
+  launch_command?: string;
 }
 
 export interface SystemConfig {

@@ -1,4 +1,5 @@
 mod commands;
+mod launch;
 mod layout;
 mod media;
 mod models;
@@ -127,6 +128,13 @@ pub fn run() {
             chd::convert_to_chd,
             chd::cancel_chd,
             game_status::get_game_statuses,
+            commands::launch::resolve_launch,
+            commands::launch::launch_options,
+            commands::launch::set_system_emulator,
+            commands::launch::launch_game,
+            commands::launch::stop_game,
+            commands::launch::running_game,
+            commands::launch::app_executable,
             game_status::set_game_statuses,
             saves::suggested_saves_dir,
             saves::list_saves,

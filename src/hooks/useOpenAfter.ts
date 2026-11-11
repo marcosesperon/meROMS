@@ -12,7 +12,8 @@ export const BOX_OPEN_DELAY = 2000;
  */
 export function useOpenAfter(wanted: boolean, key?: unknown): boolean {
   const [open, setOpen] = useState(false);
-  const covered = useAppStore((s) => s.editorOpen || s.fullViewOpen);
+  // Con el editor o la ficha encima, o jugando, la caja no se abre (y si estaba abierta, se cierra)
+  const covered = useAppStore((s) => s.editorOpen || s.fullViewOpen || !!s.runningGame);
   const active = wanted && !covered;
 
   useEffect(() => {

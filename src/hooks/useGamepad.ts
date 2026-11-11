@@ -11,6 +11,7 @@ import { useAppStore } from "../store/useAppStore";
 const BUTTON_KEYS: Record<number, string> = {
   0: "Enter", // A: abrir la ficha
   1: "Escape", // B: volver / salir
+  2: "x", // X: jugar (modo sofá)
   3: "f", // Y: favorito sí/no
   4: "PageUp", // L: sistema anterior
   5: "PageDown", // R: sistema siguiente
@@ -78,7 +79,9 @@ export function useGamepad() {
     }
 
     function act(key: string) {
-      const { couchMode, setCouchMode, closeFullView } = useAppStore.getState();
+      const { couchMode, setCouchMode, closeFullView, runningGame } = useAppStore.getState();
+      // Jugando, el mando es del emulador: meROMS no se mueve por detrás
+      if (runningGame) return;
       if (key === "start") {
         if (couchMode) closeFullView();
         setCouchMode(!couchMode);

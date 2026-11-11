@@ -279,6 +279,15 @@ export function CardIcon({ size = 16, className = "" }: IconProps) {
 
 // Resumen del sistema: actividad, BIOS y biblioteca
 
+/** Jugar: triángulo de «play» relleno */
+export function PlayIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z" />
+    </svg>
+  );
+}
+
 export function GamepadIcon({ size = 16, className = "" }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>

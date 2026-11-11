@@ -66,6 +66,9 @@ pub struct SystemView {
     /// Cajas 3D en la cuadrícula: «on» / «off»; si no, lo de Ajustes > General
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub box3d: Option<String>,
+    /// Comando propio para lanzar sus juegos (con las variables de ES-DE); si no, el de ES-DE
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub launch_command: Option<String>,
 }
 
 /// Clave de un sistema en `system_views` (la misma que usaba la antigua tabla de proporciones)

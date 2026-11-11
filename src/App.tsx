@@ -40,6 +40,11 @@ import { getActiveProfile, isProfileComplete } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
 import { CouchMode } from "./components/couch/CouchMode";
 import { useGamepad } from "./hooks/useGamepad";
+import { listen } from "@tauri-apps/api/event";
+import type { GameExited } from "./commands";
+import { PlayingBanner } from "./components/play/PlayingBanner";
+import { LaunchProblemModal } from "./components/play/LaunchProblemModal";
+import { SystemViewModal } from "./components/common/SystemViewModal";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
@@ -102,6 +107,16 @@ function App() {
   // and play a second video); the gamepad is read from here (Start enters it from anywhere)
   const couchMode = useAppStore((s) => s.couchMode) && !!selectedSystem;
   useGamepad();
+  // Play: the emulator closed (new play stats); the system's view window lives here too, so
+  // «Configure emulator» can open it from the couch mode
+  useEffect(() => {
+    const unlisten = listen<GameExited>("game-exited", (e) => useAppStore.getState().gameExited(e.payload));
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
+  const systemViewOpen = useAppStore((s) => s.systemViewOpen);
+  const setSystemViewOpen = useAppStore((s) => s.setSystemViewOpen);
   const clickAction = useAppStore((s) => s.settings.click_action);
   const carouselPanelOpen = useAppStore((s) => s.carouselPanelOpen);
   const setCarouselPanelOpen = useAppStore((s) => s.setCarouselPanelOpen);
@@ -377,6 +392,11 @@ function App() {
 
       {/* Couch mode: the carousel full screen for a gamepad (under the full view, which A opens) */}
       {couchMode && <CouchMode />}
+
+      {/* Play: "Playing X..." while an emulator is open, and what's missing when it can't start */}
+      <PlayingBanner />
+      <LaunchProblemModal />
+      <SystemViewModal open={systemViewOpen} system={selectedSystem} onClose={() => setSystemViewOpen(false)} />
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}
       <GameFullView />

@@ -91,6 +91,18 @@ interface AppState {
   /** Couch mode: the carousel full screen, driven with a gamepad (CouchMode; not saved) */
   couchMode: boolean;
   setCouchMode: (on: boolean) => void;
+  /** The game being played (an emulator is open; launch.rs) */
+  runningGame: { systemPath: string; gamePath: string; name: string } | null;
+  /** «Play» couldn't find what it needs: the plan says what's missing (LaunchProblemModal) */
+  launchProblem: { game: Game; plan: commands.LaunchPlan } | null;
+  setLaunchProblem: (problem: { game: Game; plan: commands.LaunchPlan } | null) => void;
+  /** Play a game of the selected system (or say what's missing) */
+  playGame: (game: Game) => Promise<void>;
+  /** The emulator closed: forget the running game and take the new play stats */
+  gameExited: (exited: commands.GameExited) => void;
+  /** The system's view window (sliders button in the header; also «Configure emulator») */
+  systemViewOpen: boolean;
+  setSystemViewOpen: (open: boolean) => void;
   /** Global search palette (⌘K / Ctrl+K or the magnifier in the sidebar) */
   searchOpen: boolean;
   setSearchOpen: (open: boolean) => void;
@@ -405,6 +417,41 @@ export const useAppStore = create<AppState>((set, get) => ({
   closeFullView: () => set({ fullViewOpen: false }),
   couchMode: false,
   setCouchMode: (on) => set({ couchMode: on }),
+  runningGame: null,
+  launchProblem: null,
+  setLaunchProblem: (problem) => set({ launchProblem: problem }),
+  playGame: async (game) => {
+    const { selectedSystem, runningGame } = get();
+    if (!selectedSystem || runningGame) return;
+    // Primero, cómo se lanzaría: si falta algo, se dice qué (y no se intenta)
+    const plan = await commands.resolveLaunch(selectedSystem.path, game.path);
+    if (!plan.command) {
+      set({ launchProblem: { game, plan } });
+      return;
+    }
+    try {
+      await commands.launchGame(selectedSystem.path, game.path);
+      set({ runningGame: { systemPath: selectedSystem.path, gamePath: game.path, name: game.name || game.path } });
+    } catch (e) {
+      showMessage(`${translate("play.failed")}\n\n${String(e)}`, "error");
+    }
+  },
+  gameExited: (exited) => {
+    set({ runningGame: null });
+    // Las estadísticas nuevas, si es el sistema que se ve
+    const { selectedSystem, games, selectedGame } = get();
+    const updated = exited.game;
+    if (!updated || selectedSystem?.path !== exited.system_path) return;
+    set({
+      games: games.map((g) => (g.path === updated.path ? { ...g, playcount: updated.playcount, lastplayed: updated.lastplayed, gametime: updated.gametime } : g)),
+      selectedGame:
+        selectedGame?.path === updated.path
+          ? { ...selectedGame, playcount: updated.playcount, lastplayed: updated.lastplayed, gametime: updated.gametime }
+          : selectedGame,
+    });
+  },
+  systemViewOpen: false,
+  setSystemViewOpen: (open) => set({ systemViewOpen: open }),
   searchOpen: false,
   setSearchOpen: (open) => set({ searchOpen: open }),
   visibleOrder: [],

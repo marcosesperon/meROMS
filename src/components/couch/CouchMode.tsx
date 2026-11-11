@@ -161,10 +161,13 @@ const COUCH_KEYS: Record<string, () => void> = {
   F: () => toggleFavorite(),
   s: () => toggleOnlyFavorites(),
   S: () => toggleOnlyFavorites(),
+  x: () => playSelected(),
+  X: () => playSelected(),
 };
 
 /** La leyenda de abajo: botón del mando, tecla equivalente y qué hace */
 const LEGEND = [
+  { pad: "X", key: "X", label: "play.button" },
   { pad: "A", key: "↵", label: "couch.open" },
   { pad: "B", key: "Esc", label: "couch.toSystems" },
   { pad: "L / R", key: "RePág / AvPág", label: "couch.system" },
@@ -192,6 +195,12 @@ function goToSystem(system: SystemInfo) {
   const favorites = !!filters.favorite;
   selectSystem(system);
   if (favorites) setFilters({ favorite: true });
+}
+
+/** Jugar el juego del centro, sin pasar por la ficha */
+function playSelected() {
+  const { selectedGame, playGame } = useAppStore.getState();
+  if (selectedGame) playGame(selectedGame);
 }
 
 function toggleFavorite() {
@@ -246,9 +255,9 @@ function useDemo(games: ReturnType<typeof useFilteredGames>, enabled: boolean): 
     const arm = () => {
       window.clearTimeout(idleTimer);
       idleTimer = window.setTimeout(() => {
-        const { fullViewOpen, selectedGame } = useAppStore.getState();
-        // Solo en la pantalla de juegos y sin la ficha u otra ventana encima
-        if (!enabledRef.current || fullViewOpen || document.querySelector(".fixed.inset-0")) return arm();
+        const { fullViewOpen, selectedGame, runningGame } = useAppStore.getState();
+        // Solo en la pantalla de juegos, sin jugar y sin la ficha u otra ventana encima
+        if (!enabledRef.current || runningGame || fullViewOpen || document.querySelector(".fixed.inset-0")) return arm();
         savedPath.current = selectedGame?.path ?? null;
         setRunning(true);
       }, DEMO_TIMES.idle);

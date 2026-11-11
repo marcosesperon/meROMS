@@ -5,7 +5,6 @@ import { SearchBar } from "../common/SearchBar";
 import { ViewToggle } from "../common/ViewToggle";
 import { SystemLogo } from "../common/SystemLogo";
 import { FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
-import { SystemViewModal } from "../common/SystemViewModal";
 import { FilterBar } from "../common/FilterBar";
 import { GRID_SORTS, type GridSort } from "../../utils/playStats";
 
@@ -18,8 +17,8 @@ export function Header() {
   const patchSettings = useAppStore((s) => s.patchSettings);
   const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
-  // Ajustes de vista de este sistema (cuadrícula y detalle del juego)
-  const [showView, setShowView] = useState(false);
+  // Ajustes de vista de este sistema (la ventana la pinta App: también la abre «Configurar emulador»)
+  const setSystemViewOpen = useAppStore((s) => s.setSystemViewOpen);
 
   if (!selectedSystem) return null;
 
@@ -85,7 +84,7 @@ export function Header() {
             </select>
           )}
           <button
-            onClick={() => setShowView(true)}
+            onClick={() => setSystemViewOpen(true)}
             data-shot="system-view"
             className="p-2 rounded text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-colors"
             title={t("systemView.button")}
@@ -105,7 +104,6 @@ export function Header() {
         </div>
       </header>
       {showFilters && <FilterBar />}
-      <SystemViewModal open={showView} system={selectedSystem} onClose={() => setShowView(false)} />
     </div>
   );
 }

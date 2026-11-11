@@ -6,7 +6,7 @@ import { useGameActions } from "../../hooks/useGameActions";
 import { useGameDetails } from "../../hooks/useGameDetails";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
-import { CloseIcon, PencilIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
+import { CloseIcon, PencilIcon, PlayIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 import { GameTabs } from "./GameTabs";
 
 /**
@@ -32,6 +32,8 @@ function FullView({ game }: { game: Game }) {
   const visibleOrder = useAppStore((s) => s.visibleOrder);
   const selectGame = useAppStore((s) => s.selectGame);
   const openEditor = useAppStore((s) => s.openEditor);
+  const playGame = useAppStore((s) => s.playGame);
+  const playing = useAppStore((s) => !!s.runningGame);
   const closeFullView = useAppStore((s) => s.closeFullView);
   const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
   const isFavorite = game.favorite === "true";
@@ -62,6 +64,11 @@ function FullView({ game }: { game: Game }) {
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
       const { prevPath, nextPath, go } = latest.current;
       if (e.key === "Escape") closeFullView();
+      // En el modo sofá, A (Intro) dentro de la ficha juega
+      else if (e.key === "Enter" && useAppStore.getState().couchMode) {
+        const { selectedGame, playGame } = useAppStore.getState();
+        if (selectedGame) playGame(selectedGame);
+      }
       else if (e.key === "ArrowLeft") go(prevPath);
       else if (e.key === "ArrowRight") go(nextPath);
       else return;
@@ -102,6 +109,14 @@ function FullView({ game }: { game: Game }) {
 
       {/* Acciones (las mismas que el panel derecho) */}
       <div className="mt-5 flex flex-wrap gap-2">
+        <button
+          onClick={() => playGame(game)}
+          disabled={playing}
+          className="flex items-center gap-2 px-6 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-md hover:bg-emerald-500 transition-colors disabled:opacity-50"
+        >
+          <PlayIcon size={14} />
+          {t("play.button")}
+        </button>
         <button
           onClick={openEditor}
           className="flex items-center gap-2 px-5 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"

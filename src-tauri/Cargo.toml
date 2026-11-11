@@ -43,6 +43,10 @@ sevenz-rust2 = { version = "0.24.2", default-features = false }
 crc32fast = "1.5.4"
 sha1 = "0.10"
 
+# Registro de Windows: dónde están algunos emuladores (reglas de ES-DE, launch/find.rs)
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
 [dev-dependencies]
 tempfile = "3.27.0"
 

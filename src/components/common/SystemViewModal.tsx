@@ -4,6 +4,7 @@ import type { TranslationKeys } from "../../i18n/en";
 import { GRID_MEDIA_OPTIONS, type SystemInfo, type SystemView } from "../../types";
 import { getSystemView, setSystemView } from "../../utils/systemView";
 import { getSystemAspectRatio } from "../../utils/cartridgeSizes";
+import { EmulatorSection } from "../play/EmulatorSection";
 
 interface SystemViewModalProps {
   open: boolean;
@@ -27,8 +28,8 @@ const RATIOS = [
 
 /**
  * Ajustes de vista de un sistema en el perfil activo: medio de la cuadrícula, forma de la
- * tarjeta y medios de la portada y del fondo del detalle del juego. Cada cambio se aplica y se
- * guarda al momento; «Automático» es lo de siempre.
+ * tarjeta, medios de la portada y del fondo del detalle del juego, y con qué emulador se juega.
+ * Cada cambio se aplica y se guarda al momento; «Automático» es lo de siempre.
  */
 export function SystemViewModal({ open, system, onClose }: SystemViewModalProps) {
   const { t } = useTranslation();
@@ -70,14 +71,14 @@ export function SystemViewModal({ open, system, onClose }: SystemViewModalProps)
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onMouseDown={onClose}>
       <div
-        className="bg-zinc-800 border border-zinc-600 rounded-lg w-[480px] max-w-[calc(100vw-2rem)] flex flex-col mx-4"
+        className="bg-zinc-800 border border-zinc-600 rounded-lg w-[480px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] flex flex-col mx-4"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("systemView.title", { system: system.full_name })}</h3>
           <p className="text-xs text-zinc-500 mt-1">{t("systemView.help")}</p>
         </div>
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto">
           {row(t("systemView.gridMedia"), t("systemView.gridMediaHelp"), select(view.grid_media, (v) => set({ grid_media: v }), globalGrid, mediaOptions))}
           {row(
             t("systemView.box3d"),
@@ -90,11 +91,15 @@ export function SystemViewModal({ open, system, onClose }: SystemViewModalProps)
           {row(t("systemView.ratio"), t("systemView.ratioHelp"), select(view.aspect_ratio, (v) => set({ aspect_ratio: v }), measured, RATIOS))}
           {row(t("systemView.cover"), t("systemView.coverHelp"), select(view.cover, (v) => set({ cover: v }), t("systemView.coverAuto"), mediaOptions))}
           {row(t("systemView.hero"), t("systemView.heroHelp"), select(view.hero, (v) => set({ hero: v }), t("systemView.heroAuto"), mediaOptions))}
+          {/* Con qué se juega (aparte: no es de la vista y «Restablecer» no lo toca) */}
+          <div className="pt-4 border-t border-zinc-700">
+            <EmulatorSection system={system} />
+          </div>
         </div>
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
           <button
             onClick={() => set({ grid_media: undefined, box3d: undefined, aspect_ratio: undefined, cover: undefined, hero: undefined })}
-            disabled={Object.keys(view).length === 0}
+            disabled={!view.grid_media && !view.box3d && !view.aspect_ratio && !view.cover && !view.hero}
             className="px-4 py-2 text-sm text-zinc-300 rounded border border-zinc-600 hover:bg-zinc-700 disabled:opacity-40"
           >
             {t("systemView.reset")}

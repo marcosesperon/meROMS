@@ -32,6 +32,7 @@ import {
   MonitorIcon,
   PaletteIcon,
   PencilIcon,
+  PlayIcon,
   SpeakerIcon,
   StarIcon,
   StarOutlineIcon,
@@ -84,6 +85,8 @@ export function GameInfoPanel({ onClose }: { onClose?: () => void } = {}) {
 function GameInfo({ game }: { game: Game }) {
   const { t } = useTranslation();
   const openEditor = useAppStore((s) => s.openEditor);
+  const playGame = useAppStore((s) => s.playGame);
+  const playing = useAppStore((s) => !!s.runningGame);
   const openFullView = useAppStore((s) => s.openFullView);
   const toggleGameFlag = useAppStore((s) => s.toggleGameFlag);
   const isFavorite = game.favorite === "true";
@@ -141,14 +144,23 @@ function GameInfo({ game }: { game: Game }) {
         </div>
       </div>
 
-      {/* Acciones */}
+      {/* Acciones: jugar (lo principal) y editar */}
       <div className="px-5 pt-3 flex gap-2">
         <button
+          onClick={() => playGame(game)}
+          disabled={playing}
+          data-shot="play"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-md hover:bg-emerald-500 transition-colors disabled:opacity-50"
+        >
+          <PlayIcon size={14} />
+          {t("play.button")}
+        </button>
+        <button
           onClick={openEditor}
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
+          title={t("info.edit")}
+          className="px-3 py-2 text-sm bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors"
         >
           <PencilIcon size={14} />
-          {t("info.edit")}
         </button>
         <button
           onClick={() => scrape(game)}
