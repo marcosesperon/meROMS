@@ -196,8 +196,20 @@ pub fn run() {
             collections::generate_m3u_playlists,
             collections::generate_collection,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app, _event| {
+            // macOS: pulsar el icono del Dock con la ventana oculta (meROMS se oculta mientras se
+            // juega) la vuelve a enseñar, con la barra «Jugando a…» para cerrar el emulador
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { has_visible_windows: false, .. } = _event {
+                use tauri::Manager;
+                if let Some(window) = _app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        });
 }
 
 /// Absolute path asked through the media protocol. Old-style URLs (media://localhost/Users/...)

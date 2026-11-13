@@ -10,7 +10,7 @@ import { SystemLogo } from "../common/SystemLogo";
 import { StarIcon } from "../common/Icons";
 import type { SystemInfo } from "../../types";
 import { systemBackdrop } from "../../utils/systemInfo";
-import { sidebarSystems } from "../../utils/systems";
+import { goToSystem, openRandom, playSelected, switchSystem, toggleFavorite, toggleOnlyFavorites } from "../../utils/padActions";
 
 /**
  * Tiempos del modo demostración (un objeto y no constantes para que la prueba del modo capturas
@@ -163,8 +163,8 @@ const COUCH_KEYS: Record<string, () => void> = {
   S: () => toggleOnlyFavorites(),
   x: () => playSelected(),
   X: () => playSelected(),
-  r: () => useAppStore.getState().setRandomOpen(true),
-  R: () => useAppStore.getState().setRandomOpen(true),
+  r: openRandom,
+  R: openRandom,
 };
 
 /** La leyenda de abajo: botón del mando, tecla equivalente y qué hace */
@@ -182,39 +182,6 @@ const SYSTEMS_LEGEND = [
   { pad: "A", key: "↵", label: "couch.enter" },
   { pad: "B", key: "Esc", label: "couch.exit" },
 ] as const;
-
-/** Sistema anterior o siguiente de la barra lateral, dando la vuelta (sigue con «solo favoritos») */
-function switchSystem(dir: 1 | -1) {
-  const { systems, onlySystemsWithGames, selectedSystem } = useAppStore.getState();
-  const list = sidebarSystems(systems, onlySystemsWithGames, selectedSystem?.path);
-  if (list.length < 2) return;
-  const index = list.findIndex((s) => s.path === selectedSystem?.path);
-  goToSystem(list[(index + dir + list.length) % list.length]);
-}
-
-/** Ir a otro sistema: cambiarlo borra los filtros, pero «solo favoritos» se mantiene en el modo sofá */
-function goToSystem(system: SystemInfo) {
-  const { selectSystem, filters, setFilters } = useAppStore.getState();
-  const favorites = !!filters.favorite;
-  selectSystem(system);
-  if (favorites) setFilters({ favorite: true });
-}
-
-/** Jugar el juego del centro, sin pasar por la ficha */
-function playSelected() {
-  const { selectedGame, playGame } = useAppStore.getState();
-  if (selectedGame) playGame(selectedGame);
-}
-
-function toggleFavorite() {
-  const { selectedGame, toggleGameFlag } = useAppStore.getState();
-  if (selectedGame) toggleGameFlag(selectedGame.path, "favorite");
-}
-
-function toggleOnlyFavorites() {
-  const { filters, setFilters } = useAppStore.getState();
-  setFilters({ favorite: filters.favorite ? undefined : true });
-}
 
 /** ¿Hay un mando conectado? (para la leyenda) */
 function usePadConnected(): boolean {

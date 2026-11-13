@@ -1,10 +1,13 @@
 import { useEffect } from "react";
 import { useAppStore } from "../store/useAppStore";
+import { openRandom, playSelected, switchSystem, toggleFavorite, toggleOnlyFavorites } from "../utils/padActions";
 
 /*
  * Mando de juego (API Gamepad del navegador, distribución «standard»: la de los mandos de Xbox,
  * PlayStation, 8BitDo… en macOS y Windows). Cada botón se convierte en la tecla equivalente, así
- * el carrusel, la ficha completa y el modo sofá responden igual con mando que con teclado.
+ * el carrusel, la ficha completa y el modo sofá responden igual con mando que con teclado. Fuera
+ * del modo sofá los botones de acción (X, Y, L/R, Select, R3) no se simulan como teclas (RePág o
+ * F significan otra cosa en la lista), sino que hacen su acción directamente (`PAD_ACTIONS`).
  */
 
 /** Botón (índice de la distribución «standard») → tecla que se simula */
@@ -19,10 +22,23 @@ const BUTTON_KEYS: Record<number, string> = {
   7: "]", // RT: letra siguiente
   8: "s", // Select: todos / solo favoritos
   11: "r", // stick derecho pulsado (R3): «¿A qué juego?»
+  12: "ArrowUp", // cruceta ↑
+  13: "ArrowDown", // cruceta ↓
   14: "ArrowLeft", // cruceta ←
   15: "ArrowRight", // cruceta →
 };
 const START = 9;
+/** Las teclas de moverse (se repiten al mantenerlas) */
+const MOVES = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"]);
+/** Fuera del modo sofá: la acción de cada tecla de botón de acción (las demás se simulan) */
+const PAD_ACTIONS: Record<string, () => void> = {
+  x: playSelected,
+  f: toggleFavorite,
+  PageUp: () => switchSystem(-1),
+  PageDown: () => switchSystem(1),
+  s: toggleOnlyFavorites,
+  r: openRandom,
+};
 /** Las direcciones se repiten al mantenerlas: primera espera y luego cada cuánto */
 const REPEAT_DELAY = 400;
 const REPEAT_EVERY = 120;
@@ -39,7 +55,7 @@ export const GAMEPAD_ACTIVITY = "meroms-gamepad-activity";
 
 /**
  * Lee los mandos mientras haya alguno conectado (fotograma a fotograma; sin mando, nada). Start
- * entra o sale del modo sofá; el resto de botones solo dentro del modo sofá.
+ * entra o sale del modo sofá; el resto de botones, dentro y fuera de él.
  */
 export function useGamepad() {
   useEffect(() => {
@@ -62,12 +78,14 @@ export function useGamepad() {
         });
         if ((pad.axes[0] ?? 0) <= -STICK) down.add("ArrowLeft");
         if ((pad.axes[0] ?? 0) >= STICK) down.add("ArrowRight");
+        if ((pad.axes[1] ?? 0) <= -STICK) down.add("ArrowUp");
+        if ((pad.axes[1] ?? 0) >= STICK) down.add("ArrowDown");
       }
       down.delete("");
 
       for (const key of down) {
         const first = !pressed.has(key);
-        const isMove = key === "ArrowLeft" || key === "ArrowRight";
+        const isMove = MOVES.has(key);
         if (first || (isMove && now >= (repeatAt.get(key) ?? Infinity))) {
           repeatAt.set(key, now + (first ? REPEAT_DELAY : REPEAT_EVERY));
           window.dispatchEvent(new Event(GAMEPAD_ACTIVITY));
@@ -86,8 +104,11 @@ export function useGamepad() {
       if (key === "start") {
         if (couchMode) closeFullView();
         setCouchMode(!couchMode);
-      } else if (couchMode) {
+      } else if (couchMode || !(key in PAD_ACTIONS)) {
         pressKey(key);
+      } else if (!document.querySelector(".fixed.inset-0:not([data-full-view])")) {
+        // Fuera del modo sofá, sin ninguna ventana encima (la ficha completa no cuenta)
+        PAD_ACTIONS[key]();
       }
     }
 

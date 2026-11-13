@@ -16,6 +16,7 @@ import { brokenKey } from "../utils/mediaFilter";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
 import { shapeField } from "../utils/systemView";
+import { hideWhilePlaying, showAfterPlaying } from "../utils/playWindow";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
 // once per profile activation and not on every rescan
@@ -461,10 +462,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ runningGame: { systemPath: selectedSystem.path, gamePath: game.path, name: game.name || game.path } });
     } catch (e) {
       showMessage(`${translate("play.failed")}\n\n${String(e)}`, "error");
+      return;
     }
+    // meROMS se aparta para que el emulador quede delante; si el emulador ya se ha cerrado
+    // mientras se ocultaba, vuelve en seguida
+    await hideWhilePlaying();
+    if (!get().runningGame) showAfterPlaying(get().couchMode);
   },
   gameExited: (exited) => {
     set({ runningGame: null });
+    showAfterPlaying(get().couchMode);
     // Las estadísticas nuevas, si es el sistema que se ve
     const { selectedSystem, games, selectedGame } = get();
     const updated = exited.game;
