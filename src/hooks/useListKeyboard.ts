@@ -18,7 +18,7 @@ function elementFor(container: HTMLElement, path: string): HTMLElement | null {
 
 /**
  * Moverse por la cuadrícula o la tabla con el teclado: flechas, Inicio/Fin, RePág/AvPág
- * e Intro (abre el editor). No hace nada mientras se escribe en un campo ni con una
+ * e Intro (abre la ficha completa; también A del mando, que llega como Intro). No hace nada mientras se escribe en un campo ni con una
  * ventana abierta encima.
  */
 export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboardOptions) {
@@ -41,7 +41,7 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
       const { items, getColumns } = latest.current;
       if (!container || items.length === 0) return;
 
-      const { selectedGame, selectGame, openEditor } = useAppStore.getState();
+      const { selectedGame, selectGame, openFullView } = useAppStore.getState();
       const current = selectedGame ? items.findIndex((g) => g.path === selectedGame.path) : -1;
 
       if (e.key === "Enter") {
@@ -49,7 +49,7 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
         if (target?.closest("button, a")) return;
         if (current >= 0) {
           e.preventDefault();
-          openEditor();
+          openFullView();
         }
         return;
       }

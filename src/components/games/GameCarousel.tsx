@@ -112,13 +112,6 @@ export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dent
     if (settings.click_action !== "full") setCarouselPanelOpen(true);
   };
 
-  // Intro, como «Al pulsar un juego»: ficha completa o, con el panel, el editor (como la cuadrícula)
-  const openWithEnter = (game: Game) => {
-    const { selectGame, openFullView, openEditor, settings } = useAppStore.getState();
-    selectGame(game);
-    if (couch || settings.click_action === "full") openFullView();
-    else openEditor();
-  };
   const openFull = (game: Game) => {
     useAppStore.getState().selectGame(game);
     useAppStore.getState().openFullView();
@@ -168,7 +161,7 @@ export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dent
         const game = sorted[now];
         if (!game) return;
         e.preventDefault();
-        openWithEnter(game);
+        openFull(game); // Intro (o A del mando): la ficha completa, como la cuadrícula
       }
     }
     window.addEventListener("keydown", onKeyDown);
