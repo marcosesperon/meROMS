@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>meROMS - ROM manager for EmulationStation and ES-DE</title>
-  <meta name="description" content="Desktop ROM manager for EmulationStation gamelist.xml files: browse, edit, scrape and tidy your retro game library. Classic EmulationStation and ES-DE.">
+  <meta name="description" content="Desktop ROM manager for EmulationStation gamelist.xml files: browse, edit, scrape and tidy your retro game library, then play it with ES-DE's emulators, from the couch with a gamepad. Classic EmulationStation and ES-DE.">
   <meta property="og:title" content="meROMS">
-  <meta property="og:description" content="Desktop ROM manager for EmulationStation and ES-DE gamelists.">
+  <meta property="og:description" content="Desktop ROM manager for EmulationStation and ES-DE gamelists. Tidy your retro library, then play it.">
   <meta property="og:image" content="images/grid.jpg">
   <link rel="icon" type="image/png" href="images/icon.png">
   <style>
@@ -111,6 +111,13 @@
     .tour-item a.shot img { transition: transform .3s; }
     .tour-item a.shot:hover img { transform: scale(1.015); }
 
+    /* Juega: la sección con su propio ambiente (brillo violeta como la portada) */
+    section.play { position: relative; overflow: hidden; }
+    section.play::before {
+      content: ""; position: absolute; inset: 0 -20% auto; height: 700px; z-index: -1;
+      background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 22%, transparent), transparent);
+    }
+
     /* Funciones */
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
     .card { background: var(--card); border: 1px solid var(--card-hi); border-radius: var(--radius); padding: 22px; }
@@ -190,6 +197,7 @@
       <a class="brand" href="#"><img src="images/icon.png" alt="">meROMS</a>
       <nav>
         <a href="#tour"><span lang="en">Tour</span><span lang="es">Recorrido</span></a>
+        <a href="#play"><span lang="en">Play</span><span lang="es">Juega</span></a>
         <a href="#features"><span lang="en">Features</span><span lang="es">Funciones</span></a>
         <a href="#tools"><span lang="en">Tools</span><span lang="es">Herramientas</span></a>
         <a href="#download"><span lang="en">Download</span><span lang="es">Descargar</span></a>
@@ -211,8 +219,8 @@
           <span lang="es">Tu biblioteca retro,<br><em>ordenada y completa</em></span>
         </h1>
         <p class="lead">
-          <span lang="en">meROMS is a desktop manager for EmulationStation <code>gamelist.xml</code> files. Browse your systems, edit game data and media, scrape what's missing and clean up the rest &mdash; for classic EmulationStation and ES-DE.</span>
-          <span lang="es">meROMS es un gestor de escritorio para los <code>gamelist.xml</code> de EmulationStation. Recorre tus sistemas, edita datos y medios de cada juego, descarga lo que falta y limpia lo que sobra &mdash; para EmulationStation clásico y ES-DE.</span>
+          <span lang="en">meROMS is a desktop manager for EmulationStation <code>gamelist.xml</code> files. Browse your systems, edit game data and media, scrape what's missing and clean up the rest &mdash; for classic EmulationStation and ES-DE. Then play: launch your games with ES-DE's emulators, from the couch with a gamepad.</span>
+          <span lang="es">meROMS es un gestor de escritorio para los <code>gamelist.xml</code> de EmulationStation. Recorre tus sistemas, edita datos y medios de cada juego, descarga lo que falta y limpia lo que sobra &mdash; para EmulationStation clásico y ES-DE. Y luego juega: lanza tus juegos con los emuladores de ES-DE, también desde el sofá con mando.</span>
         </p>
         <div class="cta">
           <a class="btn main" href="#download">
@@ -245,6 +253,16 @@
           <span lang="es">Cuadrícula de carátulas o tabla a la izquierda; a la derecha, el juego elegido con arte, capturas, vídeo y datos. Marca favoritos, scrapea o borra sin abrir el editor.</span>
         </p>
         <div class="tour">
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Your library at a glance</span><span lang="es">Tu biblioteca de un vistazo</span></h3>
+              <p>
+                <span lang="en">The start screen is a cover page made from your own covers: games, systems, time played and plays, your systems as tiles with how much of each you've played, your most played and recent games, statuses, collection, media coverage and disk space. The house button at the top of the sidebar takes you back.</span>
+                <span lang="es">La pantalla de inicio es una portada hecha con tus propias carátulas: juegos, sistemas, tiempo jugado y partidas, tus sistemas en tarjetas con cuánto has jugado de cada uno, tus juegos más jugados y recientes, estados, colección, medios y espacio en disco. La casa de arriba de la barra lateral te devuelve a ella.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/home.jpg" data-viewer><img src="images/home.jpg" width="1600" height="1000" loading="lazy" alt="Start screen with library statistics"></a>
+          </div>
           <div class="tour-item">
             <div class="tour-text">
               <h3><span lang="en">A table when you need data</span><span lang="es">Una tabla cuando necesitas datos</span></h3>
@@ -344,6 +362,80 @@
               </p>
             </div>
             <a class="shot" href="images/settings-scraper.jpg" data-viewer><img src="images/settings-scraper.jpg" width="1600" height="1000" loading="lazy" alt="What the scraper updates"></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Juega: carrusel, modo sofá, lanzar juegos, ¿A qué juego? y logros -->
+    <section id="play" class="play">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Play</span><span lang="es">Juega</span></p>
+        <h2><span lang="en">Tidy it, then play it</span><span lang="es">Ordénala y juega</span></h2>
+        <p class="intro">
+          <span lang="en">meROMS isn't only for keeping your library in order: browse it like a shelf of boxes, from the couch with a gamepad, and launch your games with the same emulators as ES-DE.</span>
+          <span lang="es">meROMS no es solo para tener la biblioteca en orden: recórrela como una estantería de cajas, desde el sofá con mando, y lanza tus juegos con los mismos emuladores que ES-DE.</span>
+        </p>
+        <div class="tour">
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">A shelf of 3D boxes</span><span lang="es">Una estantería de cajas 3D</span></h3>
+              <p>
+                <span lang="en">The Carousel view puts your games in a row of 3D boxes over the system's colours, with the cover on the front and the title on the spine. Move with the arrows, the wheel or the trackpad, jump to a letter, and see the same boxes in the grid if you like. Reflection and glint turn themselves off on slower computers.</span>
+                <span lang="es">La vista Carrusel pone tus juegos en una fila de cajas 3D sobre los colores del sistema, con la carátula delante y el título en el lomo. Muévete con las flechas, la rueda o el trackpad, salta a una letra y, si quieres, ve las mismas cajas en la cuadrícula. El reflejo y el destello se apagan solos en equipos con poca gráfica.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/carousel.jpg" data-viewer><img src="images/carousel.jpg" width="1600" height="1000" loading="lazy" alt="Carousel view with 3D game boxes"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">The box opens and the video plays</span><span lang="es">La caja se abre y suena el vídeo</span></h3>
+              <p>
+                <span lang="en">Stay on a box for two seconds and it opens like a DVD case to play the game's video inside, at a low volume. In the carousel and in the grid; it can be turned off in Settings.</span>
+                <span lang="es">Quédate dos segundos en una caja y se abre como un estuche de DVD para poner dentro el vídeo del juego, con el volumen bajo. En el carrusel y en la cuadrícula; se puede apagar en Ajustes.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/boxvideo.jpg" data-viewer><img src="images/boxvideo.jpg" width="1600" height="1000" loading="lazy" alt="An open box playing the game's video"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Couch mode</span><span lang="es">Modo sofá</span></h3>
+              <p>
+                <span lang="en">Press Start and the carousel fills the screen, made for a gamepad: a screen with your systems, L/R to change system, LT/RT to jump letters, favourites, and a demo that shows games with their video when nobody touches anything. The gamepad works in the rest of meROMS too.</span>
+                <span lang="es">Pulsa Start y el carrusel ocupa toda la pantalla, pensado para mando: una pantalla con tus sistemas, L/R para cambiar de sistema, LT/RT para saltar de letra, favoritos y una demostración que enseña juegos con su vídeo cuando nadie toca nada. El mando funciona también en el resto de meROMS.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/couch.jpg" data-viewer><img src="images/couch.jpg" width="1600" height="1004" loading="lazy" alt="Couch mode, full screen for a gamepad"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Play with ES-DE's emulators</span><span lang="es">Juega con los emuladores de ES-DE</span></h3>
+              <p>
+                <span lang="en">meROMS brings ES-DE's launch configuration, so ES-DE doesn't need to be installed (your own <code>custom_systems</code> are used too). Pick the emulator of each system or write your own command; if something is missing, meROMS tells you what. While you play, meROMS steps aside; when the emulator closes it comes back and saves plays, last played and time played.</span>
+                <span lang="es">meROMS trae la configuración de ES-DE para lanzar juegos, así que no hace falta tener ES-DE instalado (también usa tu <code>custom_systems</code>). Elige el emulador de cada sistema o escribe tu propio comando; si falta algo, meROMS te dice qué. Mientras juegas, meROMS se aparta; al cerrar el emulador vuelve y apunta partidas, última vez y tiempo jugado.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/play.jpg" data-viewer><img src="images/play.jpg" width="1600" height="1000" loading="lazy" alt="Choosing the emulator of a system"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Which game?</span><span lang="es">¿A qué juego?</span></h3>
+              <p>
+                <span lang="en">Can't decide? A roulette of covers picks one for you: among the games you see in a system, or the whole library from the start screen, filtered by system, genre, not played yet or favourites. Then play it, open it or spin again.</span>
+                <span lang="es">¿No te decides? Una ruleta de carátulas elige por ti: entre los juegos que ves en un sistema o en toda la biblioteca desde la pantalla de inicio, filtrando por sistema, género, sin jugar o favoritos. Luego juégalo, ábrelo o vuelve a tirar.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/random.jpg" data-viewer><img src="images/random.jpg" width="1600" height="1000" loading="lazy" alt="Which game? roulette"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">RetroAchievements</span><span lang="es">RetroAchievements</span></h3>
+              <p>
+                <span lang="en">With your RetroAchievements account, each game shows its achievements and your progress, and whether your ROM is a version RetroAchievements recognises (cartridge and arcade systems for now). Check a whole system to get a trophy on the games with achievements and filter by them, and see your profile on the start screen.</span>
+                <span lang="es">Con tu cuenta de RetroAchievements, cada juego enseña sus logros y tu progreso, y si tu ROM es una versión que RetroAchievements reconoce (por ahora en sistemas de cartucho y arcade). Comprueba un sistema entero para ver un trofeo en los juegos con logros y filtrar por ellos, y ve tu perfil en la pantalla de inicio.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/achievements.jpg" data-viewer><img src="images/achievements.jpg" width="1600" height="1000" loading="lazy" alt="Achievements tab of a game"></a>
           </div>
         </div>
       </div>
@@ -457,12 +549,42 @@
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M4 12h10M4 18h10"/><path d="M19 4v16M17 7l2-3 2 3M17 17l2 3 2-3"/></svg></div>
             <h3><span lang="en">Find your way</span><span lang="es">Muévete por tu biblioteca</span></h3>
-            <p><span lang="en">Jump to a letter from the bar beside the list, a welcome screen when nothing is picked, each system with its own colours, logo and specs, and grid cards with the shape of your own media (landscape N64 boxes, 4:3 screenshots...).</span><span lang="es">Salta a una letra desde la barra junto a la lista, una pantalla de bienvenida cuando no hay nada elegido, cada sistema con sus colores, su logo y su ficha técnica, y tarjetas en la cuadrícula con la forma de tus medios (cajas de N64 apaisadas, capturas 4:3…).</span></p>
+            <p><span lang="en">Jump to a letter from the bar beside the list, a house button back to the start screen, each system with its own colours, logo and specs, and grid cards with the shape of your own media (landscape N64 boxes, 4:3 screenshots...).</span><span lang="es">Salta a una letra desde la barra junto a la lista, una casa para volver a la pantalla de inicio, cada sistema con sus colores, su logo y su ficha técnica, y tarjetas en la cuadrícula con la forma de tus medios (cajas de N64 apaisadas, capturas 4:3…).</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
             <h3><span lang="en">Each system, your way</span><span lang="es">Cada sistema, a tu manera</span></h3>
             <p><span lang="en">Per system and per profile: what the grid shows (cover, screenshot, marquee...), the shape of its cards, and which image the game details use as cover and as header background. Everything on "Automatic" until you change it.</span><span lang="es">Por sistema y por perfil: qué enseña la cuadrícula (carátula, captura, marquee…), la forma de sus tarjetas y qué imagen usa el detalle del juego como portada y como fondo de la cabecera. Todo en «Automático» hasta que lo cambies.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
+            <h3><span lang="en">3D boxes &amp; carousel</span><span lang="es">Cajas 3D y carrusel</span></h3>
+            <p><span lang="en">Your games as 3D boxes in the grid or in a row, with the right case for each system (cardboard, DVD, jewel case...). Stay on one and it opens to play its video.</span><span lang="es">Tus juegos como cajas 3D en la cuadrícula o en fila, con el estuche de cada sistema (cartón, DVD, CD…). Quédate en una y se abre para poner su vídeo.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4M15.5 11h.01M18 13h.01"/></svg></div>
+            <h3><span lang="en">Couch mode &amp; gamepad</span><span lang="es">Modo sofá y mando</span></h3>
+            <p><span lang="en">Full screen for a gamepad (Xbox, PlayStation, 8BitDo...), with a systems screen and an idle demo. The gamepad also moves you through the grid, the table and every window.</span><span lang="es">Pantalla completa para mando (Xbox, PlayStation, 8BitDo…), con pantalla de sistemas y demostración en reposo. El mando también te mueve por la cuadrícula, la tabla y todas las ventanas.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16l13-8z"/></svg></div>
+            <h3><span lang="en">Play</span><span lang="es">Jugar</span></h3>
+            <p><span lang="en">Launch games with ES-DE's emulators (or your own command), per system. Play count, last played and time played are saved when the emulator closes.</span><span lang="es">Lanza los juegos con los emuladores de ES-DE (o tu propio comando), por sistema. Al cerrar el emulador se apuntan las partidas, la última vez y el tiempo jugado.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+            <h3><span lang="en">Library statistics</span><span lang="es">Estadísticas de la biblioteca</span></h3>
+            <p><span lang="en">Figures, most played and recent games, statuses, collection, media coverage and disk space per system, on the start screen.</span><span lang="es">Cifras, juegos más jugados y recientes, estados, colección, medios y espacio en disco por sistema, en la pantalla de inicio.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h.01M16 8h.01M12 12h.01M8 16h.01M16 16h.01"/></svg></div>
+            <h3><span lang="en">Which game?</span><span lang="es">¿A qué juego?</span></h3>
+            <p><span lang="en">A random pick with a roulette of covers, in a system or across the whole library. From the dice in the header, the start screen or &#8984;/Ctrl+R.</span><span lang="es">Un juego al azar con una ruleta de carátulas, en un sistema o en toda la biblioteca. Desde el dado de la cabecera, la pantalla de inicio o &#8984;/Ctrl+R.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></div>
+            <h3>RetroAchievements</h3>
+            <p><span lang="en">Achievements and your progress for each game, whether your ROM is a compatible version, a trophy and a filter in the list, and your profile on the start screen.</span><span lang="es">Logros y tu progreso en cada juego, si tu ROM es una versión compatible, trofeo y filtro en la lista, y tu perfil en la pantalla de inicio.</span></p>
           </div>
         </div>
       </div>
@@ -534,6 +656,10 @@
           <div class="tool">
             <div><b><span lang="en">BIOS...</span><span lang="es">BIOS...</span></b></div>
             <p><span lang="en">For each system, the BIOS and system files its emulators ask for (RetroArch's list) and whether your BIOS folder has them: OK, missing or a different file. The system summary shows "BIOS: N of M".</span><span lang="es">Para cada sistema, las BIOS y ficheros de sistema que piden sus emuladores (lista de RetroArch) y si están en tu carpeta de BIOS: OK, falta o no coincide. El resumen del sistema enseña «BIOS: N de M».</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Check achievements...</span><span lang="es">Comprobar logros...</span></b></div>
+            <p><span lang="en">With your RetroAchievements account: computes the RetroAchievements hash of every ROM in the system and looks it up, with your progress. It gives the trophy in the list and the achievements filter; running it again only rechecks the ROMs that changed.</span><span lang="es">Con tu cuenta de RetroAchievements: calcula la huella de RetroAchievements de cada ROM del sistema y la busca, con tu progreso. Da el trofeo de la lista y el filtro de logros; volver a pasarlo solo recalcula las ROMs que han cambiado.</span></p>
           </div>
           <div class="tool">
             <div><b><span lang="en">Collections</span><span lang="es">Colecciones</span></b></div>

@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store/useAppStore";
 import type { Game, SystemInfo, ViewMode } from "../types";
+import { setSystemView } from "../utils/systemView";
 
 /*
  * Modo capturas (solo desarrollo): `MEROMS_SHOTS=1 pnpm tauri dev`.
@@ -145,6 +146,100 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
       }
       await click("tab-meta");
       await sleep(2500); // los hashes se calculan al abrir la pestaña
+    },
+  },
+  {
+    // Pantalla de inicio: portada con las cifras de la biblioteca
+    name: "home",
+    run: async () => {
+      useAppStore.getState().closeFullView();
+      useAppStore.getState().goHome();
+      await sleep(4000); // las estadísticas se cargan al abrir
+    },
+  },
+  {
+    name: "carousel",
+    run: async () => {
+      // Sin la caja abierta con el vídeo (esa es la siguiente)
+      useAppStore.getState().patchSettings({ box_video: false });
+      await openSystem("snes", "carousel");
+      pickGame(byPath("./Donkey Kong Country II.zip"));
+      await sleep(1500);
+    },
+  },
+  {
+    // La caja del centro se abre sola con el vídeo tras 2 s quieta
+    name: "boxvideo",
+    run: async () => {
+      useAppStore.getState().patchSettings({ box_video: true });
+      if (useAppStore.getState().selectedGame?.path !== "./Donkey Kong Country II.zip") {
+        await openSystem("snes", "carousel");
+        pickGame(byPath("./Donkey Kong Country II.zip"));
+      }
+      await sleep(5000);
+    },
+  },
+  {
+    // Modo sofá (pone la ventana a pantalla completa: la captura tiene la forma de la pantalla)
+    name: "couch",
+    run: async () => {
+      await openSystem("snes", "carousel");
+      pickGame(byPath("./Super Mario World.sfc"));
+      useAppStore.getState().setCouchMode(true);
+      await sleep(4000);
+    },
+  },
+  {
+    // Vista del sistema con «Emulador para jugar»
+    name: "play",
+    run: async () => {
+      if (useAppStore.getState().couchMode) {
+        useAppStore.getState().setCouchMode(false);
+        await sleep(2500); // sale de pantalla completa
+        await invoke("shots_prepare"); // y la ventana vuelve a su tamaño y al centro
+        await sleep(800);
+      }
+      await openSystem("snes", "grid");
+      pickGame(byPath("./Super Mario World.sfc"));
+      // Un comando propio de ejemplo (los ajustes se restauran después de las capturas)
+      setSystemView("snes", {
+        launch_command: '"/Applications/RetroArch.app/Contents/MacOS/RetroArch" -L "~/Library/Application Support/RetroArch/cores/snes9x_libretro.dylib" %ROM%',
+      });
+      useAppStore.getState().setSystemViewOpen(true);
+      await sleep(800);
+      const body = document.querySelector<HTMLElement>(".fixed.inset-0 .overflow-y-auto");
+      if (body) body.scrollTop = body.scrollHeight;
+    },
+  },
+  {
+    // «¿A qué juego?»: en un sistema la ruleta gira al abrir
+    name: "random",
+    run: async () => {
+      useAppStore.getState().setSystemViewOpen(false);
+      setSystemView("snes", { launch_command: undefined });
+      await openSystem("snes", "grid");
+      useAppStore.getState().setRandomOpen(true);
+      await sleep(6000);
+      // Que salga un juego con carátula (si no, otra tirada)
+      for (let i = 0; i < 6; i++) {
+        const [, gamePath] = document.querySelector<HTMLElement>("[data-random-result]")?.dataset.randomResult?.split("|") ?? [];
+        if (useAppStore.getState().games.find((g) => g.path === gamePath)?.image) break;
+        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+        await sleep(6000);
+      }
+    },
+  },
+  {
+    name: "achievements",
+    run: async () => {
+      useAppStore.getState().setRandomOpen(false);
+      await openSystem("snes", "grid");
+      pickGame(byPath("./Super Mario World.sfc"));
+      useAppStore.getState().openFullView();
+      // La pestaña de la ficha completa (la del panel de detrás tiene el mismo data-shot)
+      await waitFor(() => !!document.querySelector('[data-full-view] [data-shot="tab-ra"]'), 5000);
+      document.querySelector<HTMLElement>('[data-full-view] [data-shot="tab-ra"]')?.click();
+      await sleep(8000); // lista de juegos de RA, huella de la ROM y progreso
     },
   },
   {

@@ -34,11 +34,34 @@ pub fn shots_prepare(window: tauri::WebviewWindow) -> Result<(), String> {
     if !shots_mode() {
         return Err("Not in shots mode".into());
     }
-    window.set_size(tauri::LogicalSize::new(1600.0, 1000.0)).map_err(|e| e.to_string())?;
-    window.center().map_err(|e| e.to_string())?;
+    let (width, height) = shot_size(&window);
+    window.set_size(tauri::LogicalSize::new(width, height)).map_err(|e| e.to_string())?;
+    // Centrada a mano: `center()` justo después de cambiar el tamaño usa a veces el de antes y la
+    // ventana se sale por un lado (y la foto sale cortada)
+    match window.current_monitor() {
+        Ok(Some(monitor)) => {
+            let scale = monitor.scale_factor();
+            let area = monitor.work_area();
+            let (pos, size) = (area.position.to_logical::<f64>(scale), area.size.to_logical::<f64>(scale));
+            let x = pos.x + ((size.width - width) / 2.0).max(0.0);
+            let y = pos.y + ((size.height - height) / 2.0).max(0.0);
+            window.set_position(tauri::LogicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+        }
+        _ => window.center().map_err(|e| e.to_string())?,
+    }
     // Siempre encima: la foto es de la zona de pantalla y otra ventana delante saldría en ella
     window.set_always_on_top(true).map_err(|e| e.to_string())?;
     window.set_focus().map_err(|e| e.to_string())
+}
+
+/// 1600×1000 o, si la pantalla es más pequeña (un portátil), lo más grande con esa forma que quepa
+/// (si no, la foto sale cortada: es de la zona de pantalla). La imagen final se lleva a 1600 de ancho.
+fn shot_size(window: &tauri::WebviewWindow) -> (f64, f64) {
+    const TITLE_BAR: f64 = 40.0;
+    let Ok(Some(monitor)) = window.current_monitor() else { return (1600.0, 1000.0) };
+    let area = monitor.work_area().size.to_logical::<f64>(monitor.scale_factor());
+    let width = 1600.0_f64.min(area.width - 20.0).min((area.height - TITLE_BAR) * 1.6);
+    (width.floor(), (width / 1.6).floor())
 }
 
 /// Carpeta de las imágenes de la web (el proyecto se conoce al compilar: solo desarrollo)
