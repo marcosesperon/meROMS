@@ -1049,6 +1049,23 @@ export async function libraryGames(systemPaths: string[]): Promise<LibraryGame[]
   return invoke("library_games", { systemPaths });
 }
 
+/** "Continue playing": games marked Playing first, then the last played (no hidden or done ones) */
+export interface ContinueGame {
+  system_path: string;
+  system_name: string;
+  game_path: string;
+  name: string;
+  cover: string | null;
+  lastplayed: string | null;
+  playing: boolean;
+  /** Its latest save: date (unix seconds) and the newest state screenshot, if any */
+  last_save: { modified: number; thumbnail: string | null } | null;
+}
+
+export async function continuePlaying(systemPaths: string[]): Promise<ContinueGame[]> {
+  return invoke("continue_playing", { systemPaths });
+}
+
 // RetroAchievements (retroachievements.rs): the user's profile, a game's achievements and progress,
 // and "Check achievements" for a whole system
 

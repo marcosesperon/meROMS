@@ -33,3 +33,11 @@ export async function goToGame(systemPath: string, gamePath: string) {
   }, 150);
   if (s.settings.click_action === "full") s.openFullView();
 }
+
+/** Jugar a un juego de cualquier sistema: va a él (como `goToGame`) y lo lanza, sin la ficha */
+export async function playGameAt(systemPath: string, gamePath: string) {
+  await goToGame(systemPath, gamePath);
+  const { selectedGame, playGame, closeFullView } = useAppStore.getState();
+  closeFullView();
+  if (selectedGame?.path === gamePath) playGame(selectedGame);
+}

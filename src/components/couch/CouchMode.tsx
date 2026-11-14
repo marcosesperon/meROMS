@@ -6,10 +6,13 @@ import { useFilteredGames } from "../../hooks/useFilteredGames";
 import { GAMEPAD_ACTIVITY } from "../../hooks/useGamepad";
 import { GameCarousel } from "../games/GameCarousel";
 import { SystemCarousel } from "./SystemCarousel";
+import { ContinueCarousel } from "./ContinueCarousel";
+import { continuePlaying, type ContinueGame } from "../../commands";
 import { SystemLogo } from "../common/SystemLogo";
 import { StarIcon } from "../common/Icons";
 import type { SystemInfo } from "../../types";
 import { systemBackdrop } from "../../utils/systemInfo";
+import { sidebarSystems } from "../../utils/systems";
 import { goToSystem, openRandom, playSelected, switchSystem, toggleFavorite, toggleOnlyFavorites } from "../../utils/padActions";
 
 /**
@@ -20,7 +23,9 @@ export const DEMO_TIMES = { idle: 2 * 60 * 1000, every: 15 * 1000 };
 
 /**
  * Modo sofá: el carrusel del sistema a pantalla completa, para manejarlo con un mando (o con el
- * teclado). Dos pantallas: los juegos (con la que se entra) y los sistemas. Arriba el logo del
+ * teclado). Tres pantallas: los juegos (con la que se entra desde un sistema), los sistemas (con
+ * la que se entra desde la pantalla de inicio; su primera tarjeta es «Seguir jugando») y «Seguir
+ * jugando» (`ContinueCarousel`). Arriba el logo del
  * sistema, abajo la leyenda de botones. Las teclas (o los botones, que useGamepad convierte en
  * teclas): ← → moverse e Intro abrir (las atiende el carrusel de cada pantalla); en los juegos,
  * RePág/AvPág sistema, [ ] letra (carrusel), F favorito, S solo favoritos; Esc: de los juegos a
@@ -36,9 +41,12 @@ export function CouchMode() {
   const games = useFilteredGames();
   const onlyFavorites = useAppStore((s) => !!s.filters.favorite);
   const padConnected = usePadConnected();
-  // Pantalla: los juegos del sistema o la lista de sistemas (y cuál está ahí en el centro)
-  const [screen, setScreen] = useState<"games" | "systems">("games");
-  const [focused, setFocused] = useState<SystemInfo | null>(null);
+  // Pantalla: los juegos del sistema, la lista de sistemas o «Seguir jugando»; sin sistema
+  // elegido (desde la pantalla de inicio) se empieza en los sistemas
+  const [screen, setScreen] = useState<Screen>(() => (useAppStore.getState().selectedSystem ? "games" : "systems"));
+  // El sistema cuyos colores van de fondo en sistemas y «Seguir jugando» (el del centro)
+  const [focused, setFocused] = useState<string | null>(null);
+  const continueGames = useContinueGames();
   const screenRef = useRef(screen);
   screenRef.current = screen;
   const demo = useDemo(games, screen === "games");
@@ -69,8 +77,8 @@ export function CouchMode() {
       if (document.querySelector(".fixed.inset-0")) return;
       if (e.key === "Escape") {
         e.preventDefault();
-        // Volver: de los juegos a los sistemas; desde los sistemas, fuera del modo sofá
-        if (screenRef.current === "games") setScreen("systems");
+        // Volver: de los juegos o «Seguir jugando» a los sistemas; desde los sistemas, fuera
+        if (screenRef.current !== "systems") setScreen("systems");
         else useAppStore.getState().setCouchMode(false);
         return;
       }
@@ -83,11 +91,13 @@ export function CouchMode() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  if (!selectedSystem) return null;
   const onSystems = screen === "systems";
-  // Elegir un sistema en la lista: sus juegos (sigue con «solo favoritos» si estaba puesto)
-  const pickSystem = (system: SystemInfo) => {
-    if (system.path !== selectedSystem.path) goToSystem(system);
+  const onGames = screen === "games" && !!selectedSystem;
+  // Elegir en la lista de sistemas: sus juegos (sigue con «solo favoritos» si estaba puesto) o,
+  // con la primera tarjeta, «Seguir jugando»
+  const pickSystem = (system: SystemInfo | null) => {
+    if (!system) return setScreen("continue");
+    if (system.path !== selectedSystem?.path) goToSystem(system);
     setScreen("games");
   };
 
@@ -102,18 +112,18 @@ export function CouchMode() {
         bottom: 0,
         left: 0,
         // En la lista de sistemas, los colores del que está en el centro
-        background: systemBackdrop((onSystems ? focused?.name : null) ?? selectedSystem.name),
+        background: systemBackdrop((onGames ? selectedSystem?.name : focused) ?? ""),
         transition: "background 0.4s",
       }}
     >
       {/* Arriba: el logo del sistema (o «Sistemas») y si solo se ven los favoritos */}
       <div className="h-24 shrink-0 flex items-center justify-center gap-4 relative">
-        {onSystems ? (
-          <h1 className="text-2xl font-semibold tracking-wide text-white">{t("couch.systems")}</h1>
-        ) : (
+        {onGames && selectedSystem ? (
           <SystemLogo name={selectedSystem.name} width={220} maxHeight={56} />
+        ) : (
+          <h1 className="text-2xl font-semibold tracking-wide text-white">{t(onSystems ? "couch.systems" : "continue.title")}</h1>
         )}
-        {!onSystems && onlyFavorites && (
+        {onGames && onlyFavorites && (
           <span className="absolute right-8 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 text-sm text-yellow-300">
             <StarIcon size={14} className="text-yellow-400" />
             {t("couch.onlyFavorites")}
@@ -129,7 +139,9 @@ export function CouchMode() {
       {/* El carrusel de siempre, sin su fondo (el del modo sofá ya es el del sistema) */}
       <div className="flex-1 min-h-0 flex">
         {onSystems ? (
-          <SystemCarousel onPick={pickSystem} onFocus={setFocused} />
+          <SystemCarousel onPick={pickSystem} onFocus={(system) => setFocused(system?.name ?? null)} continueCount={continueGames.length} />
+        ) : !onGames ? (
+          <ContinueCarousel games={continueGames} onFocus={setFocused} />
         ) : games.length > 0 ? (
           <GameCarousel games={games} couch />
         ) : (
@@ -139,7 +151,7 @@ export function CouchMode() {
 
       {/* Leyenda: los botones del mando o, sin mando, las teclas */}
       <div className="h-12 shrink-0 flex items-center justify-center gap-6 bg-black/30 text-sm text-zinc-300">
-        {(onSystems ? SYSTEMS_LEGEND : LEGEND).map(({ pad, key, label }) => (
+        {(onSystems ? SYSTEMS_LEGEND : onGames ? LEGEND : CONTINUE_LEGEND).map(({ pad, key, label }) => (
           <span key={label} className="flex items-center gap-2">
             <kbd className="min-w-7 px-1.5 py-0.5 rounded-md bg-white/15 text-center text-xs font-semibold text-white">
               {padConnected ? pad : key}
@@ -150,6 +162,28 @@ export function CouchMode() {
       </div>
     </div>
   );
+}
+
+type Screen = "games" | "systems" | "continue";
+
+/**
+ * Juegos de «Seguir jugando» (los sistemas de la barra lateral con gamelist), leídos al entrar en
+ * el modo sofá y otra vez cada vez que se cierra un emulador (cambian la fecha y el orden)
+ */
+function useContinueGames(): ContinueGame[] {
+  const systems = useAppStore((s) => s.systems);
+  const onlyWithGames = useAppStore((s) => s.onlySystemsWithGames);
+  const running = useAppStore((s) => !!s.runningGame);
+  const [list, setList] = useState<ContinueGame[]>([]);
+  const paths = sidebarSystems(systems, onlyWithGames)
+    .filter((s) => s.has_gamelist)
+    .map((s) => s.path)
+    .join("\n");
+  useEffect(() => {
+    if (running || !paths) return;
+    continuePlaying(paths.split("\n")).then(setList).catch(() => {});
+  }, [paths, running]);
+  return list;
 }
 
 /** Lo que hace cada tecla propia del modo sofá */
@@ -177,6 +211,11 @@ const LEGEND = [
   { pad: "Y", key: "F", label: "couch.favorite" },
   { pad: "Select", key: "S", label: "couch.onlyFavoritesToggle" },
   { pad: "R3", key: "R", label: "random.short" },
+] as const;
+const CONTINUE_LEGEND = [
+  { pad: "X", key: "X", label: "play.button" },
+  { pad: "A", key: "↵", label: "couch.open" },
+  { pad: "B", key: "Esc", label: "couch.toSystems" },
 ] as const;
 const SYSTEMS_LEGEND = [
   { pad: "A", key: "↵", label: "couch.enter" },

@@ -140,6 +140,7 @@ pub fn run() {
             commands::library_stats::library_disk_usage,
             commands::library_stats::library_disk_cached,
             commands::library_stats::library_games,
+            commands::library_stats::continue_playing,
             commands::retroachievements::ra_check_account,
             commands::retroachievements::ra_profile,
             commands::retroachievements::ra_game,

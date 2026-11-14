@@ -9,7 +9,8 @@ import { LibraryStats } from "../stats/LibraryStats";
 import { HomeHero } from "../stats/HomeHero";
 import { SystemTiles } from "../stats/SystemTiles";
 import { RaProfileCard } from "../stats/RaProfileCard";
-import { libraryStats, type LibraryStats as Stats } from "../../commands";
+import { ContinuePlaying } from "../stats/ContinuePlaying";
+import { continuePlaying, libraryStats, type ContinueGame, type LibraryStats as Stats } from "../../commands";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
 
@@ -47,6 +48,12 @@ export function WelcomeScreen() {
     statsTask.run((task) => libraryStats(paths, task)).then((r) => r && setStats(r)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showHome, paths]);
+  // «Seguir jugando» va aparte: es rápido y no espera a las estadísticas
+  const [continueGames, setContinueGames] = useState<ContinueGame[]>([]);
+  useEffect(() => {
+    if (!showHome || paths.length === 0) return;
+    continuePlaying(paths).then(setContinueGames).catch(() => {});
+  }, [showHome, paths]);
   const fullName = (path: string) => systems.find((s) => s.path === path)?.full_name ?? path;
 
   // Hay biblioteca que enseñar: portada (cabecera con mosaico y cifras), sistemas y estadísticas
@@ -55,6 +62,7 @@ export function WelcomeScreen() {
       <div className="flex-1 overflow-y-auto select-none">
         <div className="max-w-6xl mx-auto px-6 py-6 space-y-7">
           <HomeHero stats={stats} version={version} />
+          <ContinuePlaying games={continueGames} />
           <SystemTiles stats={stats?.systems ?? null} />
           <RaProfileCard />
           {stats ? (

@@ -4,7 +4,7 @@ import type { LibraryStats } from "../../commands";
 import { resolveImageSrc } from "../../utils/images";
 import { formatPlayTime } from "../../utils/playStats";
 import { useAppStore } from "../../store/useAppStore";
-import { DiceIcon } from "../common/Icons";
+import { DiceIcon, GamepadIcon } from "../common/Icons";
 // El icono de la app tal cual (el mismo SVG del que salen los iconos)
 import appIcon from "../../../src-tauri/icons/source/meroms.svg";
 
@@ -51,15 +51,18 @@ export function HomeHero({ stats, version }: { stats: LibraryStats | null; versi
             </h1>
             <p className="mt-2 text-sm text-zinc-300/90">{t("home.tagline")}</p>
           </div>
-          {/* «¿A qué juego?» entre toda la biblioteca */}
-          <button
-            onClick={() => useAppStore.getState().setRandomOpen(true)}
-            data-shot="random-home"
-            className="ml-auto self-start flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 transition-colors"
-          >
-            <DiceIcon size={16} />
-            {t("random.button")}
-          </button>
+          <div className="ml-auto self-start flex gap-2">
+            {/* Modo sofá, empezando en la pantalla de sistemas («Seguir jugando» en el centro) */}
+            <button onClick={() => useAppStore.getState().setCouchMode(true)} data-shot="couch-home" className={heroButton}>
+              <GamepadIcon size={16} />
+              {t("couch.short")}
+            </button>
+            {/* «¿A qué juego?» entre toda la biblioteca */}
+            <button onClick={() => useAppStore.getState().setRandomOpen(true)} data-shot="random-home" className={heroButton}>
+              <DiceIcon size={16} />
+              {t("random.button")}
+            </button>
+          </div>
         </div>
 
         {/* Las cifras de la biblioteca, grandes */}
@@ -75,6 +78,9 @@ export function HomeHero({ stats, version }: { stats: LibraryStats | null; versi
     </section>
   );
 }
+
+const heroButton =
+  "flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 border border-white/15 text-sm font-semibold text-white backdrop-blur hover:bg-white/20 transition-colors";
 
 /** Huecos del mosaico (5 filas de 8): con menos carátulas, se repiten en bucle */
 const MOSAIC_SLOTS = 40;

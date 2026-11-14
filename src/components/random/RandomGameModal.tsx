@@ -4,7 +4,7 @@ import { useTranslation } from "../../i18n";
 import { libraryGames, type LibraryGame } from "../../commands";
 import { useFilteredGames } from "../../hooks/useFilteredGames";
 import { resolveImageSrc } from "../../utils/images";
-import { goToGame } from "../../utils/goToGame";
+import { goToGame, playGameAt } from "../../utils/goToGame";
 import { SystemLogo } from "../common/SystemLogo";
 import { DiceIcon, PlayIcon } from "../common/Icons";
 
@@ -130,10 +130,7 @@ function RandomGame() {
   const play = async () => {
     if (!winner) return;
     close();
-    await goToGame(winner.systemPath, winner.gamePath);
-    const { selectedGame, playGame, closeFullView } = useAppStore.getState();
-    closeFullView();
-    if (selectedGame?.path === winner.gamePath) playGame(selectedGame);
+    await playGameAt(winner.systemPath, winner.gamePath);
   };
   const details = async () => {
     if (!winner) return;

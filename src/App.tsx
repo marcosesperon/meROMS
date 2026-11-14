@@ -107,8 +107,9 @@ function App() {
   const multiSelect = useAppStore((s) => s.multiSelect);
   const viewMode = useAppStore((s) => s.viewMode);
   // Couch mode: the list and the panels aren't drawn underneath (they'd answer the same keys
-  // and play a second video); the gamepad is read from here (Start enters it from anywhere)
-  const couchMode = useAppStore((s) => s.couchMode) && !!selectedSystem;
+  // and play a second video); the gamepad is read from here (Start enters it from anywhere, the
+  // start screen too: then it begins on the systems screen, with "Continue playing" first)
+  const couchMode = useAppStore((s) => s.couchMode);
   useGamepad();
   // Play: the emulator closed (new play stats); the system's view window lives here too, so
   // «Configure emulator» can open it from the couch mode

@@ -12,7 +12,7 @@ use tauri::Manager;
 
 use super::cleanup::MEDIA_DIRS;
 use super::progress::Progress;
-use super::{game_status, gamelist, settings};
+use super::{game_status, gamelist, saves, settings};
 use crate::layout::{strip_dot_slash, Layout, SystemRef};
 use crate::media;
 use crate::models::Game;
@@ -21,6 +21,10 @@ use crate::models::Game;
 const TOP: usize = 10;
 /// Carátulas del mosaico de la cabecera de la pantalla de inicio
 const MOSAIC: usize = 24;
+/// Cuántos juegos van en «Seguir jugando»
+const CONTINUE: usize = 12;
+/// Estados que dan un juego por acabado: no salen en «Seguir jugando» (salvo marcados «Jugando»)
+const DONE: &[&str] = &["finished", "completed", "abandoned"];
 
 /// Lo de un sistema
 #[derive(Debug, Clone, Default, Serialize)]
@@ -112,6 +116,74 @@ pub fn library_stats(app: tauri::AppHandle, system_paths: Vec<String>, task: Opt
     let seed = chrono::Utc::now().timestamp_nanos_opt().unwrap_or(1) as u64;
     stats.mosaic = mosaic(&stats.most_played, &stats.recent, covers, seed);
     Ok(stats)
+}
+
+/// Un juego de «Seguir jugando» (pantalla de inicio y modo sofá)
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ContinueGame {
+    pub system_path: String,
+    pub system_name: String,
+    pub game_path: String,
+    pub name: String,
+    pub cover: Option<String>,
+    pub lastplayed: Option<String>,
+    /// Marcado con el estado «Jugando»
+    pub playing: bool,
+    /// Su última partida guardada (fecha y captura del estado), si hay
+    pub last_save: Option<saves::LastSave>,
+}
+
+/// «Seguir jugando»: primero los marcados «Jugando» y luego los últimos jugados, sin los ocultos
+/// ni los acabados (terminados, completados, abandonados); hasta `CONTINUE`, con su última partida
+#[tauri::command(async)]
+pub fn continue_playing(app: tauri::AppHandle, system_paths: Vec<String>) -> Result<Vec<ContinueGame>, String> {
+    let layout = super::active_layout(&app)?;
+    let mut all = Vec::new();
+    for path in &system_paths {
+        let system = SystemRef::from_rom_dir(path);
+        let games = gamelist::read_gamelist(&layout, &system)?.games;
+        let statuses = game_status::statuses_of(&system.rom_dir, &games)?;
+        all.extend(games.iter().filter_map(|g| continue_candidate(&system, g, statuses.get(&g.path))));
+    }
+    let mut list = pick_continue(all);
+    // Las partidas guardadas, solo de los que salen (buscarlas lee carpetas)
+    let saves_dir = settings::get_settings(app.clone()).ok().and_then(|s| s.active_profile().and_then(saves::saves_dir));
+    if let Some(dir) = saves_dir {
+        for game in &mut list {
+            game.last_save = saves::last_save(&dir, &game.system_name, &game.game_path);
+        }
+    }
+    Ok(list)
+}
+
+/// ¿Sale este juego en «Seguir jugando»? (sin mirar todavía el orden ni cuántos)
+fn continue_candidate(system: &SystemRef, game: &Game, status: Option<&game_status::GameStatus>) -> Option<ContinueGame> {
+    if game.hidden.as_deref() == Some("true") {
+        return None;
+    }
+    let playing = status.is_some_and(|s| s.playing);
+    let done = status.and_then(|s| s.status.as_deref()).is_some_and(|s| DONE.contains(&s));
+    let lastplayed = game.lastplayed.clone().filter(|l| !l.is_empty());
+    if !playing && (done || lastplayed.is_none()) {
+        return None;
+    }
+    Some(ContinueGame {
+        system_path: system.rom_dir.to_string_lossy().to_string(),
+        system_name: system.name.clone(),
+        game_path: game.path.clone(),
+        name: game.name.clone().filter(|n| !n.is_empty()).unwrap_or_else(|| game.path.clone()),
+        cover: cover_of(game),
+        lastplayed,
+        playing,
+        last_save: None,
+    })
+}
+
+/// Los «Jugando» primero; dentro de cada grupo, el jugado más recientemente antes
+fn pick_continue(mut all: Vec<ContinueGame>) -> Vec<ContinueGame> {
+    all.sort_by(|a, b| b.playing.cmp(&a.playing).then(b.lastplayed.cmp(&a.lastplayed)));
+    all.truncate(CONTINUE);
+    all
 }
 
 /// Un juego de la biblioteca para el sorteo de «¿A qué juego?» (solo lo que hace falta)
@@ -429,6 +501,38 @@ mod tests {
         assert!(entry.played && entry.favorite);
         let fresh = library_game(&system, &game("./b.sfc")).unwrap();
         assert!(!fresh.played && !fresh.favorite && fresh.year.is_none());
+    }
+
+    #[test]
+    fn seguir_jugando_primero_los_marcados_y_sin_los_acabados() {
+        let system = SystemRef::from_rom_dir("/roms/snes");
+        let status = |status: Option<&str>, playing: bool| game_status::GameStatus { status: status.map(String::from), playing, backlog: false };
+        let played = |path: &str, when: &str| {
+            let mut g = game(path);
+            g.lastplayed = Some(when.into());
+            g
+        };
+        let old = played("./old.sfc", "20261101T100000");
+        let new = played("./new.sfc", "20261110T100000");
+        let finished = played("./finished.sfc", "20261112T100000");
+        let mut hidden = played("./hidden.sfc", "20261112T100000");
+        hidden.hidden = Some("true".into());
+        let never = game("./never.sfc");
+        // Marcado «Jugando» sin haberlo lanzado desde meROMS: sale igual, y el primero
+        let marked = game("./marked.sfc");
+        let candidates: Vec<ContinueGame> = [
+            continue_candidate(&system, &old, None),
+            continue_candidate(&system, &new, Some(&status(Some("incomplete"), false))),
+            continue_candidate(&system, &finished, Some(&status(Some("finished"), false))),
+            continue_candidate(&system, &hidden, None),
+            continue_candidate(&system, &never, None),
+            continue_candidate(&system, &marked, Some(&status(None, true))),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        let order: Vec<String> = pick_continue(candidates).into_iter().map(|g| g.game_path).collect();
+        assert_eq!(order, vec!["./marked.sfc", "./new.sfc", "./old.sfc"]);
     }
 
     #[test]

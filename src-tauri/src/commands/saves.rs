@@ -131,6 +131,23 @@ fn find_saves(dir: &Path, system_name: &str, game_path: &str) -> Vec<SaveFile> {
     out
 }
 
+/// La última partida guardada de un juego (para «Seguir jugando»)
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct LastSave {
+    /// Fecha del fichero más reciente, partida o estado (segundos unix)
+    pub modified: i64,
+    /// Miniatura del estado más reciente que tenga una
+    pub thumbnail: Option<String>,
+}
+
+/// Lo último que se guardó de un juego, si hay algo
+pub fn last_save(dir: &Path, system_name: &str, game_path: &str) -> Option<LastSave> {
+    let files = find_saves(dir, system_name, game_path);
+    let modified = files.iter().map(|f| f.modified).max()?;
+    let thumbnail = files.iter().filter(|f| f.thumbnail.is_some()).max_by_key(|f| f.modified).and_then(|f| f.thumbnail.clone());
+    Some(LastSave { modified, thumbnail })
+}
+
 /// Perfil activo y nombre del sistema (su carpeta)
 fn context(app: &tauri::AppHandle, system_path: &str) -> Result<(Profile, String), String> {
     let settings = super::settings::get_settings(app.clone())?;
@@ -250,6 +267,28 @@ mod tests {
         assert_eq!(classify("Sonic (USA).state3.png", s), None);
         assert_eq!(classify("Sonic (USA) 2.srm", s), None);
         assert_eq!(classify("Sonic (USA).zip", s), None);
+    }
+
+    #[test]
+    fn ultima_partida_con_la_miniatura_mas_reciente() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path();
+        fs::create_dir_all(dir.join("snes")).unwrap();
+        let at = |name: &str, secs: u64| {
+            let path = dir.join("snes").join(name);
+            fs::write(&path, b"x").unwrap();
+            let time = std::time::UNIX_EPOCH + std::time::Duration::from_secs(secs);
+            fs::File::options().write(true).open(&path).unwrap().set_modified(time).unwrap();
+        };
+        assert_eq!(last_save(dir, "snes", "./Mario.sfc"), None);
+        at("Mario.state1", 100);
+        at("Mario.state1.png", 100);
+        at("Mario.state2", 200);
+        at("Mario.state2.png", 200);
+        at("Mario.srm", 300);
+        let last = last_save(dir, "snes", "./Mario.sfc").unwrap();
+        assert_eq!(last.modified, 300);
+        assert!(last.thumbnail.unwrap().ends_with("Mario.state2.png"));
     }
 
     #[test]
