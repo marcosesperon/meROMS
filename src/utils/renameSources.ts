@@ -7,6 +7,7 @@ export const RENAME_SOURCES: { id: RenameSource; label: TranslationKeys; help: T
   { id: "title", label: "rename.sourceTitle", help: "rename.sourceTitleHelp", empty: "rename.noRenames" },
   { id: "rules", label: "rename.sourceRules", help: "rename.sourceRulesHelp", empty: "rename.noRenamesRules" },
   { id: "dat", label: "rename.sourceDat", help: "rename.sourceDatHelp", empty: "rename.noRenamesDat" },
+  { id: "goodtools", label: "rename.sourceGoodtools", help: "rename.sourceGoodtoolsHelp", empty: "rename.noRenamesGoodtools" },
   { id: "scraper", label: "rename.sourceScraper", help: "rename.sourceScraperHelp", empty: "rename.noRenamesScraper" },
 ];
 

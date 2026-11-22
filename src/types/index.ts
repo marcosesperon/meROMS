@@ -316,7 +316,7 @@ export interface RenameEntry {
 }
 
 /** Where the proposed name comes from */
-export type RenameSource = "title" | "rules" | "dat" | "scraper";
+export type RenameSource = "title" | "rules" | "dat" | "goodtools" | "scraper";
 /** Scrapers que dan el nombre de fichero de la ROM (fuente «Scraper» de Renombrar) */
 export type NameScraper = "screenscraper";
 

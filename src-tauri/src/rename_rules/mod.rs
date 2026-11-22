@@ -9,6 +9,8 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+pub mod goodtools;
+
 const DEFAULT_RULES_JSON: &str = include_str!("default_rules.json");
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

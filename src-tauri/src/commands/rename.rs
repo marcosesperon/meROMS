@@ -47,6 +47,8 @@ pub enum RenameSource {
     Rules,
     /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
     Dat,
+    /// GoodTools codes translated to No-Intro, keeping the region ((U) → (USA), [h1] → (Hack)…)
+    Goodtools,
     /// File name a scraper has for the ROM, recognised by content (`scraper` says which one;
     /// today only "screenscraper": asked now, cached, also filled while scraping)
     Scraper,
@@ -183,6 +185,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
     let proposed = match source {
         RenameSource::Title => game_title.as_deref().map(sanitize_filename),
         RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
+        RenameSource::Goodtools => Some(sanitize_filename(&crate::rename_rules::goodtools::to_no_intro(&current_name))),
         RenameSource::Dat | RenameSource::Scraper => official.map(sanitize_filename),
     }
     .filter(|p| !p.is_empty())
@@ -721,7 +724,7 @@ mod tests {
 
     #[test]
     fn sources_are_read_with_the_names_the_ui_sends() {
-        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("scraper", RenameSource::Scraper)] {
+        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("goodtools", RenameSource::Goodtools), ("scraper", RenameSource::Scraper)] {
             assert_eq!(serde_json::from_str::<RenameSource>(&format!("\"{}\"", text)).unwrap(), source);
         }
     }
