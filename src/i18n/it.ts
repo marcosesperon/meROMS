@@ -815,6 +815,13 @@ const it: Record<TranslationKeys, string> = {
   "duplicates.reason_similar_name": "Nome simile",
   "duplicates.removeConfirm": "Togliere {games} giochi dalla gamelist e mettere nel cestino {files} file (ROM e media)?",
   "duplicates.removeFailed": "Impossibile mettere nel cestino {count} file:",
+  "duplicates.autoMark": "Seleziona automaticamente",
+  "duplicates.autoMarkHint": "In ogni gruppo tiene il migliore (non è una beta, la tua regione e lingua, più media, più dati) e seleziona gli altri. I preferiti e i giochi giocati non vengono mai selezionati.",
+  "duplicates.keeps": "Resta: {reason}",
+  "duplicates.keep_media": "più media",
+  "duplicates.keep_data": "più dati",
+  "duplicates.protected": "Preferito o giocato",
+  "duplicates.mediaCount": "{count} media",
 
   // Collections
   "collections.button": "Collezioni",

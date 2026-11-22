@@ -815,6 +815,13 @@ const de: Record<TranslationKeys, string> = {
   "duplicates.reason_similar_name": "Ähnlicher Name",
   "duplicates.removeConfirm": "{games} Spiele aus der Gamelist entfernen und {files} Dateien (ROMs und Medien) in den Papierkorb legen?",
   "duplicates.removeFailed": "{count} konnten nicht in den Papierkorb:",
+  "duplicates.autoMark": "Automatisch markieren",
+  "duplicates.autoMarkHint": "Behält in jeder Gruppe den besten (keine Beta, deine Region und Sprache, mehr Medien, mehr Daten) und markiert die anderen. Favoriten und gespielte Spiele werden nie markiert.",
+  "duplicates.keeps": "Bleibt: {reason}",
+  "duplicates.keep_media": "mehr Medien",
+  "duplicates.keep_data": "mehr Daten",
+  "duplicates.protected": "Favorit oder gespielt",
+  "duplicates.mediaCount": "{count} Medien",
 
   // Collections
   "collections.button": "Sammlungen",

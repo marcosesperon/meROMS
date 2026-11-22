@@ -815,6 +815,13 @@ const pt: Record<TranslationKeys, string> = {
   "duplicates.reason_similar_name": "Nome parecido",
   "duplicates.removeConfirm": "Remover {games} jogos da gamelist e enviar {files} ficheiros (ROMs e media) para o lixo?",
   "duplicates.removeFailed": "{count} não puderam ser enviados para o lixo:",
+  "duplicates.autoMark": "Marcar automaticamente",
+  "duplicates.autoMarkHint": "Em cada grupo fica o melhor (não é beta, a sua região e idioma, mais media, mais dados) e marca os restantes. Os favoritos e os jogados nunca são marcados.",
+  "duplicates.keeps": "Fica: {reason}",
+  "duplicates.keep_media": "mais media",
+  "duplicates.keep_data": "mais dados",
+  "duplicates.protected": "Favorito ou jogado",
+  "duplicates.mediaCount": "{count} media",
 
   // Collections
   "collections.button": "Coleções",

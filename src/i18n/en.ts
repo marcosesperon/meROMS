@@ -813,6 +813,13 @@ const en = {
   "duplicates.reason_similar_name": "Similar name",
   "duplicates.removeConfirm": "Remove {games} games from the gamelist and send {files} files (ROMs and media) to the trash?",
   "duplicates.removeFailed": "{count} could not be sent to the trash:",
+  "duplicates.autoMark": "Mark automatically",
+  "duplicates.autoMarkHint": "In each group keeps the best one (not a beta, your region and language, more media, more data) and marks the rest. Favourites and played games are never marked.",
+  "duplicates.keeps": "Keeps: {reason}",
+  "duplicates.keep_media": "more media",
+  "duplicates.keep_data": "more data",
+  "duplicates.protected": "Favourite or played",
+  "duplicates.mediaCount": "{count} media",
 
   // Collections
   "collections.button": "Collections",

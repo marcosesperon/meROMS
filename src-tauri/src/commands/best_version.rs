@@ -264,9 +264,93 @@ pub fn best_versions(app: tauri::AppHandle, system_path: String, task: Option<St
     Ok(groups)
 }
 
+/// Datos rellenos: descripción, fecha, desarrolladora, editora, género, jugadores y nota
+fn filled_data(game: &Game) -> usize {
+    let fields = [&game.desc, &game.releasedate, &game.developer, &game.publisher, &game.genre, &game.players, &game.rating];
+    fields.iter().filter(|f| f.as_deref().is_some_and(|v| !v.trim().is_empty())).count()
+}
+
+fn is_favorite(game: &Game) -> bool {
+    game.favorite.as_deref() == Some("true")
+}
+
+/// Con partidas o tiempo jugado
+fn is_played(game: &Game) -> bool {
+    let positive = |v: &Option<String>| v.as_deref().and_then(|s| s.trim().parse::<f64>().ok()).is_some_and(|n| n > 0.0);
+    positive(&game.playcount) || positive(&game.gametime)
+}
+
+/// Favorito o jugado: el marcado automático nunca lo propone para borrar
+pub fn is_protected(game: &Game) -> bool {
+    is_favorite(game) || is_played(game)
+}
+
+/// De un grupo de duplicados, cuál se queda y por qué. Manda lo mismo que en «Mejor versión»
+/// (no deseadas, región, idioma, revisión, verificada); si ahí empatan, el que tiene más medios
+/// (`media[i]` = medios del juego i), luego más datos y uso, y al final el fichero más corto.
+/// Motivos: los de `reason` + `media` | `data`.
+pub fn pick_keeper(games: &[Game], media: &[usize], regions: &[String], languages: &[String]) -> (usize, &'static str) {
+    let file_len = |g: &Game| Path::new(&g.path).file_name().map_or(0, |f| f.len());
+    // Datos y uso: campos rellenos, más uno por ser favorito y otro por estar jugado
+    let usage = |g: &Game| filled_data(g) + usize::from(is_favorite(g)) + usize::from(is_played(g));
+    let tags = |g: &Game| parse_tags(&Path::new(&g.path).file_stem().map(|f| f.to_string_lossy().to_string()).unwrap_or_default());
+    let key = |i: usize| {
+        let g = &games[i];
+        (score(&tags(g), regions, languages), std::cmp::Reverse(media[i]), std::cmp::Reverse(usage(g)), file_len(g))
+    };
+    let mut order: Vec<usize> = (0..games.len()).collect();
+    order.sort_by_key(|&i| key(i));
+    let Some(&best) = order.first() else { return (0, "only") };
+    let Some(&next) = order.get(1) else { return (best, "only") };
+    let (b, n) = (key(best), key(next));
+    let why = if b.0 != n.0 {
+        reason(&b.0, Some(&n.0))
+    } else if b.1 != n.1 {
+        "media"
+    } else if b.2 != n.2 {
+        "data"
+    } else {
+        "shortest"
+    };
+    (best, why)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_keeper_goes_by_tags_then_media_then_data() {
+        let eu = codes(&["eu", "us", "jp"]);
+        let es = codes(&["es", "en"]);
+        // Una beta pierde aunque tenga más medios
+        let games = vec![g("./Sonic (Europe) (Beta).md"), g("./Sonic (USA).md")];
+        assert_eq!(pick_keeper(&games, &[5, 1], &eu, &es), (1, "not_unwanted"));
+        // Misma región: gana el que tiene más medios
+        let games = vec![g("./Sonic (Europe).md"), g("./Sonic (Europe) [x].md")];
+        assert_eq!(pick_keeper(&games, &[1, 3], &eu, &es), (1, "media"));
+        // Mismos medios: gana el que tiene más datos (o es favorito / está jugado)
+        let mut rich = g("./Sonic 2.md");
+        rich.desc = Some("Un erizo".into());
+        rich.developer = Some("Sega".into());
+        let games = vec![g("./Sonic.md"), rich];
+        assert_eq!(pick_keeper(&games, &[2, 2], &eu, &es), (1, "data"));
+        // Todo igual: el nombre de fichero más corto
+        let games = vec![g("./Sonic 1.md"), g("./Sonic.md")];
+        assert_eq!(pick_keeper(&games, &[0, 0], &eu, &es), (1, "shortest"));
+    }
+
+    #[test]
+    fn favourites_and_played_games_are_protected() {
+        let mut fav = g("./a.md");
+        fav.favorite = Some("true".into());
+        let mut played = g("./b.md");
+        played.playcount = Some("3".into());
+        let mut timed = g("./c.md");
+        timed.gametime = Some("120".into());
+        assert!(is_protected(&fav) && is_protected(&played) && is_protected(&timed));
+        assert!(!is_protected(&g("./d.md")));
+    }
 
     fn codes(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| s.to_string()).collect()

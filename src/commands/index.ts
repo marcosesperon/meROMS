@@ -683,6 +683,14 @@ export interface DuplicateGroup {
   /** Extra detail (the ScreenScraper ID) */
   detail: string | null;
   games: Game[];
+  /** Suggested game to keep (path), for "Mark automatically" */
+  keep: string;
+  /** Why it stays: best.reason_* keys + "media" | "data" */
+  keep_reason: string;
+  /** Media files of each game, same order as games */
+  media: number[];
+  /** Favourite or played (same order as games): never marked automatically */
+  protected: boolean[];
 }
 
 export async function findDuplicates(systemPath: string, task?: string): Promise<DuplicateGroup[]> {

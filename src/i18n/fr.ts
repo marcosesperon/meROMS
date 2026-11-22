@@ -815,6 +815,13 @@ const fr: Record<TranslationKeys, string> = {
   "duplicates.reason_similar_name": "Nom proche",
   "duplicates.removeConfirm": "Retirer {games} jeux de la gamelist et mettre {files} fichiers (ROMs et médias) à la corbeille ?",
   "duplicates.removeFailed": "{count} n'ont pas pu être mis à la corbeille :",
+  "duplicates.autoMark": "Cocher automatiquement",
+  "duplicates.autoMarkHint": "Dans chaque groupe, garde le meilleur (pas une bêta, votre région et langue, plus de médias, plus de données) et coche les autres. Les favoris et les jeux joués ne sont jamais cochés.",
+  "duplicates.keeps": "Gardé : {reason}",
+  "duplicates.keep_media": "plus de médias",
+  "duplicates.keep_data": "plus de données",
+  "duplicates.protected": "Favori ou joué",
+  "duplicates.mediaCount": "{count} médias",
 
   // Collections
   "collections.button": "Collections",

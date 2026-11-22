@@ -14,6 +14,15 @@ pub struct DuplicateGroup {
     /// Extra detail for the reason (the ScreenScraper ID)
     pub detail: Option<String>,
     pub games: Vec<Game>,
+    /// Suggested game to keep ("Mark automatically"), by path
+    pub keep: String,
+    /// Why it stays: best_version reasons (not_unwanted, region, language, revision, verified,
+    /// shortest) + "media" | "data"
+    pub keep_reason: String,
+    /// Media files of each game (same order as `games`); a broken Classic path doesn't count
+    pub media: Vec<usize>,
+    /// Favourite or played (same order as `games`): never marked automatically
+    pub protected: Vec<bool>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -49,9 +58,15 @@ fn normalize_name(name: &str) -> String {
 
 #[tauri::command(async)]
 pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<DuplicateGroup>, String> {
+    let settings = super::settings::get_settings(app.clone())?;
+    let (_, system) = super::system_context(&app, &system_path)?;
     let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, task)?;
     let games = &gamelist.games;
     let mut groups: Vec<DuplicateGroup> = Vec::new();
+    let new_group = |reason: &str, detail: Option<String>, indices: &[usize]| {
+        let members: Vec<Game> = indices.iter().map(|&i| games[i].clone()).collect();
+        suggest(reason, detail, members, &system, &settings.scrape_regions(), &settings.scrape_languages())
+    };
     let mut used_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
 
     // 1. Group by same ScreenScraper ID
@@ -66,11 +81,7 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<
     }
     for (id, indices) in &id_map {
         if indices.len() > 1 {
-            groups.push(DuplicateGroup {
-                reason: "screenscraper_id".to_string(),
-                detail: Some(id.clone()),
-                games: indices.iter().map(|&i| games[i].clone()).collect(),
-            });
+            groups.push(new_group("screenscraper_id", Some(id.clone()), indices));
             for &i in indices {
                 used_indices.insert(i);
             }
@@ -93,11 +104,7 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<
     }
     for (_hash, indices) in &hash_map {
         if indices.len() > 1 {
-            groups.push(DuplicateGroup {
-                reason: "hash".to_string(),
-                detail: None,
-                games: indices.iter().map(|&i| games[i].clone()).collect(),
-            });
+            groups.push(new_group("hash", None, indices));
             for &i in indices {
                 used_indices.insert(i);
             }
@@ -119,15 +126,36 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<
     }
     for (_name, indices) in &name_map {
         if indices.len() > 1 {
-            groups.push(DuplicateGroup {
-                reason: "similar_name".to_string(),
-                detail: None,
-                games: indices.iter().map(|&i| games[i].clone()).collect(),
-            });
+            groups.push(new_group("similar_name", None, indices));
         }
     }
 
     Ok(groups)
+}
+
+/// Build a group with its suggestion: which game stays (best_version::pick_keeper), how many
+/// media files each one has and which ones are protected (favourite or played).
+fn suggest(reason: &str, detail: Option<String>, games: Vec<Game>, system: &SystemRef, regions: &[String], languages: &[String]) -> DuplicateGroup {
+    let media: Vec<usize> = games.iter().map(|g| media_count(system, g)).collect();
+    let (keep, why) = super::best_version::pick_keeper(&games, &media, regions, languages);
+    DuplicateGroup {
+        reason: reason.to_string(),
+        detail,
+        keep: games[keep].path.clone(),
+        keep_reason: why.to_string(),
+        protected: games.iter().map(super::best_version::is_protected).collect(),
+        media,
+        games,
+    }
+}
+
+/// Media files of a game: its media fields that point to an existing file (in ES-DE the
+/// gamelist read already filled them from the files named after the ROM)
+fn media_count(system: &SystemRef, game: &Game) -> usize {
+    media::media_fields()
+        .filter_map(|f| media::get_field(game, f))
+        .filter(|v| !v.trim().is_empty() && media::resolve_media_path(system, v).is_file())
+        .count()
 }
 
 /// Juegos por tanda al mandarlos a la papelera (cada tanda va de una vez)
