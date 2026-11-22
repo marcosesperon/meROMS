@@ -1075,7 +1075,7 @@ const en = {
   "rename.sourceTitle": "Game title",
   "rename.sourceRules": "Clean with rules",
   "rename.sourceTitleHelp": "The new file name is the game title from the gamelist.",
-  "rename.sourceRulesHelp": "The current file name is cleaned with the rules from Settings > Rules (region, language and version tags, [..], etc.).",
+  "rename.sourceRulesHelp": "The current file name is cleaned with the rules from Settings > Rules (region, language and version tags, [..], etc.). A leading compilation number (0004 Game) is removed from the game title too.",
   "rename.noRenamesRules": "The rules do not change any file name.",
   "rename.tracks": "+{count} tracks",
   "rename.tracksHelp": "The .bin/.raw tracks named after the game are renamed too, and the .cue/.gdi is updated",

@@ -1077,7 +1077,7 @@ const it: Record<TranslationKeys, string> = {
   "rename.sourceTitle": "Titolo del gioco",
   "rename.sourceRules": "Pulisci con le regole",
   "rename.sourceTitleHelp": "Il nuovo nome del file è il titolo del gioco nella gamelist.",
-  "rename.sourceRulesHelp": "Il nome attuale del file viene pulito con le regole di Impostazioni > Regole (tag di regione, lingua e versione, [..], ecc.).",
+  "rename.sourceRulesHelp": "Il nome attuale del file viene pulito con le regole di Impostazioni > Regole (tag di regione, lingua e versione, [..], ecc.). Se il file perde un numero di raccolta all'inizio (0004 Gioco), lo perde anche il titolo.",
   "rename.noRenamesRules": "Le regole non cambiano nessun nome di file.",
   "rename.tracks": "+{count} tracce",
   "rename.tracksHelp": "Anche le tracce .bin/.raw con il nome del gioco vengono rinominate, e il .cue/.gdi viene aggiornato",

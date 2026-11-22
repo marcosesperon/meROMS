@@ -60,6 +60,28 @@ pub struct RenameResult {
     pub skipped: Vec<String>,
 }
 
+/// Número de recopilatorio delante del nombre: 2-4 cifras y un espacio, salvo años 19xx/20xx
+/// (`0004 Green Corps`, `546 Super Spy Hunter`; no `1943 The Battle of Midway` ni `1942`).
+/// Es la misma condición que la regla «quitar el número del principio» de `default_rules.json`.
+static LEADING_NUMBER: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| regex::Regex::new(r"^(?:\d{2,3}|[03-9]\d{3}|1[0-8]\d{2}|2[1-9]\d{2})\s+").unwrap());
+
+/// El número de delante con su espacio («0004 »), si lo lleva
+fn leading_number(name: &str) -> Option<&str> {
+    LEADING_NUMBER.find(name).filter(|m| m.end() < name.len()).map(|m| m.as_str())
+}
+
+/// Si el fichero perdió su número al renombrarlo y el título empieza por ese mismo número, el
+/// título también lo pierde (solo eso: el resto del título no se toca). None = no cambia.
+fn title_without_number(title: &str, old_stem: &str, new_stem: &str) -> Option<String> {
+    let number = leading_number(old_stem)?;
+    if new_stem.starts_with(number) {
+        return None;
+    }
+    let rest = title.strip_prefix(number)?;
+    (!rest.trim().is_empty()).then(|| rest.to_string())
+}
+
 /// Characters not allowed in filenames (on any of the usual systems).
 fn is_forbidden(c: char) -> bool {
     matches!(c, '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|')
@@ -428,6 +450,10 @@ pub fn rename_roms(
         for game in &mut gamelist.games {
             if game.path == req.current_path {
                 game.path = new_relative.clone();
+                // Recopilatorios: «0004 Green Corps» pierde el número igual que el fichero
+                if let Some(title) = game.name.as_deref().and_then(|t| title_without_number(t, old_stem, &req.new_name)) {
+                    game.name = Some(title);
+                }
 
                 if layout.writes_media_tags() {
                     for field in media::media_fields() {
@@ -668,6 +694,29 @@ mod tests {
     fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
         propose(&game, source, &CompiledRules::new(&default_rules()), None)
+    }
+
+    #[test]
+    fn the_leading_number_rule_and_the_title() {
+        let rules = CompiledRules::new(&default_rules());
+        for (from, to) in [
+            ("0004 Green Corps", "Green Corps"),
+            ("546 Super Spy Hunter", "Super Spy Hunter"),
+            ("002 Super Mario World", "Super Mario World"),
+            ("1943 The Battle of Midway", "1943 The Battle of Midway"),
+            ("1942", "1942"),
+            ("10-Yard Fight", "10-Yard Fight"),
+            ("2010 Street Fighter", "2010 Street Fighter"),
+        ] {
+            assert_eq!(rules.apply(from).trim(), to, "{}", from);
+        }
+        // El título pierde el mismo número que el fichero, y nada más
+        assert_eq!(title_without_number("0004 Green Corps", "0004 Green Corps", "Green Corps").as_deref(), Some("Green Corps"));
+        assert_eq!(title_without_number("0004 Green Corps (Chinese)", "0004 Green Corps", "Green Corps").as_deref(), Some("Green Corps (Chinese)"));
+        assert_eq!(title_without_number("Green Corps", "0004 Green Corps", "Green Corps"), None, "the title had no number");
+        assert_eq!(title_without_number("0005 Other", "0004 Green Corps", "Green Corps"), None, "another number");
+        assert_eq!(title_without_number("0004 Green Corps", "0004 Green Corps", "0004 Green Corps (USA)"), None, "the file keeps it");
+        assert_eq!(title_without_number("1943 Midway", "1943 Midway", "Midway"), None, "years are not compilation numbers");
     }
 
     #[test]

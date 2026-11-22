@@ -241,6 +241,12 @@
       "enabled": false
     },
     {
+      "pattern": "^(?:\\d{2,3}|[03-9]\\d{3}|1[0-8]\\d{2}|2[1-9]\\d{2})\\s+(\\S)",
+      "replacement": "$1",
+      "description": "Remove a leading number of 2-4 digits followed by a space (compilations: '0004 Green Corps'), except years 19xx/20xx.",
+      "enabled": true
+    },
+    {
       "pattern": "\\s+",
       "replacement": " ",
       "description": "Remove unnecessary spaces within the filename.",

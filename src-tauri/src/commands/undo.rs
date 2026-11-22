@@ -152,6 +152,10 @@ fn undo_gamelists(lists: &mut HashMap<String, GameList>, games: &[GameChange]) {
         let Some(pos) = list.games.iter().position(|g| g.path == change.after.path) else { continue };
         let mut game = list.games[pos].clone();
         game.path = change.before.path.clone();
+        // El título (renombrar le quita el número de recopilatorio), si nadie lo cambió después
+        if game.name == change.after.name {
+            game.name = change.before.name.clone();
+        }
         for field in media::media_fields() {
             if media::get_field(&game, field) == media::get_field(&change.after, field) {
                 media::set_field(&mut game, field, media::get_field(&change.before, field).cloned());
@@ -236,7 +240,7 @@ mod tests {
         touch(&sys.rom_dir.join("covers/Zelda (USA).png"), "img");
         touch(&sys.rom_dir.join("custom-Favs.cfg"), "./Zelda (USA).sfc\n");
         let before = GameList {
-            games: vec![Game { path: "./Zelda (USA).sfc".into(), name: Some("Zelda".into()), image: Some("./covers/Zelda (USA).png".into()), ..Default::default() }],
+            games: vec![Game { path: "./Zelda (USA).sfc".into(), name: Some("0001 Zelda".into()), image: Some("./covers/Zelda (USA).png".into()), ..Default::default() }],
             ..Default::default()
         };
         super::super::gamelist::write_gamelist_no_backup(&layout, &sys, &before).unwrap();
@@ -248,6 +252,8 @@ mod tests {
         let mut after = before.clone();
         after.games[0].path = "./Zelda.sfc".into();
         after.games[0].image = Some("./covers/Zelda.png".into());
+        // Renombrar también pudo quitarle al título el número de recopilatorio
+        after.games[0].name = Some("Zelda".into());
         super::super::gamelist::write_gamelist_no_backup(&layout, &sys, &after).unwrap();
         super::super::rename::update_references(&layout, &sys, &[("./Zelda (USA).sfc".into(), "./Zelda.sfc".into())]);
         let pairs = vec![("./Zelda (USA).sfc".to_string(), "./Zelda.sfc".to_string())];
@@ -273,6 +279,7 @@ mod tests {
         assert_eq!(list.games[0].path, "./Zelda (USA).sfc");
         assert_eq!(list.games[0].image.as_deref(), Some("./covers/Zelda (USA).png"));
         assert_eq!(list.games[0].desc.as_deref(), Some("Editado después"));
+        assert_eq!(list.games[0].name.as_deref(), Some("0001 Zelda"), "the title comes back too");
         assert_eq!(fs::read_to_string(sys.rom_dir.join("custom-Favs.cfg")).unwrap(), "./Zelda (USA).sfc\n");
     }
 
