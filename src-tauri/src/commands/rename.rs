@@ -34,6 +34,9 @@ pub struct RenameEntry {
     /// «Scraper» source stopped before asking for this ROM: no name yet («Search» goes on)
     #[serde(default)]
     pub pending: bool,
+    /// «Scraper» source: the scraper didn't answer for this ROM (timeout…); «Search» retries it
+    #[serde(default)]
+    pub unanswered: bool,
 }
 
 /// Where the proposed name comes from.
@@ -158,6 +161,7 @@ pub fn list_rename_candidates(
         let official = dat_names.get(&rom_of(game)).or_else(|| ss_names.get(&game.path));
         let mut entry = propose(game, source, &rules, official.map(String::as_str));
         entry.pending = scraped.pending.contains(&game.path);
+        entry.unanswered = scraped.failed.contains(&game.path);
         entries.push(entry);
     }
     progress.phase("checking");
@@ -202,6 +206,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
         tracks: 0,
         conflict: None,
         pending: false,
+        unanswered: false,
     }
 }
 
@@ -263,6 +268,7 @@ fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<St
         tracks: 0,
         conflict: None,
         pending: false,
+        unanswered: false,
     }];
     mark_conflicts(&mut entry, rom_dir);
     mark_track_conflicts(&mut entry, rom_dir);

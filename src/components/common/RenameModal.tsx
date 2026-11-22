@@ -156,6 +156,8 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const conflictCount = entries.filter((e) => e.can_rename && e.conflict).length;
   // «Scraper» parado a medias: ROMs por las que no se llegó a preguntar
   const pendingCount = entries.filter((e) => e.pending).length;
+  // ROMs por las que el scraper no contestó (tiempo de espera…): «Buscar» las reintenta
+  const unansweredCount = entries.filter((e) => e.unanswered).length;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -204,6 +206,9 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
               )}
             </p>
           )}
+          {!scanning && source === "scraper" && unansweredCount > 0 && (
+            <p className="text-sm text-amber-400 mt-1">{t("rename.scraperUnanswered", { count: unansweredCount })}</p>
+          )}
           {!scanning && source === "scraper" && pendingCount > 0 && (
             <p className="text-sm text-amber-400 mt-1">
               {t("rename.scraperStopped", { done: entries.length - pendingCount, total: entries.length })}
@@ -224,7 +229,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
               {/* Parado antes de encontrar nada: el aviso de arriba lo explica */}
-              {pendingCount > 0 ? "" : t(renameSourceText(source).empty)}
+              {pendingCount + unansweredCount > 0 ? "" : t(renameSourceText(source).empty)}
             </div>
           ) : (
             <>

@@ -21,7 +21,11 @@ use crate::models::system::screenscraper_id_for_system;
 use crate::models::AppSettings;
 
 use super::progress::Progress;
-use super::scraper::{build_http_client, ss_lookup_rom, RomKey, REQUEST_DELAY_MS};
+use super::scraper::{build_http_client, is_fatal_ss_error, ss_lookup_rom, RomKey, REQUEST_DELAY_MS};
+
+/// Tantas ROMs seguidas con fallo de conexión (no por tardar) y se para: ScreenScraper
+/// probablemente está caído
+const MAX_FAILURES_IN_A_ROW: usize = 5;
 
 /// Renombrar y el scraper pueden escribir la caché a la vez: se lee y se escribe de uno en uno
 static CACHE_LOCK: Mutex<()> = Mutex::new(());
@@ -135,6 +139,9 @@ pub struct ScraperNames {
     pub names: HashMap<String, String>,
     /// Juegos por los que no se llegó a preguntar porque se paró la búsqueda
     pub pending: HashSet<String>,
+    /// Juegos por los que ScreenScraper no contestó (tiempo de espera, conexión…): no se
+    /// guardan en caché, así que el próximo «Buscar» los reintenta
+    pub failed: HashSet<String>,
     /// Se paró con Cancelar
     pub stopped: bool,
 }
@@ -167,6 +174,7 @@ async fn ask_missing(settings: &AppSettings, system: &SystemRef, games: &[&Game]
     let client = build_http_client()?;
     let mut found = ScraperNames::default();
     let mut asked = 0;
+    let mut failures_in_a_row = 0;
     for (i, game) in games.iter().enumerate() {
         // Parado: ya no se pregunta, pero lo que está en caché sigue valiendo
         found.stopped = found.stopped || progress.cancelled();
@@ -189,10 +197,29 @@ async fn ask_missing(settings: &AppSettings, system: &SystemRef, games: &[&Game]
                     sleep(Duration::from_millis(REQUEST_DELAY_MS)).await;
                 }
                 asked += 1;
-                let (jeu, key) = ss_lookup_rom(&client, settings, game, system).await?;
-                let name = jeu.and_then(|jeu| matching_filename(&jeu, &key));
-                cache.put(&rom, name.clone());
-                name
+                match ss_lookup_rom(&client, settings, game, system).await {
+                    Ok((jeu, key)) => {
+                        failures_in_a_row = 0;
+                        let name = jeu.and_then(|jeu| matching_filename(&jeu, &key));
+                        cache.put(&rom, name.clone());
+                        name
+                    }
+                    // Credenciales, cupo agotado…: no tiene sentido seguir
+                    Err(e) if is_fatal_ss_error(&e) => return Err(e),
+                    // Solo esta ROM (no contestó a tiempo, conexión…): se salta y se sigue
+                    Err(e) => {
+                        // Que tarde con una ROM concreta es normal (en NES, con los recopilatorios
+                        // chinos): solo los fallos de conexión hacen pensar que está caído
+                        if !e.contains("timed out") {
+                            failures_in_a_row += 1;
+                        }
+                        if failures_in_a_row >= MAX_FAILURES_IN_A_ROW {
+                            return Err(format!("ScreenScraper did not answer for {} ROMs in a row: {}", failures_in_a_row, e));
+                        }
+                        found.failed.insert(game.path.clone());
+                        continue;
+                    }
+                }
             }
         };
         if let Some(stem) = name.as_deref().and_then(|n| Path::new(n).file_stem()).map(|s| s.to_string_lossy().to_string()) {

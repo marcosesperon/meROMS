@@ -313,6 +313,8 @@ export interface RenameEntry {
   conflict?: "duplicate" | "exists";
   /** "scraper" source stopped before asking for this ROM: no name yet (Search goes on) */
   pending?: boolean;
+  /** "scraper" source: the scraper didn't answer for this ROM (timeout...); Search retries it */
+  unanswered?: boolean;
 }
 
 /** Where the proposed name comes from */

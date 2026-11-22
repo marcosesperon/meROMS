@@ -1094,6 +1094,7 @@ const es: Record<TranslationKeys, string> = {
   "rename.scraperSearch": "Buscar",
   "rename.scraperHint": "Elige el scraper y pulsa Buscar.",
   "rename.scraperStopped": "Búsqueda parada: {done} de {total}. Pulsa Buscar para seguir (las ROMs ya consultadas no gastan cupo).",
+  "rename.scraperUnanswered": "{count} ROMs sin respuesta de ScreenScraper: pulsa Buscar para reintentarlas.",
   "rename.conflicts": "{count} conflictos",
   "rename.conflictDuplicate": "duplicado",
   "rename.conflictExists": "ya existe",

@@ -1094,6 +1094,7 @@ const de: Record<TranslationKeys, string> = {
   "rename.scraperSearch": "Suchen",
   "rename.scraperHint": "Scraper wählen und Suchen drücken.",
   "rename.scraperStopped": "Suche gestoppt: {done} von {total}. Suchen drücken, um weiterzumachen (bereits abgefragte ROMs verbrauchen kein Kontingent).",
+  "rename.scraperUnanswered": "{count} ROMs ohne Antwort von ScreenScraper: Suchen drücken, um es erneut zu versuchen.",
   "rename.conflicts": "{count} Konflikte",
   "rename.conflictDuplicate": "doppelt",
   "rename.conflictExists": "existiert",

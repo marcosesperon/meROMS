@@ -310,18 +310,41 @@ async fn process_scrape_response(
 
 /// GET a ScreenScraper endpoint and read the JSON. `None` = «nothing found» (HTTP 404 / 430),
 /// as the automatic scrape always treated it.
+/// ¿Afecta a todas las consultas y no solo a esta ROM? Credenciales (401/403), API cerrada (423),
+/// programa vetado (426), cupo del día o de ROMs desconocidas agotado (430/431). Lo demás
+/// (tiempo de espera, conexión, errores del servidor, respuesta ilegible) es de esa ROM.
+pub(super) fn is_fatal_ss_error(error: &str) -> bool {
+    ["HTTP 401", "HTTP 403", "HTTP 423", "HTTP 426", "HTTP 430", "HTTP 431", "credentials not configured"]
+        .iter()
+        .any(|code| error.contains(code))
+}
+
+/// Un error de red de ScreenScraper sin la URL (lleva las credenciales de desarrollador y del
+/// usuario) y con su causa de fondo («timed out», «connection reset»…), que reqwest esconde
+fn request_error(e: reqwest::Error) -> String {
+    let e = e.without_url();
+    let mut text = e.to_string();
+    let mut source = std::error::Error::source(&e);
+    while let Some(cause) = source {
+        text.push_str(&format!(": {}", cause));
+        source = cause.source();
+    }
+    text
+}
+
 async fn ss_get(client: &Client, settings: &AppSettings, endpoint: &str, params: &[(&str, &str)]) -> Result<Option<Value>, String> {
     let url = build_api_url(endpoint, settings, params)?;
     let response = client
         .get(&url)
         .send()
         .await
-        .map_err(|e| format!("API request failed: {}", e))?;
+        .map_err(|e| format!("API request failed: {}", request_error(e)))?;
 
     let status = response.status();
     if !status.is_success() {
         let body_text = response.text().await.unwrap_or_default();
-        if status.as_u16() == 404 || status.as_u16() == 430 {
+        // 404 = no lo conoce. 430/431 (cupo del día agotado) NO es «no encontrado»: es un error
+        if status.as_u16() == 404 {
             return Ok(None);
         }
         return Err(format!(
@@ -981,6 +1004,16 @@ pub async fn scrape_system(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_account_wide_errors_stop_a_lookup() {
+        assert!(is_fatal_ss_error("ScreenScraper error: HTTP 430 Too Many Requests — quota"));
+        assert!(is_fatal_ss_error("ScreenScraper error: HTTP 403 Forbidden — bad login"));
+        assert!(is_fatal_ss_error("ScreenScraper developer credentials not configured"));
+        assert!(!is_fatal_ss_error("API request failed: error sending request: operation timed out"));
+        assert!(!is_fatal_ss_error("ScreenScraper error: HTTP 500 Internal Server Error — "));
+        assert!(!is_fatal_ss_error("Failed to parse API response: expected value"));
+    }
 
     fn langs(v: &[&str]) -> Vec<String> {
         v.iter().map(|s| s.to_string()).collect()

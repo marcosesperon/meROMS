@@ -1092,6 +1092,7 @@ const en = {
   "rename.scraperSearch": "Search",
   "rename.scraperHint": "Pick the scraper and press Search.",
   "rename.scraperStopped": "Search stopped: {done} of {total}. Press Search to go on (ROMs already asked use no quota).",
+  "rename.scraperUnanswered": "{count} ROMs got no answer from ScreenScraper: press Search to try them again.",
   "rename.conflicts": "{count} conflicts",
   "rename.conflictDuplicate": "duplicate",
   "rename.conflictExists": "exists",
