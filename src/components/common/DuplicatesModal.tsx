@@ -65,11 +65,13 @@ export function DuplicatesModal({
   }
 
   // Marca en cada grupo los que sobran: todos menos el que se queda y los protegidos
-  // (favoritos o jugados). Lo que ya estuviera marcado a mano se respeta.
+  // (favoritos o jugados). Los grupos de discos distintos de un juego no se tocan.
+  // Lo que ya estuviera marcado a mano se respeta.
   function autoMark() {
     setSelected((prev) => {
       const next = new Set(prev);
       for (const group of groups) {
+        if (group.discs) continue;
         group.games.forEach((game, i) => {
           if (game.path !== group.keep && !group.protected[i]) next.add(game.path);
         });
@@ -155,6 +157,11 @@ export function DuplicatesModal({
                     <span className="text-xs text-zinc-500">
                       {group.games.length} {t("header.games")}
                     </span>
+                    {group.discs && (
+                      <span className="text-xs text-sky-400 bg-sky-400/10 px-2 py-0.5 rounded">
+                        {t("duplicates.discs")}
+                      </span>
+                    )}
                   </div>
                   <div className="space-y-1">
                     {group.games.map((game: Game, i) => (
@@ -177,7 +184,7 @@ export function DuplicatesModal({
                           </span>
                         </div>
                         {/* Pistas para decidir: si se queda, si está protegido y cuántos medios tiene */}
-                        {game.path === group.keep && (
+                        {game.path === group.keep && !group.discs && (
                           <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded shrink-0">
                             {keepReason(group)}
                           </span>

@@ -691,6 +691,8 @@ export interface DuplicateGroup {
   media: number[];
   /** Favourite or played (same order as games): never marked automatically */
   protected: boolean[];
+  /** Different discs of one game: the group is not marked automatically */
+  discs: boolean;
 }
 
 export async function findDuplicates(systemPath: string, task?: string): Promise<DuplicateGroup[]> {

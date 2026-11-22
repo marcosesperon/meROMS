@@ -821,6 +821,7 @@ const es: Record<TranslationKeys, string> = {
   "duplicates.keep_media": "más medios",
   "duplicates.keep_data": "más datos",
   "duplicates.protected": "Favorito o jugado",
+  "duplicates.discs": "Discos de un mismo juego: no se marcan solos",
   "duplicates.mediaCount": "{count} medios",
 
   // Collections

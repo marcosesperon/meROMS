@@ -23,6 +23,8 @@ pub struct DuplicateGroup {
     pub media: Vec<usize>,
     /// Favourite or played (same order as `games`): never marked automatically
     pub protected: Vec<bool>,
+    /// Different discs of one game ("(Disc 1)", "(Disc 2)"...): not marked automatically
+    pub discs: bool,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -144,9 +146,26 @@ fn suggest(reason: &str, detail: Option<String>, games: Vec<Game>, system: &Syst
         keep: games[keep].path.clone(),
         keep_reason: why.to_string(),
         protected: games.iter().map(super::best_version::is_protected).collect(),
+        discs: different_discs(&games),
         media,
         games,
     }
+}
+
+/// Disc number from the file name: "(Disc 2)", "(Disk 2 of 3)", "(CD2)" -> "2"
+fn disc_number(path: &str) -> Option<String> {
+    let stem = std::path::Path::new(path).file_stem()?.to_string_lossy().to_lowercase();
+    ["(disc ", "(disk ", "(cd"].iter().find_map(|tag| {
+        let rest = &stem[stem.find(tag)? + tag.len()..];
+        let number: String = rest.trim_start().chars().take_while(|c| c.is_ascii_alphanumeric()).collect();
+        (!number.is_empty()).then_some(number)
+    })
+}
+
+/// True when the group has at least two different disc numbers (they are not copies)
+fn different_discs(games: &[Game]) -> bool {
+    let numbers: HashSet<String> = games.iter().filter_map(|g| disc_number(&g.path)).collect();
+    numbers.len() > 1
 }
 
 /// Media files of a game: its media fields that point to an existing file (in ES-DE the
@@ -347,6 +366,18 @@ mod tests {
 
         let plan = files_to_remove(&Layout::Classic, &system, &[to_remove, stays], &["./SDI.sms".into()]);
         assert_eq!(names(&plan[0].2, &system.rom_dir), vec!["covers/SDI.png", "images/SDI-image.png"]);
+    }
+
+    #[test]
+    fn discs_of_one_game_are_told_apart_from_copies() {
+        assert_eq!(disc_number("./FF7 (USA) (Disc 2).cue").as_deref(), Some("2"));
+        assert_eq!(disc_number("./FF7 (Disk 1 of 3).chd").as_deref(), Some("1"));
+        assert_eq!(disc_number("./Game (CD2).iso").as_deref(), Some("2"));
+        assert_eq!(disc_number("./Sonic (USA).md"), None);
+        assert!(different_discs(&[game("./FF7 (Disc 1).cue"), game("./FF7 (Disc 2).cue")]));
+        // Same disc in two regions: copies, so they can be marked
+        assert!(!different_discs(&[game("./FF7 (USA) (Disc 1).cue"), game("./FF7 (Europe) (Disc 1).cue")]));
+        assert!(!different_discs(&[game("./Sonic (USA).md"), game("./Sonic (Europe).md")]));
     }
 
     #[test]

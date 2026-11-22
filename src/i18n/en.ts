@@ -819,6 +819,7 @@ const en = {
   "duplicates.keep_media": "more media",
   "duplicates.keep_data": "more data",
   "duplicates.protected": "Favourite or played",
+  "duplicates.discs": "Discs of one game: not marked automatically",
   "duplicates.mediaCount": "{count} media",
 
   // Collections
