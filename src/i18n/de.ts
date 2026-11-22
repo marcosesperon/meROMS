@@ -1084,6 +1084,9 @@ const de: Record<TranslationKeys, string> = {
   "rename.sourceDat": "DAT-Name",
   "rename.sourceDatHelp": "Der offizielle Name aus dem DAT des Systems, für ROMs, die über ihren Inhalt erkannt wurden (DAT… > Nach Inhalt prüfen). Die Endung bleibt.",
   "rename.noRenamesDat": "Keine über den Inhalt erkannte ROM hat einen anderen Namen als im DAT. Falls noch nicht geschehen, öffne DAT… und nutze „Nach Inhalt prüfen“.",
+  "rename.sourceSs": "ScreenScraper",
+  "rename.sourceSsHelp": "Der Dateiname, den ScreenScraper für die ROM kennt, erkannt am Inhalt (nur wenn die Prüfsumme passt). Er wird jetzt abgefragt (verbraucht dein Tageskontingent) und gemerkt. Die Dateiendung bleibt.",
+  "rename.noRenamesSs": "ScreenScraper hat für keine am Inhalt erkannte ROM einen anderen Namen.",
   "rename.conflicts": "{count} Konflikte",
   "rename.conflictDuplicate": "doppelt",
   "rename.conflictExists": "existiert",
@@ -1162,6 +1165,7 @@ const de: Record<TranslationKeys, string> = {
   "task.phase.renaming": "Benenne um…",
   "task.phase.moving": "Verschiebe…",
   "task.phase.writing": "Schreibe Dateien…",
+  "task.phase.asking": "ScreenScraper wird abgefragt…",
   "task.stopped": "Gestoppt: {done} von {total} erledigt. Das Erledigte ist gespeichert.",
 
   // Take a system to another profile

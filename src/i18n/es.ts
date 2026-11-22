@@ -1084,6 +1084,9 @@ const es: Record<TranslationKeys, string> = {
   "rename.sourceDat": "Nombre del DAT",
   "rename.sourceDatHelp": "El nombre oficial del DAT del sistema, para las ROMs reconocidas por su contenido (DAT… > Comprobar por contenido). Se conserva la extensión.",
   "rename.noRenamesDat": "Ninguna ROM reconocida por contenido tiene un nombre distinto al del DAT. Si aún no lo has hecho, abre DAT… y usa «Comprobar por contenido».",
+  "rename.sourceSs": "ScreenScraper",
+  "rename.sourceSsHelp": "El nombre de fichero que ScreenScraper tiene para la ROM, reconocida por su contenido (solo si la huella coincide). Se pregunta ahora (gasta tu cupo diario) y se recuerda. Se conserva la extensión.",
+  "rename.noRenamesSs": "ScreenScraper no tiene un nombre distinto para ninguna ROM reconocida por su contenido.",
   "rename.conflicts": "{count} conflictos",
   "rename.conflictDuplicate": "duplicado",
   "rename.conflictExists": "ya existe",
@@ -1162,6 +1165,7 @@ const es: Record<TranslationKeys, string> = {
   "task.phase.renaming": "Renombrando…",
   "task.phase.moving": "Moviendo…",
   "task.phase.writing": "Escribiendo ficheros…",
+  "task.phase.asking": "Preguntando a ScreenScraper…",
   "task.stopped": "Detenido: hechos {done} de {total}. Lo hecho queda guardado.",
 
   // Llevar un sistema a otro perfil

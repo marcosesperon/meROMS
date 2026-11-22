@@ -44,6 +44,8 @@ pub enum RenameSource {
     Rules,
     /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
     Dat,
+    /// File name ScreenScraper has for the ROM, recognised by content (asked now, cached)
+    ScreenScraper,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -110,11 +112,18 @@ pub fn list_rename_candidates(
     };
 
     let chosen: Vec<_> = gamelist.games.iter().filter(wanted).collect();
+    // «ScreenScraper»: se pregunta ahora por lo que no esté en caché (por ruta del juego)
+    let ss_names = if source == RenameSource::ScreenScraper {
+        crate::commands::ss_rom_names::names_for(&app, &settings, &system, &chosen, &progress)?
+    } else {
+        HashMap::new()
+    };
     let mut entries: Vec<RenameEntry> = Vec::with_capacity(chosen.len());
     for (i, game) in chosen.iter().enumerate() {
         progress.check()?;
         progress.step("games", i + 1, chosen.len(), &game.path);
-        entries.push(propose(game, source, &rules, dat_names.get(&rom_of(game)).map(String::as_str)));
+        let official = dat_names.get(&rom_of(game)).or_else(|| ss_names.get(&game.path));
+        entries.push(propose(game, source, &rules, official.map(String::as_str)));
     }
     progress.phase("checking");
     mark_conflicts(&mut entries, &system.rom_dir);
@@ -124,7 +133,8 @@ pub fn list_rename_candidates(
     Ok(entries)
 }
 
-fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules, dat_name: Option<&str>) -> RenameEntry {
+/// `official`: el nombre de la fuente DAT o ScreenScraper (sin extensión), si lo hay
+fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules, official: Option<&str>) -> RenameEntry {
     let rom_path = Path::new(&game.path);
     let ext = rom_path
         .extension()
@@ -140,7 +150,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
     let proposed = match source {
         RenameSource::Title => game_title.as_deref().map(sanitize_filename),
         RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
-        RenameSource::Dat => dat_name.map(sanitize_filename),
+        RenameSource::Dat | RenameSource::ScreenScraper => official.map(sanitize_filename),
     }
     .filter(|p| !p.is_empty())
     .unwrap_or_else(|| current_name.clone());
@@ -645,6 +655,18 @@ mod tests {
     fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
         propose(&game, source, &CompiledRules::new(&default_rules()), None)
+    }
+
+    #[test]
+    fn screenscraper_source_keeps_the_file_extension() {
+        // ScreenScraper conoce «Super Mario World (USA).sfc» (el de dentro del zip): llega sin
+        // extensión y el fichero sigue siendo .zip
+        let game = Game { path: "./mario mal.zip".into(), ..Default::default() };
+        let e = propose(&game, RenameSource::ScreenScraper, &CompiledRules::new(&default_rules()), Some("Super Mario World (USA)"));
+        assert_eq!(e.proposed_name, "Super Mario World (USA)");
+        assert!(e.can_rename);
+        let e = propose(&game, RenameSource::ScreenScraper, &CompiledRules::new(&default_rules()), None);
+        assert!(!e.can_rename, "without a name from ScreenScraper it stays as it is");
     }
 
     #[test]

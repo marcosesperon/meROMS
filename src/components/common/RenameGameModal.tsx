@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { checkRenameTarget, listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
-import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
+import { renameSourceText, usableRenameSources } from "../../utils/renameSources";
 import { useDebounce } from "../../hooks/useDebounce";
 import { showMessage } from "../../utils/dialogs";
 import { useAppStore } from "../../store/useAppStore";
@@ -39,9 +39,12 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
   const [conflict, setConflict] = useState<Conflict>(null);
   const [checking, setChecking] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  // Buscando la propuesta (con ScreenScraper tarda un poco)
+  const [loading, setLoading] = useState(false);
   const debouncedName = useDebounce(name, 250);
+  const ssUsable = useAppStore((s) => !!s.scraperStatus?.screenscraper);
 
-  // Propuesta inicial (y cada vez que se cambia entre título y reglas)
+  // Propuesta inicial (y cada vez que se cambia de fuente)
   useEffect(() => {
     if (!open) {
       setEntry(null);
@@ -49,13 +52,17 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
       setConflict(null);
       return;
     }
+    // Mientras se busca la propuesta (ScreenScraper tarda un poco) no hay nada que editar
+    setEntry(null);
+    setLoading(true);
     listRenameCandidates(systemPath, source, gamePath)
       .then(([found]) => {
         setEntry(found ?? null);
         setName(found?.proposed_name ?? "");
         setConflict((found?.conflict as Conflict) ?? null);
       })
-      .catch((e) => showMessage(t("rename.failed", { error: String(e) }), "error"));
+      .catch((e) => showMessage(t("rename.failed", { error: String(e) }), "error"))
+      .finally(() => setLoading(false));
   }, [open, systemPath, gamePath, source]);
 
   // Comprobación del nombre según se escribe (con una pequeña espera)
@@ -118,11 +125,11 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
           <h3 className="text-base font-semibold text-zinc-100">{t("gameTools.renameTitle")}</h3>
           {/* De dónde sale el nombre propuesto */}
           <div className="flex gap-2 mt-3">
-            {RENAME_SOURCES.map(({ id: s, label }) => (
+            {usableRenameSources(ssUsable).map(({ id: s, label }) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}
-                disabled={renaming}
+                disabled={renaming || loading}
                 className={`px-3 py-1 text-xs rounded transition-colors ${
                   source === s ? "bg-indigo-600 text-white" : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
                 }`}

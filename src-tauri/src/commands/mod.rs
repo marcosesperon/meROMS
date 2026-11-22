@@ -37,6 +37,7 @@ pub mod scraper_adb;
 pub mod scraper_launchbox;
 pub mod scraper_tgdb;
 pub mod settings;
+pub mod ss_rom_names;
 pub mod systems;
 pub mod transfer_profile;
 pub mod translate;

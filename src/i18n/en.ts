@@ -1082,6 +1082,9 @@ const en = {
   "rename.sourceDat": "DAT name",
   "rename.sourceDatHelp": "The official name from the system's DAT, for ROMs recognised by their content (DAT... > Check by content). The extension is kept.",
   "rename.noRenamesDat": "No ROM recognised by content has a name different from the DAT. If you haven't yet, open DAT... and use Check by content.",
+  "rename.sourceSs": "ScreenScraper",
+  "rename.sourceSsHelp": "The file name ScreenScraper has for the ROM, recognised by its content (only if the checksum matches). It is asked now (uses your daily quota) and remembered. The extension is kept.",
+  "rename.noRenamesSs": "ScreenScraper has no different name for any ROM recognised by its content.",
   "rename.conflicts": "{count} conflicts",
   "rename.conflictDuplicate": "duplicate",
   "rename.conflictExists": "exists",
@@ -1160,6 +1163,7 @@ const en = {
   "task.phase.renaming": "Renaming...",
   "task.phase.moving": "Moving...",
   "task.phase.writing": "Writing files...",
+  "task.phase.asking": "Asking ScreenScraper...",
   "task.stopped": "Stopped: {done} of {total} done. What was done is saved.",
 
   // Take a system to another profile

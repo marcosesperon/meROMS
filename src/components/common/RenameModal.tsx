@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
 import type { RenameEntry, RenameSource } from "../../types";
-import { RENAME_SOURCES, renameSourceText } from "../../utils/renameSources";
+import { renameSourceText, usableRenameSources } from "../../utils/renameSources";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
@@ -18,6 +18,7 @@ interface RenameModalProps {
 export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
+  const ssUsable = useAppStore((s) => !!s.scraperStatus?.screenscraper);
   const [entries, setEntries] = useState<RenameEntry[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editedNames, setEditedNames] = useState<Record<string, string>>({});
@@ -74,6 +75,8 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       setEditedNames(names);
     } catch (e) {
       console.error("Scan failed:", e);
+      // Con ScreenScraper puede fallar la consulta (sin conexión, cupo agotado…): se avisa
+      await showMessage(t("rename.failed", { error: String(e) }), "error");
     }
   }
 
@@ -142,7 +145,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           </h3>
           {/* Where the new name comes from */}
           <div className="flex gap-2 mt-3">
-            {RENAME_SOURCES.map(({ id: s, label }) => (
+            {usableRenameSources(ssUsable).map(({ id: s, label }) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}

@@ -18,9 +18,9 @@ use crate::models::GameList;
 
 const API_BASE: &str = "https://www.screenscraper.fr/api2";
 const SOFTWARE_NAME: &str = "meROMS";
-const REQUEST_DELAY_MS: u64 = 1500;
+pub(super) const REQUEST_DELAY_MS: u64 = 1500;
 
-fn build_http_client() -> Result<Client, String> {
+pub(super) fn build_http_client() -> Result<Client, String> {
     let mut headers = HeaderMap::new();
     headers.insert(
         USER_AGENT,
@@ -338,8 +338,22 @@ async fn ss_get(client: &Client, settings: &AppSettings, endpoint: &str, params:
         .map_err(|e| format!("Failed to parse API response: {}", e))
 }
 
+/// Huella con la que se preguntó a ScreenScraper por una ROM: el CRC del fichero de dentro
+/// (zip/7z de un solo fichero) o el MD5 del fichero tal cual
+#[derive(Debug, Clone, PartialEq)]
+pub(super) enum RomKey {
+    Crc(String),
+    Md5(String),
+}
+
 /// The game ScreenScraper recognises from the ROM file itself (MD5 + file name), if any
 async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, system: &SystemRef) -> Result<Option<Value>, String> {
+    Ok(ss_lookup_rom(client, settings, game, system).await?.0)
+}
+
+/// Como `ss_game_by_rom`, pero devuelve también la huella usada (Renombrar la necesita para
+/// saber cuál de las ROMs del juego es la nuestra)
+pub(super) async fn ss_lookup_rom(client: &Client, settings: &AppSettings, game: &Game, system: &SystemRef) -> Result<(Option<Value>, RomKey), String> {
     let folder_name = system.name.as_str();
     let system_id = screenscraper_id_for_system(folder_name)
         .ok_or_else(|| format!("Unknown system for ScreenScraper: {}", folder_name))?;
@@ -361,7 +375,8 @@ async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, sy
             ("romtaille", size.as_str()),
             ("romnom", inner_name.as_str()),
         ];
-        return Ok(ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"])));
+        let jeu = ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"]));
+        return Ok((jeu, RomKey::Crc(crc)));
     }
 
     // Fichero suelto, o zip de arcade (varios ficheros: se identifica por el nombre del zip)
@@ -377,7 +392,8 @@ async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, sy
         ("md5", md5_hash.as_str()),
         ("romnom", rom_filename),
     ];
-    Ok(ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"])))
+    let jeu = ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"]));
+    Ok((jeu, RomKey::Md5(md5_hash)))
 }
 
 /// ScreenScraper sometimes answers «nothing» with an empty or id-less game: that's no game

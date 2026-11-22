@@ -314,7 +314,7 @@ export interface RenameEntry {
 }
 
 /** Where the proposed name comes from */
-export type RenameSource = "title" | "rules" | "dat";
+export type RenameSource = "title" | "rules" | "dat" | "screenscraper";
 
 export interface RenameResult {
   gamelist: GameList;
