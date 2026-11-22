@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, NameScraper, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -228,14 +228,15 @@ export async function trashMedia(systemPath: string, paths: string[], task?: str
   return invoke("trash_media", { systemPath, paths, task });
 }
 
-/** With gamePath, only that game is proposed (game detail panel). */
+/** With gamePath, only that game is proposed (game detail panel). scraper: which one, for the "scraper" source. */
 export async function listRenameCandidates(
   systemPath: string,
   source: RenameSource = "title",
   gamePath?: string,
-  task?: string
+  task?: string,
+  scraper?: NameScraper
 ): Promise<RenameEntry[]> {
-  return invoke("list_rename_candidates", { systemPath, source, gamePath, task });
+  return invoke("list_rename_candidates", { systemPath, source, gamePath, scraper, task });
 }
 
 /** null = the name can be used; otherwise "invalid" or "exists". */

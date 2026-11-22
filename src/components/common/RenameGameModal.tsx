@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { checkRenameTarget, listRenameCandidates, renameRoms } from "../../commands";
-import type { RenameEntry, RenameSource } from "../../types";
-import { renameSourceText, usableRenameSources } from "../../utils/renameSources";
+import type { NameScraper, RenameEntry, RenameSource } from "../../types";
+import { renameSourceText, usableNameScrapers, usableRenameSources } from "../../utils/renameSources";
+import { NameScraperPicker } from "./NameScraperPicker";
 import { useDebounce } from "../../hooks/useDebounce";
 import { showMessage } from "../../utils/dialogs";
 import { useAppStore } from "../../store/useAppStore";
@@ -42,7 +43,11 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
   // Buscando la propuesta (con ScreenScraper tarda un poco)
   const [loading, setLoading] = useState(false);
   const debouncedName = useDebounce(name, 250);
-  const ssUsable = useAppStore((s) => !!s.scraperStatus?.screenscraper);
+  const scraperStatus = useAppStore((s) => s.scraperStatus);
+  // Fuente «Scraper»: cuál se usa; la consulta espera a «Buscar» (gasta cupo)
+  const [scraper, setScraper] = useState<NameScraper | null>(null);
+  // Cada «Buscar» cambia este número y relanza la búsqueda
+  const [searchRun, setSearchRun] = useState(0);
 
   // Propuesta inicial (y cada vez que se cambia de fuente)
   useEffect(() => {
@@ -54,8 +59,16 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
     }
     // Mientras se busca la propuesta (ScreenScraper tarda un poco) no hay nada que editar
     setEntry(null);
+    setName("");
+    setConflict(null);
+    // «Scraper»: nada hasta pulsar «Buscar»
+    if (source === "scraper") {
+      const chosen = scraper ?? usableNameScrapers(scraperStatus)[0]?.id ?? null;
+      if (!scraper && chosen) setScraper(chosen);
+      if (searchRun === 0 || !chosen) return;
+    }
     setLoading(true);
-    listRenameCandidates(systemPath, source, gamePath)
+    listRenameCandidates(systemPath, source, gamePath, undefined, source === "scraper" ? scraper ?? undefined : undefined)
       .then(([found]) => {
         setEntry(found ?? null);
         setName(found?.proposed_name ?? "");
@@ -63,7 +76,8 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
       })
       .catch((e) => showMessage(t("rename.failed", { error: String(e) }), "error"))
       .finally(() => setLoading(false));
-  }, [open, systemPath, gamePath, source]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, systemPath, gamePath, source, searchRun]);
 
   // Comprobación del nombre según se escribe (con una pequeña espera)
   useEffect(() => {
@@ -125,10 +139,14 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
           <h3 className="text-base font-semibold text-zinc-100">{t("gameTools.renameTitle")}</h3>
           {/* De dónde sale el nombre propuesto */}
           <div className="flex gap-2 mt-3">
-            {usableRenameSources(ssUsable).map(({ id: s, label }) => (
+            {usableRenameSources(scraperStatus).map(({ id: s, label }) => (
               <button
                 key={s}
-                onClick={() => setSource(s)}
+                onClick={() => {
+                  setSource(s);
+                  // Al volver a «Scraper» se vuelve a esperar a «Buscar»
+                  setSearchRun(0);
+                }}
                 disabled={renaming || loading}
                 className={`px-3 py-1 text-xs rounded transition-colors ${
                   source === s ? "bg-indigo-600 text-white" : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
@@ -141,12 +159,20 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
           <p className="text-xs text-zinc-500 mt-2">
             {t(renameSourceText(source).help)}
           </p>
+          {source === "scraper" && (
+            <NameScraperPicker
+              scraper={scraper}
+              onChange={setScraper}
+              onSearch={() => setSearchRun((n) => n + 1)}
+              disabled={renaming || loading}
+            />
+          )}
         </div>
 
         <div className="px-5 py-4 space-y-3">
           <div>
             <label className="text-xs text-zinc-400 mb-1 block">{t("gameTools.renameCurrent")}</label>
-            <p className="text-sm text-zinc-300 font-mono break-all">{entry?.current_path ?? "..."}</p>
+            <p className="text-sm text-zinc-300 font-mono break-all">{entry?.current_path ?? gamePath}</p>
           </div>
           <div>
             <label className="text-xs text-zinc-400 mb-1 block">{t("gameTools.renameNew")}</label>
@@ -159,7 +185,11 @@ export function RenameGameModal({ open, systemPath, gamePath, onClose, onDone }:
                 conflict ? "border-amber-500" : "border-zinc-600 focus:border-indigo-500"
               }`}
             />
-            {conflict ? (
+            {source === "scraper" && searchRun === 0 ? (
+              <p className="text-xs text-zinc-500 mt-1">{t("rename.scraperHint")}</p>
+            ) : source === "scraper" && entry && unchanged ? (
+              <p className="text-xs text-zinc-500 mt-1">{t("rename.noRenamesScraper")}</p>
+            ) : conflict ? (
               <p className="text-xs text-amber-400 mt-1">{conflictText[conflict]}</p>
             ) : unchanged ? (
               <p className="text-xs text-zinc-500 mt-1">{t("gameTools.renameSame")}</p>

@@ -311,10 +311,14 @@ export interface RenameEntry {
   tracks?: number;
   /** duplicate = another ROM would get the same name · exists = a different file has it */
   conflict?: "duplicate" | "exists";
+  /** "scraper" source stopped before asking for this ROM: no name yet (Search goes on) */
+  pending?: boolean;
 }
 
 /** Where the proposed name comes from */
-export type RenameSource = "title" | "rules" | "dat" | "screenscraper";
+export type RenameSource = "title" | "rules" | "dat" | "scraper";
+/** Scrapers que dan el nombre de fichero de la ROM (fuente «Scraper» de Renombrar) */
+export type NameScraper = "screenscraper";
 
 export interface RenameResult {
   gamelist: GameList;

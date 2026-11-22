@@ -31,6 +31,9 @@ pub struct RenameEntry {
     /// same name) or "exists" (a different file already has that name)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conflict: Option<String>,
+    /// «Scraper» source stopped before asking for this ROM: no name yet («Search» goes on)
+    #[serde(default)]
+    pub pending: bool,
 }
 
 /// Where the proposed name comes from.
@@ -44,10 +47,9 @@ pub enum RenameSource {
     Rules,
     /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
     Dat,
-    /// File name ScreenScraper has for the ROM, recognised by content (asked now, cached).
-    /// "screenscraper" on the wire, like the UI (snake_case would make it "screen_scraper")
-    #[serde(rename = "screenscraper")]
-    ScreenScraper,
+    /// File name a scraper has for the ROM, recognised by content (`scraper` says which one;
+    /// today only "screenscraper": asked now, cached, also filled while scraping)
+    Scraper,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -94,6 +96,7 @@ pub fn list_rename_candidates(
     system_path: String,
     source: Option<RenameSource>,
     game_path: Option<String>,
+    scraper: Option<String>,
     task: Option<String>,
 ) -> Result<Vec<RenameEntry>, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
@@ -114,18 +117,24 @@ pub fn list_rename_candidates(
     };
 
     let chosen: Vec<_> = gamelist.games.iter().filter(wanted).collect();
-    // «ScreenScraper»: se pregunta ahora por lo que no esté en caché (por ruta del juego)
-    let ss_names = if source == RenameSource::ScreenScraper {
-        crate::commands::ss_rom_names::names_for(&app, &settings, &system, &chosen, &progress)?
-    } else {
-        HashMap::new()
+    // «Scraper»: el que se eligió pregunta ahora por lo que no esté en caché (por ruta del juego)
+    let scraped = match (source, scraper.as_deref()) {
+        (RenameSource::Scraper, Some("screenscraper")) => crate::commands::ss_rom_names::names_for(&app, &settings, &system, &chosen, &progress)?,
+        (RenameSource::Scraper, other) => return Err(format!("Unknown scraper for file names: {}", other.unwrap_or("none"))),
+        _ => Default::default(),
     };
+    let ss_names = &scraped.names;
     let mut entries: Vec<RenameEntry> = Vec::with_capacity(chosen.len());
     for (i, game) in chosen.iter().enumerate() {
-        progress.check()?;
+        // Tras parar al scraper, lo que queda es local y rápido: se termina la lista
+        if !scraped.stopped {
+            progress.check()?;
+        }
         progress.step("games", i + 1, chosen.len(), &game.path);
         let official = dat_names.get(&rom_of(game)).or_else(|| ss_names.get(&game.path));
-        entries.push(propose(game, source, &rules, official.map(String::as_str)));
+        let mut entry = propose(game, source, &rules, official.map(String::as_str));
+        entry.pending = scraped.pending.contains(&game.path);
+        entries.push(entry);
     }
     progress.phase("checking");
     mark_conflicts(&mut entries, &system.rom_dir);
@@ -135,7 +144,7 @@ pub fn list_rename_candidates(
     Ok(entries)
 }
 
-/// `official`: el nombre de la fuente DAT o ScreenScraper (sin extensión), si lo hay
+/// `official`: el nombre de la fuente DAT o del scraper (sin extensión), si lo hay
 fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules, official: Option<&str>) -> RenameEntry {
     let rom_path = Path::new(&game.path);
     let ext = rom_path
@@ -152,7 +161,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
     let proposed = match source {
         RenameSource::Title => game_title.as_deref().map(sanitize_filename),
         RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
-        RenameSource::Dat | RenameSource::ScreenScraper => official.map(sanitize_filename),
+        RenameSource::Dat | RenameSource::Scraper => official.map(sanitize_filename),
     }
     .filter(|p| !p.is_empty())
     .unwrap_or_else(|| current_name.clone());
@@ -167,6 +176,7 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
         can_rename,
         tracks: 0,
         conflict: None,
+        pending: false,
     }
 }
 
@@ -227,6 +237,7 @@ fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<St
         can_rename: true,
         tracks: 0,
         conflict: None,
+        pending: false,
     }];
     mark_conflicts(&mut entry, rom_dir);
     mark_track_conflicts(&mut entry, rom_dir);
@@ -661,7 +672,7 @@ mod tests {
 
     #[test]
     fn sources_are_read_with_the_names_the_ui_sends() {
-        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("screenscraper", RenameSource::ScreenScraper)] {
+        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("scraper", RenameSource::Scraper)] {
             assert_eq!(serde_json::from_str::<RenameSource>(&format!("\"{}\"", text)).unwrap(), source);
         }
     }
@@ -671,10 +682,10 @@ mod tests {
         // ScreenScraper conoce «Super Mario World (USA).sfc» (el de dentro del zip): llega sin
         // extensión y el fichero sigue siendo .zip
         let game = Game { path: "./mario mal.zip".into(), ..Default::default() };
-        let e = propose(&game, RenameSource::ScreenScraper, &CompiledRules::new(&default_rules()), Some("Super Mario World (USA)"));
+        let e = propose(&game, RenameSource::Scraper, &CompiledRules::new(&default_rules()), Some("Super Mario World (USA)"));
         assert_eq!(e.proposed_name, "Super Mario World (USA)");
         assert!(e.can_rename);
-        let e = propose(&game, RenameSource::ScreenScraper, &CompiledRules::new(&default_rules()), None);
+        let e = propose(&game, RenameSource::Scraper, &CompiledRules::new(&default_rules()), None);
         assert!(!e.can_rename, "without a name from ScreenScraper it stays as it is");
     }
 

@@ -346,54 +346,45 @@ pub(super) enum RomKey {
     Md5(String),
 }
 
-/// The game ScreenScraper recognises from the ROM file itself (MD5 + file name), if any
-async fn ss_game_by_rom(client: &Client, settings: &AppSettings, game: &Game, system: &SystemRef) -> Result<Option<Value>, String> {
-    Ok(ss_lookup_rom(client, settings, game, system).await?.0)
-}
-
-/// Como `ss_game_by_rom`, pero devuelve también la huella usada (Renombrar la necesita para
-/// saber cuál de las ROMs del juego es la nuestra)
+/// The game ScreenScraper recognises from the ROM file itself (checksum + file name), if any,
+/// y la huella usada (para saber cuál de las ROMs del juego es la nuestra: Renombrar)
 pub(super) async fn ss_lookup_rom(client: &Client, settings: &AppSettings, game: &Game, system: &SystemRef) -> Result<(Option<Value>, RomKey), String> {
     let folder_name = system.name.as_str();
     let system_id = screenscraper_id_for_system(folder_name)
         .ok_or_else(|| format!("Unknown system for ScreenScraper: {}", folder_name))?;
+    let (key, extra) = rom_probe(game, system)?;
+    let system_id_str = system_id.to_string();
+    let mut params: Vec<(&str, &str)> = vec![("systemeid", system_id_str.as_str())];
+    params.extend(extra.iter().map(|(k, v)| (*k, v.as_str())));
+    let jeu = ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"]));
+    Ok((jeu, key))
+}
 
+/// La huella de una ROM tal como se le pregunta a ScreenScraper, y los datos que la acompañan
+/// en la consulta (tamaño y nombre)
+fn rom_probe(game: &Game, system: &SystemRef) -> Result<(RomKey, Vec<(&'static str, String)>), String> {
     let rom_relative = game.path.strip_prefix("./").unwrap_or(&game.path);
     let rom_absolute = system.rom_dir.join(rom_relative);
-    let system_id_str = system_id.to_string();
 
     // Un .zip/.7z con un solo fichero: ScreenScraper conoce el fichero de dentro (su CRC,
     // tamaño y nombre), no el comprimido. Se leen del índice, sin descomprimir.
     if let Some(inner) = crate::rom_hash::single_archive_entry(&rom_absolute) {
         let crc = inner.crc.to_uppercase();
-        let size = inner.size.to_string();
         // Solo el nombre, sin la carpeta que pudiera llevar dentro del comprimido
         let inner_name = inner.name.rsplit(['/', '\\']).next().unwrap_or(&inner.name).to_string();
-        let params = vec![
-            ("systemeid", system_id_str.as_str()),
-            ("crc", crc.as_str()),
-            ("romtaille", size.as_str()),
-            ("romnom", inner_name.as_str()),
-        ];
-        let jeu = ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"]));
-        return Ok((jeu, RomKey::Crc(crc)));
+        let extra = vec![("crc", crc.clone()), ("romtaille", inner.size.to_string()), ("romnom", inner_name)];
+        return Ok((RomKey::Crc(crc), extra));
     }
 
     // Fichero suelto, o zip de arcade (varios ficheros: se identifica por el nombre del zip)
     let md5_hash = compute_md5(&rom_absolute)?;
+    let rom_filename = Path::new(&game.path).file_name().and_then(|n| n.to_str()).unwrap_or(&game.path).to_string();
+    Ok((RomKey::Md5(md5_hash.clone()), vec![("md5", md5_hash), ("romnom", rom_filename)]))
+}
 
-    let rom_filename = Path::new(&game.path)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(&game.path);
-
-    let params = vec![
-        ("systemeid", system_id_str.as_str()),
-        ("md5", md5_hash.as_str()),
-        ("romnom", rom_filename),
-    ];
-    let jeu = ss_get(client, settings, "jeuInfos.php", &params).await?.and_then(|body| real_game(&body["response"]["jeu"]));
-    Ok((jeu, RomKey::Md5(md5_hash)))
+/// Ruta absoluta de la ROM de un juego
+fn rom_file(game: &Game, system: &SystemRef) -> std::path::PathBuf {
+    system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path))
 }
 
 /// ScreenScraper sometimes answers «nothing» with an empty or id-less game: that's no game
@@ -403,13 +394,17 @@ fn real_game(jeu: &Value) -> Option<Value> {
 
 /// Scrape a single game using ScreenScraper API.
 async fn scrape_game_screenscraper(
+    app: &tauri::AppHandle,
     settings: &AppSettings,
     existing_game: &Game,
     layout: &Layout,
     system: &SystemRef,
 ) -> Result<ScrapeResult, String> {
     let client = build_http_client()?;
-    let Some(jeu) = ss_game_by_rom(&client, settings, existing_game, system).await? else {
+    let (jeu, key) = ss_lookup_rom(&client, settings, existing_game, system).await?;
+    // De paso, el nombre de fichero que ScreenScraper tiene para la ROM (para Renombrar)
+    crate::commands::ss_rom_names::remember(app, &rom_file(existing_game, system), jeu.as_ref(), &key);
+    let Some(jeu) = jeu else {
         return Ok(ScrapeResult {
             game: existing_game.clone(),
             found: false,
@@ -534,8 +529,12 @@ pub async fn search_scrape(
             .into_iter()
             .find(|g| g.path == game_path);
         if let Some(game) = game {
-            match ss_game_by_rom(&client, &settings, &game, &system).await {
-                Ok(jeu) => rom_match = jeu.and_then(|jeu| parse_ss_candidate(&jeu, &regions, true)),
+            match ss_lookup_rom(&client, &settings, &game, &system).await {
+                Ok((jeu, key)) => {
+                    // De paso, el nombre de fichero de la ROM (para Renombrar)
+                    crate::commands::ss_rom_names::remember(&app, &rom_file(&game, &system), jeu.as_ref(), &key);
+                    rom_match = jeu.and_then(|jeu| parse_ss_candidate(&jeu, &regions, true));
+                }
                 Err(e) => errors.push(format!("ScreenScraper: {}", e)),
             }
         }
@@ -646,6 +645,14 @@ pub async fn apply_scrape(
                 .await?
                 .ok_or("ScreenScraper: game not found")?;
             let jeu = real_game(&body["response"]["jeu"]).ok_or("ScreenScraper: game not found")?;
+            // De paso, el nombre de fichero de la ROM, si está en la lista de ROMs de ese juego
+            // con nuestra huella (calculada aquí: la consulta fue por id, no por la ROM)
+            let rom = rom_file(&game, &system);
+            if rom.is_file() {
+                if let Ok((key, _)) = rom_probe(&game, &system) {
+                    crate::commands::ss_rom_names::remember(&app, &rom, Some(&jeu), &key);
+                }
+            }
             let media_types = settings.media_types();
             let game = process_scrape_response(&client, &jeu, &game, &layout, &system, &media_types, &settings).await?;
             Ok(ScrapeResult { game, found: true })
@@ -751,7 +758,7 @@ async fn try_source(
     system: &SystemRef,
 ) -> Result<ScrapeResult, String> {
     match source {
-        Source::ScreenScraper => scrape_game_screenscraper(settings, game, layout, system).await,
+        Source::ScreenScraper => scrape_game_screenscraper(app, settings, game, layout, system).await,
         Source::ArcadeItalia => crate::commands::scraper_adb::scrape_game_adb(client, game, layout, system, settings).await,
         Source::LaunchBox => crate::commands::scraper_launchbox::scrape_game_launchbox(app, client, game, layout, system, settings).await,
         Source::TheGamesDb => {

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listRenameCandidates, renameRoms } from "../../commands";
-import type { RenameEntry, RenameSource } from "../../types";
-import { renameSourceText, usableRenameSources } from "../../utils/renameSources";
+import type { NameScraper, RenameEntry, RenameSource } from "../../types";
+import { renameSourceText, usableNameScrapers, usableRenameSources } from "../../utils/renameSources";
+import { NameScraperPicker } from "./NameScraperPicker";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
@@ -18,7 +19,10 @@ interface RenameModalProps {
 export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
-  const ssUsable = useAppStore((s) => !!s.scraperStatus?.screenscraper);
+  const scraperStatus = useAppStore((s) => s.scraperStatus);
+  // Fuente «Scraper»: cuál se usa y si ya se pulsó «Buscar» (antes no se pregunta nada)
+  const [scraper, setScraper] = useState<NameScraper | null>(null);
+  const [searched, setSearched] = useState(false);
   const [entries, setEntries] = useState<RenameEntry[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editedNames, setEditedNames] = useState<Record<string, string>>({});
@@ -26,10 +30,11 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const scanTask = useTask();
   const scanning = scanTask.running;
   // Cancelar con el botón cierra la ventana; cambiar el origen del nombre también para la búsqueda
-  // anterior, pero entonces sigue la nueva
+  // anterior, pero entonces sigue la nueva. Con «Scraper» Cancelar solo para las consultas: la
+  // ventana sigue abierta con lo encontrado hasta ahí
   const userCancelled = useRef(false);
   const cancelScan = () => {
-    userCancelled.current = true;
+    if (source !== "scraper") userCancelled.current = true;
     scanTask.cancel();
   };
   // Renombrar: con progreso y Cancelar (se para entre juegos; lo renombrado se guarda)
@@ -42,6 +47,14 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       setEntries([]);
       setSelected(new Set());
       setEditedNames({});
+      return;
+    }
+    // «Scraper» gasta cupo: se espera a «Buscar»; mientras, ni lista ni consultas
+    if (source === "scraper") {
+      setScraper((current) => current ?? usableNameScrapers(scraperStatus)[0]?.id ?? null);
+      setSearched(false);
+      setEntries([]);
+      setSelected(new Set());
       return;
     }
     scan();
@@ -58,10 +71,14 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   async function scan() {
     userCancelled.current = false;
     try {
-      const result = await scanTask.run((task) => listRenameCandidates(systemPath, source, undefined, task));
-      // Cancelado: no hay nada que enseñar
+      const result = await scanTask.run((task) =>
+        listRenameCandidates(systemPath, source, undefined, task, source === "scraper" ? scraper ?? undefined : undefined)
+      );
+      // Cancelado: no hay nada que enseñar (con «Scraper», parado antes de preguntar nada:
+      // se vuelve a esperar a «Buscar»)
       if (!result) {
-        if (userCancelled.current) onClose();
+        if (source === "scraper") setSearched(false);
+        else if (userCancelled.current) onClose();
         return;
       }
       setEntries(result);
@@ -137,6 +154,8 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   const renameableCount = entries.filter((e) => e.can_rename).length;
   const selectableCount = entries.filter((e) => e.can_rename && !isBlocked(e)).length;
   const conflictCount = entries.filter((e) => e.can_rename && e.conflict).length;
+  // «Scraper» parado a medias: ROMs por las que no se llegó a preguntar
+  const pendingCount = entries.filter((e) => e.pending).length;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -148,7 +167,7 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           </h3>
           {/* Where the new name comes from */}
           <div className="flex gap-2 mt-3">
-            {usableRenameSources(ssUsable).map(({ id: s, label }) => (
+            {usableRenameSources(scraperStatus).map(({ id: s, label }) => (
               <button
                 key={s}
                 onClick={() => setSource(s)}
@@ -166,12 +185,28 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
           <p className="text-xs text-zinc-500 mt-2">
             {t(renameSourceText(source).help)}
           </p>
+          {source === "scraper" && (
+            <NameScraperPicker
+              scraper={scraper}
+              onChange={setScraper}
+              onSearch={() => {
+                setSearched(true);
+                scan();
+              }}
+              disabled={scanning || renaming}
+            />
+          )}
           {!scanning && renameableCount > 0 && (
             <p className="text-sm text-zinc-400 mt-1">
               {t("rename.found", { count: renameableCount })}
               {conflictCount > 0 && (
                 <span className="text-amber-400"> · {t("rename.conflicts", { count: conflictCount })}</span>
               )}
+            </p>
+          )}
+          {!scanning && source === "scraper" && pendingCount > 0 && (
+            <p className="text-sm text-amber-400 mt-1">
+              {t("rename.scraperStopped", { done: entries.length - pendingCount, total: entries.length })}
             </p>
           )}
         </div>
@@ -182,9 +217,14 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
             <TaskProgress progress={renameTask.progress} onCancel={renameTask.cancel} cancelling={renameTask.cancelling} />
           ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("rename.scanning")} onCancel={cancelScan} cancelling={scanTask.cancelling} />
+          ) : source === "scraper" && !searched ? (
+            <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
+              {t("rename.scraperHint")}
+            </div>
           ) : renameableCount === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {t(renameSourceText(source).empty)}
+              {/* Parado antes de encontrar nada: el aviso de arriba lo explica */}
+              {pendingCount > 0 ? "" : t(renameSourceText(source).empty)}
             </div>
           ) : (
             <>
