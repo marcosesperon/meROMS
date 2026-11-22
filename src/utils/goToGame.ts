@@ -1,4 +1,5 @@
 import { useAppStore } from "../store/useAppStore";
+import { scrollToGame } from "./scrollToGame";
 
 /**
  * Ir a un juego de cualquier sistema (búsqueda global, estadísticas de la biblioteca): abre su
@@ -29,7 +30,7 @@ export async function goToGame(systemPath: string, gamePath: string) {
   if (!game) return;
   s.selectGame(game);
   setTimeout(() => {
-    document.querySelector(`[data-game-path="${CSS.escape(game.path)}"]`)?.scrollIntoView({ block: "center" });
+    scrollToGame(game.path, "center");
   }, 150);
   if (s.settings.click_action === "full") s.openFullView();
 }

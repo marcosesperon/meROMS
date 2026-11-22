@@ -319,7 +319,7 @@ function SystemSummary() {
 
       <div className="px-6">
         {info?.description && (
-          <p className="mt-4 text-sm leading-relaxed text-zinc-400">{locale === "es" ? info.description.es : info.description.en}</p>
+          <p className="mt-4 text-sm leading-relaxed text-zinc-400">{localize(info.description, locale)}</p>
         )}
 
         {specs.length > 0 && (

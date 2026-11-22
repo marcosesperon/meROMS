@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "./store/useAppStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
@@ -27,7 +27,8 @@ import { MediaReviewModal } from "./components/common/MediaReviewModal";
 import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
-import { datReport, listMissingRoms, listNewRoms, scrapeSystem } from "./commands";
+import { datReport, listMissingRoms, listNewRoms, scrapeSystem, watchRoms } from "./commands";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DatModal } from "./components/common/DatModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
 import { useFilteredGames } from "./hooks/useFilteredGames";
@@ -36,7 +37,7 @@ import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
 import { useTranslation } from "./i18n";
-import { getActiveProfile, isProfileComplete } from "./utils/profiles";
+import { getActiveProfile, isProfileComplete, profileLocationKey } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
 import { CouchMode } from "./components/couch/CouchMode";
 import { useGamepad } from "./hooks/useGamepad";
@@ -119,6 +120,44 @@ function App() {
       unlisten.then((f) => f());
     };
   }, []);
+  // Watching the ROM folders (Settings, on unless turned off): new and missing ROMs show up in
+  // the sidebar and in the selected system's buttons without entering it. Real-time watching in
+  // Rust ("roms-changed") plus a full pass when the list of systems changes, and a pass of the
+  // open system when the window comes back to the front (network or USB drives may not send
+  // changes), at most every 15 s. On a network drive a pass of the whole library is slow, so
+  // it isn't repeated when only a game count changes (entering a system updates it).
+  const watchOn = useAppStore((s) => s.settings.watch_roms !== false);
+  const profileKey = useAppStore((s) => profileLocationKey(getActiveProfile(s.settings)));
+  const systemsKey = useAppStore((s) => s.systems.filter((x) => x.has_gamelist).map((x) => x.path).join("\n"));
+  // Bumped when the selected system's folder changed: its buttons are recounted
+  const [romsTick, setRomsTick] = useState(0);
+  useEffect(() => {
+    watchRoms(watchOn).catch(() => {});
+  }, [watchOn, profileKey]);
+  useEffect(() => {
+    if (watchOn) useAppStore.getState().refreshRomChanges();
+    else useAppStore.setState({ romChanges: {} });
+  }, [watchOn, systemsKey]);
+  useEffect(() => {
+    if (!watchOn) return;
+    let last = Date.now();
+    const unlistenFocus = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (!focused || Date.now() - last < 15000) return;
+      const open = useAppStore.getState().selectedSystem?.path;
+      if (!open) return;
+      last = Date.now();
+      useAppStore.getState().refreshRomChanges([open]);
+      setRomsTick((n) => n + 1);
+    });
+    const unlistenChanges = listen<string[]>("roms-changed", (e) => {
+      useAppStore.getState().refreshRomChanges(e.payload);
+      if (e.payload.includes(useAppStore.getState().selectedSystem?.path ?? "")) setRomsTick((n) => n + 1);
+    });
+    return () => {
+      unlistenFocus.then((f) => f());
+      unlistenChanges.then((f) => f());
+    };
+  }, [watchOn]);
   const systemViewOpen = useAppStore((s) => s.systemViewOpen);
   const setSystemViewOpen = useAppStore((s) => s.setSystemViewOpen);
   const clickAction = useAppStore((s) => s.settings.click_action);
@@ -139,7 +178,9 @@ function App() {
     loadSettings();
   }, []);
 
-  // Recount whenever the games change (system loaded, ROMs added, renamed, removed...)
+  // Recount when the games' paths change (system loaded, ROMs added, renamed, removed...), not
+  // on every data edit: each count walks the system folder, slow on a network drive
+  const gamePathsKey = useMemo(() => games.map((g) => g.path).join("\n"), [games]);
   useEffect(() => {
     if (!selectedSystem) {
       setNewRomsCount(0);
@@ -147,17 +188,23 @@ function App() {
       return;
     }
     let cancelled = false;
-    listNewRoms(selectedSystem.path)
-      .then((roms) => !cancelled && setNewRomsCount(roms.length))
-      .catch(() => !cancelled && setNewRomsCount(0));
+    const path = selectedSystem.path;
+    const { trackBackground } = useAppStore.getState();
+    const newRoms = trackBackground(listNewRoms(path)).then((roms) => roms.length);
     // And the other way round: games whose ROM is gone (marked in the list, "No ROM (N)" button)
-    listMissingRoms(selectedSystem.path)
-      .then((m) => !cancelled && setMissingRomPaths(new Set(m.games.map((g) => g.path))))
-      .catch(() => !cancelled && setMissingRomPaths(new Set()));
+    const missing = trackBackground(listMissingRoms(path)).then((m) => new Set(m.games.map((g) => g.path)));
+    newRoms.then((n) => !cancelled && setNewRomsCount(n)).catch(() => !cancelled && setNewRomsCount(0));
+    missing.then((m) => !cancelled && setMissingRomPaths(m)).catch(() => !cancelled && setMissingRomPaths(new Set()));
+    // The sidebar mark of this system follows the same counts (adding ROMs clears it)
+    Promise.all([newRoms, missing])
+      .then(([n, m]) => {
+        if (useAppStore.getState().settings.watch_roms !== false) useAppStore.getState().setRomChange(path, { new_roms: n, missing: m.size });
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [selectedSystem?.path, games]);
+  }, [selectedSystem?.path, gamePathsKey, romsTick]);
 
   // Clone/BIOS marks from the system's DAT (null = no DAT): on system change, DAT change or games change
   useEffect(() => {
@@ -166,7 +213,9 @@ function App() {
       return;
     }
     let cancelled = false;
-    datReport(selectedSystem.path)
+    useAppStore
+      .getState()
+      .trackBackground(datReport(selectedSystem.path))
       .then((r) => !cancelled && setDatMarks(r ? new Map(r.marks.map((m) => [m.game_path, m])) : null))
       .catch(() => !cancelled && setDatMarks(null));
     return () => {
@@ -178,7 +227,7 @@ function App() {
   async function reloadAfterMediaChange() {
     if (!selectedSystem) return;
     bumpMediaVersion();
-    await loadGames(selectedSystem.path);
+    await loadGames(selectedSystem.path, { mediaChanged: true });
     const { games: fresh, selectedGame: current } = useAppStore.getState();
     if (current) selectGame(fresh.find((g) => g.path === current.path) ?? null);
   }
@@ -198,7 +247,7 @@ function App() {
       setScrapeError(String(e));
     } finally {
       // Reload games after scraping ends (also when stopped or cut: what was done is saved)
-      await loadGames(selectedSystem.path).catch(() => {});
+      await loadGames(selectedSystem.path, { mediaChanged: true }).catch(() => {});
       setScrapeFinished(true);
     }
   }

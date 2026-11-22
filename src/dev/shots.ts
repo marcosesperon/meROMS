@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useAppStore } from "../store/useAppStore";
 import type { Game, SystemInfo, ViewMode } from "../types";
 import { setSystemView } from "../utils/systemView";
+import { scrollToGame } from "../utils/scrollToGame";
 
 /*
  * Modo capturas (solo desarrollo): `MEROMS_SHOTS=1 pnpm tauri dev`.
@@ -57,7 +58,7 @@ function pickGame(match: (g: Game) => boolean) {
   const game = useAppStore.getState().games.find(match);
   if (!game) throw new Error("Game not found");
   useAppStore.getState().selectGame(game);
-  document.querySelector(`[data-game-path="${CSS.escape(game.path)}"]`)?.scrollIntoView({ block: "center" });
+  scrollToGame(game.path, "center");
 }
 const byPath = (path: string) => (g: Game) => g.path === path;
 

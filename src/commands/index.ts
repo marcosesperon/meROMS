@@ -646,7 +646,7 @@ export async function bestVersions(systemPath: string, task?: string): Promise<V
   return invoke("best_versions", { systemPath, task });
 }
 
-/** Translate texts with DeepL to the app language ("es" | "en"); text null = already in that language */
+/** Translate texts with DeepL to the app language (en, es, fr, pt, it, de); text null = already in that language */
 export async function translateTexts(texts: string[], target: string): Promise<{ text: string | null }[]> {
   return invoke("translate_texts", { texts, target });
 }
@@ -886,9 +886,10 @@ export async function cancelTask(task: string): Promise<void> {
   return invoke("cancel_task", { task });
 }
 
-/** The most common shape of a media type (gamelist field) in the system, for the grid cards; null = not enough images */
-export async function usualMediaShape(systemPath: string, field: string): Promise<MediaProfile | null> {
-  return invoke("usual_media_shape", { systemPath, field });
+/** The most common shape of a media type (gamelist field) in the system, for the grid cards; null = not enough images.
+ *  Saved by the backend while the media folder doesn't change; force measures it again */
+export async function usualMediaShape(systemPath: string, field: string, force?: boolean): Promise<MediaProfile | null> {
+  return invoke("usual_media_shape", { systemPath, field, force: force ?? false });
 }
 
 /** Result of "Move/copy to another profile" */
@@ -1047,6 +1048,22 @@ export interface LibraryGame {
 
 export async function libraryGames(systemPaths: string[]): Promise<LibraryGame[]> {
   return invoke("library_games", { systemPaths });
+}
+
+/** New ROMs (not in the gamelist) and missing ones (in the gamelist, not on disk) of a system */
+export interface RomChanges {
+  new_roms: number;
+  missing: number;
+}
+
+/** Counts per system path (the systems given, those with a gamelist) */
+export async function romChanges(systemPaths: string[]): Promise<Record<string, RomChanges>> {
+  return invoke("rom_changes", { systemPaths });
+}
+
+/** Start (or stop) watching the active profile's ROM folder; changes arrive as "roms-changed" */
+export async function watchRoms(enabled: boolean): Promise<void> {
+  return invoke("watch_roms", { enabled });
 }
 
 /** "Continue playing": games marked Playing first, then the last played (no hidden or done ones) */

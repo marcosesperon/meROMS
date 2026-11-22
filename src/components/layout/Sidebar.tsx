@@ -17,6 +17,7 @@ export function Sidebar() {
   const loading = useAppStore((s) => s.loading);
   const scanProgress = useAppStore((s) => s.scanProgress);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
+  const romChanges = useAppStore((s) => s.romChanges);
   const onlyWithGames = useAppStore((s) => s.onlySystemsWithGames);
   const toggleOnlyWithGames = useAppStore((s) => s.toggleOnlySystemsWithGames);
   const { t } = useTranslation();
@@ -68,6 +69,8 @@ export function Sidebar() {
           visibleSystems.map((system) => {
             const selected = selectedSystem?.path === system.path;
             const count = system.has_gamelist ? system.game_count : system.rom_count;
+            // ROMs nuevas o desaparecidas en su carpeta (vigilancia de carpetas)
+            const changes = romChanges[system.path];
             return (
               <button
                 key={system.path}
@@ -105,6 +108,23 @@ export function Sidebar() {
                     >
                       {count}
                     </span>
+                  )}
+                  {/* ROMs nuevas: «+N» verde abajo a la derecha; desaparecidas: punto rojo abajo a la izquierda */}
+                  {!!changes?.new_roms && (
+                    <span
+                      data-rom-new={changes.new_roms}
+                      title={t("watch.newMark", { count: changes.new_roms })}
+                      className="absolute -bottom-2 -right-4 min-w-[18px] text-center text-[9px] leading-none font-semibold px-1 py-0.5 rounded-full bg-emerald-600 text-white"
+                    >
+                      +{changes.new_roms}
+                    </span>
+                  )}
+                  {!!changes?.missing && (
+                    <span
+                      data-rom-missing={changes.missing}
+                      title={t("watch.missingMark", { count: changes.missing })}
+                      className="absolute -bottom-1.5 -left-3 w-2 h-2 rounded-full bg-red-500"
+                    />
                   )}
                   {/* Marca: este sistema está en la otra estructura y se puede migrar */}
                   {pendingStructure?.systems.includes(system.name) && (

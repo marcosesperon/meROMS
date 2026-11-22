@@ -169,6 +169,8 @@ export interface AppSettings {
   carousel_effects_slow?: boolean;
   /** 3D boxes (grid and carousel) open and play the game's video after 2 s still on them (missing = yes) */
   box_video?: boolean;
+  /** Watch the ROM folders for new and missing ROMs (missing = yes) */
+  watch_roms?: boolean;
   /** Donation prompt: unix seconds of the first launch, then of the last time it was shown */
   donation_prompt_at?: number;
   /** Look for a new version at start and once a day (missing = yes) */

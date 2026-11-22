@@ -2,7 +2,11 @@
   "3do": {
     "manufacturer": {
       "es": "Panasonic / Goldstar / Sanyo (diseño de The 3DO Company)",
-      "en": "Panasonic / Goldstar / Sanyo (designed by The 3DO Company)"
+      "en": "Panasonic / Goldstar / Sanyo (designed by The 3DO Company)",
+      "fr": "Panasonic / Goldstar / Sanyo (conçu par The 3DO Company)",
+      "pt": "Panasonic / Goldstar / Sanyo (concebida pela The 3DO Company)",
+      "it": "Panasonic / Goldstar / Sanyo (progettata da The 3DO Company)",
+      "de": "Panasonic / Goldstar / Sanyo (entworfen von The 3DO Company)"
     },
     "year": 1993,
     "type": "console",
@@ -13,29 +17,53 @@
     ],
     "cpu": {
       "es": "ARM60 a 12,5 MHz",
-      "en": "ARM60 at 12.5 MHz"
+      "en": "ARM60 at 12.5 MHz",
+      "fr": "ARM60 à 12,5 MHz",
+      "pt": "ARM60 a 12,5 MHz",
+      "it": "ARM60 a 12,5 MHz",
+      "de": "ARM60 mit 12,5 MHz"
     },
     "memory": "2 MB RAM + 1 MB VRAM",
     "resolution": {
       "es": "320×240 (hasta 640×480)",
-      "en": "320×240 (up to 640×480)"
+      "en": "320×240 (up to 640×480)",
+      "fr": "320×240 (jusqu'à 640×480)",
+      "pt": "320×240 (até 640×480)",
+      "it": "320×240 (fino a 640×480)",
+      "de": "320×240 (bis 640×480)"
     },
     "colors": {
       "es": "16 millones (24 bits)",
-      "en": "16 million (24 bits)"
+      "en": "16 million (24 bits)",
+      "fr": "16 millions (24 bits)",
+      "pt": "16 milhões (24 bits)",
+      "it": "16 milioni (24 bit)",
+      "de": "16 Millionen (24 Bit)"
     },
     "sound": {
       "es": "DSP propio, 16 bits estéreo",
-      "en": "Custom DSP, 16-bit stereo"
+      "en": "Custom DSP, 16-bit stereo",
+      "fr": "DSP maison, 16 bits stéréo",
+      "pt": "DSP próprio, 16 bits estéreo",
+      "it": "DSP proprietario, 16 bit stereo",
+      "de": "Eigener DSP, 16 Bit Stereo"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~2 millones",
-      "en": "~2 million"
+      "en": "~2 million",
+      "fr": "~2 millions",
+      "pt": "~2 milhões",
+      "it": "~2 milioni",
+      "de": "~2 Millionen"
     },
     "description": {
       "es": "Estándar de consola de 32 bits que varias marcas fabricaban bajo licencia. Muy potente para su época, pero su alto precio lastró sus ventas.",
-      "en": "A 32-bit console standard built under licence by several manufacturers. Powerful for its time, but its high price held back sales."
+      "en": "A 32-bit console standard built under licence by several manufacturers. Powerful for its time, but its high price held back sales.",
+      "fr": "Un standard de console 32 bits fabriqué sous licence par plusieurs marques. Très puissante pour l'époque, mais son prix élevé a freiné ses ventes.",
+      "pt": "Uma norma de consola de 32 bits fabricada sob licença por várias marcas. Muito potente para a época, mas o preço alto travou as vendas.",
+      "it": "Uno standard di console a 32 bit prodotto su licenza da diverse marche. Molto potente per l'epoca, ma il prezzo alto ne frenò le vendite.",
+      "de": "Ein 32-Bit-Konsolenstandard, den mehrere Hersteller in Lizenz bauten. Für seine Zeit sehr leistungsstark, doch der hohe Preis bremste den Verkauf."
     }
   },
   "ags": {
@@ -48,7 +76,11 @@
     ],
     "description": {
       "es": "Motor para crear aventuras gráficas al estilo point-and-click. Miles de juegos amateur y comerciales están hechos con él.",
-      "en": "An engine for making point-and-click graphic adventures. Thousands of hobbyist and commercial games were built with it."
+      "en": "An engine for making point-and-click graphic adventures. Thousands of hobbyist and commercial games were built with it.",
+      "fr": "Un moteur pour créer des aventures graphiques en point-and-click. Des milliers de jeux amateurs et commerciaux ont été faits avec.",
+      "pt": "Um motor para criar aventuras gráficas point-and-click. Com ele foram feitos milhares de jogos amadores e comerciais.",
+      "it": "Un motore per creare avventure grafiche punta e clicca. Con questo sono stati fatti migliaia di giochi amatoriali e commerciali.",
+      "de": "Eine Engine für Point-and-Click-Grafikadventures. Tausende Hobby- und kommerzielle Spiele wurden damit gemacht."
     }
   },
   "amiga": {
@@ -61,32 +93,60 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 7,16 MHz (A500/A2000)",
-      "en": "Motorola 68000 at 7.16 MHz (A500/A2000)"
+      "en": "Motorola 68000 at 7.16 MHz (A500/A2000)",
+      "fr": "Motorola 68000 à 7,16 MHz (A500/A2000)",
+      "pt": "Motorola 68000 a 7,16 MHz (A500/A2000)",
+      "it": "Motorola 68000 a 7,16 MHz (A500/A2000)",
+      "de": "Motorola 68000 mit 7,16 MHz (A500/A2000)"
     },
     "memory": "512 KB – 1 MB (A500)",
     "resolution": {
       "es": "320×256 a 640×512 (PAL)",
-      "en": "320×256 to 640×512 (PAL)"
+      "en": "320×256 to 640×512 (PAL)",
+      "fr": "320×256 à 640×512 (PAL)",
+      "pt": "320×256 a 640×512 (PAL)",
+      "it": "Da 320×256 a 640×512 (PAL)",
+      "de": "320×256 bis 640×512 (PAL)"
     },
     "colors": {
       "es": "4.096 (32 en pantalla; 4.096 en modo HAM)",
-      "en": "4,096 (32 on screen; 4,096 in HAM mode)"
+      "en": "4,096 (32 on screen; 4,096 in HAM mode)",
+      "fr": "4 096 (32 à l'écran ; 4 096 en mode HAM)",
+      "pt": "4.096 (32 no ecrã; 4.096 no modo HAM)",
+      "it": "4.096 (32 a schermo; 4.096 in modalità HAM)",
+      "de": "4.096 (32 auf dem Bildschirm; 4.096 im HAM-Modus)"
     },
     "sound": {
       "es": "Paula: 4 canales PCM de 8 bits estéreo",
-      "en": "Paula: 4 8-bit PCM channels stereo"
+      "en": "Paula: 4 8-bit PCM channels stereo",
+      "fr": "Paula : 4 canaux PCM 8 bits stéréo",
+      "pt": "Paula: 4 canais PCM de 8 bits estéreo",
+      "it": "Paula: 4 canali PCM a 8 bit stereo",
+      "de": "Paula: 4 PCM-Kanäle, 8 Bit, Stereo"
     },
     "media": {
       "es": "Disquete 3,5\"",
-      "en": "Floppy disk 3.5\""
+      "en": "Floppy disk 3.5\"",
+      "fr": "Disquette 3,5\"",
+      "pt": "Disquete 3,5\"",
+      "it": "Floppy disk da 3,5\"",
+      "de": "Diskette 3,5\""
     },
     "unitsSold": {
       "es": "~4,8 millones",
-      "en": "~4.8 million"
+      "en": "~4.8 million",
+      "fr": "~4,8 millions",
+      "pt": "~4,8 milhões",
+      "it": "~4,8 milioni",
+      "de": "~4,8 Millionen"
     },
     "description": {
       "es": "Ordenador muy adelantado gracias a sus chips gráficos y de sonido propios. Fue la plataforma de referencia de los juegos europeos de finales de los 80 y principios de los 90.",
-      "en": "A computer far ahead of its time thanks to its custom graphics and sound chips. It was the leading platform for European games in the late 80s and early 90s."
+      "en": "A computer far ahead of its time thanks to its custom graphics and sound chips. It was the leading platform for European games in the late 80s and early 90s.",
+      "fr": "Un ordinateur très en avance sur son temps grâce à ses puces graphiques et sonores maison. Ce fut la plateforme phare du jeu européen de la fin des années 80 et du début des années 90.",
+      "pt": "Um computador muito à frente do seu tempo graças aos seus chips gráficos e de som próprios. Foi a grande plataforma dos jogos europeus no final dos anos 80 e início dos 90.",
+      "it": "Un computer molto avanti per i suoi tempi grazie ai suoi chip grafici e sonori dedicati. Fu la piattaforma di riferimento per i giochi europei tra la fine degli anni '80 e l'inizio dei '90.",
+      "de": "Ein Computer, der dank eigener Grafik- und Soundchips seiner Zeit weit voraus war. Ende der 80er und Anfang der 90er war er die führende Plattform für europäische Spiele."
     }
   },
   "amstradcpc": {
@@ -99,26 +159,46 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 4 MHz",
-      "en": "Zilog Z80A at 4 MHz"
+      "en": "Zilog Z80A at 4 MHz",
+      "fr": "Zilog Z80A à 4 MHz",
+      "pt": "Zilog Z80A a 4 MHz",
+      "it": "Zilog Z80A a 4 MHz",
+      "de": "Zilog Z80A mit 4 MHz"
     },
     "memory": "64 KB (CPC 464) / 128 KB (CPC 6128)",
     "resolution": "160×200 (16 col.), 320×200 (4), 640×200 (2)",
     "colors": "27",
     "sound": {
       "es": "AY-3-8912: 3 canales",
-      "en": "AY-3-8912: 3 channels"
+      "en": "AY-3-8912: 3 channels",
+      "fr": "AY-3-8912 : 3 canaux",
+      "pt": "AY-3-8912: 3 canais",
+      "it": "AY-3-8912: 3 canali",
+      "de": "AY-3-8912: 3 Kanäle"
     },
     "media": {
       "es": "Casete / disquete 3\"",
-      "en": "Cassette / floppy disk 3\""
+      "en": "Cassette / floppy disk 3\"",
+      "fr": "Cassette / disquette 3\"",
+      "pt": "Cassete / disquete 3\"",
+      "it": "Cassetta / floppy disk da 3\"",
+      "de": "Kassette / Diskette 3\""
     },
     "unitsSold": {
       "es": "~3 millones",
-      "en": "~3 million"
+      "en": "~3 million",
+      "fr": "~3 millions",
+      "pt": "~3 milhões",
+      "it": "~3 milioni",
+      "de": "~3 Millionen"
     },
     "description": {
       "es": "Ordenador de 8 bits con monitor incluido, muy popular en España, Francia y Reino Unido. Recibió muchas conversiones de juegos de Spectrum.",
-      "en": "An 8-bit computer sold with its own monitor, very popular in Spain, France and the UK. It got many conversions of Spectrum games."
+      "en": "An 8-bit computer sold with its own monitor, very popular in Spain, France and the UK. It got many conversions of Spectrum games.",
+      "fr": "Un ordinateur 8 bits vendu avec son propre moniteur, très populaire en Espagne, en France et au Royaume-Uni. Il a reçu de nombreuses conversions de jeux Spectrum.",
+      "pt": "Um computador de 8 bits vendido com monitor próprio, muito popular em Espanha, França e no Reino Unido. Recebeu muitas conversões de jogos do Spectrum.",
+      "it": "Un computer a 8 bit venduto con il suo monitor, molto popolare in Spagna, Francia e Regno Unito. Ricevette molte conversioni di giochi dello Spectrum.",
+      "de": "Ein 8-Bit-Computer, der mit eigenem Monitor verkauft wurde, sehr beliebt in Spanien, Frankreich und Großbritannien (in Deutschland als Schneider CPC). Er bekam viele Umsetzungen von Spectrum-Spielen."
     }
   },
   "apple2": {
@@ -131,41 +211,77 @@
     ],
     "cpu": {
       "es": "MOS 6502 a 1 MHz",
-      "en": "MOS 6502 at 1 MHz"
+      "en": "MOS 6502 at 1 MHz",
+      "fr": "MOS 6502 à 1 MHz",
+      "pt": "MOS 6502 a 1 MHz",
+      "it": "MOS 6502 a 1 MHz",
+      "de": "MOS 6502 mit 1 MHz"
     },
     "memory": {
       "es": "4 – 64 KB (ampliable)",
-      "en": "4 – 64 KB (expandable)"
+      "en": "4 – 64 KB (expandable)",
+      "fr": "4 – 64 KB (extensible)",
+      "pt": "4 – 64 KB (expansível)",
+      "it": "4 – 64 KB (espandibile)",
+      "de": "4 – 64 KB (erweiterbar)"
     },
     "resolution": {
       "es": "280×192 (alta resolución)",
-      "en": "280×192 (high-res)"
+      "en": "280×192 (high-res)",
+      "fr": "280×192 (haute résolution)",
+      "pt": "280×192 (alta resolução)",
+      "it": "280×192 (alta risoluzione)",
+      "de": "280×192 (hohe Auflösung)"
     },
     "colors": {
       "es": "6 (alta res.) / 16 (baja res.)",
-      "en": "6 (high-res) / 16 (low-res)"
+      "en": "6 (high-res) / 16 (low-res)",
+      "fr": "6 (haute rés.) / 16 (basse rés.)",
+      "pt": "6 (alta res.) / 16 (baixa res.)",
+      "it": "6 (alta risoluzione) / 16 (bassa risoluzione)",
+      "de": "6 (hohe Auflösung) / 16 (niedrige Auflösung)"
     },
     "sound": {
       "es": "Altavoz de 1 bit",
-      "en": "1-bit beeper"
+      "en": "1-bit beeper",
+      "fr": "Haut-parleur 1 bit",
+      "pt": "Altifalante de 1 bit",
+      "it": "Beeper a 1 bit",
+      "de": "1-Bit-Beeper"
     },
     "media": {
       "es": "Casete / disquete 5,25\"",
-      "en": "Cassette / floppy disk 5.25\""
+      "en": "Cassette / floppy disk 5.25\"",
+      "fr": "Cassette / disquette 5,25\"",
+      "pt": "Cassete / disquete 5,25\"",
+      "it": "Cassetta / floppy disk da 5,25\"",
+      "de": "Kassette / Diskette 5,25\""
     },
     "unitsSold": {
       "es": "~5-6 millones (toda la familia)",
-      "en": "~5-6 million (whole family)"
+      "en": "~5-6 million (whole family)",
+      "fr": "~5-6 millions (toute la famille)",
+      "pt": "~5-6 milhões (toda a família)",
+      "it": "~5-6 milioni (tutta la famiglia)",
+      "de": "~5–6 Millionen (ganze Familie)"
     },
     "description": {
       "es": "Uno de los primeros ordenadores personales de éxito. Su catálogo incluye clásicos como Ultima, Wizardry, Lode Runner o Karateka.",
-      "en": "One of the first successful personal computers. Its library includes classics such as Ultima, Wizardry, Lode Runner and Karateka."
+      "en": "One of the first successful personal computers. Its library includes classics such as Ultima, Wizardry, Lode Runner and Karateka.",
+      "fr": "L'un des premiers ordinateurs personnels à succès. Sa ludothèque compte des classiques comme Ultima, Wizardry, Lode Runner et Karateka.",
+      "pt": "Um dos primeiros computadores pessoais de sucesso. A sua biblioteca inclui clássicos como Ultima, Wizardry, Lode Runner e Karateka.",
+      "it": "Uno dei primi personal computer di successo. Il suo catalogo include classici come Ultima, Wizardry, Lode Runner e Karateka.",
+      "de": "Einer der ersten erfolgreichen Personal Computer. Zu seinen Spielen gehören Klassiker wie Ultima, Wizardry, Lode Runner und Karateka."
     }
   },
   "arcade": {
     "manufacturer": {
       "es": "Varios",
-      "en": "Various"
+      "en": "Various",
+      "fr": "Divers",
+      "pt": "Vários",
+      "it": "Vari",
+      "de": "Verschiedene"
     },
     "year": 1971,
     "type": "arcade",
@@ -175,11 +291,19 @@
     ],
     "media": {
       "es": "Placas arcade",
-      "en": "Arcade boards"
+      "en": "Arcade boards",
+      "fr": "Cartes arcade",
+      "pt": "Placas arcade",
+      "it": "Schede arcade",
+      "de": "Arcade-Platinen"
     },
     "description": {
       "es": "Máquinas recreativas de muchos fabricantes, normalmente emuladas con MAME o FinalBurn. Cada placa tiene su propio hardware.",
-      "en": "Coin-op machines from many manufacturers, usually emulated with MAME or FinalBurn. Each board has its own hardware."
+      "en": "Coin-op machines from many manufacturers, usually emulated with MAME or FinalBurn. Each board has its own hardware.",
+      "fr": "Des bornes d'arcade de nombreux fabricants, généralement émulées avec MAME ou FinalBurn. Chaque carte a son propre matériel.",
+      "pt": "Máquinas de moedas de muitos fabricantes, normalmente emuladas com MAME ou FinalBurn. Cada placa tem o seu próprio hardware.",
+      "it": "Macchine a gettoni di molti produttori, di solito emulate con MAME o FinalBurn. Ogni scheda ha il suo hardware.",
+      "de": "Münzautomaten vieler Hersteller, meist mit MAME oder FinalBurn emuliert. Jede Platine hat ihre eigene Hardware."
     }
   },
   "astrocade": {
@@ -193,25 +317,45 @@
     ],
     "cpu": {
       "es": "Zilog Z80 a 1,789 MHz",
-      "en": "Zilog Z80 at 1.789 MHz"
+      "en": "Zilog Z80 at 1.789 MHz",
+      "fr": "Zilog Z80 à 1,789 MHz",
+      "pt": "Zilog Z80 a 1,789 MHz",
+      "it": "Zilog Z80 a 1,789 MHz",
+      "de": "Zilog Z80 mit 1,789 MHz"
     },
     "memory": "4 KB RAM",
     "resolution": "160×102",
     "colors": {
       "es": "8 en pantalla (de 256)",
-      "en": "8 on screen (of 256)"
+      "en": "8 on screen (of 256)",
+      "fr": "8 à l'écran (sur 256)",
+      "pt": "8 no ecrã (de 256)",
+      "it": "8 a schermo (su 256)",
+      "de": "8 auf dem Bildschirm (von 256)"
     },
     "sound": {
       "es": "3 canales + ruido",
-      "en": "3 channels + noise"
+      "en": "3 channels + noise",
+      "fr": "3 canaux + bruit",
+      "pt": "3 canais + ruído",
+      "it": "3 canali + rumore",
+      "de": "3 Kanäle + Rauschen"
     },
     "media": {
       "es": "Cartucho / casete",
-      "en": "Cartridge / cassette"
+      "en": "Cartridge / cassette",
+      "fr": "Cartouche / cassette",
+      "pt": "Cartucho / cassete",
+      "it": "Cartuccia / cassetta",
+      "de": "Modul / Kassette"
     },
     "description": {
       "es": "Consola doméstica de Bally basada en su hardware de recreativas. Incluía un lenguaje BASIC y mandos con pistola y ruleta.",
-      "en": "Bally's home console based on its arcade hardware. It shipped with a BASIC language and pistol-grip controllers with a dial."
+      "en": "Bally's home console based on its arcade hardware. It shipped with a BASIC language and pistol-grip controllers with a dial.",
+      "fr": "La console de salon de Bally, basée sur son matériel d'arcade. Elle était livrée avec un langage BASIC et des manettes en forme de poignée avec molette.",
+      "pt": "A consola doméstica da Bally, baseada no seu hardware arcade. Vinha com uma linguagem BASIC e comandos em forma de pistola com um botão rotativo.",
+      "it": "La console domestica di Bally basata sul suo hardware arcade. Veniva con un linguaggio BASIC e controller a impugnatura a pistola con manopola.",
+      "de": "Ballys Heimkonsole auf Basis seiner Arcade-Hardware. Sie kam mit BASIC und Pistolengriff-Controllern mit Drehregler."
     }
   },
   "atari2600": {
@@ -225,26 +369,46 @@
     ],
     "cpu": {
       "es": "MOS 6507 a 1,19 MHz",
-      "en": "MOS 6507 at 1.19 MHz"
+      "en": "MOS 6507 at 1.19 MHz",
+      "fr": "MOS 6507 à 1,19 MHz",
+      "pt": "MOS 6507 a 1,19 MHz",
+      "it": "MOS 6507 a 1,19 MHz",
+      "de": "MOS 6507 mit 1,19 MHz"
     },
     "memory": "128 bytes RAM",
     "resolution": "160×192",
     "colors": "128 (NTSC)",
     "sound": {
       "es": "TIA: 2 canales",
-      "en": "TIA: 2 channels"
+      "en": "TIA: 2 channels",
+      "fr": "TIA : 2 canaux",
+      "pt": "TIA: 2 canais",
+      "it": "TIA: 2 canali",
+      "de": "TIA: 2 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~30 millones",
-      "en": "~30 million"
+      "en": "~30 million",
+      "fr": "~30 millions",
+      "pt": "~30 milhões",
+      "it": "~30 milioni",
+      "de": "~30 Millionen"
     },
     "description": {
       "es": "La consola que popularizó los videojuegos en casa con cartuchos intercambiables. Su catálogo marcó una época, de Pitfall! a Space Invaders.",
-      "en": "The console that popularised home gaming with swappable cartridges. Its library defined an era, from Pitfall! to Space Invaders."
+      "en": "The console that popularised home gaming with swappable cartridges. Its library defined an era, from Pitfall! to Space Invaders.",
+      "fr": "La console qui a popularisé le jeu vidéo à la maison avec des cartouches interchangeables. Sa ludothèque a marqué une époque, de Pitfall! à Space Invaders.",
+      "pt": "A consola que popularizou os jogos em casa com cartuchos intercambiáveis. A sua biblioteca marcou uma época, de Pitfall! a Space Invaders.",
+      "it": "La console che rese popolare il gioco in casa con cartucce intercambiabili. Il suo catalogo segnò un'epoca, da Pitfall! a Space Invaders.",
+      "de": "Die Konsole, die das Spielen zu Hause mit wechselbaren Modulen populär machte. Ihre Spiele prägten eine Ära, von Pitfall! bis Space Invaders."
     }
   },
   "atari5200": {
@@ -258,29 +422,53 @@
     ],
     "cpu": {
       "es": "MOS 6502C a 1,79 MHz",
-      "en": "MOS 6502C at 1.79 MHz"
+      "en": "MOS 6502C at 1.79 MHz",
+      "fr": "MOS 6502C à 1,79 MHz",
+      "pt": "MOS 6502C a 1,79 MHz",
+      "it": "MOS 6502C a 1,79 MHz",
+      "de": "MOS 6502C mit 1,79 MHz"
     },
     "memory": "16 KB RAM",
     "resolution": "320×192",
     "colors": {
       "es": "256 (16 en pantalla)",
-      "en": "256 (16 on screen)"
+      "en": "256 (16 on screen)",
+      "fr": "256 (16 à l'écran)",
+      "pt": "256 (16 no ecrã)",
+      "it": "256 (16 a schermo)",
+      "de": "256 (16 auf dem Bildschirm)"
     },
     "sound": {
       "es": "POKEY: 4 canales",
-      "en": "POKEY: 4 channels"
+      "en": "POKEY: 4 channels",
+      "fr": "POKEY : 4 canaux",
+      "pt": "POKEY: 4 canais",
+      "it": "POKEY: 4 canali",
+      "de": "POKEY: 4 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~1 millón",
-      "en": "~1 million"
+      "en": "~1 million",
+      "fr": "~1 million",
+      "pt": "~1 milhão",
+      "it": "~1 milione",
+      "de": "~1 Million"
     },
     "description": {
       "es": "Sucesora de la 2600 basada en el hardware de los ordenadores Atari de 8 bits. Sus mandos analógicos eran poco fiables.",
-      "en": "The 2600's successor, based on Atari's 8-bit computers. Its analogue controllers were notoriously unreliable."
+      "en": "The 2600's successor, based on Atari's 8-bit computers. Its analogue controllers were notoriously unreliable.",
+      "fr": "La remplaçante de la 2600, basée sur les ordinateurs 8 bits d'Atari. Ses manettes analogiques étaient réputées peu fiables.",
+      "pt": "A sucessora da 2600, baseada nos computadores de 8 bits da Atari. Os seus comandos analógicos eram famosos por serem pouco fiáveis.",
+      "it": "L'erede del 2600, basata sui computer a 8 bit di Atari. I suoi controller analogici erano famosi per essere poco affidabili.",
+      "de": "Der Nachfolger der 2600, basierend auf Ataris 8-Bit-Computern. Ihre Analog-Controller waren berüchtigt unzuverlässig."
     }
   },
   "atari7800": {
@@ -294,29 +482,53 @@
     ],
     "cpu": {
       "es": "Atari SALLY (6502) a 1,79 MHz",
-      "en": "Atari SALLY (6502) at 1.79 MHz"
+      "en": "Atari SALLY (6502) at 1.79 MHz",
+      "fr": "Atari SALLY (6502) à 1,79 MHz",
+      "pt": "Atari SALLY (6502) a 1,79 MHz",
+      "it": "Atari SALLY (6502) a 1,79 MHz",
+      "de": "Atari SALLY (6502) mit 1,79 MHz"
     },
     "memory": "4 KB RAM",
     "resolution": "160×240 / 320×240",
     "colors": {
       "es": "256 (25 en pantalla)",
-      "en": "256 (25 on screen)"
+      "en": "256 (25 on screen)",
+      "fr": "256 (25 à l'écran)",
+      "pt": "256 (25 no ecrã)",
+      "it": "256 (25 a schermo)",
+      "de": "256 (25 auf dem Bildschirm)"
     },
     "sound": {
       "es": "TIA: 2 canales",
-      "en": "TIA: 2 channels"
+      "en": "TIA: 2 channels",
+      "fr": "TIA : 2 canaux",
+      "pt": "TIA: 2 canais",
+      "it": "TIA: 2 canali",
+      "de": "TIA: 2 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~3,8 millones",
-      "en": "~3.8 million"
+      "en": "~3.8 million",
+      "fr": "~3,8 millions",
+      "pt": "~3,8 milhões",
+      "it": "~3,8 milioni",
+      "de": "~3,8 Millionen"
     },
     "description": {
       "es": "Consola compatible con los cartuchos de la 2600. Llegó tarde frente a la NES y tuvo un catálogo reducido.",
-      "en": "A console backward compatible with 2600 cartridges. It arrived late against the NES and had a small library."
+      "en": "A console backward compatible with 2600 cartridges. It arrived late against the NES and had a small library.",
+      "fr": "Une console rétrocompatible avec les cartouches de la 2600. Elle est arrivée tard face à la NES et a eu une ludothèque réduite.",
+      "pt": "Uma consola retrocompatível com os cartuchos da 2600. Chegou tarde face à NES e teve uma biblioteca pequena.",
+      "it": "Una console retrocompatibile con le cartucce del 2600. Arrivò tardi contro il NES ed ebbe un catalogo ridotto.",
+      "de": "Eine Konsole, die abwärtskompatibel zu 2600-Modulen war. Sie kam spät gegen das NES und hatte wenige Spiele."
     }
   },
   "atari800": {
@@ -329,29 +541,53 @@
     ],
     "cpu": {
       "es": "MOS 6502B a 1,79 MHz",
-      "en": "MOS 6502B at 1.79 MHz"
+      "en": "MOS 6502B at 1.79 MHz",
+      "fr": "MOS 6502B à 1,79 MHz",
+      "pt": "MOS 6502B a 1,79 MHz",
+      "it": "MOS 6502B a 1,79 MHz",
+      "de": "MOS 6502B mit 1,79 MHz"
     },
     "memory": "8 – 64 KB",
     "resolution": "320×192",
     "colors": {
       "es": "256 (16 en pantalla)",
-      "en": "256 (16 on screen)"
+      "en": "256 (16 on screen)",
+      "fr": "256 (16 à l'écran)",
+      "pt": "256 (16 no ecrã)",
+      "it": "256 (16 a schermo)",
+      "de": "256 (16 auf dem Bildschirm)"
     },
     "sound": {
       "es": "POKEY: 4 canales",
-      "en": "POKEY: 4 channels"
+      "en": "POKEY: 4 channels",
+      "fr": "POKEY : 4 canaux",
+      "pt": "POKEY: 4 canais",
+      "it": "POKEY: 4 canali",
+      "de": "POKEY: 4 Kanäle"
     },
     "media": {
       "es": "Cartucho / casete / disquete",
-      "en": "Cartridge / cassette / floppy disk"
+      "en": "Cartridge / cassette / floppy disk",
+      "fr": "Cartouche / cassette / disquette",
+      "pt": "Cartucho / cassete / disquete",
+      "it": "Cartuccia / cassetta / floppy disk",
+      "de": "Modul / Kassette / Diskette"
     },
     "unitsSold": {
       "es": "~4 millones (familia de 8 bits)",
-      "en": "~4 million (8-bit family)"
+      "en": "~4 million (8-bit family)",
+      "fr": "~4 millions (famille 8 bits)",
+      "pt": "~4 milhões (família de 8 bits)",
+      "it": "~4 milioni (famiglia a 8 bit)",
+      "de": "~4 Millionen (8-Bit-Familie)"
     },
     "description": {
       "es": "Familia de ordenadores de 8 bits (400, 800, XL, XE) con chips gráficos avanzados. Juegos como Star Raiders o Rescue on Fractalus! nacieron aquí.",
-      "en": "A family of 8-bit computers (400, 800, XL, XE) with advanced graphics chips. Games such as Star Raiders and Rescue on Fractalus! were born here."
+      "en": "A family of 8-bit computers (400, 800, XL, XE) with advanced graphics chips. Games such as Star Raiders and Rescue on Fractalus! were born here.",
+      "fr": "Une famille d'ordinateurs 8 bits (400, 800, XL, XE) aux puces graphiques avancées. Des jeux comme Star Raiders et Rescue on Fractalus! y sont nés.",
+      "pt": "Uma família de computadores de 8 bits (400, 800, XL, XE) com chips gráficos avançados. Jogos como Star Raiders e Rescue on Fractalus! nasceram aqui.",
+      "it": "Una famiglia di computer a 8 bit (400, 800, XL, XE) con chip grafici avanzati. Qui nacquero giochi come Star Raiders e Rescue on Fractalus!",
+      "de": "Eine Familie von 8-Bit-Computern (400, 800, XL, XE) mit fortschrittlichen Grafikchips. Spiele wie Star Raiders und Rescue on Fractalus! entstanden hier."
     }
   },
   "atarijaguar": {
@@ -365,32 +601,60 @@
     ],
     "cpu": {
       "es": "Motorola 68000 + chips Tom y Jerry (RISC de 32 bits)",
-      "en": "Motorola 68000 + Tom and Jerry chips (32-bit RISC)"
+      "en": "Motorola 68000 + Tom and Jerry chips (32-bit RISC)",
+      "fr": "Motorola 68000 + puces Tom et Jerry (RISC 32 bits)",
+      "pt": "Motorola 68000 + chips Tom e Jerry (RISC de 32 bits)",
+      "it": "Motorola 68000 + chip Tom e Jerry (RISC a 32 bit)",
+      "de": "Motorola 68000 + Chips Tom und Jerry (32-Bit-RISC)"
     },
     "memory": "2 MB RAM",
     "resolution": {
       "es": "Hasta 720×576",
-      "en": "Up to 720×576"
+      "en": "Up to 720×576",
+      "fr": "Jusqu'à 720×576",
+      "pt": "Até 720×576",
+      "it": "Fino a 720×576",
+      "de": "Bis 720×576"
     },
     "colors": {
       "es": "16 millones (24 bits)",
-      "en": "16 million (24 bits)"
+      "en": "16 million (24 bits)",
+      "fr": "16 millions (24 bits)",
+      "pt": "16 milhões (24 bits)",
+      "it": "16 milioni (24 bit)",
+      "de": "16 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Jerry: DSP de 16 bits estéreo",
-      "en": "Jerry: 16-bit DSP stereo"
+      "en": "Jerry: 16-bit DSP stereo",
+      "fr": "Jerry : DSP 16 bits stéréo",
+      "pt": "Jerry: DSP de 16 bits estéreo",
+      "it": "Jerry: DSP a 16 bit stereo",
+      "de": "Jerry: 16-Bit-DSP, Stereo"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~250.000",
-      "en": "~250,000"
+      "en": "~250,000",
+      "fr": "~250 000",
+      "pt": "~250.000",
+      "it": "~250.000",
+      "de": "~250.000"
     },
     "description": {
       "es": "Anunciada como la primera consola de 64 bits. Era difícil de programar y su catálogo fue escaso; fue la última consola de Atari.",
-      "en": "Advertised as the first 64-bit console. It was hard to program and had few games; it was Atari's last console."
+      "en": "Advertised as the first 64-bit console. It was hard to program and had few games; it was Atari's last console.",
+      "fr": "Présentée comme la première console 64 bits. Difficile à programmer, elle a eu peu de jeux ; ce fut la dernière console d'Atari.",
+      "pt": "Anunciada como a primeira consola de 64 bits. Era difícil de programar e teve poucos jogos; foi a última consola da Atari.",
+      "it": "Pubblicizzata come la prima console a 64 bit. Era difficile da programmare ed ebbe pochi giochi; fu l'ultima console di Atari.",
+      "de": "Als erste 64-Bit-Konsole beworben. Sie war schwer zu programmieren und hatte wenige Spiele; es war Ataris letzte Konsole."
     }
   },
   "atarijaguarcd": {
@@ -404,32 +668,60 @@
     ],
     "cpu": {
       "es": "Igual que Jaguar",
-      "en": "Same as Jaguar"
+      "en": "Same as Jaguar",
+      "fr": "Identique à la Jaguar",
+      "pt": "Igual à Jaguar",
+      "it": "Come la Jaguar",
+      "de": "Wie beim Jaguar"
     },
     "memory": {
       "es": "Igual que Jaguar",
-      "en": "Same as Jaguar"
+      "en": "Same as Jaguar",
+      "fr": "Identique à la Jaguar",
+      "pt": "Igual à Jaguar",
+      "it": "Come la Jaguar",
+      "de": "Wie beim Jaguar"
     },
     "resolution": {
       "es": "Igual que Jaguar",
-      "en": "Same as Jaguar"
+      "en": "Same as Jaguar",
+      "fr": "Identique à la Jaguar",
+      "pt": "Igual à Jaguar",
+      "it": "Come la Jaguar",
+      "de": "Wie beim Jaguar"
     },
     "colors": {
       "es": "16 millones (24 bits)",
-      "en": "16 million (24 bits)"
+      "en": "16 million (24 bits)",
+      "fr": "16 millions (24 bits)",
+      "pt": "16 milhões (24 bits)",
+      "it": "16 milioni (24 bit)",
+      "de": "16 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Igual que Jaguar",
-      "en": "Same as Jaguar"
+      "en": "Same as Jaguar",
+      "fr": "Identique à la Jaguar",
+      "pt": "Igual à Jaguar",
+      "it": "Come la Jaguar",
+      "de": "Wie beim Jaguar"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~20.000",
-      "en": "~20,000"
+      "en": "~20,000",
+      "fr": "~20 000",
+      "pt": "~20.000",
+      "it": "~20.000",
+      "de": "~20.000"
     },
     "description": {
       "es": "Unidad de CD que se acoplaba encima de la Jaguar. Salieron muy pocos juegos para ella.",
-      "en": "A CD drive that sat on top of the Jaguar. Very few games were released for it."
+      "en": "A CD drive that sat on top of the Jaguar. Very few games were released for it.",
+      "fr": "Un lecteur CD qui se posait sur la Jaguar. Très peu de jeux sont sortis pour lui.",
+      "pt": "Uma unidade de CD que se encaixava por cima da Jaguar. Saíram muito poucos jogos para ela.",
+      "it": "Un lettore CD che si montava sopra la Jaguar. Uscirono pochissimi giochi.",
+      "de": "Ein CD-Laufwerk, das oben auf den Jaguar gesetzt wurde. Es erschienen nur sehr wenige Spiele dafür."
     }
   },
   "atarilynx": {
@@ -443,29 +735,53 @@
     ],
     "cpu": {
       "es": "WDC 65SC02 a 4 MHz + coprocesador Suzy de 16 bits",
-      "en": "WDC 65SC02 at 4 MHz + 16-bit Suzy coprocessor"
+      "en": "WDC 65SC02 at 4 MHz + 16-bit Suzy coprocessor",
+      "fr": "WDC 65SC02 à 4 MHz + coprocesseur Suzy 16 bits",
+      "pt": "WDC 65SC02 a 4 MHz + coprocessador Suzy de 16 bits",
+      "it": "WDC 65SC02 a 4 MHz + coprocessore Suzy a 16 bit",
+      "de": "WDC 65SC02 mit 4 MHz + 16-Bit-Koprozessor Suzy"
     },
     "memory": "64 KB RAM",
     "resolution": "160×102",
     "colors": {
       "es": "4.096 (16 en pantalla)",
-      "en": "4,096 (16 on screen)"
+      "en": "4,096 (16 on screen)",
+      "fr": "4 096 (16 à l'écran)",
+      "pt": "4.096 (16 no ecrã)",
+      "it": "4.096 (16 a schermo)",
+      "de": "4.096 (16 auf dem Bildschirm)"
     },
     "sound": {
       "es": "4 canales",
-      "en": "4 channels"
+      "en": "4 channels",
+      "fr": "4 canaux",
+      "pt": "4 canais",
+      "it": "4 canali",
+      "de": "4 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~3 millones",
-      "en": "~3 million"
+      "en": "~3 million",
+      "fr": "~3 millions",
+      "pt": "~3 milhões",
+      "it": "~3 milioni",
+      "de": "~3 Millionen"
     },
     "description": {
       "es": "Primera portátil con pantalla a color retroiluminada. Podía escalar y rotar sprites por hardware, pero era grande y gastaba muchas pilas.",
-      "en": "The first handheld with a backlit colour screen. It could scale and rotate sprites in hardware, but it was bulky and drained batteries."
+      "en": "The first handheld with a backlit colour screen. It could scale and rotate sprites in hardware, but it was bulky and drained batteries.",
+      "fr": "La première portable à écran couleur rétroéclairé. Elle pouvait zoomer et faire pivoter les sprites en matériel, mais elle était encombrante et vidait les piles.",
+      "pt": "A primeira consola portátil com ecrã a cores retroiluminado. Escalava e rodava sprites por hardware, mas era volumosa e gastava muitas pilhas.",
+      "it": "La prima portatile con schermo a colori retroilluminato. Poteva scalare e ruotare gli sprite via hardware, ma era ingombrante e consumava molte batterie.",
+      "de": "Der erste Handheld mit beleuchtetem Farbbildschirm. Er konnte Sprites per Hardware skalieren und drehen, war aber klobig und fraß Batterien."
     }
   },
   "atarist": {
@@ -478,29 +794,53 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 8 MHz",
-      "en": "Motorola 68000 at 8 MHz"
+      "en": "Motorola 68000 at 8 MHz",
+      "fr": "Motorola 68000 à 8 MHz",
+      "pt": "Motorola 68000 a 8 MHz",
+      "it": "Motorola 68000 a 8 MHz",
+      "de": "Motorola 68000 mit 8 MHz"
     },
     "memory": "512 KB – 4 MB",
     "resolution": "320×200 (16 col.), 640×400 (mono)",
     "colors": {
       "es": "512 (4.096 en STE)",
-      "en": "512 (4,096 on STE)"
+      "en": "512 (4,096 on STE)",
+      "fr": "512 (4 096 sur STE)",
+      "pt": "512 (4.096 no STE)",
+      "it": "512 (4.096 sull'STE)",
+      "de": "512 (4.096 beim STE)"
     },
     "sound": {
       "es": "YM2149: 3 canales; MIDI integrado",
-      "en": "YM2149: 3 channels; built-in MIDI"
+      "en": "YM2149: 3 channels; built-in MIDI",
+      "fr": "YM2149 : 3 canaux ; MIDI intégré",
+      "pt": "YM2149: 3 canais; MIDI integrado",
+      "it": "YM2149: 3 canali; MIDI integrato",
+      "de": "YM2149: 3 Kanäle; MIDI eingebaut"
     },
     "media": {
       "es": "Disquete 3,5\"",
-      "en": "Floppy disk 3.5\""
+      "en": "Floppy disk 3.5\"",
+      "fr": "Disquette 3,5\"",
+      "pt": "Disquete 3,5\"",
+      "it": "Floppy disk da 3,5\"",
+      "de": "Diskette 3,5\""
     },
     "unitsSold": {
       "es": "~2-3 millones",
-      "en": "~2-3 million"
+      "en": "~2-3 million",
+      "fr": "~2-3 millions",
+      "pt": "~2-3 milhões",
+      "it": "~2-3 milioni",
+      "de": "~2–3 Millionen"
     },
     "description": {
       "es": "Ordenador de 16 bits rival del Amiga, muy usado en música por su puerto MIDI integrado. Compartió muchos juegos con el Amiga.",
-      "en": "A 16-bit computer and rival to the Amiga, widely used for music thanks to its built-in MIDI ports. It shared many games with the Amiga."
+      "en": "A 16-bit computer and rival to the Amiga, widely used for music thanks to its built-in MIDI ports. It shared many games with the Amiga.",
+      "fr": "Un ordinateur 16 bits rival de l'Amiga, très utilisé en musique grâce à ses ports MIDI intégrés. Il a partagé de nombreux jeux avec l'Amiga.",
+      "pt": "Um computador de 16 bits rival do Amiga, muito usado para música graças às suas portas MIDI integradas. Partilhou muitos jogos com o Amiga.",
+      "it": "Un computer a 16 bit rivale dell'Amiga, molto usato per la musica grazie alle porte MIDI integrate. Condivideva molti giochi con l'Amiga.",
+      "de": "Ein 16-Bit-Computer und Rivale des Amiga, dank eingebauter MIDI-Anschlüsse viel für Musik genutzt. Er teilte viele Spiele mit dem Amiga."
     }
   },
   "bbcmicro": {
@@ -513,29 +853,53 @@
     ],
     "cpu": {
       "es": "MOS 6502 a 2 MHz",
-      "en": "MOS 6502 at 2 MHz"
+      "en": "MOS 6502 at 2 MHz",
+      "fr": "MOS 6502 à 2 MHz",
+      "pt": "MOS 6502 a 2 MHz",
+      "it": "MOS 6502 a 2 MHz",
+      "de": "MOS 6502 mit 2 MHz"
     },
     "memory": "16 – 32 KB",
     "resolution": {
       "es": "Hasta 640×256",
-      "en": "Up to 640×256"
+      "en": "Up to 640×256",
+      "fr": "Jusqu'à 640×256",
+      "pt": "Até 640×256",
+      "it": "Fino a 640×256",
+      "de": "Bis 640×256"
     },
     "colors": "8",
     "sound": {
       "es": "SN76489: 3 canales + ruido",
-      "en": "SN76489: 3 channels + noise"
+      "en": "SN76489: 3 channels + noise",
+      "fr": "SN76489 : 3 canaux + bruit",
+      "pt": "SN76489: 3 canais + ruído",
+      "it": "SN76489: 3 canali + rumore",
+      "de": "SN76489: 3 Kanäle + Rauschen"
     },
     "media": {
       "es": "Casete / disquete 5,25\"",
-      "en": "Cassette / floppy disk 5.25\""
+      "en": "Cassette / floppy disk 5.25\"",
+      "fr": "Cassette / disquette 5,25\"",
+      "pt": "Cassete / disquete 5,25\"",
+      "it": "Cassetta / floppy disk da 5,25\"",
+      "de": "Kassette / Diskette 5,25\""
     },
     "unitsSold": {
       "es": "~1,5 millones",
-      "en": "~1.5 million"
+      "en": "~1.5 million",
+      "fr": "~1,5 million",
+      "pt": "~1,5 milhões",
+      "it": "~1,5 milioni",
+      "de": "~1,5 Millionen"
     },
     "description": {
       "es": "Ordenador del programa educativo de la BBC, presente en casi todos los colegios británicos. Allí nació Elite.",
-      "en": "The computer behind the BBC's education programme, found in almost every British school. Elite was born on it."
+      "en": "The computer behind the BBC's education programme, found in almost every British school. Elite was born on it.",
+      "fr": "L'ordinateur du programme éducatif de la BBC, présent dans presque toutes les écoles britanniques. Elite y est né.",
+      "pt": "O computador do programa educativo da BBC, presente em quase todas as escolas britânicas. O Elite nasceu nele.",
+      "it": "Il computer del programma educativo della BBC, presente in quasi tutte le scuole britanniche. Su di esso nacque Elite.",
+      "de": "Der Computer des Bildungsprogramms der BBC, in fast jeder britischen Schule zu finden. Elite entstand auf ihm."
     }
   },
   "c64": {
@@ -548,26 +912,46 @@
     ],
     "cpu": {
       "es": "MOS 6510 a ~1 MHz",
-      "en": "MOS 6510 at ~1 MHz"
+      "en": "MOS 6510 at ~1 MHz",
+      "fr": "MOS 6510 à ~1 MHz",
+      "pt": "MOS 6510 a ~1 MHz",
+      "it": "MOS 6510 a ~1 MHz",
+      "de": "MOS 6510 mit ~1 MHz"
     },
     "memory": "64 KB",
     "resolution": "320×200",
     "colors": "16",
     "sound": {
       "es": "SID 6581: 3 voces con filtros",
-      "en": "SID 6581: 3 voices with filters"
+      "en": "SID 6581: 3 voices with filters",
+      "fr": "SID 6581 : 3 voix avec filtres",
+      "pt": "SID 6581: 3 vozes com filtros",
+      "it": "SID 6581: 3 voci con filtri",
+      "de": "SID 6581: 3 Stimmen mit Filtern"
     },
     "media": {
       "es": "Casete / disquete 5,25\" / cartucho",
-      "en": "Cassette / floppy disk 5.25\" / cartridge"
+      "en": "Cassette / floppy disk 5.25\" / cartridge",
+      "fr": "Cassette / disquette 5,25\" / cartouche",
+      "pt": "Cassete / disquete 5,25\" / cartucho",
+      "it": "Cassetta / floppy disk da 5,25\" / cartuccia",
+      "de": "Kassette / Diskette 5,25\" / Modul"
     },
     "unitsSold": {
       "es": "~12-17 millones",
-      "en": "~12-17 million"
+      "en": "~12-17 million",
+      "fr": "~12-17 millions",
+      "pt": "~12-17 milhões",
+      "it": "~12-17 milioni",
+      "de": "~12–17 Millionen"
     },
     "description": {
       "es": "El ordenador más vendido de la historia en un solo modelo. Su chip de sonido SID es legendario y su catálogo de juegos, enorme.",
-      "en": "The best-selling single computer model ever. Its SID sound chip is legendary and its game library is huge."
+      "en": "The best-selling single computer model ever. Its SID sound chip is legendary and its game library is huge.",
+      "fr": "Le modèle d'ordinateur le plus vendu de l'histoire. Sa puce sonore SID est légendaire et sa ludothèque, immense.",
+      "pt": "O modelo de computador mais vendido de sempre. O seu chip de som SID é lendário e a sua biblioteca de jogos é enorme.",
+      "it": "Il singolo modello di computer più venduto di sempre. Il suo chip sonoro SID è leggendario e il suo catalogo di giochi è enorme.",
+      "de": "Das meistverkaufte einzelne Computermodell aller Zeiten. Sein SID-Soundchip ist legendär und seine Spielebibliothek riesig."
     }
   },
   "channelf": {
@@ -581,28 +965,52 @@
     ],
     "cpu": {
       "es": "Fairchild F8 a 1,79 MHz",
-      "en": "Fairchild F8 at 1.79 MHz"
+      "en": "Fairchild F8 at 1.79 MHz",
+      "fr": "Fairchild F8 à 1,79 MHz",
+      "pt": "Fairchild F8 a 1,79 MHz",
+      "it": "Fairchild F8 a 1,79 MHz",
+      "de": "Fairchild F8 mit 1,79 MHz"
     },
     "memory": "64 bytes RAM + 2 KB VRAM",
     "resolution": {
       "es": "128×64 (102×58 visibles)",
-      "en": "128×64 (102×58 visible)"
+      "en": "128×64 (102×58 visible)",
+      "fr": "128×64 (102×58 visibles)",
+      "pt": "128×64 (102×58 visíveis)",
+      "it": "128×64 (102×58 visibili)",
+      "de": "128×64 (102×58 sichtbar)"
     },
     "colors": {
       "es": "8 (4 por línea)",
-      "en": "8 (4 per line)"
+      "en": "8 (4 per line)",
+      "fr": "8 (4 par ligne)",
+      "pt": "8 (4 por linha)",
+      "it": "8 (4 per riga)",
+      "de": "8 (4 pro Zeile)"
     },
     "sound": {
       "es": "Tonos simples (altavoz)",
-      "en": "Simple tones (speaker)"
+      "en": "Simple tones (speaker)",
+      "fr": "Sons simples (haut-parleur)",
+      "pt": "Tons simples (altifalante)",
+      "it": "Toni semplici (altoparlante)",
+      "de": "Einfache Töne (Lautsprecher)"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "description": {
       "es": "Primera consola con cartuchos programables con microprocesador. Abrió el camino a la Atari 2600.",
-      "en": "The first console with microprocessor-based programmable cartridges. It paved the way for the Atari 2600."
+      "en": "The first console with microprocessor-based programmable cartridges. It paved the way for the Atari 2600.",
+      "fr": "La première console à cartouches programmables à microprocesseur. Elle a ouvert la voie à l'Atari 2600.",
+      "pt": "A primeira consola com cartuchos programáveis baseada num microprocessador. Abriu caminho à Atari 2600.",
+      "it": "La prima console con cartucce programmabili basate su microprocessore. Aprì la strada all'Atari 2600.",
+      "de": "Die erste Konsole mit programmierbaren Modulen auf Mikroprozessorbasis. Sie ebnete den Weg für die Atari 2600."
     }
   },
   "coco": {
@@ -615,25 +1023,45 @@
     ],
     "cpu": {
       "es": "Motorola 6809E a 0,89 MHz",
-      "en": "Motorola 6809E at 0.89 MHz"
+      "en": "Motorola 6809E at 0.89 MHz",
+      "fr": "Motorola 6809E à 0,89 MHz",
+      "pt": "Motorola 6809E a 0,89 MHz",
+      "it": "Motorola 6809E a 0,89 MHz",
+      "de": "Motorola 6809E mit 0,89 MHz"
     },
     "memory": "4 – 128 KB",
     "resolution": "256×192",
     "colors": {
       "es": "4 (hasta 16 en CoCo 3)",
-      "en": "4 (up to 16 on CoCo 3)"
+      "en": "4 (up to 16 on CoCo 3)",
+      "fr": "4 (jusqu'à 16 sur CoCo 3)",
+      "pt": "4 (até 16 no CoCo 3)",
+      "it": "4 (fino a 16 sul CoCo 3)",
+      "de": "4 (bis 16 beim CoCo 3)"
     },
     "sound": {
       "es": "1 canal DAC de 6 bits",
-      "en": "1 channel 6-bit DAC"
+      "en": "1 channel 6-bit DAC",
+      "fr": "1 canal DAC 6 bits",
+      "pt": "1 canal DAC de 6 bits",
+      "it": "DAC a 6 bit, 1 canale",
+      "de": "1 Kanal, 6-Bit-DAC"
     },
     "media": {
       "es": "Cartucho / casete / disquete",
-      "en": "Cartridge / cassette / floppy disk"
+      "en": "Cartridge / cassette / floppy disk",
+      "fr": "Cartouche / cassette / disquette",
+      "pt": "Cartucho / cassete / disquete",
+      "it": "Cartuccia / cassetta / floppy disk",
+      "de": "Modul / Kassette / Diskette"
     },
     "description": {
       "es": "El TRS-80 Color Computer, ordenador doméstico de 8 bits con un procesador 6809 muy capaz. Se vendió en las tiendas RadioShack.",
-      "en": "The TRS-80 Color Computer, an 8-bit home computer with a capable 6809 CPU. It was sold in RadioShack stores."
+      "en": "The TRS-80 Color Computer, an 8-bit home computer with a capable 6809 CPU. It was sold in RadioShack stores.",
+      "fr": "Le TRS-80 Color Computer, un ordinateur familial 8 bits doté d'un processeur 6809 très capable. Il était vendu dans les magasins RadioShack.",
+      "pt": "O TRS-80 Color Computer, um computador doméstico de 8 bits com um competente processador 6809. Era vendido nas lojas RadioShack.",
+      "it": "Il TRS-80 Color Computer, un home computer a 8 bit con una CPU 6809 molto capace. Si vendeva nei negozi RadioShack.",
+      "de": "Der TRS-80 Color Computer, ein 8-Bit-Heimcomputer mit leistungsfähiger 6809-CPU. Er wurde in RadioShack-Läden verkauft."
     }
   },
   "colecovision": {
@@ -647,26 +1075,46 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
-      "en": "Zilog Z80A at 3.58 MHz"
+      "en": "Zilog Z80A at 3.58 MHz",
+      "fr": "Zilog Z80A à 3,58 MHz",
+      "pt": "Zilog Z80A a 3,58 MHz",
+      "it": "Zilog Z80A a 3,58 MHz",
+      "de": "Zilog Z80A mit 3,58 MHz"
     },
     "memory": "1 KB RAM + 16 KB VRAM",
     "resolution": "256×192",
     "colors": "16",
     "sound": {
       "es": "SN76489: 3 canales + ruido",
-      "en": "SN76489: 3 channels + noise"
+      "en": "SN76489: 3 channels + noise",
+      "fr": "SN76489 : 3 canaux + bruit",
+      "pt": "SN76489: 3 canais + ruído",
+      "it": "SN76489: 3 canali + rumore",
+      "de": "SN76489: 3 Kanäle + Rauschen"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~2 millones",
-      "en": "~2 million"
+      "en": "~2 million",
+      "fr": "~2 millions",
+      "pt": "~2 milhões",
+      "it": "~2 milioni",
+      "de": "~2 Millionen"
     },
     "description": {
       "es": "Consola con gráficos cercanos a las recreativas de la época; venía con Donkey Kong. Un módulo le permitía usar juegos de Atari 2600.",
-      "en": "A console with graphics close to the arcades of its day; it came with Donkey Kong. An add-on let it play Atari 2600 games."
+      "en": "A console with graphics close to the arcades of its day; it came with Donkey Kong. An add-on let it play Atari 2600 games.",
+      "fr": "Une console aux graphismes proches de l'arcade de l'époque ; elle était livrée avec Donkey Kong. Un module lui permettait de lire les jeux Atari 2600.",
+      "pt": "Uma consola com gráficos próximos dos arcades da época; vinha com Donkey Kong. Um acessório permitia jogar jogos da Atari 2600.",
+      "it": "Una console con una grafica vicina agli arcade dell'epoca; veniva con Donkey Kong. Un accessorio le permetteva di usare i giochi dell'Atari 2600.",
+      "de": "Eine Konsole mit Grafik nah an den Spielhallen ihrer Zeit; sie kam mit Donkey Kong. Ein Zusatzmodul ließ sie Atari-2600-Spiele abspielen."
     }
   },
   "cps1": {
@@ -679,25 +1127,45 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 10 MHz + Z80 (sonido)",
-      "en": "Motorola 68000 at 10 MHz + Z80 (sound)"
+      "en": "Motorola 68000 at 10 MHz + Z80 (sound)",
+      "fr": "Motorola 68000 à 10 MHz + Z80 (son)",
+      "pt": "Motorola 68000 a 10 MHz + Z80 (som)",
+      "it": "Motorola 68000 a 10 MHz + Z80 (audio)",
+      "de": "Motorola 68000 mit 10 MHz + Z80 (Sound)"
     },
     "memory": {
       "es": "64 KB RAM principal",
-      "en": "64 KB main RAM"
+      "en": "64 KB main RAM",
+      "fr": "64 KB de RAM principale",
+      "pt": "64 KB de RAM principal",
+      "it": "64 KB di RAM principale",
+      "de": "64 KB Haupt-RAM"
     },
     "resolution": "384×224",
     "colors": {
       "es": "4.096 en pantalla",
-      "en": "4,096 on screen"
+      "en": "4,096 on screen",
+      "fr": "4 096 à l'écran",
+      "pt": "4.096 no ecrã",
+      "it": "4.096 a schermo",
+      "de": "4.096 auf dem Bildschirm"
     },
     "sound": "YM2151 + OKI MSM6295",
     "media": {
       "es": "Placa arcade",
-      "en": "Arcade board"
+      "en": "Arcade board",
+      "fr": "Carte arcade",
+      "pt": "Placa arcade",
+      "it": "Scheda arcade",
+      "de": "Arcade-Platine"
     },
     "description": {
       "es": "Capcom Play System, la placa arcade de Capcom de finales de los 80. Street Fighter II, Final Fight o Ghouls'n Ghosts funcionan en ella.",
-      "en": "Capcom Play System, Capcom's arcade board of the late 80s. Street Fighter II, Final Fight and Ghouls'n Ghosts run on it."
+      "en": "Capcom Play System, Capcom's arcade board of the late 80s. Street Fighter II, Final Fight and Ghouls'n Ghosts run on it.",
+      "fr": "Le Capcom Play System, la carte arcade de Capcom de la fin des années 80. Street Fighter II, Final Fight et Ghouls'n Ghosts tournent dessus.",
+      "pt": "Capcom Play System, a placa arcade da Capcom do final dos anos 80. Nela correm Street Fighter II, Final Fight e Ghouls'n Ghosts.",
+      "it": "Capcom Play System, la scheda arcade di Capcom della fine degli anni '80. Ci girano Street Fighter II, Final Fight e Ghouls'n Ghosts.",
+      "de": "Capcom Play System, Capcoms Arcade-Platine der späten 80er. Street Fighter II, Final Fight und Ghouls'n Ghosts laufen darauf."
     }
   },
   "cps2": {
@@ -710,25 +1178,45 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 16 MHz + Z80 (sonido)",
-      "en": "Motorola 68000 at 16 MHz + Z80 (sound)"
+      "en": "Motorola 68000 at 16 MHz + Z80 (sound)",
+      "fr": "Motorola 68000 à 16 MHz + Z80 (son)",
+      "pt": "Motorola 68000 a 16 MHz + Z80 (som)",
+      "it": "Motorola 68000 a 16 MHz + Z80 (audio)",
+      "de": "Motorola 68000 mit 16 MHz + Z80 (Sound)"
     },
     "memory": {
       "es": "64 KB RAM principal",
-      "en": "64 KB main RAM"
+      "en": "64 KB main RAM",
+      "fr": "64 KB de RAM principale",
+      "pt": "64 KB de RAM principal",
+      "it": "64 KB di RAM principale",
+      "de": "64 KB Haupt-RAM"
     },
     "resolution": "384×224",
     "colors": {
       "es": "4.096 en pantalla",
-      "en": "4,096 on screen"
+      "en": "4,096 on screen",
+      "fr": "4 096 à l'écran",
+      "pt": "4.096 no ecrã",
+      "it": "4.096 a schermo",
+      "de": "4.096 auf dem Bildschirm"
     },
     "sound": "Q-Sound",
     "media": {
       "es": "Placa arcade (cartucho cifrado)",
-      "en": "Arcade board (encrypted cartridge)"
+      "en": "Arcade board (encrypted cartridge)",
+      "fr": "Carte arcade (cartouche chiffrée)",
+      "pt": "Placa arcade (cartucho cifrado)",
+      "it": "Scheda arcade (cartuccia criptata)",
+      "de": "Arcade-Platine (verschlüsseltes Modul)"
     },
     "description": {
       "es": "Sucesora del CPS1 con cifrado contra la piratería y sonido Q-Sound. Hogar de Street Fighter Alpha, Darkstalkers y Marvel vs. Capcom.",
-      "en": "The CPS1 successor, with anti-piracy encryption and Q-Sound audio. Home to Street Fighter Alpha, Darkstalkers and Marvel vs. Capcom."
+      "en": "The CPS1 successor, with anti-piracy encryption and Q-Sound audio. Home to Street Fighter Alpha, Darkstalkers and Marvel vs. Capcom.",
+      "fr": "Le successeur du CPS1, avec un chiffrement anti-piratage et le son Q-Sound. La maison de Street Fighter Alpha, Darkstalkers et Marvel vs. Capcom.",
+      "pt": "A sucessora da CPS1, com encriptação anti-pirataria e áudio Q-Sound. A casa de Street Fighter Alpha, Darkstalkers e Marvel vs. Capcom.",
+      "it": "L'erede della CPS1, con crittografia anti-pirateria e audio Q-Sound. Casa di Street Fighter Alpha, Darkstalkers e Marvel vs. Capcom.",
+      "de": "Der Nachfolger des CPS1, mit Kopierschutz-Verschlüsselung und Q-Sound. Heimat von Street Fighter Alpha, Darkstalkers und Marvel vs. Capcom."
     }
   },
   "cps3": {
@@ -741,28 +1229,52 @@
     ],
     "cpu": {
       "es": "Hitachi SH-2 a 25 MHz",
-      "en": "Hitachi SH-2 at 25 MHz"
+      "en": "Hitachi SH-2 at 25 MHz",
+      "fr": "Hitachi SH-2 à 25 MHz",
+      "pt": "Hitachi SH-2 a 25 MHz",
+      "it": "Hitachi SH-2 a 25 MHz",
+      "de": "Hitachi SH-2 mit 25 MHz"
     },
     "memory": "2 MB RAM",
     "resolution": {
       "es": "384×224 (y 496×224)",
-      "en": "384×224 (and 496×224)"
+      "en": "384×224 (and 496×224)",
+      "fr": "384×224 (et 496×224)",
+      "pt": "384×224 (e 496×224)",
+      "it": "384×224 (e 496×224)",
+      "de": "384×224 (und 496×224)"
     },
     "colors": {
       "es": "32.768",
-      "en": "32,768"
+      "en": "32,768",
+      "fr": "32 768",
+      "pt": "32.768",
+      "it": "32.768",
+      "de": "32.768"
     },
     "sound": {
       "es": "Sonido PCM de 16 canales",
-      "en": "16-channel PCM sound"
+      "en": "16-channel PCM sound",
+      "fr": "Son PCM 16 canaux",
+      "pt": "Som PCM de 16 canais",
+      "it": "Audio PCM a 16 canali",
+      "de": "16-Kanal-PCM-Sound"
     },
     "media": {
       "es": "Placa arcade + CD-ROM",
-      "en": "Arcade board + CD-ROM"
+      "en": "Arcade board + CD-ROM",
+      "fr": "Carte arcade + CD-ROM",
+      "pt": "Placa arcade + CD-ROM",
+      "it": "Scheda arcade + CD-ROM",
+      "de": "Arcade-Platine + CD-ROM"
     },
     "description": {
       "es": "Última placa arcade de Capcom de su serie, con juegos cargados desde CD. Solo tuvo seis juegos, entre ellos Street Fighter III.",
-      "en": "Capcom's last arcade board in the series, with games loaded from CD. It had just six games, including Street Fighter III."
+      "en": "Capcom's last arcade board in the series, with games loaded from CD. It had just six games, including Street Fighter III.",
+      "fr": "La dernière carte arcade de la série de Capcom, avec des jeux chargés depuis un CD. Elle n'a eu que six jeux, dont Street Fighter III.",
+      "pt": "A última placa arcade da série da Capcom, com jogos carregados a partir de CD. Teve apenas seis jogos, entre eles Street Fighter III.",
+      "it": "L'ultima scheda arcade della serie di Capcom, con i giochi caricati da CD. Ebbe solo sei giochi, tra cui Street Fighter III.",
+      "de": "Capcoms letzte Arcade-Platine der Reihe, mit Spielen, die von CD geladen wurden. Es gab nur sechs Spiele, darunter Street Fighter III."
     }
   },
   "daphne": {
@@ -775,7 +1287,11 @@
     ],
     "description": {
       "es": "Emulador de recreativas con LaserDisc, como Dragon's Lair o Space Ace, que mezclaban vídeo y juego.",
-      "en": "An emulator for LaserDisc arcade games such as Dragon's Lair and Space Ace, which mixed video and gameplay."
+      "en": "An emulator for LaserDisc arcade games such as Dragon's Lair and Space Ace, which mixed video and gameplay.",
+      "fr": "Un émulateur de jeux d'arcade sur LaserDisc comme Dragon's Lair et Space Ace, qui mêlaient vidéo et jeu.",
+      "pt": "Um emulador de jogos arcade em LaserDisc como Dragon's Lair e Space Ace, que misturavam vídeo e jogabilidade.",
+      "it": "Un emulatore per giochi arcade su LaserDisc come Dragon's Lair e Space Ace, che mescolavano video e gameplay.",
+      "de": "Ein Emulator für LaserDisc-Arcadespiele wie Dragon's Lair und Space Ace, die Video und Spiel mischten."
     }
   },
   "desktop": {
@@ -788,7 +1304,11 @@
     ],
     "description": {
       "es": "Accesos directos a aplicaciones de escritorio lanzadas desde el frontend.",
-      "en": "Shortcuts to desktop applications launched from the frontend."
+      "en": "Shortcuts to desktop applications launched from the frontend.",
+      "fr": "Des raccourcis vers des applications de bureau lancées depuis le frontend.",
+      "pt": "Atalhos para aplicações de computador lançadas a partir do frontend.",
+      "it": "Collegamenti ad applicazioni desktop avviate dal frontend.",
+      "de": "Verknüpfungen zu Desktop-Anwendungen, die aus dem Frontend gestartet werden."
     }
   },
   "dragon32": {
@@ -801,32 +1321,60 @@
     ],
     "cpu": {
       "es": "Motorola 6809E a 0,89 MHz",
-      "en": "Motorola 6809E at 0.89 MHz"
+      "en": "Motorola 6809E at 0.89 MHz",
+      "fr": "Motorola 6809E à 0,89 MHz",
+      "pt": "Motorola 6809E a 0,89 MHz",
+      "it": "Motorola 6809E a 0,89 MHz",
+      "de": "Motorola 6809E mit 0,89 MHz"
     },
     "memory": {
       "es": "32 KB (64 KB en Dragon 64)",
-      "en": "32 KB (64 KB on Dragon 64)"
+      "en": "32 KB (64 KB on Dragon 64)",
+      "fr": "32 KB (64 KB sur Dragon 64)",
+      "pt": "32 KB (64 KB no Dragon 64)",
+      "it": "32 KB (64 KB sul Dragon 64)",
+      "de": "32 KB (64 KB beim Dragon 64)"
     },
     "resolution": "256×192",
     "colors": {
       "es": "4 (9 en total)",
-      "en": "4 (9 total)"
+      "en": "4 (9 total)",
+      "fr": "4 (9 au total)",
+      "pt": "4 (9 no total)",
+      "it": "4 (9 in totale)",
+      "de": "4 (insgesamt 9)"
     },
     "sound": {
       "es": "1 canal DAC de 6 bits",
-      "en": "1 channel 6-bit DAC"
+      "en": "1 channel 6-bit DAC",
+      "fr": "1 canal DAC 6 bits",
+      "pt": "1 canal DAC de 6 bits",
+      "it": "DAC a 6 bit, 1 canale",
+      "de": "1 Kanal, 6-Bit-DAC"
     },
     "media": {
       "es": "Cartucho / casete",
-      "en": "Cartridge / cassette"
+      "en": "Cartridge / cassette",
+      "fr": "Cartouche / cassette",
+      "pt": "Cartucho / cassete",
+      "it": "Cartuccia / cassetta",
+      "de": "Modul / Kassette"
     },
     "unitsSold": {
       "es": "~150.000",
-      "en": "~150,000"
+      "en": "~150,000",
+      "fr": "~150 000",
+      "pt": "~150.000",
+      "it": "~150.000",
+      "de": "~150.000"
     },
     "description": {
       "es": "Ordenador galés muy parecido al TRS-80 Color Computer. Tuvo cierto éxito en Reino Unido y España.",
-      "en": "A Welsh computer very similar to the TRS-80 Color Computer. It had some success in the UK and Spain."
+      "en": "A Welsh computer very similar to the TRS-80 Color Computer. It had some success in the UK and Spain.",
+      "fr": "Un ordinateur gallois très proche du TRS-80 Color Computer. Il a eu un certain succès au Royaume-Uni et en Espagne.",
+      "pt": "Um computador galês muito parecido com o TRS-80 Color Computer. Teve algum sucesso no Reino Unido e em Espanha.",
+      "it": "Un computer gallese molto simile al TRS-80 Color Computer. Ebbe un certo successo nel Regno Unito e in Spagna.",
+      "de": "Ein walisischer Computer, sehr ähnlich dem TRS-80 Color Computer. Er hatte etwas Erfolg in Großbritannien und Spanien."
     }
   },
   "dreamcast": {
@@ -840,26 +1388,46 @@
     ],
     "cpu": {
       "es": "Hitachi SH-4 a 200 MHz",
-      "en": "Hitachi SH-4 at 200 MHz"
+      "en": "Hitachi SH-4 at 200 MHz",
+      "fr": "Hitachi SH-4 à 200 MHz",
+      "pt": "Hitachi SH-4 a 200 MHz",
+      "it": "Hitachi SH-4 a 200 MHz",
+      "de": "Hitachi SH-4 mit 200 MHz"
     },
     "memory": "16 MB RAM + 8 MB VRAM + 2 MB audio",
     "resolution": "640×480",
     "colors": {
       "es": "16 millones (24 bits)",
-      "en": "16 million (24 bits)"
+      "en": "16 million (24 bits)",
+      "fr": "16 millions (24 bits)",
+      "pt": "16 milhões (24 bits)",
+      "it": "16 milioni (24 bit)",
+      "de": "16 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Yamaha AICA (ARM7), 64 canales",
-      "en": "Yamaha AICA (ARM7), 64 channels"
+      "en": "Yamaha AICA (ARM7), 64 channels",
+      "fr": "Yamaha AICA (ARM7), 64 canaux",
+      "pt": "Yamaha AICA (ARM7), 64 canais",
+      "it": "Yamaha AICA (ARM7), 64 canali",
+      "de": "Yamaha AICA (ARM7), 64 Kanäle"
     },
     "media": "GD-ROM",
     "unitsSold": {
       "es": "~9,1 millones",
-      "en": "~9.1 million"
+      "en": "~9.1 million",
+      "fr": "~9,1 millions",
+      "pt": "~9,1 milhões",
+      "it": "~9,1 milioni",
+      "de": "~9,1 Millionen"
     },
     "description": {
       "es": "Última consola de Sega, con módem integrado para jugar en línea. Shenmue, Jet Set Radio y Soulcalibur son algunos de sus clásicos.",
-      "en": "Sega's last console, with a built-in modem for online play. Shenmue, Jet Set Radio and Soulcalibur are among its classics."
+      "en": "Sega's last console, with a built-in modem for online play. Shenmue, Jet Set Radio and Soulcalibur are among its classics.",
+      "fr": "La dernière console de Sega, avec un modem intégré pour jouer en ligne. Shenmue, Jet Set Radio et Soulcalibur font partie de ses classiques.",
+      "pt": "A última consola da Sega, com modem integrado para jogar online. Shenmue, Jet Set Radio e Soulcalibur estão entre os seus clássicos.",
+      "it": "L'ultima console di Sega, con un modem integrato per il gioco online. Shenmue, Jet Set Radio e Soulcalibur sono tra i suoi classici.",
+      "de": "Segas letzte Konsole, mit eingebautem Modem für Onlinespiele. Shenmue, Jet Set Radio und Soulcalibur gehören zu ihren Klassikern."
     }
   },
   "easyrpg": {
@@ -872,7 +1440,11 @@
     ],
     "description": {
       "es": "Intérprete libre para jugar a juegos hechos con RPG Maker 2000 y 2003.",
-      "en": "A free interpreter for playing games made with RPG Maker 2000 and 2003."
+      "en": "A free interpreter for playing games made with RPG Maker 2000 and 2003.",
+      "fr": "Un interpréteur libre pour jouer aux jeux faits avec RPG Maker 2000 et 2003.",
+      "pt": "Um intérprete livre para jogar jogos feitos com RPG Maker 2000 e 2003.",
+      "it": "Un interprete libero per giocare ai giochi creati con RPG Maker 2000 e 2003.",
+      "de": "Ein freier Interpreter für Spiele, die mit RPG Maker 2000 und 2003 gemacht wurden."
     }
   },
   "fba": {
@@ -885,7 +1457,11 @@
     ],
     "description": {
       "es": "FinalBurn Alpha / Neo, emulador de recreativas centrado en Capcom, SNK, Sega, Toaplan y otras placas de los 80 y 90.",
-      "en": "FinalBurn Alpha / Neo, an arcade emulator focused on Capcom, SNK, Sega, Toaplan and other boards of the 80s and 90s."
+      "en": "FinalBurn Alpha / Neo, an arcade emulator focused on Capcom, SNK, Sega, Toaplan and other boards of the 80s and 90s.",
+      "fr": "FinalBurn Alpha / Neo, un émulateur d'arcade centré sur Capcom, SNK, Sega, Toaplan et d'autres cartes des années 80 et 90.",
+      "pt": "FinalBurn Alpha / Neo, um emulador arcade centrado nas placas da Capcom, SNK, Sega, Toaplan e outras dos anos 80 e 90.",
+      "it": "FinalBurn Alpha / Neo, un emulatore arcade incentrato su schede Capcom, SNK, Sega, Toaplan e altre degli anni '80 e '90.",
+      "de": "FinalBurn Alpha / Neo, ein Arcade-Emulator mit Fokus auf Platinen von Capcom, SNK, Sega, Toaplan und anderen aus den 80ern und 90ern."
     }
   },
   "fds": {
@@ -899,32 +1475,60 @@
     ],
     "cpu": {
       "es": "Igual que Famicom (Ricoh 2A03)",
-      "en": "Same as Famicom (Ricoh 2A03)"
+      "en": "Same as Famicom (Ricoh 2A03)",
+      "fr": "Identique à la Famicom (Ricoh 2A03)",
+      "pt": "Igual à Famicom (Ricoh 2A03)",
+      "it": "Come il Famicom (Ricoh 2A03)",
+      "de": "Wie beim Famicom (Ricoh 2A03)"
     },
     "memory": {
       "es": "32 KB RAM extra + 8 KB CHR RAM",
-      "en": "32 KB extra RAM + 8 KB CHR RAM"
+      "en": "32 KB extra RAM + 8 KB CHR RAM",
+      "fr": "32 KB de RAM en plus + 8 KB de CHR RAM",
+      "pt": "32 KB de RAM extra + 8 KB de CHR RAM",
+      "it": "32 KB di RAM extra + 8 KB di CHR RAM",
+      "de": "32 KB zusätzliches RAM + 8 KB CHR-RAM"
     },
     "resolution": "256×240",
     "colors": {
       "es": "54 (25 en pantalla)",
-      "en": "54 (25 on screen)"
+      "en": "54 (25 on screen)",
+      "fr": "54 (25 à l'écran)",
+      "pt": "54 (25 no ecrã)",
+      "it": "54 (25 a schermo)",
+      "de": "54 (25 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Famicom + canal de síntesis por tabla de ondas",
-      "en": "Famicom + wavetable synthesis channel"
+      "en": "Famicom + wavetable synthesis channel",
+      "fr": "Famicom + canal de synthèse par table d'ondes",
+      "pt": "Famicom + canal de síntese por tabela de ondas",
+      "it": "Famicom + canale di sintesi wavetable",
+      "de": "Famicom + Wavetable-Synthese-Kanal"
     },
     "media": {
       "es": "Disco Quick Disk",
-      "en": "Quick Disk"
+      "en": "Quick Disk",
+      "fr": "Quick Disk",
+      "pt": "Quick Disk",
+      "it": "Quick Disk",
+      "de": "Quick Disk"
     },
     "unitsSold": {
       "es": "~4,4 millones",
-      "en": "~4.4 million"
+      "en": "~4.4 million",
+      "fr": "~4,4 millions",
+      "pt": "~4,4 milhões",
+      "it": "~4,4 milioni",
+      "de": "~4,4 Millionen"
     },
     "description": {
       "es": "Famicom Disk System, periférico solo japonés que cargaba juegos desde disquetes regrabables. Aquí debutaron The Legend of Zelda y Metroid.",
-      "en": "Famicom Disk System, a Japan-only add-on that loaded games from rewritable floppy disks. The Legend of Zelda and Metroid debuted here."
+      "en": "Famicom Disk System, a Japan-only add-on that loaded games from rewritable floppy disks. The Legend of Zelda and Metroid debuted here.",
+      "fr": "Le Famicom Disk System, un périphérique sorti uniquement au Japon qui chargeait les jeux depuis des disquettes réinscriptibles. The Legend of Zelda et Metroid y ont fait leurs débuts.",
+      "pt": "Famicom Disk System, um acessório exclusivo do Japão que carregava jogos a partir de disquetes regraváveis. The Legend of Zelda e Metroid estrearam-se aqui.",
+      "it": "Famicom Disk System, un accessorio uscito solo in Giappone che caricava i giochi da floppy disk riscrivibili. The Legend of Zelda e Metroid debuttarono qui.",
+      "de": "Famicom Disk System, ein nur in Japan erschienenes Zusatzgerät, das Spiele von wiederbeschreibbaren Disketten lud. The Legend of Zelda und Metroid feierten hier Premiere."
     }
   },
   "gameandwatch": {
@@ -937,35 +1541,67 @@
     ],
     "cpu": {
       "es": "Microcontrolador Sharp SM5 de 4 bits",
-      "en": "Sharp SM5 4-bit microcontroller"
+      "en": "Sharp SM5 4-bit microcontroller",
+      "fr": "Microcontrôleur Sharp SM5 4 bits",
+      "pt": "Microcontrolador Sharp SM5 de 4 bits",
+      "it": "Microcontrollore Sharp SM5 a 4 bit",
+      "de": "Sharp SM5, 4-Bit-Mikrocontroller"
     },
     "memory": {
       "es": "Mínima",
-      "en": "Minimal"
+      "en": "Minimal",
+      "fr": "Minimale",
+      "pt": "Mínima",
+      "it": "Minima",
+      "de": "Minimal"
     },
     "resolution": {
       "es": "Pantalla LCD segmentada",
-      "en": "Segmented LCD"
+      "en": "Segmented LCD",
+      "fr": "Écran LCD segmenté",
+      "pt": "LCD segmentado",
+      "it": "LCD a segmenti",
+      "de": "Segment-LCD"
     },
     "colors": {
       "es": "Monocromo (con fondos impresos)",
-      "en": "Monochrome (printed backgrounds)"
+      "en": "Monochrome (printed backgrounds)",
+      "fr": "Monochrome (fonds imprimés)",
+      "pt": "Monocromático (fundos impressos)",
+      "it": "Monocromatico (sfondi stampati)",
+      "de": "Monochrom (gedruckte Hintergründe)"
     },
     "sound": {
       "es": "Pitidos",
-      "en": "Beeps"
+      "en": "Beeps",
+      "fr": "Bips",
+      "pt": "Bipes",
+      "it": "Bip",
+      "de": "Pieptöne"
     },
     "media": {
       "es": "Integrado",
-      "en": "Built-in"
+      "en": "Built-in",
+      "fr": "Intégré",
+      "pt": "Integrado",
+      "it": "Integrato",
+      "de": "Eingebaut"
     },
     "unitsSold": {
       "es": "~43 millones",
-      "en": "~43 million"
+      "en": "~43 million",
+      "fr": "~43 millions",
+      "pt": "~43 milhões",
+      "it": "~43 milioni",
+      "de": "~43 Millionen"
     },
     "description": {
       "es": "Serie de maquinitas LCD con un único juego cada una. Su cruceta inspiró la de la NES y su doble pantalla, la de Nintendo DS.",
-      "en": "A series of LCD handhelds with one game each. Their D-pad inspired the NES controller and their dual screens, the Nintendo DS."
+      "en": "A series of LCD handhelds with one game each. Their D-pad inspired the NES controller and their dual screens, the Nintendo DS.",
+      "fr": "Une série de consoles LCD avec un seul jeu chacune. Leur croix directionnelle a inspiré celle de la NES, et leur double écran, la Nintendo DS.",
+      "pt": "Uma série de consolas portáteis LCD com um jogo cada. A sua cruz direcional inspirou o comando da NES e os seus dois ecrãs, a Nintendo DS.",
+      "it": "Una serie di portatili LCD con un gioco ciascuno. La loro croce direzionale ispirò il controller del NES e i loro doppi schermi il Nintendo DS.",
+      "de": "Eine Reihe von LCD-Handhelds mit je einem Spiel. Ihr Steuerkreuz inspirierte den NES-Controller und ihre zwei Bildschirme den Nintendo DS."
     }
   },
   "gamegear": {
@@ -979,29 +1615,53 @@
     ],
     "cpu": {
       "es": "Zilog Z80 a 3,58 MHz",
-      "en": "Zilog Z80 at 3.58 MHz"
+      "en": "Zilog Z80 at 3.58 MHz",
+      "fr": "Zilog Z80 à 3,58 MHz",
+      "pt": "Zilog Z80 a 3,58 MHz",
+      "it": "Zilog Z80 a 3,58 MHz",
+      "de": "Zilog Z80 mit 3,58 MHz"
     },
     "memory": "8 KB RAM + 16 KB VRAM",
     "resolution": "160×144",
     "colors": {
       "es": "4.096 (32 en pantalla)",
-      "en": "4,096 (32 on screen)"
+      "en": "4,096 (32 on screen)",
+      "fr": "4 096 (32 à l'écran)",
+      "pt": "4.096 (32 no ecrã)",
+      "it": "4.096 (32 a schermo)",
+      "de": "4.096 (32 auf dem Bildschirm)"
     },
     "sound": {
       "es": "SN76489: 3 canales + ruido (estéreo)",
-      "en": "SN76489: 3 channels + noise (stereo)"
+      "en": "SN76489: 3 channels + noise (stereo)",
+      "fr": "SN76489 : 3 canaux + bruit (stéréo)",
+      "pt": "SN76489: 3 canais + ruído (estéreo)",
+      "it": "SN76489: 3 canali + rumore (stereo)",
+      "de": "SN76489: 3 Kanäle + Rauschen (Stereo)"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~10,6 millones",
-      "en": "~10.6 million"
+      "en": "~10.6 million",
+      "fr": "~10,6 millions",
+      "pt": "~10,6 milhões",
+      "it": "~10,6 milioni",
+      "de": "~10,6 Millionen"
     },
     "description": {
       "es": "Portátil de Sega con pantalla a color retroiluminada, basada en la Master System. Su gran pega era el gasto de pilas.",
-      "en": "Sega's handheld with a backlit colour screen, based on the Master System. Its big drawback was battery life."
+      "en": "Sega's handheld with a backlit colour screen, based on the Master System. Its big drawback was battery life.",
+      "fr": "La portable de Sega à écran couleur rétroéclairé, basée sur la Master System. Son gros défaut : l'autonomie.",
+      "pt": "A consola portátil da Sega com ecrã a cores retroiluminado, baseada na Master System. O seu grande ponto fraco era a duração das pilhas.",
+      "it": "La portatile di Sega con schermo a colori retroilluminato, basata sul Master System. Il suo grande difetto era la durata delle batterie.",
+      "de": "Segas Handheld mit beleuchtetem Farbbildschirm, basierend auf dem Master System. Sein großer Nachteil war die Akkulaufzeit."
     }
   },
   "gb": {
@@ -1015,29 +1675,53 @@
     ],
     "cpu": {
       "es": "Sharp LR35902 a 4,19 MHz",
-      "en": "Sharp LR35902 at 4.19 MHz"
+      "en": "Sharp LR35902 at 4.19 MHz",
+      "fr": "Sharp LR35902 à 4,19 MHz",
+      "pt": "Sharp LR35902 a 4,19 MHz",
+      "it": "Sharp LR35902 a 4,19 MHz",
+      "de": "Sharp LR35902 mit 4,19 MHz"
     },
     "memory": "8 KB RAM + 8 KB VRAM",
     "resolution": "160×144",
     "colors": {
       "es": "4 tonos de gris (verde)",
-      "en": "4 shades of grey (green)"
+      "en": "4 shades of grey (green)",
+      "fr": "4 nuances de gris (vert)",
+      "pt": "4 tons de cinzento (verde)",
+      "it": "4 tonalità di grigio (verde)",
+      "de": "4 Graustufen (grünlich)"
     },
     "sound": {
       "es": "4 canales estéreo",
-      "en": "4 channels stereo"
+      "en": "4 channels stereo",
+      "fr": "4 canaux stéréo",
+      "pt": "4 canais estéreo",
+      "it": "4 canali stereo",
+      "de": "4 Kanäle, Stereo"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~119 millones (con Game Boy Color)",
-      "en": "~119 million (with Game Boy Color)"
+      "en": "~119 million (with Game Boy Color)",
+      "fr": "~119 millions (avec la Game Boy Color)",
+      "pt": "~119 milhões (com o Game Boy Color)",
+      "it": "~119 milioni (con Game Boy Color)",
+      "de": "~119 Millionen (mit Game Boy Color)"
     },
     "description": {
       "es": "La portátil que conquistó el mundo gracias a Tetris y, después, a Pokémon. Sencilla, resistente y con pilas de larga duración.",
-      "en": "The handheld that conquered the world thanks to Tetris and, later, Pokémon. Simple, tough and easy on batteries."
+      "en": "The handheld that conquered the world thanks to Tetris and, later, Pokémon. Simple, tough and easy on batteries.",
+      "fr": "La portable qui a conquis le monde grâce à Tetris puis à Pokémon. Simple, solide et économe en piles.",
+      "pt": "A consola portátil que conquistou o mundo graças ao Tetris e, mais tarde, ao Pokémon. Simples, resistente e poupada nas pilhas.",
+      "it": "La portatile che conquistò il mondo grazie a Tetris e, più tardi, a Pokémon. Semplice, resistente e parca con le batterie.",
+      "de": "Der Handheld, der dank Tetris und später Pokémon die Welt eroberte. Einfach, robust und sparsam mit Batterien."
     }
   },
   "gba": {
@@ -1051,29 +1735,53 @@
     ],
     "cpu": {
       "es": "ARM7TDMI a 16,78 MHz",
-      "en": "ARM7TDMI at 16.78 MHz"
+      "en": "ARM7TDMI at 16.78 MHz",
+      "fr": "ARM7TDMI à 16,78 MHz",
+      "pt": "ARM7TDMI a 16,78 MHz",
+      "it": "ARM7TDMI a 16,78 MHz",
+      "de": "ARM7TDMI mit 16,78 MHz"
     },
     "memory": "32 KB + 256 KB RAM, 96 KB VRAM",
     "resolution": "240×160",
     "colors": {
       "es": "32.768 (15 bits)",
-      "en": "32,768 (15 bits)"
+      "en": "32,768 (15 bits)",
+      "fr": "32 768 (15 bits)",
+      "pt": "32.768 (15 bits)",
+      "it": "32.768 (15 bit)",
+      "de": "32.768 (15 Bit)"
     },
     "sound": {
       "es": "4 canales GB + 2 canales PCM",
-      "en": "4 channels GB + 2 channels PCM"
+      "en": "4 channels GB + 2 channels PCM",
+      "fr": "4 canaux GB + 2 canaux PCM",
+      "pt": "4 canais GB + 2 canais PCM",
+      "it": "4 canali GB + 2 canali PCM",
+      "de": "4 GB-Kanäle + 2 PCM-Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~81,5 millones",
-      "en": "~81.5 million"
+      "en": "~81.5 million",
+      "fr": "~81,5 millions",
+      "pt": "~81,5 milhões",
+      "it": "~81,5 milioni",
+      "de": "~81,5 Millionen"
     },
     "description": {
       "es": "Portátil de 32 bits con un enorme catálogo de juegos 2D, desde Pokémon y Zelda hasta Metroid y Advance Wars.",
-      "en": "A 32-bit handheld with a huge 2D library, from Pokémon and Zelda to Metroid and Advance Wars."
+      "en": "A 32-bit handheld with a huge 2D library, from Pokémon and Zelda to Metroid and Advance Wars.",
+      "fr": "Une portable 32 bits à l'immense ludothèque 2D, de Pokémon et Zelda à Metroid et Advance Wars.",
+      "pt": "Uma consola portátil de 32 bits com uma enorme biblioteca 2D, de Pokémon e Zelda a Metroid e Advance Wars.",
+      "it": "Una portatile a 32 bit con un enorme catalogo 2D, da Pokémon e Zelda a Metroid e Advance Wars.",
+      "de": "Ein 32-Bit-Handheld mit riesiger 2D-Bibliothek, von Pokémon und Zelda bis Metroid und Advance Wars."
     }
   },
   "gbc": {
@@ -1087,29 +1795,53 @@
     ],
     "cpu": {
       "es": "Sharp LR35902 a 8,4 MHz (doble velocidad)",
-      "en": "Sharp LR35902 at 8.4 MHz (double speed)"
+      "en": "Sharp LR35902 at 8.4 MHz (double speed)",
+      "fr": "Sharp LR35902 à 8,4 MHz (double vitesse)",
+      "pt": "Sharp LR35902 a 8,4 MHz (velocidade dupla)",
+      "it": "Sharp LR35902 a 8,4 MHz (doppia velocità)",
+      "de": "Sharp LR35902 mit 8,4 MHz (doppelte Geschwindigkeit)"
     },
     "memory": "32 KB RAM + 16 KB VRAM",
     "resolution": "160×144",
     "colors": {
       "es": "32.768 (56 en pantalla)",
-      "en": "32,768 (56 on screen)"
+      "en": "32,768 (56 on screen)",
+      "fr": "32 768 (56 à l'écran)",
+      "pt": "32.768 (56 no ecrã)",
+      "it": "32.768 (56 a schermo)",
+      "de": "32.768 (56 auf dem Bildschirm)"
     },
     "sound": {
       "es": "4 canales estéreo",
-      "en": "4 channels stereo"
+      "en": "4 channels stereo",
+      "fr": "4 canaux stéréo",
+      "pt": "4 canais estéreo",
+      "it": "4 canali stereo",
+      "de": "4 Kanäle, Stereo"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~119 millones (con Game Boy)",
-      "en": "~119 million (with Game Boy)"
+      "en": "~119 million (with Game Boy)",
+      "fr": "~119 millions (avec la Game Boy)",
+      "pt": "~119 milhões (com o Game Boy)",
+      "it": "~119 milioni (con Game Boy)",
+      "de": "~119 Millionen (mit Game Boy)"
     },
     "description": {
       "es": "Game Boy con pantalla a color, compatible con los juegos de la original. Pokémon Oro y Plata fueron su gran éxito.",
-      "en": "A Game Boy with a colour screen, compatible with original Game Boy games. Pokémon Gold and Silver were its big hits."
+      "en": "A Game Boy with a colour screen, compatible with original Game Boy games. Pokémon Gold and Silver were its big hits.",
+      "fr": "Une Game Boy à écran couleur, compatible avec les jeux de la Game Boy d'origine. Pokémon Or et Argent ont été ses grands succès.",
+      "pt": "Um Game Boy com ecrã a cores, compatível com os jogos do Game Boy original. Pokémon Gold e Silver foram os seus grandes êxitos.",
+      "it": "Un Game Boy con schermo a colori, compatibile con i giochi del Game Boy originale. Pokémon Oro e Argento furono i suoi grandi successi.",
+      "de": "Ein Game Boy mit Farbbildschirm, kompatibel mit den Spielen des ursprünglichen Game Boy. Pokémon Gold und Silber waren seine großen Hits."
     }
   },
   "gc": {
@@ -1123,32 +1855,60 @@
     ],
     "cpu": {
       "es": "IBM PowerPC Gekko a 486 MHz",
-      "en": "IBM PowerPC Gekko at 486 MHz"
+      "en": "IBM PowerPC Gekko at 486 MHz",
+      "fr": "IBM PowerPC Gekko à 486 MHz",
+      "pt": "IBM PowerPC Gekko a 486 MHz",
+      "it": "IBM PowerPC Gekko a 486 MHz",
+      "de": "IBM PowerPC Gekko mit 486 MHz"
     },
     "memory": {
       "es": "24 MB RAM + 16 MB auxiliar",
-      "en": "24 MB RAM + 16 MB auxiliary"
+      "en": "24 MB RAM + 16 MB auxiliary",
+      "fr": "24 MB de RAM + 16 MB auxiliaires",
+      "pt": "24 MB de RAM + 16 MB auxiliares",
+      "it": "24 MB di RAM + 16 MB ausiliari",
+      "de": "24 MB RAM + 16 MB Zusatzspeicher"
     },
     "resolution": {
       "es": "640×480 (hasta 480p)",
-      "en": "640×480 (up to 480p)"
+      "en": "640×480 (up to 480p)",
+      "fr": "640×480 (jusqu'à 480p)",
+      "pt": "640×480 (até 480p)",
+      "it": "640×480 (fino a 480p)",
+      "de": "640×480 (bis 480p)"
     },
     "colors": {
       "es": "16 millones (24 bits)",
-      "en": "16 million (24 bits)"
+      "en": "16 million (24 bits)",
+      "fr": "16 millions (24 bits)",
+      "pt": "16 milhões (24 bits)",
+      "it": "16 milioni (24 bit)",
+      "de": "16 Millionen (24 Bit)"
     },
     "sound": {
       "es": "DSP Macronix, 64 canales",
-      "en": "DSP Macronix, 64 channels"
+      "en": "DSP Macronix, 64 channels",
+      "fr": "DSP Macronix, 64 canaux",
+      "pt": "DSP Macronix, 64 canais",
+      "it": "DSP Macronix, 64 canali",
+      "de": "DSP Macronix, 64 Kanäle"
     },
     "media": "Mini-DVD (GameCube Optical Disc)",
     "unitsSold": {
       "es": "~21,7 millones",
-      "en": "~21.7 million"
+      "en": "~21.7 million",
+      "fr": "~21,7 millions",
+      "pt": "~21,7 milhões",
+      "it": "~21,7 milioni",
+      "de": "~21,7 Millionen"
     },
     "description": {
       "es": "GameCube, compacta y con asa, con clásicos como Metroid Prime, Super Smash Bros. Melee y The Wind Waker.",
-      "en": "The compact GameCube with its carry handle, home to Metroid Prime, Super Smash Bros. Melee and The Wind Waker."
+      "en": "The compact GameCube with its carry handle, home to Metroid Prime, Super Smash Bros. Melee and The Wind Waker.",
+      "fr": "La GameCube, compacte et avec sa poignée, maison de Metroid Prime, Super Smash Bros. Melee et The Wind Waker.",
+      "pt": "A compacta GameCube com a sua pega, casa de Metroid Prime, Super Smash Bros. Melee e The Wind Waker.",
+      "it": "Il compatto GameCube con la sua maniglia, casa di Metroid Prime, Super Smash Bros. Melee e The Wind Waker.",
+      "de": "Der kompakte GameCube mit Tragegriff, Heimat von Metroid Prime, Super Smash Bros. Melee und The Wind Waker."
     }
   },
   "genesis": {
@@ -1164,7 +1924,11 @@
     ],
     "description": {
       "es": "Visor de imágenes del frontend (no es un sistema de juego).",
-      "en": "The frontend's image viewer (not a game system)."
+      "en": "The frontend's image viewer (not a game system).",
+      "fr": "La visionneuse d'images du frontend (pas un système de jeu).",
+      "pt": "O visualizador de imagens do frontend (não é um sistema de jogos).",
+      "it": "Il visualizzatore di immagini del frontend (non è un sistema di gioco).",
+      "de": "Der Bildbetrachter des Frontends (kein Spielsystem)."
     }
   },
   "intellivision": {
@@ -1178,29 +1942,53 @@
     ],
     "cpu": {
       "es": "General Instrument CP1610 a 0,89 MHz (16 bits)",
-      "en": "General Instrument CP1610 at 0.89 MHz (16 bits)"
+      "en": "General Instrument CP1610 at 0.89 MHz (16 bits)",
+      "fr": "General Instrument CP1610 à 0,89 MHz (16 bits)",
+      "pt": "General Instrument CP1610 a 0,89 MHz (16 bits)",
+      "it": "General Instrument CP1610 a 0,89 MHz (16 bit)",
+      "de": "General Instrument CP1610 mit 0,89 MHz (16 Bit)"
     },
     "memory": {
       "es": "1,4 KB RAM",
-      "en": "1.4 KB RAM"
+      "en": "1.4 KB RAM",
+      "fr": "1,4 KB de RAM",
+      "pt": "1,4 KB de RAM",
+      "it": "1,4 KB di RAM",
+      "de": "1,4 KB RAM"
     },
     "resolution": "159×96",
     "colors": "16",
     "sound": {
       "es": "AY-3-8914: 3 canales",
-      "en": "AY-3-8914: 3 channels"
+      "en": "AY-3-8914: 3 channels",
+      "fr": "AY-3-8914 : 3 canaux",
+      "pt": "AY-3-8914: 3 canais",
+      "it": "AY-3-8914: 3 canali",
+      "de": "AY-3-8914: 3 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~3 millones",
-      "en": "~3 million"
+      "en": "~3 million",
+      "fr": "~3 millions",
+      "pt": "~3 milhões",
+      "it": "~3 milioni",
+      "de": "~3 Millionen"
     },
     "description": {
       "es": "Consola de Mattel que competía con la Atari 2600 con mejores gráficos. Sus mandos tenían un disco direccional y teclado numérico.",
-      "en": "Mattel's console that took on the Atari 2600 with better graphics. Its controllers had a direction disc and a keypad."
+      "en": "Mattel's console that took on the Atari 2600 with better graphics. Its controllers had a direction disc and a keypad.",
+      "fr": "La console de Mattel qui affrontait l'Atari 2600 avec de meilleurs graphismes. Ses manettes avaient un disque directionnel et un pavé numérique.",
+      "pt": "A consola da Mattel que enfrentou a Atari 2600 com melhores gráficos. Os seus comandos tinham um disco direcional e um teclado numérico.",
+      "it": "La console di Mattel che sfidò l'Atari 2600 con una grafica migliore. I suoi controller avevano un disco direzionale e un tastierino.",
+      "de": "Mattels Konsole, die mit besserer Grafik gegen die Atari 2600 antrat. Ihre Controller hatten eine Richtungsscheibe und ein Tastenfeld."
     }
   },
   "love": {
@@ -1213,7 +2001,11 @@
     ],
     "description": {
       "es": "Motor libre para hacer juegos 2D en el lenguaje Lua.",
-      "en": "A free framework for making 2D games in Lua."
+      "en": "A free framework for making 2D games in Lua.",
+      "fr": "Un framework libre pour créer des jeux 2D en Lua.",
+      "pt": "Uma framework livre para criar jogos 2D em Lua.",
+      "it": "Un framework libero per creare giochi 2D in Lua.",
+      "de": "Ein freies Framework, um 2D-Spiele in Lua zu entwickeln."
     }
   },
   "macintosh": {
@@ -1226,28 +2018,52 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 7,8 MHz (modelo original)",
-      "en": "Motorola 68000 at 7.8 MHz (original model)"
+      "en": "Motorola 68000 at 7.8 MHz (original model)",
+      "fr": "Motorola 68000 à 7,8 MHz (modèle d'origine)",
+      "pt": "Motorola 68000 a 7,8 MHz (modelo original)",
+      "it": "Motorola 68000 a 7,8 MHz (modello originale)",
+      "de": "Motorola 68000 mit 7,8 MHz (Originalmodell)"
     },
     "memory": {
       "es": "128 KB (original) – varios MB",
-      "en": "128 KB (original) – several MB"
+      "en": "128 KB (original) – several MB",
+      "fr": "128 KB (d'origine) – plusieurs MB",
+      "pt": "128 KB (original) – vários MB",
+      "it": "128 KB (originale) – diversi MB",
+      "de": "128 KB (Original) – mehrere MB"
     },
     "resolution": "512×342 (original)",
     "colors": {
       "es": "Monocromo (color desde Mac II)",
-      "en": "Monochrome (colour from Mac II)"
+      "en": "Monochrome (colour from Mac II)",
+      "fr": "Monochrome (couleur à partir du Mac II)",
+      "pt": "Monocromático (cor a partir do Mac II)",
+      "it": "Monocromatico (a colori dal Mac II)",
+      "de": "Monochrom (Farbe ab Mac II)"
     },
     "sound": {
       "es": "Sonido PCM de 8 bits",
-      "en": "8-bit PCM sound"
+      "en": "8-bit PCM sound",
+      "fr": "Son PCM 8 bits",
+      "pt": "Som PCM de 8 bits",
+      "it": "Audio PCM a 8 bit",
+      "de": "8-Bit-PCM-Sound"
     },
     "media": {
       "es": "Disquete 3,5\" / disco duro",
-      "en": "Floppy disk 3.5\" / hard disk"
+      "en": "Floppy disk 3.5\" / hard disk",
+      "fr": "Disquette 3,5\" / disque dur",
+      "pt": "Disquete 3,5\" / disco rígido",
+      "it": "Floppy disk da 3,5\" / disco rigido",
+      "de": "Diskette 3,5\" / Festplatte"
     },
     "description": {
       "es": "El ordenador que popularizó la interfaz gráfica y el ratón. Juegos como Myst, Marathon o Dark Castle salieron primero en Mac.",
-      "en": "The computer that popularised the graphical interface and the mouse. Games such as Myst, Marathon and Dark Castle came out on the Mac first."
+      "en": "The computer that popularised the graphical interface and the mouse. Games such as Myst, Marathon and Dark Castle came out on the Mac first.",
+      "fr": "L'ordinateur qui a popularisé l'interface graphique et la souris. Des jeux comme Myst, Marathon et Dark Castle sont d'abord sortis sur Mac.",
+      "pt": "O computador que popularizou a interface gráfica e o rato. Jogos como Myst, Marathon e Dark Castle saíram primeiro no Mac.",
+      "it": "Il computer che rese popolari l'interfaccia grafica e il mouse. Giochi come Myst, Marathon e Dark Castle uscirono prima su Mac.",
+      "de": "Der Computer, der die grafische Oberfläche und die Maus populär machte. Spiele wie Myst, Marathon und Dark Castle erschienen zuerst auf dem Mac."
     }
   },
   "mame": {
@@ -1260,7 +2076,11 @@
     ],
     "description": {
       "es": "MAME (Multiple Arcade Machine Emulator), el emulador de referencia para preservar miles de placas arcade.",
-      "en": "MAME (Multiple Arcade Machine Emulator), the reference emulator for preserving thousands of arcade boards."
+      "en": "MAME (Multiple Arcade Machine Emulator), the reference emulator for preserving thousands of arcade boards.",
+      "fr": "MAME (Multiple Arcade Machine Emulator), l'émulateur de référence pour préserver des milliers de cartes arcade.",
+      "pt": "MAME (Multiple Arcade Machine Emulator), o emulador de referência para preservar milhares de placas arcade.",
+      "it": "MAME (Multiple Arcade Machine Emulator), l'emulatore di riferimento per preservare migliaia di schede arcade.",
+      "de": "MAME (Multiple Arcade Machine Emulator), der Referenz-Emulator zur Bewahrung tausender Arcade-Platinen."
     }
   },
   "mastersystem": {
@@ -1274,32 +2094,60 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
-      "en": "Zilog Z80A at 3.58 MHz"
+      "en": "Zilog Z80A at 3.58 MHz",
+      "fr": "Zilog Z80A à 3,58 MHz",
+      "pt": "Zilog Z80A a 3,58 MHz",
+      "it": "Zilog Z80A a 3,58 MHz",
+      "de": "Zilog Z80A mit 3,58 MHz"
     },
     "memory": "8 KB RAM + 16 KB VRAM",
     "resolution": {
       "es": "256×192 (y 256×224)",
-      "en": "256×192 (and 256×224)"
+      "en": "256×192 (and 256×224)",
+      "fr": "256×192 (et 256×224)",
+      "pt": "256×192 (e 256×224)",
+      "it": "256×192 (e 256×224)",
+      "de": "256×192 (und 256×224)"
     },
     "colors": {
       "es": "64 (32 en pantalla)",
-      "en": "64 (32 on screen)"
+      "en": "64 (32 on screen)",
+      "fr": "64 (32 à l'écran)",
+      "pt": "64 (32 no ecrã)",
+      "it": "64 (32 a schermo)",
+      "de": "64 (32 auf dem Bildschirm)"
     },
     "sound": {
       "es": "SN76489: 3 canales + ruido (FM opcional en Japón)",
-      "en": "SN76489: 3 channels + noise (optional FM in Japan)"
+      "en": "SN76489: 3 channels + noise (optional FM in Japan)",
+      "fr": "SN76489 : 3 canaux + bruit (FM en option au Japon)",
+      "pt": "SN76489: 3 canais + ruído (FM opcional no Japão)",
+      "it": "SN76489: 3 canali + rumore (FM opzionale in Giappone)",
+      "de": "SN76489: 3 Kanäle + Rauschen (optional FM in Japan)"
     },
     "media": {
       "es": "Cartucho / Sega Card",
-      "en": "Cartridge / Sega Card"
+      "en": "Cartridge / Sega Card",
+      "fr": "Cartouche / Sega Card",
+      "pt": "Cartucho / Sega Card",
+      "it": "Cartuccia / Sega Card",
+      "de": "Modul / Sega Card"
     },
     "unitsSold": {
       "es": "~13 millones",
-      "en": "~13 million"
+      "en": "~13 million",
+      "fr": "~13 millions",
+      "pt": "~13 milhões",
+      "it": "~13 milioni",
+      "de": "~13 Millionen"
     },
     "description": {
       "es": "Consola de 8 bits de Sega, rival de la NES. Fue un gran éxito en Europa y Brasil, con clásicos como Alex Kidd, Wonder Boy o Phantasy Star.",
-      "en": "Sega's 8-bit console and NES rival. It was a big hit in Europe and Brazil, with classics such as Alex Kidd, Wonder Boy and Phantasy Star."
+      "en": "Sega's 8-bit console and NES rival. It was a big hit in Europe and Brazil, with classics such as Alex Kidd, Wonder Boy and Phantasy Star.",
+      "fr": "La console 8 bits de Sega, rivale de la NES. Un grand succès en Europe et au Brésil, avec des classiques comme Alex Kidd, Wonder Boy et Phantasy Star.",
+      "pt": "A consola de 8 bits da Sega e rival da NES. Teve grande sucesso na Europa e no Brasil, com clássicos como Alex Kidd, Wonder Boy e Phantasy Star.",
+      "it": "La console a 8 bit di Sega e rivale del NES. Ebbe grande successo in Europa e in Brasile, con classici come Alex Kidd, Wonder Boy e Phantasy Star.",
+      "de": "Segas 8-Bit-Konsole und Rivale des NES. In Europa und Brasilien ein großer Erfolg, mit Klassikern wie Alex Kidd, Wonder Boy und Phantasy Star."
     }
   },
   "megadrive": {
@@ -1313,29 +2161,53 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 7,67 MHz + Zilog Z80 (sonido)",
-      "en": "Motorola 68000 at 7.67 MHz + Zilog Z80 (sound)"
+      "en": "Motorola 68000 at 7.67 MHz + Zilog Z80 (sound)",
+      "fr": "Motorola 68000 à 7,67 MHz + Zilog Z80 (son)",
+      "pt": "Motorola 68000 a 7,67 MHz + Zilog Z80 (som)",
+      "it": "Motorola 68000 a 7,67 MHz + Zilog Z80 (audio)",
+      "de": "Motorola 68000 mit 7,67 MHz + Zilog Z80 (Sound)"
     },
     "memory": "64 KB RAM + 64 KB VRAM + 8 KB audio",
     "resolution": "320×224",
     "colors": {
       "es": "512 (61 en pantalla)",
-      "en": "512 (61 on screen)"
+      "en": "512 (61 on screen)",
+      "fr": "512 (61 à l'écran)",
+      "pt": "512 (61 no ecrã)",
+      "it": "512 (61 a schermo)",
+      "de": "512 (61 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Yamaha YM2612 (FM, 6 canales) + SN76489",
-      "en": "Yamaha YM2612 (FM, 6 channels) + SN76489"
+      "en": "Yamaha YM2612 (FM, 6 channels) + SN76489",
+      "fr": "Yamaha YM2612 (FM, 6 canaux) + SN76489",
+      "pt": "Yamaha YM2612 (FM, 6 canais) + SN76489",
+      "it": "Yamaha YM2612 (FM, 6 canali) + SN76489",
+      "de": "Yamaha YM2612 (FM, 6 Kanäle) + SN76489"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~30-35 millones",
-      "en": "~30-35 million"
+      "en": "~30-35 million",
+      "fr": "~30-35 millions",
+      "pt": "~30-35 milhões",
+      "it": "~30-35 milioni",
+      "de": "~30–35 Millionen"
     },
     "description": {
       "es": "La consola de 16 bits de Sega (Genesis en América). Sonic the Hedgehog la convirtió en la gran rival de la Super Nintendo.",
-      "en": "Sega's 16-bit console (Genesis in North America). Sonic the Hedgehog made it the Super Nintendo's great rival."
+      "en": "Sega's 16-bit console (Genesis in North America). Sonic the Hedgehog made it the Super Nintendo's great rival.",
+      "fr": "La console 16 bits de Sega (Genesis en Amérique du Nord). Sonic the Hedgehog en a fait la grande rivale de la Super Nintendo.",
+      "pt": "A consola de 16 bits da Sega (Genesis na América do Norte). Sonic the Hedgehog tornou-a a grande rival da Super Nintendo.",
+      "it": "La console a 16 bit di Sega (Genesis in Nord America). Sonic the Hedgehog la rese la grande rivale del Super Nintendo.",
+      "de": "Segas 16-Bit-Konsole (in Nordamerika Genesis). Sonic the Hedgehog machte sie zum großen Rivalen des Super Nintendo."
     }
   },
   "mess": {
@@ -1348,7 +2220,11 @@
     ],
     "description": {
       "es": "MESS, la parte de MAME que emula consolas y ordenadores (hoy integrada en MAME).",
-      "en": "MESS, the part of MAME that emulates consoles and computers (now merged into MAME)."
+      "en": "MESS, the part of MAME that emulates consoles and computers (now merged into MAME).",
+      "fr": "MESS, la partie de MAME qui émule consoles et ordinateurs (aujourd'hui intégrée à MAME).",
+      "pt": "MESS, a parte do MAME que emula consolas e computadores (hoje integrada no MAME).",
+      "it": "MESS, la parte di MAME che emula console e computer (oggi integrata in MAME).",
+      "de": "MESS, der Teil von MAME, der Konsolen und Computer emuliert (heute in MAME aufgegangen)."
     }
   },
   "msu1": {
@@ -1361,13 +2237,21 @@
     ],
     "description": {
       "es": "Chip de mejora para Super Nintendo que permite audio en calidad CD y vídeo en juegos modificados.",
-      "en": "An enhancement chip for the Super Nintendo that adds CD-quality audio and video to modified games."
+      "en": "An enhancement chip for the Super Nintendo that adds CD-quality audio and video to modified games.",
+      "fr": "Une puce d'amélioration pour la Super Nintendo qui ajoute un son de qualité CD et de la vidéo aux jeux modifiés.",
+      "pt": "Um chip de melhoria para a Super Nintendo que acrescenta áudio com qualidade de CD e vídeo a jogos modificados.",
+      "it": "Un chip di espansione per il Super Nintendo che aggiunge audio di qualità CD e video ai giochi modificati.",
+      "de": "Ein Erweiterungschip für das Super Nintendo, der modifizierten Spielen Audio in CD-Qualität und Video hinzufügt."
     }
   },
   "msx": {
     "manufacturer": {
       "es": "Varios (estándar de ASCII y Microsoft)",
-      "en": "Various (ASCII/Microsoft standard)"
+      "en": "Various (ASCII/Microsoft standard)",
+      "fr": "Divers (standard ASCII/Microsoft)",
+      "pt": "Vários (norma da ASCII e da Microsoft)",
+      "it": "Vari (standard ASCII/Microsoft)",
+      "de": "Verschiedene (Standard von ASCII/Microsoft)"
     },
     "year": 1983,
     "type": "computer",
@@ -1377,26 +2261,46 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
-      "en": "Zilog Z80A at 3.58 MHz"
+      "en": "Zilog Z80A at 3.58 MHz",
+      "fr": "Zilog Z80A à 3,58 MHz",
+      "pt": "Zilog Z80A a 3,58 MHz",
+      "it": "Zilog Z80A a 3,58 MHz",
+      "de": "Zilog Z80A mit 3,58 MHz"
     },
     "memory": "8 – 64 KB RAM + 16 KB VRAM",
     "resolution": "256×192",
     "colors": "16",
     "sound": {
       "es": "AY-3-8910: 3 canales",
-      "en": "AY-3-8910: 3 channels"
+      "en": "AY-3-8910: 3 channels",
+      "fr": "AY-3-8910 : 3 canaux",
+      "pt": "AY-3-8910: 3 canais",
+      "it": "AY-3-8910: 3 canali",
+      "de": "AY-3-8910: 3 Kanäle"
     },
     "media": {
       "es": "Cartucho / casete / disquete",
-      "en": "Cartridge / cassette / floppy disk"
+      "en": "Cartridge / cassette / floppy disk",
+      "fr": "Cartouche / cassette / disquette",
+      "pt": "Cartucho / cassete / disquete",
+      "it": "Cartuccia / cassetta / floppy disk",
+      "de": "Modul / Kassette / Diskette"
     },
     "unitsSold": {
       "es": "~5 millones",
-      "en": "~5 million"
+      "en": "~5 million",
+      "fr": "~5 millions",
+      "pt": "~5 milhões",
+      "it": "~5 milioni",
+      "de": "~5 Millionen"
     },
     "description": {
       "es": "Estándar de ordenadores de 8 bits fabricado por muchas marcas. Konami publicó en él Metal Gear, Nemesis y Vampire Killer.",
-      "en": "An 8-bit computer standard made by many brands. Konami released Metal Gear, Nemesis and Vampire Killer on it."
+      "en": "An 8-bit computer standard made by many brands. Konami released Metal Gear, Nemesis and Vampire Killer on it.",
+      "fr": "Un standard d'ordinateurs 8 bits fabriqué par de nombreuses marques. Konami y a sorti Metal Gear, Nemesis et Vampire Killer.",
+      "pt": "Uma norma de computadores de 8 bits fabricada por muitas marcas. A Konami lançou nela Metal Gear, Nemesis e Vampire Killer.",
+      "it": "Uno standard di computer a 8 bit prodotto da molte marche. Konami vi pubblicò Metal Gear, Nemesis e Vampire Killer.",
+      "de": "Ein 8-Bit-Computerstandard, gebaut von vielen Marken. Konami brachte darauf Metal Gear, Nemesis und Vampire Killer heraus."
     }
   },
   "n64": {
@@ -1410,35 +2314,67 @@
     ],
     "cpu": {
       "es": "NEC VR4300 a 93,75 MHz (64 bits)",
-      "en": "NEC VR4300 at 93.75 MHz (64 bits)"
+      "en": "NEC VR4300 at 93.75 MHz (64 bits)",
+      "fr": "NEC VR4300 à 93,75 MHz (64 bits)",
+      "pt": "NEC VR4300 a 93,75 MHz (64 bits)",
+      "it": "NEC VR4300 a 93,75 MHz (64 bit)",
+      "de": "NEC VR4300 mit 93,75 MHz (64 Bit)"
     },
     "memory": {
       "es": "4 MB RDRAM (8 MB con Expansion Pak)",
-      "en": "4 MB RDRAM (8 MB with Expansion Pak)"
+      "en": "4 MB RDRAM (8 MB with Expansion Pak)",
+      "fr": "4 MB de RDRAM (8 MB avec l'Expansion Pak)",
+      "pt": "4 MB de RDRAM (8 MB com o Expansion Pak)",
+      "it": "4 MB di RDRAM (8 MB con Expansion Pak)",
+      "de": "4 MB RDRAM (8 MB mit Expansion Pak)"
     },
     "resolution": {
       "es": "256×224 a 640×480",
-      "en": "256×224 to 640×480"
+      "en": "256×224 to 640×480",
+      "fr": "256×224 à 640×480",
+      "pt": "256×224 a 640×480",
+      "it": "Da 256×224 a 640×480",
+      "de": "256×224 bis 640×480"
     },
     "colors": {
       "es": "16,8 millones (24 bits)",
-      "en": "16.8 million (24 bits)"
+      "en": "16.8 million (24 bits)",
+      "fr": "16,8 millions (24 bits)",
+      "pt": "16,8 milhões (24 bits)",
+      "it": "16,8 milioni (24 bit)",
+      "de": "16,8 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Por software en el RCP, hasta 100 canales PCM",
-      "en": "Software on the RCP, up to 100 PCM channels"
+      "en": "Software on the RCP, up to 100 PCM channels",
+      "fr": "Logiciel sur le RCP, jusqu'à 100 canaux PCM",
+      "pt": "Por software no RCP, até 100 canais PCM",
+      "it": "Software sull'RCP, fino a 100 canali PCM",
+      "de": "Software auf dem RCP, bis zu 100 PCM-Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~32,9 millones",
-      "en": "~32.9 million"
+      "en": "~32.9 million",
+      "fr": "~32,9 millions",
+      "pt": "~32,9 milhões",
+      "it": "~32,9 milioni",
+      "de": "~32,9 Millionen"
     },
     "description": {
       "es": "Consola de 64 bits que fijó cómo se juega en 3D con Super Mario 64, Ocarina of Time y GoldenEye 007. Popularizó el stick analógico.",
-      "en": "A 64-bit console that set the template for 3D games with Super Mario 64, Ocarina of Time and GoldenEye 007. It popularised the analogue stick."
+      "en": "A 64-bit console that set the template for 3D games with Super Mario 64, Ocarina of Time and GoldenEye 007. It popularised the analogue stick.",
+      "fr": "Une console 64 bits qui a posé les bases du jeu en 3D avec Super Mario 64, Ocarina of Time et GoldenEye 007. Elle a popularisé le stick analogique.",
+      "pt": "Uma consola de 64 bits que definiu o modelo dos jogos 3D com Super Mario 64, Ocarina of Time e GoldenEye 007. Popularizou o stick analógico.",
+      "it": "Una console a 64 bit che fissò il modello dei giochi 3D con Super Mario 64, Ocarina of Time e GoldenEye 007. Rese popolare lo stick analogico.",
+      "de": "Eine 64-Bit-Konsole, die mit Super Mario 64, Ocarina of Time und GoldenEye 007 die Vorlage für 3D-Spiele schuf. Sie machte den Analogstick populär."
     }
   },
   "nds": {
@@ -1452,32 +2388,60 @@
     ],
     "cpu": {
       "es": "ARM946E-S a 67 MHz + ARM7TDMI a 33 MHz",
-      "en": "ARM946E-S at 67 MHz + ARM7TDMI at 33 MHz"
+      "en": "ARM946E-S at 67 MHz + ARM7TDMI at 33 MHz",
+      "fr": "ARM946E-S à 67 MHz + ARM7TDMI à 33 MHz",
+      "pt": "ARM946E-S a 67 MHz + ARM7TDMI a 33 MHz",
+      "it": "ARM946E-S a 67 MHz + ARM7TDMI a 33 MHz",
+      "de": "ARM946E-S mit 67 MHz + ARM7TDMI mit 33 MHz"
     },
     "memory": "4 MB RAM + 656 KB VRAM",
     "resolution": {
       "es": "256×192 (dos pantallas, la inferior táctil)",
-      "en": "256×192 (two screens, the lower one touch)"
+      "en": "256×192 (two screens, the lower one touch)",
+      "fr": "256×192 (deux écrans, celui du bas tactile)",
+      "pt": "256×192 (dois ecrãs, o inferior tátil)",
+      "it": "256×192 (due schermi, quello inferiore touch)",
+      "de": "256×192 (zwei Bildschirme, der untere mit Touch)"
     },
     "colors": {
       "es": "262.144 (18 bits)",
-      "en": "262,144 (18 bits)"
+      "en": "262,144 (18 bits)",
+      "fr": "262 144 (18 bits)",
+      "pt": "262.144 (18 bits)",
+      "it": "262.144 (18 bit)",
+      "de": "262.144 (18 Bit)"
     },
     "sound": {
       "es": "16 canales estéreo",
-      "en": "16 channels stereo"
+      "en": "16 channels stereo",
+      "fr": "16 canaux stéréo",
+      "pt": "16 canais estéreo",
+      "it": "16 canali stereo",
+      "de": "16 Kanäle, Stereo"
     },
     "media": {
       "es": "Cartucho (Game Card)",
-      "en": "Cartridge (Game Card)"
+      "en": "Cartridge (Game Card)",
+      "fr": "Cartouche (Game Card)",
+      "pt": "Cartucho (Game Card)",
+      "it": "Cartuccia (Game Card)",
+      "de": "Modul (Game Card)"
     },
     "unitsSold": {
       "es": "~154 millones",
-      "en": "~154 million"
+      "en": "~154 million",
+      "fr": "~154 millions",
+      "pt": "~154 milhões",
+      "it": "~154 milioni",
+      "de": "~154 Millionen"
     },
     "description": {
       "es": "Portátil de doble pantalla con pantalla táctil y micrófono. Una de las consolas más vendidas de la historia.",
-      "en": "A dual-screen handheld with a touch screen and microphone. One of the best-selling consoles of all time."
+      "en": "A dual-screen handheld with a touch screen and microphone. One of the best-selling consoles of all time.",
+      "fr": "Une portable à double écran, avec écran tactile et micro. L'une des consoles les plus vendues de tous les temps.",
+      "pt": "Uma consola portátil de dois ecrãs, com ecrã tátil e microfone. Uma das consolas mais vendidas de sempre.",
+      "it": "Una portatile a doppio schermo con touch screen e microfono. Una delle console più vendute di tutti i tempi.",
+      "de": "Ein Handheld mit zwei Bildschirmen, Touchscreen und Mikrofon. Eine der meistverkauften Konsolen aller Zeiten."
     }
   },
   "neogeo": {
@@ -1491,26 +2455,46 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 12 MHz + Zilog Z80 (sonido)",
-      "en": "Motorola 68000 at 12 MHz + Zilog Z80 (sound)"
+      "en": "Motorola 68000 at 12 MHz + Zilog Z80 (sound)",
+      "fr": "Motorola 68000 à 12 MHz + Zilog Z80 (son)",
+      "pt": "Motorola 68000 a 12 MHz + Zilog Z80 (som)",
+      "it": "Motorola 68000 a 12 MHz + Zilog Z80 (audio)",
+      "de": "Motorola 68000 mit 12 MHz + Zilog Z80 (Sound)"
     },
     "memory": "64 KB RAM + 84 KB VRAM",
     "resolution": "320×224",
     "colors": {
       "es": "65.536 (4.096 en pantalla)",
-      "en": "65,536 (4,096 on screen)"
+      "en": "65,536 (4,096 on screen)",
+      "fr": "65 536 (4 096 à l'écran)",
+      "pt": "65.536 (4.096 no ecrã)",
+      "it": "65.536 (4.096 a schermo)",
+      "de": "65.536 (4.096 auf dem Bildschirm)"
     },
     "sound": "Yamaha YM2610: FM + ADPCM",
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~1 millón (AES)",
-      "en": "~1 million (AES)"
+      "en": "~1 million (AES)",
+      "fr": "~1 million (AES)",
+      "pt": "~1 milhão (AES)",
+      "it": "~1 milione (AES)",
+      "de": "~1 Million (AES)"
     },
     "description": {
       "es": "El mismo hardware en recreativas (MVS) y en casa (AES). Hogar de The King of Fighters, Metal Slug y Samurai Shodown.",
-      "en": "The same hardware in arcades (MVS) and at home (AES). Home to The King of Fighters, Metal Slug and Samurai Shodown."
+      "en": "The same hardware in arcades (MVS) and at home (AES). Home to The King of Fighters, Metal Slug and Samurai Shodown.",
+      "fr": "Le même matériel en salle d'arcade (MVS) et à la maison (AES). La maison de The King of Fighters, Metal Slug et Samurai Shodown.",
+      "pt": "O mesmo hardware nos arcades (MVS) e em casa (AES). A casa de The King of Fighters, Metal Slug e Samurai Shodown.",
+      "it": "Lo stesso hardware in sala giochi (MVS) e a casa (AES). Casa di The King of Fighters, Metal Slug e Samurai Shodown.",
+      "de": "Dieselbe Hardware in der Spielhalle (MVS) und zu Hause (AES). Heimat von The King of Fighters, Metal Slug und Samurai Shodown."
     }
   },
   "neogeocd": {
@@ -1524,29 +2508,53 @@
     ],
     "cpu": {
       "es": "Igual que Neo Geo",
-      "en": "Same as Neo Geo"
+      "en": "Same as Neo Geo",
+      "fr": "Identique à la Neo Geo",
+      "pt": "Igual à Neo Geo",
+      "it": "Come il Neo Geo",
+      "de": "Wie beim Neo Geo"
     },
     "memory": {
       "es": "7 MB RAM en total",
-      "en": "7 MB RAM total"
+      "en": "7 MB RAM total",
+      "fr": "7 MB de RAM au total",
+      "pt": "7 MB de RAM no total",
+      "it": "7 MB di RAM in totale",
+      "de": "7 MB RAM insgesamt"
     },
     "resolution": "320×224",
     "colors": {
       "es": "65.536 (4.096 en pantalla)",
-      "en": "65,536 (4,096 on screen)"
+      "en": "65,536 (4,096 on screen)",
+      "fr": "65 536 (4 096 à l'écran)",
+      "pt": "65.536 (4.096 no ecrã)",
+      "it": "65.536 (4.096 a schermo)",
+      "de": "65.536 (4.096 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Yamaha YM2610 + audio CD",
-      "en": "Yamaha YM2610 + CD audio"
+      "en": "Yamaha YM2610 + CD audio",
+      "fr": "Yamaha YM2610 + audio CD",
+      "pt": "Yamaha YM2610 + áudio de CD",
+      "it": "Yamaha YM2610 + audio CD",
+      "de": "Yamaha YM2610 + CD-Audio"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~570.000",
-      "en": "~570,000"
+      "en": "~570,000",
+      "fr": "~570 000",
+      "pt": "~570.000",
+      "it": "~570.000",
+      "de": "~570.000"
     },
     "description": {
       "es": "Versión en CD de la Neo Geo, mucho más barata que los cartuchos AES pero con tiempos de carga largos.",
-      "en": "The CD version of the Neo Geo, much cheaper than AES cartridges but with long loading times."
+      "en": "The CD version of the Neo Geo, much cheaper than AES cartridges but with long loading times.",
+      "fr": "La version CD de la Neo Geo, bien moins chère que les cartouches AES mais avec de longs temps de chargement.",
+      "pt": "A versão em CD da Neo Geo, muito mais barata do que os cartuchos AES, mas com tempos de carregamento longos.",
+      "it": "La versione CD del Neo Geo, molto più economica delle cartucce AES ma con lunghi tempi di caricamento.",
+      "de": "Die CD-Version des Neo Geo, viel günstiger als die AES-Module, aber mit langen Ladezeiten."
     }
   },
   "nes": {
@@ -1560,29 +2568,53 @@
     ],
     "cpu": {
       "es": "Ricoh 2A03 (6502) a 1,79 MHz",
-      "en": "Ricoh 2A03 (6502) at 1.79 MHz"
+      "en": "Ricoh 2A03 (6502) at 1.79 MHz",
+      "fr": "Ricoh 2A03 (6502) à 1,79 MHz",
+      "pt": "Ricoh 2A03 (6502) a 1,79 MHz",
+      "it": "Ricoh 2A03 (6502) a 1,79 MHz",
+      "de": "Ricoh 2A03 (6502) mit 1,79 MHz"
     },
     "memory": "2 KB RAM + 2 KB VRAM",
     "resolution": "256×240",
     "colors": {
       "es": "54 (25 en pantalla)",
-      "en": "54 (25 on screen)"
+      "en": "54 (25 on screen)",
+      "fr": "54 (25 à l'écran)",
+      "pt": "54 (25 no ecrã)",
+      "it": "54 (25 a schermo)",
+      "de": "54 (25 auf dem Bildschirm)"
     },
     "sound": {
       "es": "2 pulsos, triángulo, ruido y DPCM",
-      "en": "2 pulse, triangle, noise and DPCM"
+      "en": "2 pulse, triangle, noise and DPCM",
+      "fr": "2 pulsations, triangle, bruit et DPCM",
+      "pt": "2 de pulso, triângulo, ruído e DPCM",
+      "it": "2 a impulsi, triangolare, rumore e DPCM",
+      "de": "2 Puls, Dreieck, Rauschen und DPCM"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~61,9 millones",
-      "en": "~61.9 million"
+      "en": "~61.9 million",
+      "fr": "~61,9 millions",
+      "pt": "~61,9 milhões",
+      "it": "~61,9 milioni",
+      "de": "~61,9 Millionen"
     },
     "description": {
       "es": "Famicom en Japón. Recuperó el mercado tras la crisis de 1983 con Super Mario Bros., The Legend of Zelda y Metroid.",
-      "en": "Famicom in Japan. It revived the market after the 1983 crash with Super Mario Bros., The Legend of Zelda and Metroid."
+      "en": "Famicom in Japan. It revived the market after the 1983 crash with Super Mario Bros., The Legend of Zelda and Metroid.",
+      "fr": "La Famicom au Japon. Elle a relancé le marché après le krach de 1983 avec Super Mario Bros., The Legend of Zelda et Metroid.",
+      "pt": "Famicom no Japão. Reanimou o mercado após o crash de 1983 com Super Mario Bros., The Legend of Zelda e Metroid.",
+      "it": "Famicom in Giappone. Rilanciò il mercato dopo la crisi del 1983 con Super Mario Bros., The Legend of Zelda e Metroid.",
+      "de": "In Japan Famicom. Es belebte den Markt nach dem Crash von 1983 wieder, mit Super Mario Bros., The Legend of Zelda und Metroid."
     }
   },
   "ngpc": {
@@ -1596,29 +2628,53 @@
     ],
     "cpu": {
       "es": "Toshiba TLCS-900H a 6,14 MHz + Z80 (sonido)",
-      "en": "Toshiba TLCS-900H at 6.14 MHz + Z80 (sound)"
+      "en": "Toshiba TLCS-900H at 6.14 MHz + Z80 (sound)",
+      "fr": "Toshiba TLCS-900H à 6,14 MHz + Z80 (son)",
+      "pt": "Toshiba TLCS-900H a 6,14 MHz + Z80 (som)",
+      "it": "Toshiba TLCS-900H a 6,14 MHz + Z80 (audio)",
+      "de": "Toshiba TLCS-900H mit 6,14 MHz + Z80 (Sound)"
     },
     "memory": "12 KB RAM + 4 KB audio",
     "resolution": "160×152",
     "colors": {
       "es": "4.096 (146 en pantalla)",
-      "en": "4,096 (146 on screen)"
+      "en": "4,096 (146 on screen)",
+      "fr": "4 096 (146 à l'écran)",
+      "pt": "4.096 (146 no ecrã)",
+      "it": "4.096 (146 a schermo)",
+      "de": "4.096 (146 auf dem Bildschirm)"
     },
     "sound": {
       "es": "T6W28: 3 canales + ruido + DAC",
-      "en": "T6W28: 3 channels + noise + DAC"
+      "en": "T6W28: 3 channels + noise + DAC",
+      "fr": "T6W28 : 3 canaux + bruit + DAC",
+      "pt": "T6W28: 3 canais + ruído + DAC",
+      "it": "T6W28: 3 canali + rumore + DAC",
+      "de": "T6W28: 3 Kanäle + Rauschen + DAC"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~2 millones (con NGP)",
-      "en": "~2 million (with NGP)"
+      "en": "~2 million (with NGP)",
+      "fr": "~2 millions (avec la NGP)",
+      "pt": "~2 milhões (com a NGP)",
+      "it": "~2 milioni (con NGP)",
+      "de": "~2 Millionen (mit NGP)"
     },
     "description": {
       "es": "Neo Geo Pocket Color, portátil de SNK con un stick de microinterruptores excelente. Tuvo buenos juegos de lucha y cruces con Capcom.",
-      "en": "Neo Geo Pocket Color, SNK's handheld with an excellent microswitch stick. It had great fighting games and crossovers with Capcom."
+      "en": "Neo Geo Pocket Color, SNK's handheld with an excellent microswitch stick. It had great fighting games and crossovers with Capcom.",
+      "fr": "La Neo Geo Pocket Color, portable de SNK au stick à microrupteurs excellent. Elle a eu d'excellents jeux de combat et des crossovers avec Capcom.",
+      "pt": "Neo Geo Pocket Color, a consola portátil da SNK com um excelente stick de microinterruptores. Teve ótimos jogos de luta e crossovers com a Capcom.",
+      "it": "Neo Geo Pocket Color, la portatile di SNK con un ottimo stick a microswitch. Ebbe grandi picchiaduro e crossover con Capcom.",
+      "de": "Neo Geo Pocket Color, SNKs Handheld mit einem hervorragenden Mikroschalter-Stick. Er hatte tolle Prügelspiele und Crossovers mit Capcom."
     }
   },
   "odyssey2": {
@@ -1632,26 +2688,46 @@
     ],
     "cpu": {
       "es": "Intel 8048 a 1,79 MHz",
-      "en": "Intel 8048 at 1.79 MHz"
+      "en": "Intel 8048 at 1.79 MHz",
+      "fr": "Intel 8048 à 1,79 MHz",
+      "pt": "Intel 8048 a 1,79 MHz",
+      "it": "Intel 8048 a 1,79 MHz",
+      "de": "Intel 8048 mit 1,79 MHz"
     },
     "memory": "64 bytes + 128 bytes RAM",
     "resolution": "160×200",
     "colors": "16",
     "sound": {
       "es": "1 canal",
-      "en": "1 channel"
+      "en": "1 channel",
+      "fr": "1 canal",
+      "pt": "1 canal",
+      "it": "1 canale",
+      "de": "1 Kanal"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~2 millones",
-      "en": "~2 million"
+      "en": "~2 million",
+      "fr": "~2 millions",
+      "pt": "~2 milhões",
+      "it": "~2 milioni",
+      "de": "~2 Millionen"
     },
     "description": {
       "es": "Consola con teclado de membrana integrado, conocida en Europa como Philips Videopac G7000.",
-      "en": "A console with a built-in membrane keyboard, known in Europe as the Philips Videopac G7000."
+      "en": "A console with a built-in membrane keyboard, known in Europe as the Philips Videopac G7000.",
+      "fr": "Une console avec clavier à membrane intégré, connue en Europe sous le nom de Philips Videopac G7000.",
+      "pt": "Uma consola com teclado de membrana integrado, conhecida na Europa como Philips Videopac G7000.",
+      "it": "Una console con tastiera a membrana integrata, conosciuta in Europa come Philips Videopac G7000.",
+      "de": "Eine Konsole mit eingebauter Folientastatur, in Europa als Philips Videopac G7000 bekannt."
     }
   },
   "openbor": {
@@ -1664,7 +2740,11 @@
     ],
     "description": {
       "es": "Motor libre para juegos de lucha con desplazamiento (beat 'em up), nacido de Beats of Rage. Hay cientos de juegos hechos por fans.",
-      "en": "A free engine for side-scrolling beat 'em ups, born from Beats of Rage. Fans have made hundreds of games with it."
+      "en": "A free engine for side-scrolling beat 'em ups, born from Beats of Rage. Fans have made hundreds of games with it.",
+      "fr": "Un moteur libre de beat 'em up à défilement horizontal, né de Beats of Rage. Les fans en ont tiré des centaines de jeux.",
+      "pt": "Um motor livre para beat 'em ups de deslocamento lateral, nascido do Beats of Rage. Os fãs criaram centenas de jogos com ele.",
+      "it": "Un motore libero per picchiaduro a scorrimento, nato da Beats of Rage. I fan ci hanno creato centinaia di giochi.",
+      "de": "Eine freie Engine für seitlich scrollende Beat 'em ups, entstanden aus Beats of Rage. Fans haben damit Hunderte Spiele gemacht."
     }
   },
   "oric": {
@@ -1677,32 +2757,56 @@
     ],
     "cpu": {
       "es": "MOS 6502A a 1 MHz",
-      "en": "MOS 6502A at 1 MHz"
+      "en": "MOS 6502A at 1 MHz",
+      "fr": "MOS 6502A à 1 MHz",
+      "pt": "MOS 6502A a 1 MHz",
+      "it": "MOS 6502A a 1 MHz",
+      "de": "MOS 6502A mit 1 MHz"
     },
     "memory": "16 – 48 KB",
     "resolution": "240×200",
     "colors": "8",
     "sound": {
       "es": "AY-3-8912: 3 canales",
-      "en": "AY-3-8912: 3 channels"
+      "en": "AY-3-8912: 3 channels",
+      "fr": "AY-3-8912 : 3 canaux",
+      "pt": "AY-3-8912: 3 canais",
+      "it": "AY-3-8912: 3 canali",
+      "de": "AY-3-8912: 3 Kanäle"
     },
     "media": {
       "es": "Casete / disquete",
-      "en": "Cassette / floppy disk"
+      "en": "Cassette / floppy disk",
+      "fr": "Cassette / disquette",
+      "pt": "Cassete / disquete",
+      "it": "Cassetta / floppy disk",
+      "de": "Kassette / Diskette"
     },
     "unitsSold": {
       "es": "~210.000",
-      "en": "~210,000"
+      "en": "~210,000",
+      "fr": "~210 000",
+      "pt": "~210.000",
+      "it": "~210.000",
+      "de": "~210.000"
     },
     "description": {
       "es": "Ordenador británico de 8 bits que tuvo bastante éxito en Francia.",
-      "en": "A British 8-bit computer that did fairly well in France."
+      "en": "A British 8-bit computer that did fairly well in France.",
+      "fr": "Un ordinateur 8 bits britannique qui a plutôt bien marché en France.",
+      "pt": "Um computador britânico de 8 bits que teve bastante sucesso em França.",
+      "it": "Un computer britannico a 8 bit che ebbe un discreto successo in Francia.",
+      "de": "Ein britischer 8-Bit-Computer, der in Frankreich recht erfolgreich war."
     }
   },
   "pc": {
     "manufacturer": {
       "es": "IBM y compatibles",
-      "en": "IBM and compatibles"
+      "en": "IBM and compatibles",
+      "fr": "IBM et compatibles",
+      "pt": "IBM e compatíveis",
+      "it": "IBM e compatibili",
+      "de": "IBM und Kompatible"
     },
     "year": 1981,
     "type": "computer",
@@ -1712,31 +2816,59 @@
     ],
     "cpu": {
       "es": "Intel x86 (8088 en adelante)",
-      "en": "Intel x86 (8088 onwards)"
+      "en": "Intel x86 (8088 onwards)",
+      "fr": "Intel x86 (à partir du 8088)",
+      "pt": "Intel x86 (a partir do 8088)",
+      "it": "Intel x86 (dall'8088 in poi)",
+      "de": "Intel x86 (ab 8088)"
     },
     "memory": {
       "es": "Variable",
-      "en": "Varies"
+      "en": "Varies",
+      "fr": "Variable",
+      "pt": "Variável",
+      "it": "Variabile",
+      "de": "Unterschiedlich"
     },
     "resolution": {
       "es": "Variable (CGA, EGA, VGA…)",
-      "en": "Varies (CGA, EGA, VGA…)"
+      "en": "Varies (CGA, EGA, VGA…)",
+      "fr": "Variable (CGA, EGA, VGA…)",
+      "pt": "Variável (CGA, EGA, VGA…)",
+      "it": "Variabile (CGA, EGA, VGA…)",
+      "de": "Unterschiedlich (CGA, EGA, VGA…)"
     },
     "colors": {
       "es": "Variable",
-      "en": "Varies"
+      "en": "Varies",
+      "fr": "Variable",
+      "pt": "Variável",
+      "it": "Variabile",
+      "de": "Unterschiedlich"
     },
     "sound": {
       "es": "Altavoz, AdLib, Sound Blaster…",
-      "en": "PC speaker, AdLib, Sound Blaster…"
+      "en": "PC speaker, AdLib, Sound Blaster…",
+      "fr": "Haut-parleur PC, AdLib, Sound Blaster…",
+      "pt": "Altifalante do PC, AdLib, Sound Blaster…",
+      "it": "PC speaker, AdLib, Sound Blaster…",
+      "de": "PC-Speaker, AdLib, Sound Blaster…"
     },
     "media": {
       "es": "Disquete / CD-ROM / disco duro",
-      "en": "Floppy disk / CD-ROM / hard disk"
+      "en": "Floppy disk / CD-ROM / hard disk",
+      "fr": "Disquette / CD-ROM / disque dur",
+      "pt": "Disquete / CD-ROM / disco rígido",
+      "it": "Floppy disk / CD-ROM / disco rigido",
+      "de": "Diskette / CD-ROM / Festplatte"
     },
     "description": {
       "es": "Los PC compatibles con MS-DOS, normalmente emulados con DOSBox. Doom, Monkey Island o Civilization son de aquí.",
-      "en": "MS-DOS compatible PCs, usually emulated with DOSBox. Doom, Monkey Island and Civilization come from here."
+      "en": "MS-DOS compatible PCs, usually emulated with DOSBox. Doom, Monkey Island and Civilization come from here.",
+      "fr": "Les PC compatibles MS-DOS, généralement émulés avec DOSBox. Doom, Monkey Island et Civilization viennent de là.",
+      "pt": "PCs compatíveis com MS-DOS, normalmente emulados com DOSBox. Doom, Monkey Island e Civilization vêm daqui.",
+      "it": "PC compatibili MS-DOS, di solito emulati con DOSBox. Da qui vengono Doom, Monkey Island e Civilization.",
+      "de": "MS-DOS-kompatible PCs, meist mit DOSBox emuliert. Doom, Monkey Island und Civilization stammen von hier."
     }
   },
   "pce-cd": {
@@ -1750,28 +2882,52 @@
     ],
     "cpu": {
       "es": "Igual que PC Engine",
-      "en": "Same as PC Engine"
+      "en": "Same as PC Engine",
+      "fr": "Identique à la PC Engine",
+      "pt": "Igual à PC Engine",
+      "it": "Come il PC Engine",
+      "de": "Wie bei der PC Engine"
     },
     "memory": {
       "es": "64 KB RAM extra (System Card 1.0/2.0)",
-      "en": "64 KB extra RAM (System Card 1.0/2.0)"
+      "en": "64 KB extra RAM (System Card 1.0/2.0)",
+      "fr": "64 KB de RAM en plus (System Card 1.0/2.0)",
+      "pt": "64 KB de RAM extra (System Card 1.0/2.0)",
+      "it": "64 KB di RAM extra (System Card 1.0/2.0)",
+      "de": "64 KB zusätzliches RAM (System Card 1.0/2.0)"
     },
     "resolution": {
       "es": "256×224 a 512×240",
-      "en": "256×224 to 512×240"
+      "en": "256×224 to 512×240",
+      "fr": "256×224 à 512×240",
+      "pt": "256×224 a 512×240",
+      "it": "Da 256×224 a 512×240",
+      "de": "256×224 bis 512×240"
     },
     "colors": {
       "es": "512 (482 en pantalla)",
-      "en": "512 (482 on screen)"
+      "en": "512 (482 on screen)",
+      "fr": "512 (482 à l'écran)",
+      "pt": "512 (482 no ecrã)",
+      "it": "512 (482 a schermo)",
+      "de": "512 (482 auf dem Bildschirm)"
     },
     "sound": {
       "es": "PC Engine + audio CD + ADPCM",
-      "en": "PC Engine + CD audio + ADPCM"
+      "en": "PC Engine + CD audio + ADPCM",
+      "fr": "PC Engine + audio CD + ADPCM",
+      "pt": "PC Engine + áudio de CD + ADPCM",
+      "it": "PC Engine + audio CD + ADPCM",
+      "de": "PC Engine + CD-Audio + ADPCM"
     },
     "media": "CD-ROM",
     "description": {
       "es": "CD-ROM² de PC Engine, primera consola con unidad de CD. Juegos como Ys Book I & II o Rondo of Blood aprovecharon su audio CD.",
-      "en": "The PC Engine CD-ROM², the first console with a CD drive. Games such as Ys Book I & II and Rondo of Blood made the most of its CD audio."
+      "en": "The PC Engine CD-ROM², the first console with a CD drive. Games such as Ys Book I & II and Rondo of Blood made the most of its CD audio.",
+      "fr": "Le CD-ROM² de la PC Engine, première console avec lecteur CD. Des jeux comme Ys Book I & II et Rondo of Blood ont tiré parti de son audio CD.",
+      "pt": "O PC Engine CD-ROM², a primeira consola com leitor de CD. Jogos como Ys Book I & II e Rondo of Blood tiraram o máximo partido do seu áudio de CD.",
+      "it": "Il PC Engine CD-ROM², la prima console con lettore CD. Giochi come Ys Book I & II e Rondo of Blood sfruttarono al massimo il suo audio CD.",
+      "de": "Die PC Engine CD-ROM², die erste Konsole mit CD-Laufwerk. Spiele wie Ys Book I & II und Rondo of Blood holten das Beste aus ihrem CD-Audio heraus."
     }
   },
   "pcengine": {
@@ -1785,35 +2941,63 @@
     ],
     "cpu": {
       "es": "Hudson HuC6280 a 7,16 MHz (8 bits)",
-      "en": "Hudson HuC6280 at 7.16 MHz (8 bits)"
+      "en": "Hudson HuC6280 at 7.16 MHz (8 bits)",
+      "fr": "Hudson HuC6280 à 7,16 MHz (8 bits)",
+      "pt": "Hudson HuC6280 a 7,16 MHz (8 bits)",
+      "it": "Hudson HuC6280 a 7,16 MHz (8 bit)",
+      "de": "Hudson HuC6280 mit 7,16 MHz (8 Bit)"
     },
     "memory": "8 KB RAM + 64 KB VRAM",
     "resolution": {
       "es": "256×224 a 512×240",
-      "en": "256×224 to 512×240"
+      "en": "256×224 to 512×240",
+      "fr": "256×224 à 512×240",
+      "pt": "256×224 a 512×240",
+      "it": "Da 256×224 a 512×240",
+      "de": "256×224 bis 512×240"
     },
     "colors": {
       "es": "512 (482 en pantalla)",
-      "en": "512 (482 on screen)"
+      "en": "512 (482 on screen)",
+      "fr": "512 (482 à l'écran)",
+      "pt": "512 (482 no ecrã)",
+      "it": "512 (482 a schermo)",
+      "de": "512 (482 auf dem Bildschirm)"
     },
     "sound": {
       "es": "6 canales de tabla de ondas",
-      "en": "6 wavetable channels"
+      "en": "6 wavetable channels",
+      "fr": "6 canaux à table d'ondes",
+      "pt": "6 canais de tabela de ondas",
+      "it": "6 canali wavetable",
+      "de": "6 Wavetable-Kanäle"
     },
     "media": "HuCard",
     "unitsSold": {
       "es": "~10 millones (con TurboGrafx-16)",
-      "en": "~10 million (with TurboGrafx-16)"
+      "en": "~10 million (with TurboGrafx-16)",
+      "fr": "~10 millions (avec la TurboGrafx-16)",
+      "pt": "~10 milhões (com a TurboGrafx-16)",
+      "it": "~10 milioni (con TurboGrafx-16)",
+      "de": "~10 Millionen (mit TurboGrafx-16)"
     },
     "description": {
       "es": "Consola diminuta con gráficos de nivel arcade, muy popular en Japón. En América se llamó TurboGrafx-16.",
-      "en": "A tiny console with arcade-level graphics, very popular in Japan. In North America it was called the TurboGrafx-16."
+      "en": "A tiny console with arcade-level graphics, very popular in Japan. In North America it was called the TurboGrafx-16.",
+      "fr": "Une console minuscule aux graphismes dignes de l'arcade, très populaire au Japon. En Amérique du Nord, elle s'appelait TurboGrafx-16.",
+      "pt": "Uma consola minúscula com gráficos ao nível dos arcades, muito popular no Japão. Na América do Norte chamava-se TurboGrafx-16.",
+      "it": "Una console minuscola con grafica da sala giochi, molto popolare in Giappone. In Nord America si chiamava TurboGrafx-16.",
+      "de": "Eine winzige Konsole mit Grafik auf Arcade-Niveau, sehr beliebt in Japan. In Nordamerika hieß sie TurboGrafx-16."
     }
   },
   "ports": {
     "manufacturer": {
       "es": "Varios",
-      "en": "Various"
+      "en": "Various",
+      "fr": "Divers",
+      "pt": "Vários",
+      "it": "Vari",
+      "de": "Verschiedene"
     },
     "year": null,
     "type": "software",
@@ -1823,7 +3007,11 @@
     ],
     "description": {
       "es": "Juegos portados de forma nativa (por ejemplo Doom, Quake o Cave Story) que se lanzan sin un emulador de consola.",
-      "en": "Games ported natively (such as Doom, Quake or Cave Story) that run without a console emulator."
+      "en": "Games ported natively (such as Doom, Quake or Cave Story) that run without a console emulator.",
+      "fr": "Des jeux portés nativement (comme Doom, Quake ou Cave Story) qui tournent sans émulateur de console.",
+      "pt": "Jogos adaptados de forma nativa (como Doom, Quake ou Cave Story) que correm sem emulador de consola.",
+      "it": "Giochi portati in modo nativo (come Doom, Quake o Cave Story) che girano senza un emulatore di console.",
+      "de": "Nativ portierte Spiele (wie Doom, Quake oder Cave Story), die ohne Konsolen-Emulator laufen."
     }
   },
   "prboom": {
@@ -1836,7 +3024,11 @@
     ],
     "description": {
       "es": "Motor libre para jugar a Doom, Doom II y sus mods en sistemas modernos.",
-      "en": "A free engine for playing Doom, Doom II and their mods on modern systems."
+      "en": "A free engine for playing Doom, Doom II and their mods on modern systems.",
+      "fr": "Un moteur libre pour jouer à Doom, Doom II et leurs mods sur les systèmes modernes.",
+      "pt": "Um motor livre para jogar Doom, Doom II e os seus mods em sistemas modernos.",
+      "it": "Un motore libero per giocare a Doom, Doom II e alle loro mod sui sistemi moderni.",
+      "de": "Eine freie Engine, um Doom, Doom II und ihre Mods auf modernen Systemen zu spielen."
     }
   },
   "ps2": {
@@ -1850,29 +3042,53 @@
     ],
     "cpu": {
       "es": "Emotion Engine (MIPS R5900) a 294,9 MHz",
-      "en": "Emotion Engine (MIPS R5900) at 294.9 MHz"
+      "en": "Emotion Engine (MIPS R5900) at 294.9 MHz",
+      "fr": "Emotion Engine (MIPS R5900) à 294,9 MHz",
+      "pt": "Emotion Engine (MIPS R5900) a 294,9 MHz",
+      "it": "Emotion Engine (MIPS R5900) a 294,9 MHz",
+      "de": "Emotion Engine (MIPS R5900) mit 294,9 MHz"
     },
     "memory": "32 MB RAM + 4 MB VRAM",
     "resolution": {
       "es": "Hasta 1920×1080 (habitual 640×448)",
-      "en": "Up to 1920×1080 (typically 640×448)"
+      "en": "Up to 1920×1080 (typically 640×448)",
+      "fr": "Jusqu'à 1920×1080 (en général 640×448)",
+      "pt": "Até 1920×1080 (habitualmente 640×448)",
+      "it": "Fino a 1920×1080 (di solito 640×448)",
+      "de": "Bis 1920×1080 (meist 640×448)"
     },
     "colors": {
       "es": "16,8 millones (24 bits)",
-      "en": "16.8 million (24 bits)"
+      "en": "16.8 million (24 bits)",
+      "fr": "16,8 millions (24 bits)",
+      "pt": "16,8 milhões (24 bits)",
+      "it": "16,8 milioni (24 bit)",
+      "de": "16,8 Millionen (24 Bit)"
     },
     "sound": {
       "es": "SPU2: 48 canales",
-      "en": "SPU2: 48 channels"
+      "en": "SPU2: 48 channels",
+      "fr": "SPU2 : 48 canaux",
+      "pt": "SPU2: 48 canais",
+      "it": "SPU2: 48 canali",
+      "de": "SPU2: 48 Kanäle"
     },
     "media": "DVD-ROM / CD-ROM",
     "unitsSold": {
       "es": "~155 millones",
-      "en": "~155 million"
+      "en": "~155 million",
+      "fr": "~155 millions",
+      "pt": "~155 milhões",
+      "it": "~155 milioni",
+      "de": "~155 Millionen"
     },
     "description": {
       "es": "La consola más vendida de la historia. Compatible con los juegos de PlayStation y reproductora de DVD.",
-      "en": "The best-selling console of all time. Backward compatible with PlayStation games and a DVD player."
+      "en": "The best-selling console of all time. Backward compatible with PlayStation games and a DVD player.",
+      "fr": "La console la plus vendue de tous les temps. Rétrocompatible avec les jeux PlayStation et lecteur DVD.",
+      "pt": "A consola mais vendida de sempre. Retrocompatível com os jogos da PlayStation e leitor de DVD.",
+      "it": "La console più venduta di tutti i tempi. Retrocompatibile con i giochi PlayStation e lettore DVD.",
+      "de": "Die meistverkaufte Konsole aller Zeiten. Abwärtskompatibel zu PlayStation-Spielen und zugleich DVD-Player."
     }
   },
   "ps3": {
@@ -1886,32 +3102,60 @@
     ],
     "cpu": {
       "es": "Cell Broadband Engine a 3,2 GHz",
-      "en": "Cell Broadband Engine at 3.2 GHz"
+      "en": "Cell Broadband Engine at 3.2 GHz",
+      "fr": "Cell Broadband Engine à 3,2 GHz",
+      "pt": "Cell Broadband Engine a 3,2 GHz",
+      "it": "Cell Broadband Engine a 3,2 GHz",
+      "de": "Cell Broadband Engine mit 3,2 GHz"
     },
     "memory": "256 MB XDR + 256 MB GDDR3",
     "resolution": {
       "es": "Hasta 1920×1080",
-      "en": "Up to 1920×1080"
+      "en": "Up to 1920×1080",
+      "fr": "Jusqu'à 1920×1080",
+      "pt": "Até 1920×1080",
+      "it": "Fino a 1920×1080",
+      "de": "Bis 1920×1080"
     },
     "colors": {
       "es": "16,8 millones (24 bits)",
-      "en": "16.8 million (24 bits)"
+      "en": "16.8 million (24 bits)",
+      "fr": "16,8 millions (24 bits)",
+      "pt": "16,8 milhões (24 bits)",
+      "it": "16,8 milioni (24 bit)",
+      "de": "16,8 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Dolby Digital / DTS, hasta 7.1",
-      "en": "Dolby Digital / DTS, up to 7.1"
+      "en": "Dolby Digital / DTS, up to 7.1",
+      "fr": "Dolby Digital / DTS, jusqu'à 7.1",
+      "pt": "Dolby Digital / DTS, até 7.1",
+      "it": "Dolby Digital / DTS, fino a 7.1",
+      "de": "Dolby Digital / DTS, bis 7.1"
     },
     "media": {
       "es": "Blu-ray / descarga",
-      "en": "Blu-ray / download"
+      "en": "Blu-ray / download",
+      "fr": "Blu-ray / téléchargement",
+      "pt": "Blu-ray / download",
+      "it": "Blu-ray / download",
+      "de": "Blu-ray / Download"
     },
     "unitsSold": {
       "es": "~87,4 millones",
-      "en": "~87.4 million"
+      "en": "~87.4 million",
+      "fr": "~87,4 millions",
+      "pt": "~87,4 milhões",
+      "it": "~87,4 milioni",
+      "de": "~87,4 Millionen"
     },
     "description": {
       "es": "Consola de Sony con lector Blu-ray y el complejo procesador Cell. Uncharted, The Last of Us o Demon's Souls salieron en ella.",
-      "en": "Sony's console with a Blu-ray drive and the complex Cell processor. Uncharted, The Last of Us and Demon's Souls came out on it."
+      "en": "Sony's console with a Blu-ray drive and the complex Cell processor. Uncharted, The Last of Us and Demon's Souls came out on it.",
+      "fr": "La console de Sony avec lecteur Blu-ray et le complexe processeur Cell. Uncharted, The Last of Us et Demon's Souls y sont sortis.",
+      "pt": "A consola da Sony com leitor Blu-ray e o complexo processador Cell. Uncharted, The Last of Us e Demon's Souls saíram nela.",
+      "it": "La console di Sony con lettore Blu-ray e il complesso processore Cell. Su di essa uscirono Uncharted, The Last of Us e Demon's Souls.",
+      "de": "Sonys Konsole mit Blu-ray-Laufwerk und dem komplexen Cell-Prozessor. Uncharted, The Last of Us und Demon's Souls erschienen darauf."
     }
   },
   "psp": {
@@ -1925,32 +3169,60 @@
     ],
     "cpu": {
       "es": "MIPS R4000 a 333 MHz",
-      "en": "MIPS R4000 at 333 MHz"
+      "en": "MIPS R4000 at 333 MHz",
+      "fr": "MIPS R4000 à 333 MHz",
+      "pt": "MIPS R4000 a 333 MHz",
+      "it": "MIPS R4000 a 333 MHz",
+      "de": "MIPS R4000 mit 333 MHz"
     },
     "memory": {
       "es": "32 MB (64 MB en modelos posteriores)",
-      "en": "32 MB (64 MB on later models)"
+      "en": "32 MB (64 MB on later models)",
+      "fr": "32 MB (64 MB sur les modèles suivants)",
+      "pt": "32 MB (64 MB nos modelos posteriores)",
+      "it": "32 MB (64 MB nei modelli successivi)",
+      "de": "32 MB (64 MB bei späteren Modellen)"
     },
     "resolution": "480×272",
     "colors": {
       "es": "16,7 millones (24 bits)",
-      "en": "16.7 million (24 bits)"
+      "en": "16.7 million (24 bits)",
+      "fr": "16,7 millions (24 bits)",
+      "pt": "16,7 milhões (24 bits)",
+      "it": "16,7 milioni (24 bit)",
+      "de": "16,7 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Estéreo, hasta 44,1 kHz",
-      "en": "Stereo, up to 44.1 kHz"
+      "en": "Stereo, up to 44.1 kHz",
+      "fr": "Stéréo, jusqu'à 44,1 kHz",
+      "pt": "Estéreo, até 44,1 kHz",
+      "it": "Stereo, fino a 44,1 kHz",
+      "de": "Stereo, bis 44,1 kHz"
     },
     "media": {
       "es": "UMD / descarga",
-      "en": "UMD / download"
+      "en": "UMD / download",
+      "fr": "UMD / téléchargement",
+      "pt": "UMD / download",
+      "it": "UMD / download",
+      "de": "UMD / Download"
     },
     "unitsSold": {
       "es": "~80 millones",
-      "en": "~80 million"
+      "en": "~80 million",
+      "fr": "~80 millions",
+      "pt": "~80 milhões",
+      "it": "~80 milioni",
+      "de": "~80 Millionen"
     },
     "description": {
       "es": "PlayStation Portable, portátil con gráficos cercanos a PS2 y discos UMD. También reproducía música y vídeo.",
-      "en": "PlayStation Portable, a handheld with near-PS2 graphics and UMD discs. It also played music and video."
+      "en": "PlayStation Portable, a handheld with near-PS2 graphics and UMD discs. It also played music and video.",
+      "fr": "La PlayStation Portable, une portable aux graphismes proches de la PS2 et aux disques UMD. Elle lisait aussi musique et vidéo.",
+      "pt": "PlayStation Portable, uma consola portátil com gráficos próximos da PS2 e discos UMD. Também reproduzia música e vídeo.",
+      "it": "PlayStation Portable, una portatile con grafica vicina alla PS2 e dischi UMD. Riproduceva anche musica e video.",
+      "de": "PlayStation Portable, ein Handheld mit Grafik nahe an der PS2 und UMD-Discs. Sie spielte auch Musik und Videos ab."
     }
   },
   "psx": {
@@ -1964,29 +3236,53 @@
     ],
     "cpu": {
       "es": "MIPS R3000A a 33,87 MHz",
-      "en": "MIPS R3000A at 33.87 MHz"
+      "en": "MIPS R3000A at 33.87 MHz",
+      "fr": "MIPS R3000A à 33,87 MHz",
+      "pt": "MIPS R3000A a 33,87 MHz",
+      "it": "MIPS R3000A a 33,87 MHz",
+      "de": "MIPS R3000A mit 33,87 MHz"
     },
     "memory": "2 MB RAM + 1 MB VRAM + 512 KB audio",
     "resolution": {
       "es": "256×224 a 640×480",
-      "en": "256×224 to 640×480"
+      "en": "256×224 to 640×480",
+      "fr": "256×224 à 640×480",
+      "pt": "256×224 a 640×480",
+      "it": "Da 256×224 a 640×480",
+      "de": "256×224 bis 640×480"
     },
     "colors": {
       "es": "16,7 millones (24 bits)",
-      "en": "16.7 million (24 bits)"
+      "en": "16.7 million (24 bits)",
+      "fr": "16,7 millions (24 bits)",
+      "pt": "16,7 milhões (24 bits)",
+      "it": "16,7 milioni (24 bit)",
+      "de": "16,7 Millionen (24 Bit)"
     },
     "sound": {
       "es": "SPU: 24 canales ADPCM",
-      "en": "SPU: 24 channels ADPCM"
+      "en": "SPU: 24 channels ADPCM",
+      "fr": "SPU : 24 canaux ADPCM",
+      "pt": "SPU: 24 canais ADPCM",
+      "it": "SPU: 24 canali ADPCM",
+      "de": "SPU: 24 ADPCM-Kanäle"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~102,5 millones",
-      "en": "~102.5 million"
+      "en": "~102.5 million",
+      "fr": "~102,5 millions",
+      "pt": "~102,5 milhões",
+      "it": "~102,5 milioni",
+      "de": "~102,5 Millionen"
     },
     "description": {
       "es": "La primera PlayStation. Llevó los juegos en 3D y en CD al gran público con Final Fantasy VII, Metal Gear Solid o Gran Turismo.",
-      "en": "The original PlayStation. It brought 3D, CD-based games to the mainstream with Final Fantasy VII, Metal Gear Solid and Gran Turismo."
+      "en": "The original PlayStation. It brought 3D, CD-based games to the mainstream with Final Fantasy VII, Metal Gear Solid and Gran Turismo.",
+      "fr": "La première PlayStation. Elle a fait entrer les jeux 3D sur CD dans le grand public avec Final Fantasy VII, Metal Gear Solid et Gran Turismo.",
+      "pt": "A PlayStation original. Levou os jogos 3D em CD ao grande público com Final Fantasy VII, Metal Gear Solid e Gran Turismo.",
+      "it": "La PlayStation originale. Portò al grande pubblico i giochi 3D su CD con Final Fantasy VII, Metal Gear Solid e Gran Turismo.",
+      "de": "Die erste PlayStation. Mit Final Fantasy VII, Metal Gear Solid und Gran Turismo brachte sie 3D-Spiele auf CD in den Massenmarkt."
     }
   },
   "pygame": {
@@ -1999,7 +3295,11 @@
     ],
     "description": {
       "es": "Biblioteca de Python para crear juegos; aquí se agrupan juegos hechos con ella.",
-      "en": "A Python library for making games; this groups games built with it."
+      "en": "A Python library for making games; this groups games built with it.",
+      "fr": "Une bibliothèque Python pour créer des jeux ; ici sont regroupés les jeux faits avec.",
+      "pt": "Uma biblioteca de Python para criar jogos; aqui ficam os jogos feitos com ela.",
+      "it": "Una libreria Python per creare giochi; qui si raggruppano i giochi fatti con essa.",
+      "de": "Eine Python-Bibliothek zum Entwickeln von Spielen; hier sind damit gemachte Spiele gesammelt."
     }
   },
   "residualvm": {
@@ -2012,7 +3312,11 @@
     ],
     "description": {
       "es": "Motor para aventuras en 3D como Grim Fandango o Myst III. Hoy está integrado en ScummVM.",
-      "en": "An engine for 3D adventures such as Grim Fandango and Myst III. It is now part of ScummVM."
+      "en": "An engine for 3D adventures such as Grim Fandango and Myst III. It is now part of ScummVM.",
+      "fr": "Un moteur pour aventures 3D comme Grim Fandango et Myst III. Il fait aujourd'hui partie de ScummVM.",
+      "pt": "Um motor para aventuras 3D como Grim Fandango e Myst III. Hoje faz parte do ScummVM.",
+      "it": "Un motore per avventure 3D come Grim Fandango e Myst III. Oggi fa parte di ScummVM.",
+      "de": "Eine Engine für 3D-Adventures wie Grim Fandango und Myst III. Heute Teil von ScummVM."
     }
   },
   "retroarch": {
@@ -2025,7 +3329,11 @@
     ],
     "description": {
       "es": "Interfaz común para muchos emuladores («cores») de libretro.",
-      "en": "A common frontend for many libretro emulators (cores)."
+      "en": "A common frontend for many libretro emulators (cores).",
+      "fr": "Une interface commune pour de nombreux émulateurs libretro (cores).",
+      "pt": "Um frontend comum para muitos emuladores libretro (cores).",
+      "it": "Un frontend comune per molti emulatori libretro (core).",
+      "de": "Ein gemeinsames Frontend für viele libretro-Emulatoren (Cores)."
     }
   },
   "retropie": {
@@ -2038,7 +3346,11 @@
     ],
     "description": {
       "es": "Menú de configuración de RetroPie (no es un sistema de juego).",
-      "en": "RetroPie's setup menu (not a game system)."
+      "en": "RetroPie's setup menu (not a game system).",
+      "fr": "Le menu de configuration de RetroPie (pas un système de jeu).",
+      "pt": "O menu de configuração do RetroPie (não é um sistema de jogos).",
+      "it": "Il menu di configurazione di RetroPie (non è un sistema di gioco).",
+      "de": "Das Einstellungsmenü von RetroPie (kein Spielsystem)."
     }
   },
   "samcoupe": {
@@ -2051,29 +3363,53 @@
     ],
     "cpu": {
       "es": "Zilog Z80B a 6 MHz",
-      "en": "Zilog Z80B at 6 MHz"
+      "en": "Zilog Z80B at 6 MHz",
+      "fr": "Zilog Z80B à 6 MHz",
+      "pt": "Zilog Z80B a 6 MHz",
+      "it": "Zilog Z80B a 6 MHz",
+      "de": "Zilog Z80B mit 6 MHz"
     },
     "memory": "256 – 512 KB",
     "resolution": "256×192 (16 col.) / 512×192 (4)",
     "colors": {
       "es": "128 (16 en pantalla)",
-      "en": "128 (16 on screen)"
+      "en": "128 (16 on screen)",
+      "fr": "128 (16 à l'écran)",
+      "pt": "128 (16 no ecrã)",
+      "it": "128 (16 a schermo)",
+      "de": "128 (16 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Philips SAA1099: 6 canales estéreo",
-      "en": "Philips SAA1099: 6 channels stereo"
+      "en": "Philips SAA1099: 6 channels stereo",
+      "fr": "Philips SAA1099 : 6 canaux stéréo",
+      "pt": "Philips SAA1099: 6 canais estéreo",
+      "it": "Philips SAA1099: 6 canali stereo",
+      "de": "Philips SAA1099: 6 Kanäle, Stereo"
     },
     "media": {
       "es": "Casete / disquete 3,5\"",
-      "en": "Cassette / floppy disk 3.5\""
+      "en": "Cassette / floppy disk 3.5\"",
+      "fr": "Cassette / disquette 3,5\"",
+      "pt": "Cassete / disquete 3,5\"",
+      "it": "Cassetta / floppy disk da 3,5\"",
+      "de": "Kassette / Diskette 3,5\""
     },
     "unitsSold": {
       "es": "~12.000",
-      "en": "~12,000"
+      "en": "~12,000",
+      "fr": "~12 000",
+      "pt": "~12.000",
+      "it": "~12.000",
+      "de": "~12.000"
     },
     "description": {
       "es": "Ordenador británico pensado como sucesor del ZX Spectrum y compatible con muchos de sus juegos.",
-      "en": "A British computer designed as a successor to the ZX Spectrum and compatible with many of its games."
+      "en": "A British computer designed as a successor to the ZX Spectrum and compatible with many of its games.",
+      "fr": "Un ordinateur britannique conçu comme successeur du ZX Spectrum et compatible avec beaucoup de ses jeux.",
+      "pt": "Um computador britânico concebido como sucessor do ZX Spectrum e compatível com muitos dos seus jogos.",
+      "it": "Un computer britannico pensato come erede dello ZX Spectrum e compatibile con molti dei suoi giochi.",
+      "de": "Ein britischer Computer, als Nachfolger des ZX Spectrum gedacht und mit vielen seiner Spiele kompatibel."
     }
   },
   "saturn": {
@@ -2087,32 +3423,60 @@
     ],
     "cpu": {
       "es": "2 × Hitachi SH-2 a 28,6 MHz",
-      "en": "2 × Hitachi SH-2 at 28.6 MHz"
+      "en": "2 × Hitachi SH-2 at 28.6 MHz",
+      "fr": "2 × Hitachi SH-2 à 28,6 MHz",
+      "pt": "2 × Hitachi SH-2 a 28,6 MHz",
+      "it": "2 × Hitachi SH-2 a 28,6 MHz",
+      "de": "2 × Hitachi SH-2 mit 28,6 MHz"
     },
     "memory": {
       "es": "2 MB RAM + 1,5 MB VRAM + 512 KB audio",
-      "en": "2 MB RAM + 1.5 MB VRAM + 512 KB audio"
+      "en": "2 MB RAM + 1.5 MB VRAM + 512 KB audio",
+      "fr": "2 MB de RAM + 1,5 MB de VRAM + 512 KB audio",
+      "pt": "2 MB de RAM + 1,5 MB de VRAM + 512 KB de áudio",
+      "it": "2 MB di RAM + 1,5 MB di VRAM + 512 KB audio",
+      "de": "2 MB RAM + 1,5 MB VRAM + 512 KB Audio"
     },
     "resolution": {
       "es": "320×224 a 704×512",
-      "en": "320×224 to 704×512"
+      "en": "320×224 to 704×512",
+      "fr": "320×224 à 704×512",
+      "pt": "320×224 a 704×512",
+      "it": "Da 320×224 a 704×512",
+      "de": "320×224 bis 704×512"
     },
     "colors": {
       "es": "16,7 millones (24 bits)",
-      "en": "16.7 million (24 bits)"
+      "en": "16.7 million (24 bits)",
+      "fr": "16,7 millions (24 bits)",
+      "pt": "16,7 milhões (24 bits)",
+      "it": "16,7 milioni (24 bit)",
+      "de": "16,7 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Yamaha SCSP: 32 canales",
-      "en": "Yamaha SCSP: 32 channels"
+      "en": "Yamaha SCSP: 32 channels",
+      "fr": "Yamaha SCSP : 32 canaux",
+      "pt": "Yamaha SCSP: 32 canais",
+      "it": "Yamaha SCSP: 32 canali",
+      "de": "Yamaha SCSP: 32 Kanäle"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~9,3 millones",
-      "en": "~9.3 million"
+      "en": "~9.3 million",
+      "fr": "~9,3 millions",
+      "pt": "~9,3 milhões",
+      "it": "~9,3 milioni",
+      "de": "~9,3 Millionen"
     },
     "description": {
       "es": "Consola de 32 bits de Sega con dos procesadores, difícil de programar. Brilló en Japón con Panzer Dragoon, NiGHTS y la lucha 2D.",
-      "en": "Sega's 32-bit console with two CPUs, hard to program. It shone in Japan with Panzer Dragoon, NiGHTS and 2D fighters."
+      "en": "Sega's 32-bit console with two CPUs, hard to program. It shone in Japan with Panzer Dragoon, NiGHTS and 2D fighters.",
+      "fr": "La console 32 bits de Sega à deux processeurs, difficile à programmer. Elle a brillé au Japon avec Panzer Dragoon, NiGHTS et les jeux de combat 2D.",
+      "pt": "A consola de 32 bits da Sega com dois processadores, difícil de programar. Brilhou no Japão com Panzer Dragoon, NiGHTS e jogos de luta 2D.",
+      "it": "La console a 32 bit di Sega con due CPU, difficile da programmare. Brillò in Giappone con Panzer Dragoon, NiGHTS e i picchiaduro 2D.",
+      "de": "Segas 32-Bit-Konsole mit zwei CPUs, schwer zu programmieren. In Japan glänzte sie mit Panzer Dragoon, NiGHTS und 2D-Prügelspielen."
     }
   },
   "scummvm": {
@@ -2125,7 +3489,11 @@
     ],
     "description": {
       "es": "Motor que permite jugar a aventuras gráficas clásicas (LucasArts, Sierra, Revolution…) sustituyendo su ejecutable original.",
-      "en": "An engine for classic graphic adventures (LucasArts, Sierra, Revolution…) that replaces their original executables."
+      "en": "An engine for classic graphic adventures (LucasArts, Sierra, Revolution…) that replaces their original executables.",
+      "fr": "Un moteur pour les aventures graphiques classiques (LucasArts, Sierra, Revolution…) qui remplace leurs exécutables d'origine.",
+      "pt": "Um motor para aventuras gráficas clássicas (LucasArts, Sierra, Revolution…) que substitui os seus executáveis originais.",
+      "it": "Un motore per le avventure grafiche classiche (LucasArts, Sierra, Revolution…) che sostituisce i loro eseguibili originali.",
+      "de": "Eine Engine für klassische Grafikadventures (LucasArts, Sierra, Revolution…), die deren originale Programmdateien ersetzt."
     }
   },
   "sega32x": {
@@ -2139,29 +3507,53 @@
     ],
     "cpu": {
       "es": "2 × Hitachi SH-2 a 23 MHz (más la Mega Drive)",
-      "en": "2 × Hitachi SH-2 at 23 MHz (plus the Mega Drive)"
+      "en": "2 × Hitachi SH-2 at 23 MHz (plus the Mega Drive)",
+      "fr": "2 × Hitachi SH-2 à 23 MHz (plus la Mega Drive)",
+      "pt": "2 × Hitachi SH-2 a 23 MHz (mais a Mega Drive)",
+      "it": "2 × Hitachi SH-2 a 23 MHz (più il Mega Drive)",
+      "de": "2 × Hitachi SH-2 mit 23 MHz (plus das Mega Drive)"
     },
     "memory": "256 KB RAM + 256 KB VRAM",
     "resolution": "320×224",
     "colors": {
       "es": "32.768",
-      "en": "32,768"
+      "en": "32,768",
+      "fr": "32 768",
+      "pt": "32.768",
+      "it": "32.768",
+      "de": "32.768"
     },
     "sound": {
       "es": "2 canales PWM + los de Mega Drive",
-      "en": "2 channels PWM + Mega Drive's"
+      "en": "2 channels PWM + Mega Drive's",
+      "fr": "2 canaux PWM + ceux de la Mega Drive",
+      "pt": "2 canais PWM + os da Mega Drive",
+      "it": "2 canali PWM + quelli del Mega Drive",
+      "de": "2 PWM-Kanäle + die des Mega Drive"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~665.000",
-      "en": "~665,000"
+      "en": "~665,000",
+      "fr": "~665 000",
+      "pt": "~665.000",
+      "it": "~665.000",
+      "de": "~665.000"
     },
     "description": {
       "es": "Periférico que se conectaba a la Mega Drive para darle potencia de 32 bits. Tuvo vida muy corta.",
-      "en": "An add-on that plugged into the Mega Drive to give it 32-bit power. It was very short-lived."
+      "en": "An add-on that plugged into the Mega Drive to give it 32-bit power. It was very short-lived.",
+      "fr": "Une extension qui se branchait sur la Mega Drive pour lui donner la puissance du 32 bits. Sa vie fut très courte.",
+      "pt": "Um acessório que se ligava à Mega Drive para lhe dar potência de 32 bits. Teve uma vida muito curta.",
+      "it": "Un accessorio che si collegava al Mega Drive per dargli potenza a 32 bit. Ebbe vita brevissima.",
+      "de": "Ein Zusatzgerät, das auf das Mega Drive gesteckt wurde, um ihm 32-Bit-Leistung zu geben. Es war sehr kurzlebig."
     }
   },
   "segacd": {
@@ -2175,26 +3567,46 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 12,5 MHz (más la Mega Drive)",
-      "en": "Motorola 68000 at 12.5 MHz (plus the Mega Drive)"
+      "en": "Motorola 68000 at 12.5 MHz (plus the Mega Drive)",
+      "fr": "Motorola 68000 à 12,5 MHz (plus la Mega Drive)",
+      "pt": "Motorola 68000 a 12,5 MHz (mais a Mega Drive)",
+      "it": "Motorola 68000 a 12,5 MHz (più il Mega Drive)",
+      "de": "Motorola 68000 mit 12,5 MHz (plus das Mega Drive)"
     },
     "memory": "768 KB RAM",
     "resolution": "320×224",
     "colors": {
       "es": "512 (64 en pantalla)",
-      "en": "512 (64 on screen)"
+      "en": "512 (64 on screen)",
+      "fr": "512 (64 à l'écran)",
+      "pt": "512 (64 no ecrã)",
+      "it": "512 (64 a schermo)",
+      "de": "512 (64 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Ricoh RF5C164: 8 canales PCM + audio CD",
-      "en": "Ricoh RF5C164: 8 channels PCM + CD audio"
+      "en": "Ricoh RF5C164: 8 channels PCM + CD audio",
+      "fr": "Ricoh RF5C164 : 8 canaux PCM + audio CD",
+      "pt": "Ricoh RF5C164: 8 canais PCM + áudio de CD",
+      "it": "Ricoh RF5C164: 8 canali PCM + audio CD",
+      "de": "Ricoh RF5C164: 8 PCM-Kanäle + CD-Audio"
     },
     "media": "CD-ROM",
     "unitsSold": {
       "es": "~2,2 millones",
-      "en": "~2.2 million"
+      "en": "~2.2 million",
+      "fr": "~2,2 millions",
+      "pt": "~2,2 milhões",
+      "it": "~2,2 milioni",
+      "de": "~2,2 Millionen"
     },
     "description": {
       "es": "Mega-CD, la unidad de CD para Mega Drive. Permitió juegos con vídeo y audio CD, como Snatcher o Sonic CD.",
-      "en": "Mega-CD, the CD drive for the Mega Drive. It allowed games with video and CD audio, such as Snatcher and Sonic CD."
+      "en": "Mega-CD, the CD drive for the Mega Drive. It allowed games with video and CD audio, such as Snatcher and Sonic CD.",
+      "fr": "Le Mega-CD, le lecteur CD de la Mega Drive. Il a permis des jeux avec vidéo et audio CD, comme Snatcher et Sonic CD.",
+      "pt": "Mega-CD, a unidade de CD da Mega Drive. Permitiu jogos com vídeo e áudio de CD, como Snatcher e Sonic CD.",
+      "it": "Mega-CD, il lettore CD per il Mega Drive. Permise giochi con video e audio CD, come Snatcher e Sonic CD.",
+      "de": "Mega-CD, das CD-Laufwerk für das Mega Drive. Es ermöglichte Spiele mit Video und CD-Audio wie Snatcher und Sonic CD."
     }
   },
   "sg-1000": {
@@ -2208,22 +3620,38 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,58 MHz",
-      "en": "Zilog Z80A at 3.58 MHz"
+      "en": "Zilog Z80A at 3.58 MHz",
+      "fr": "Zilog Z80A à 3,58 MHz",
+      "pt": "Zilog Z80A a 3,58 MHz",
+      "it": "Zilog Z80A a 3,58 MHz",
+      "de": "Zilog Z80A mit 3,58 MHz"
     },
     "memory": "1 KB RAM + 16 KB VRAM",
     "resolution": "256×192",
     "colors": "16",
     "sound": {
       "es": "SN76489: 3 canales + ruido",
-      "en": "SN76489: 3 channels + noise"
+      "en": "SN76489: 3 channels + noise",
+      "fr": "SN76489 : 3 canaux + bruit",
+      "pt": "SN76489: 3 canais + ruído",
+      "it": "SN76489: 3 canali + rumore",
+      "de": "SN76489: 3 Kanäle + Rauschen"
     },
     "media": {
       "es": "Cartucho / Sega Card",
-      "en": "Cartridge / Sega Card"
+      "en": "Cartridge / Sega Card",
+      "fr": "Cartouche / Sega Card",
+      "pt": "Cartucho / Sega Card",
+      "it": "Cartuccia / Sega Card",
+      "de": "Modul / Sega Card"
     },
     "description": {
       "es": "Primera consola de Sega, lanzada en Japón el mismo día que la Famicom.",
-      "en": "Sega's first console, released in Japan on the same day as the Famicom."
+      "en": "Sega's first console, released in Japan on the same day as the Famicom.",
+      "fr": "La première console de Sega, sortie au Japon le même jour que la Famicom.",
+      "pt": "A primeira consola da Sega, lançada no Japão no mesmo dia que a Famicom.",
+      "it": "La prima console di Sega, uscita in Giappone lo stesso giorno del Famicom.",
+      "de": "Segas erste Konsole, in Japan am selben Tag wie das Famicom erschienen."
     }
   },
   "snes": {
@@ -2237,32 +3665,60 @@
     ],
     "cpu": {
       "es": "Ricoh 5A22 (65C816) a 3,58 MHz",
-      "en": "Ricoh 5A22 (65C816) at 3.58 MHz"
+      "en": "Ricoh 5A22 (65C816) at 3.58 MHz",
+      "fr": "Ricoh 5A22 (65C816) à 3,58 MHz",
+      "pt": "Ricoh 5A22 (65C816) a 3,58 MHz",
+      "it": "Ricoh 5A22 (65C816) a 3,58 MHz",
+      "de": "Ricoh 5A22 (65C816) mit 3,58 MHz"
     },
     "memory": "128 KB RAM + 64 KB VRAM",
     "resolution": {
       "es": "256×224 (hasta 512×448)",
-      "en": "256×224 (up to 512×448)"
+      "en": "256×224 (up to 512×448)",
+      "fr": "256×224 (jusqu'à 512×448)",
+      "pt": "256×224 (até 512×448)",
+      "it": "256×224 (fino a 512×448)",
+      "de": "256×224 (bis 512×448)"
     },
     "colors": {
       "es": "32.768 (256 en pantalla)",
-      "en": "32,768 (256 on screen)"
+      "en": "32,768 (256 on screen)",
+      "fr": "32 768 (256 à l'écran)",
+      "pt": "32.768 (256 no ecrã)",
+      "it": "32.768 (256 a schermo)",
+      "de": "32.768 (256 auf dem Bildschirm)"
     },
     "sound": {
       "es": "Sony SPC700 + DSP: 8 canales",
-      "en": "Sony SPC700 + DSP: 8 channels"
+      "en": "Sony SPC700 + DSP: 8 channels",
+      "fr": "Sony SPC700 + DSP : 8 canaux",
+      "pt": "Sony SPC700 + DSP: 8 canais",
+      "it": "Sony SPC700 + DSP: 8 canali",
+      "de": "Sony SPC700 + DSP: 8 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~49 millones",
-      "en": "~49 million"
+      "en": "~49 million",
+      "fr": "~49 millions",
+      "pt": "~49 milhões",
+      "it": "~49 milioni",
+      "de": "~49 Millionen"
     },
     "description": {
       "es": "Super Nintendo (Super Famicom en Japón), con efectos como el Modo 7. Super Mario World, A Link to the Past y Super Metroid la definen.",
-      "en": "Super Nintendo (Super Famicom in Japan), with effects such as Mode 7. Super Mario World, A Link to the Past and Super Metroid define it."
+      "en": "Super Nintendo (Super Famicom in Japan), with effects such as Mode 7. Super Mario World, A Link to the Past and Super Metroid define it.",
+      "fr": "La Super Nintendo (Super Famicom au Japon), avec des effets comme le Mode 7. Super Mario World, A Link to the Past et Super Metroid la définissent.",
+      "pt": "Super Nintendo (Super Famicom no Japão), com efeitos como o Mode 7. Super Mario World, A Link to the Past e Super Metroid definem-na.",
+      "it": "Super Nintendo (Super Famicom in Giappone), con effetti come il Mode 7. Super Mario World, A Link to the Past e Super Metroid la definiscono.",
+      "de": "Super Nintendo (in Japan Super Famicom), mit Effekten wie Mode 7. Super Mario World, A Link to the Past und Super Metroid prägen es."
     }
   },
   "solarus": {
@@ -2275,7 +3731,11 @@
     ],
     "description": {
       "es": "Motor libre para juegos de acción y aventura al estilo Zelda en 2D.",
-      "en": "A free engine for 2D Zelda-style action-adventure games."
+      "en": "A free engine for 2D Zelda-style action-adventure games.",
+      "fr": "Un moteur libre pour jeux d'action-aventure 2D à la Zelda.",
+      "pt": "Um motor livre para jogos de ação e aventura 2D ao estilo de Zelda.",
+      "it": "Un motore libero per giochi d'azione e avventura 2D in stile Zelda.",
+      "de": "Eine freie Engine für 2D-Action-Adventures im Stil von Zelda."
     }
   },
   "steam": {
@@ -2288,7 +3748,11 @@
     ],
     "description": {
       "es": "Juegos de la tienda Steam lanzados desde el frontend.",
-      "en": "Steam store games launched from the frontend."
+      "en": "Steam store games launched from the frontend.",
+      "fr": "Les jeux de la boutique Steam lancés depuis le frontend.",
+      "pt": "Jogos da loja Steam lançados a partir do frontend.",
+      "it": "Giochi dello store Steam avviati dal frontend.",
+      "de": "Spiele aus dem Steam-Store, die aus dem Frontend gestartet werden."
     }
   },
   "stratagus": {
@@ -2301,7 +3765,11 @@
     ],
     "description": {
       "es": "Motor libre de estrategia en tiempo real, usado por ejemplo por Wargus para jugar a Warcraft II.",
-      "en": "A free real-time strategy engine, used for example by Wargus to play Warcraft II."
+      "en": "A free real-time strategy engine, used for example by Wargus to play Warcraft II.",
+      "fr": "Un moteur libre de stratégie en temps réel, utilisé par exemple par Wargus pour jouer à Warcraft II.",
+      "pt": "Um motor livre de estratégia em tempo real, usado por exemplo pelo Wargus para jogar Warcraft II.",
+      "it": "Un motore libero di strategia in tempo reale, usato ad esempio da Wargus per giocare a Warcraft II.",
+      "de": "Eine freie Echtzeitstrategie-Engine, die zum Beispiel Wargus nutzt, um Warcraft II zu spielen."
     }
   },
   "supergrafx": {
@@ -2315,26 +3783,46 @@
     ],
     "cpu": {
       "es": "Hudson HuC6280 a 7,16 MHz",
-      "en": "Hudson HuC6280 at 7.16 MHz"
+      "en": "Hudson HuC6280 at 7.16 MHz",
+      "fr": "Hudson HuC6280 à 7,16 MHz",
+      "pt": "Hudson HuC6280 a 7,16 MHz",
+      "it": "Hudson HuC6280 a 7,16 MHz",
+      "de": "Hudson HuC6280 mit 7,16 MHz"
     },
     "memory": "32 KB RAM + 128 KB VRAM",
     "resolution": {
       "es": "256×224 a 512×240",
-      "en": "256×224 to 512×240"
+      "en": "256×224 to 512×240",
+      "fr": "256×224 à 512×240",
+      "pt": "256×224 a 512×240",
+      "it": "Da 256×224 a 512×240",
+      "de": "256×224 bis 512×240"
     },
     "colors": "512",
     "sound": {
       "es": "6 canales de tabla de ondas",
-      "en": "6 wavetable channels"
+      "en": "6 wavetable channels",
+      "fr": "6 canaux à table d'ondes",
+      "pt": "6 canais de tabela de ondas",
+      "it": "6 canali wavetable",
+      "de": "6 Wavetable-Kanäle"
     },
     "media": "HuCard",
     "unitsSold": {
       "es": "~75.000",
-      "en": "~75,000"
+      "en": "~75,000",
+      "fr": "~75 000",
+      "pt": "~75.000",
+      "it": "~75.000",
+      "de": "~75.000"
     },
     "description": {
       "es": "Versión mejorada de la PC Engine con el doble de memoria y capas gráficas. Solo tuvo cinco juegos exclusivos.",
-      "en": "An enhanced PC Engine with double the memory and graphics layers. It only had five exclusive games."
+      "en": "An enhanced PC Engine with double the memory and graphics layers. It only had five exclusive games.",
+      "fr": "Une PC Engine améliorée, avec deux fois plus de mémoire et de couches graphiques. Elle n'a eu que cinq jeux exclusifs.",
+      "pt": "Uma PC Engine melhorada com o dobro da memória e das camadas gráficas. Teve só cinco jogos exclusivos.",
+      "it": "Un PC Engine potenziato con il doppio della memoria e dei livelli grafici. Ebbe solo cinque giochi esclusivi.",
+      "de": "Eine verbesserte PC Engine mit doppeltem Speicher und doppelten Grafikebenen. Sie hatte nur fünf exklusive Spiele."
     }
   },
   "tg-cd": {
@@ -2353,26 +3841,46 @@
     ],
     "cpu": {
       "es": "TMS9900 a 3 MHz (16 bits)",
-      "en": "TMS9900 at 3 MHz (16 bits)"
+      "en": "TMS9900 at 3 MHz (16 bits)",
+      "fr": "TMS9900 à 3 MHz (16 bits)",
+      "pt": "TMS9900 a 3 MHz (16 bits)",
+      "it": "TMS9900 a 3 MHz (16 bit)",
+      "de": "TMS9900 mit 3 MHz (16 Bit)"
     },
     "memory": "256 bytes + 16 KB VRAM",
     "resolution": "256×192",
     "colors": "16",
     "sound": {
       "es": "TMS9919: 3 canales + ruido",
-      "en": "TMS9919: 3 channels + noise"
+      "en": "TMS9919: 3 channels + noise",
+      "fr": "TMS9919 : 3 canaux + bruit",
+      "pt": "TMS9919: 3 canais + ruído",
+      "it": "TMS9919: 3 canali + rumore",
+      "de": "TMS9919: 3 Kanäle + Rauschen"
     },
     "media": {
       "es": "Cartucho / casete / disquete",
-      "en": "Cartridge / cassette / floppy disk"
+      "en": "Cartridge / cassette / floppy disk",
+      "fr": "Cartouche / cassette / disquette",
+      "pt": "Cartucho / cassete / disquete",
+      "it": "Cartuccia / cassetta / floppy disk",
+      "de": "Modul / Kassette / Diskette"
     },
     "unitsSold": {
       "es": "~2,8 millones",
-      "en": "~2.8 million"
+      "en": "~2.8 million",
+      "fr": "~2,8 millions",
+      "pt": "~2,8 milhões",
+      "it": "~2,8 milioni",
+      "de": "~2,8 Millionen"
     },
     "description": {
       "es": "TI-99/4A, uno de los primeros ordenadores domésticos con procesador de 16 bits.",
-      "en": "The TI-99/4A, one of the first home computers with a 16-bit processor."
+      "en": "The TI-99/4A, one of the first home computers with a 16-bit processor.",
+      "fr": "Le TI-99/4A, l'un des premiers ordinateurs familiaux avec un processeur 16 bits.",
+      "pt": "O TI-99/4A, um dos primeiros computadores domésticos com processador de 16 bits.",
+      "it": "Il TI-99/4A, uno dei primi home computer con processore a 16 bit.",
+      "de": "Der TI-99/4A, einer der ersten Heimcomputer mit 16-Bit-Prozessor."
     }
   },
   "trs-80": {
@@ -2385,32 +3893,60 @@
     ],
     "cpu": {
       "es": "Zilog Z80 a 1,77 MHz",
-      "en": "Zilog Z80 at 1.77 MHz"
+      "en": "Zilog Z80 at 1.77 MHz",
+      "fr": "Zilog Z80 à 1,77 MHz",
+      "pt": "Zilog Z80 a 1,77 MHz",
+      "it": "Zilog Z80 a 1,77 MHz",
+      "de": "Zilog Z80 mit 1,77 MHz"
     },
     "memory": "4 – 48 KB",
     "resolution": {
       "es": "128×48 (semigráficos)",
-      "en": "128×48 (semigraphics)"
+      "en": "128×48 (semigraphics)",
+      "fr": "128×48 (semi-graphique)",
+      "pt": "128×48 (semigráficos)",
+      "it": "128×48 (semigrafica)",
+      "de": "128×48 (Blockgrafik)"
     },
     "colors": {
       "es": "Monocromo",
-      "en": "Monochrome"
+      "en": "Monochrome",
+      "fr": "Monochrome",
+      "pt": "Monocromático",
+      "it": "Monocromatico",
+      "de": "Monochrom"
     },
     "sound": {
       "es": "Ninguno (casete como truco)",
-      "en": "None (cassette como truco)"
+      "en": "None (the cassette used as a trick)",
+      "fr": "Aucun (astuce via la cassette)",
+      "pt": "Nenhum (a cassete como truque)",
+      "it": "Nessuno (la cassetta come trucco)",
+      "de": "Keiner (Trick über den Kassettenausgang)"
     },
     "media": {
       "es": "Casete / disquete",
-      "en": "Cassette / floppy disk"
+      "en": "Cassette / floppy disk",
+      "fr": "Cassette / disquette",
+      "pt": "Cassete / disquete",
+      "it": "Cassetta / floppy disk",
+      "de": "Kassette / Diskette"
     },
     "unitsSold": {
       "es": "~250.000 (Model I)",
-      "en": "~250,000 (Model I)"
+      "en": "~250,000 (Model I)",
+      "fr": "~250 000 (Model I)",
+      "pt": "~250.000 (Model I)",
+      "it": "~250.000 (Model I)",
+      "de": "~250.000 (Model I)"
     },
     "description": {
       "es": "Uno de los primeros ordenadores personales de éxito, vendido en las tiendas RadioShack.",
-      "en": "One of the first successful personal computers, sold in RadioShack stores."
+      "en": "One of the first successful personal computers, sold in RadioShack stores.",
+      "fr": "L'un des premiers ordinateurs personnels à succès, vendu dans les magasins RadioShack.",
+      "pt": "Um dos primeiros computadores pessoais de sucesso, vendido nas lojas RadioShack.",
+      "it": "Uno dei primi personal computer di successo, venduto nei negozi RadioShack.",
+      "de": "Einer der ersten erfolgreichen Personal Computer, verkauft in RadioShack-Läden."
     }
   },
   "tyrquake": {
@@ -2423,7 +3959,11 @@
     ],
     "description": {
       "es": "Motor libre basado en el código de Quake para jugar al original y sus mods.",
-      "en": "A free engine based on the Quake source code for playing the original and its mods."
+      "en": "A free engine based on the Quake source code for playing the original and its mods.",
+      "fr": "Un moteur libre basé sur le code source de Quake pour jouer à l'original et à ses mods.",
+      "pt": "Um motor livre baseado no código-fonte do Quake para jogar o original e os seus mods.",
+      "it": "Un motore libero basato sul codice sorgente di Quake per giocare all'originale e alle sue mod.",
+      "de": "Eine freie Engine auf Basis des Quake-Quellcodes, um das Original und seine Mods zu spielen."
     }
   },
   "vectrex": {
@@ -2437,28 +3977,52 @@
     ],
     "cpu": {
       "es": "Motorola 6809 a 1,5 MHz",
-      "en": "Motorola 6809 at 1.5 MHz"
+      "en": "Motorola 6809 at 1.5 MHz",
+      "fr": "Motorola 6809 à 1,5 MHz",
+      "pt": "Motorola 6809 a 1,5 MHz",
+      "it": "Motorola 6809 a 1,5 MHz",
+      "de": "Motorola 6809 mit 1,5 MHz"
     },
     "memory": "1 KB RAM",
     "resolution": {
       "es": "Pantalla vectorial de 9\"",
-      "en": "Vector display, 9\""
+      "en": "Vector display, 9\"",
+      "fr": "Écran vectoriel de 9\"",
+      "pt": "Ecrã vetorial de 9\"",
+      "it": "Schermo vettoriale da 9\"",
+      "de": "Vektorbildschirm, 9\""
     },
     "colors": {
       "es": "Monocromo (color con láminas)",
-      "en": "Monochrome (colour via overlays)"
+      "en": "Monochrome (colour via overlays)",
+      "fr": "Monochrome (couleur grâce aux calques)",
+      "pt": "Monocromático (cor com películas sobrepostas)",
+      "it": "Monocromatico (colore tramite overlay)",
+      "de": "Monochrom (Farbe per Folien)"
     },
     "sound": {
       "es": "AY-3-8912: 3 canales",
-      "en": "AY-3-8912: 3 channels"
+      "en": "AY-3-8912: 3 channels",
+      "fr": "AY-3-8912 : 3 canaux",
+      "pt": "AY-3-8912: 3 canais",
+      "it": "AY-3-8912: 3 canali",
+      "de": "AY-3-8912: 3 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "description": {
       "es": "Única consola con pantalla vectorial integrada. Las láminas de plástico sobre la pantalla añadían el color.",
-      "en": "The only console with a built-in vector display. Plastic overlays on the screen added colour."
+      "en": "The only console with a built-in vector display. Plastic overlays on the screen added colour.",
+      "fr": "La seule console avec un écran vectoriel intégré. Des calques en plastique posés sur l'écran ajoutaient la couleur.",
+      "pt": "A única consola com ecrã vetorial integrado. Películas de plástico sobre o ecrã davam-lhe cor.",
+      "it": "L'unica console con schermo vettoriale integrato. Delle pellicole di plastica sullo schermo aggiungevano il colore.",
+      "de": "Die einzige Konsole mit eingebautem Vektorbildschirm. Plastikfolien auf dem Bildschirm sorgten für Farbe."
     }
   },
   "videopac": {
@@ -2475,32 +4039,60 @@
     ],
     "cpu": {
       "es": "NEC V810 a 20 MHz (32 bits)",
-      "en": "NEC V810 at 20 MHz (32 bits)"
+      "en": "NEC V810 at 20 MHz (32 bits)",
+      "fr": "NEC V810 à 20 MHz (32 bits)",
+      "pt": "NEC V810 a 20 MHz (32 bits)",
+      "it": "NEC V810 a 20 MHz (32 bit)",
+      "de": "NEC V810 mit 20 MHz (32 Bit)"
     },
     "memory": "64 KB RAM + 128 KB VRAM",
     "resolution": {
       "es": "384×224 por ojo",
-      "en": "384×224 per eye"
+      "en": "384×224 per eye",
+      "fr": "384×224 par œil",
+      "pt": "384×224 por olho",
+      "it": "384×224 per occhio",
+      "de": "384×224 pro Auge"
     },
     "colors": {
       "es": "Rojo sobre negro (4 tonos)",
-      "en": "Red on black (4 shades)"
+      "en": "Red on black (4 shades)",
+      "fr": "Rouge sur noir (4 nuances)",
+      "pt": "Vermelho sobre preto (4 tons)",
+      "it": "Rosso su nero (4 tonalità)",
+      "de": "Rot auf Schwarz (4 Stufen)"
     },
     "sound": {
       "es": "Tabla de ondas, 6 canales",
-      "en": "Wavetable, 6 channels"
+      "en": "Wavetable, 6 channels",
+      "fr": "Table d'ondes, 6 canaux",
+      "pt": "Tabela de ondas, 6 canais",
+      "it": "Wavetable, 6 canali",
+      "de": "Wavetable, 6 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~770.000",
-      "en": "~770,000"
+      "en": "~770,000",
+      "fr": "~770 000",
+      "pt": "~770.000",
+      "it": "~770.000",
+      "de": "~770.000"
     },
     "description": {
       "es": "Consola de sobremesa con imagen estereoscópica en rojo y negro. Un fracaso comercial que solo duró unos meses.",
-      "en": "A tabletop console with stereoscopic red-and-black graphics. A commercial flop that lasted only a few months."
+      "en": "A tabletop console with stereoscopic red-and-black graphics. A commercial flop that lasted only a few months.",
+      "fr": "Une console de table aux graphismes stéréoscopiques rouge et noir. Un échec commercial qui n'a duré que quelques mois.",
+      "pt": "Uma consola de mesa com gráficos estereoscópicos a vermelho e preto. Um fracasso comercial que durou só alguns meses.",
+      "it": "Una console da tavolo con grafica stereoscopica rossa e nera. Un flop commerciale durato solo pochi mesi.",
+      "de": "Eine Tischkonsole mit stereoskopischer Grafik in Rot und Schwarz. Ein kommerzieller Flop, der nur wenige Monate hielt."
     }
   },
   "wii": {
@@ -2514,32 +4106,60 @@
     ],
     "cpu": {
       "es": "IBM PowerPC Broadway a 729 MHz",
-      "en": "IBM PowerPC Broadway at 729 MHz"
+      "en": "IBM PowerPC Broadway at 729 MHz",
+      "fr": "IBM PowerPC Broadway à 729 MHz",
+      "pt": "IBM PowerPC Broadway a 729 MHz",
+      "it": "IBM PowerPC Broadway a 729 MHz",
+      "de": "IBM PowerPC Broadway mit 729 MHz"
     },
     "memory": "88 MB (24 + 64) RAM",
     "resolution": {
       "es": "Hasta 480p",
-      "en": "Up to 480p"
+      "en": "Up to 480p",
+      "fr": "Jusqu'à 480p",
+      "pt": "Até 480p",
+      "it": "Fino a 480p",
+      "de": "Bis 480p"
     },
     "colors": {
       "es": "16,8 millones (24 bits)",
-      "en": "16.8 million (24 bits)"
+      "en": "16.8 million (24 bits)",
+      "fr": "16,8 millions (24 bits)",
+      "pt": "16,8 milhões (24 bits)",
+      "it": "16,8 milioni (24 bit)",
+      "de": "16,8 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Estéreo, Dolby Pro Logic II",
-      "en": "Stereo, Dolby Pro Logic II"
+      "en": "Stereo, Dolby Pro Logic II",
+      "fr": "Stéréo, Dolby Pro Logic II",
+      "pt": "Estéreo, Dolby Pro Logic II",
+      "it": "Stereo, Dolby Pro Logic II",
+      "de": "Stereo, Dolby Pro Logic II"
     },
     "media": {
       "es": "Disco óptico Wii / descarga",
-      "en": "Wii optical disc / download"
+      "en": "Wii optical disc / download",
+      "fr": "Disque optique Wii / téléchargement",
+      "pt": "Disco ótico Wii / download",
+      "it": "Disco ottico Wii / download",
+      "de": "Wii-Disc / Download"
     },
     "unitsSold": {
       "es": "~101,6 millones",
-      "en": "~101.6 million"
+      "en": "~101.6 million",
+      "fr": "~101,6 millions",
+      "pt": "~101,6 milhões",
+      "it": "~101,6 milioni",
+      "de": "~101,6 Millionen"
     },
     "description": {
       "es": "Consola de Nintendo con mando de detección de movimiento, que atrajo a todo tipo de público con Wii Sports.",
-      "en": "Nintendo's console with a motion-sensing remote, which drew in all kinds of players with Wii Sports."
+      "en": "Nintendo's console with a motion-sensing remote, which drew in all kinds of players with Wii Sports.",
+      "fr": "La console de Nintendo à télécommande détectant les mouvements, qui a attiré tous les publics avec Wii Sports.",
+      "pt": "A consola da Nintendo com comando sensível ao movimento, que atraiu todo o tipo de jogadores com Wii Sports.",
+      "it": "La console di Nintendo con il telecomando sensibile al movimento, che attirò ogni tipo di giocatore con Wii Sports.",
+      "de": "Nintendos Konsole mit bewegungsempfindlicher Fernbedienung, die mit Wii Sports alle möglichen Spieler anlockte."
     }
   },
   "wiiu": {
@@ -2553,32 +4173,60 @@
     ],
     "cpu": {
       "es": "IBM PowerPC Espresso (3 núcleos) a 1,24 GHz",
-      "en": "IBM PowerPC Espresso (3 cores) at 1.24 GHz"
+      "en": "IBM PowerPC Espresso (3 cores) at 1.24 GHz",
+      "fr": "IBM PowerPC Espresso (3 cœurs) à 1,24 GHz",
+      "pt": "IBM PowerPC Espresso (3 núcleos) a 1,24 GHz",
+      "it": "IBM PowerPC Espresso (3 core) a 1,24 GHz",
+      "de": "IBM PowerPC Espresso (3 Kerne) mit 1,24 GHz"
     },
     "memory": "2 GB RAM",
     "resolution": {
       "es": "Hasta 1920×1080",
-      "en": "Up to 1920×1080"
+      "en": "Up to 1920×1080",
+      "fr": "Jusqu'à 1920×1080",
+      "pt": "Até 1920×1080",
+      "it": "Fino a 1920×1080",
+      "de": "Bis 1920×1080"
     },
     "colors": {
       "es": "16,8 millones (24 bits)",
-      "en": "16.8 million (24 bits)"
+      "en": "16.8 million (24 bits)",
+      "fr": "16,8 millions (24 bits)",
+      "pt": "16,8 milhões (24 bits)",
+      "it": "16,8 milioni (24 bit)",
+      "de": "16,8 Millionen (24 Bit)"
     },
     "sound": {
       "es": "Hasta 5.1 PCM",
-      "en": "Up to 5.1 PCM"
+      "en": "Up to 5.1 PCM",
+      "fr": "Jusqu'à 5.1 PCM",
+      "pt": "Até 5.1 PCM",
+      "it": "Fino a 5.1 PCM",
+      "de": "Bis 5.1 PCM"
     },
     "media": {
       "es": "Disco óptico Wii U / descarga",
-      "en": "Wii U optical disc / download"
+      "en": "Wii U optical disc / download",
+      "fr": "Disque optique Wii U / téléchargement",
+      "pt": "Disco ótico Wii U / download",
+      "it": "Disco ottico Wii U / download",
+      "de": "Wii-U-Disc / Download"
     },
     "unitsSold": {
       "es": "~13,6 millones",
-      "en": "~13.6 million"
+      "en": "~13.6 million",
+      "fr": "~13,6 millions",
+      "pt": "~13,6 milhões",
+      "it": "~13,6 milioni",
+      "de": "~13,6 Millionen"
     },
     "description": {
       "es": "Consola con un mando con pantalla táctil integrada. Vendió poco, pero muchos de sus juegos pasaron después a Switch.",
-      "en": "A console with a gamepad that has its own touch screen. It sold poorly, but many of its games later moved to the Switch."
+      "en": "A console with a gamepad that has its own touch screen. It sold poorly, but many of its games later moved to the Switch.",
+      "fr": "Une console dont la manette a son propre écran tactile. Elle s'est peu vendue, mais beaucoup de ses jeux sont ensuite passés sur Switch.",
+      "pt": "Uma consola com um comando que tem o seu próprio ecrã tátil. Vendeu pouco, mas muitos dos seus jogos passaram depois para a Switch.",
+      "it": "Una console con un controller dotato di touch screen proprio. Vendette poco, ma molti dei suoi giochi passarono poi su Switch.",
+      "de": "Eine Konsole mit einem Gamepad mit eigenem Touchscreen. Sie verkaufte sich schlecht, aber viele ihrer Spiele kamen später auf die Switch."
     }
   },
   "windows": {
@@ -2591,7 +4239,11 @@
     ],
     "description": {
       "es": "Juegos de PC para Windows lanzados desde el frontend.",
-      "en": "Windows PC games launched from the frontend."
+      "en": "Windows PC games launched from the frontend.",
+      "fr": "Les jeux PC Windows lancés depuis le frontend.",
+      "pt": "Jogos de PC para Windows lançados a partir do frontend.",
+      "it": "Giochi per PC Windows avviati dal frontend.",
+      "de": "Windows-PC-Spiele, die aus dem Frontend gestartet werden."
     }
   },
   "wonderswan": {
@@ -2605,29 +4257,53 @@
     ],
     "cpu": {
       "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
-      "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
+      "en": "NEC V30 MZ at 3.07 MHz (16 bits)",
+      "fr": "NEC V30 MZ à 3,07 MHz (16 bits)",
+      "pt": "NEC V30 MZ a 3,07 MHz (16 bits)",
+      "it": "NEC V30 MZ a 3,07 MHz (16 bit)",
+      "de": "NEC V30 MZ mit 3,07 MHz (16 Bit)"
     },
     "memory": "16 KB RAM",
     "resolution": "224×144",
     "colors": {
       "es": "8 tonos de gris",
-      "en": "8 shades of grey"
+      "en": "8 shades of grey",
+      "fr": "8 nuances de gris",
+      "pt": "8 tons de cinzento",
+      "it": "8 tonalità di grigio",
+      "de": "8 Graustufen"
     },
     "sound": {
       "es": "4 canales",
-      "en": "4 channels"
+      "en": "4 channels",
+      "fr": "4 canaux",
+      "pt": "4 canais",
+      "it": "4 canali",
+      "de": "4 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~3,5 millones (toda la familia)",
-      "en": "~3.5 million (whole family)"
+      "en": "~3.5 million (whole family)",
+      "fr": "~3,5 millions (toute la famille)",
+      "pt": "~3,5 milhões (toda a família)",
+      "it": "~3,5 milioni (tutta la famiglia)",
+      "de": "~3,5 Millionen (ganze Familie)"
     },
     "description": {
       "es": "Portátil japonesa de Bandai, diseñada por Gunpei Yokoi. Podía jugarse en horizontal o en vertical.",
-      "en": "Bandai's Japanese handheld, designed by Gunpei Yokoi. It could be played horizontally or vertically."
+      "en": "Bandai's Japanese handheld, designed by Gunpei Yokoi. It could be played horizontally or vertically.",
+      "fr": "La portable japonaise de Bandai, conçue par Gunpei Yokoi. On pouvait y jouer à l'horizontale ou à la verticale.",
+      "pt": "A consola portátil japonesa da Bandai, concebida por Gunpei Yokoi. Podia jogar-se na horizontal ou na vertical.",
+      "it": "La portatile giapponese di Bandai, progettata da Gunpei Yokoi. Si poteva usare in orizzontale o in verticale.",
+      "de": "Bandais japanischer Handheld, entworfen von Gunpei Yokoi. Man konnte ihn waagerecht oder senkrecht spielen."
     }
   },
   "wonderswancolor": {
@@ -2641,29 +4317,53 @@
     ],
     "cpu": {
       "es": "NEC V30 MZ a 3,07 MHz (16 bits)",
-      "en": "NEC V30 MZ at 3.07 MHz (16 bits)"
+      "en": "NEC V30 MZ at 3.07 MHz (16 bits)",
+      "fr": "NEC V30 MZ à 3,07 MHz (16 bits)",
+      "pt": "NEC V30 MZ a 3,07 MHz (16 bits)",
+      "it": "NEC V30 MZ a 3,07 MHz (16 bit)",
+      "de": "NEC V30 MZ mit 3,07 MHz (16 Bit)"
     },
     "memory": "64 KB RAM",
     "resolution": "224×144",
     "colors": {
       "es": "4.096 (241 en pantalla)",
-      "en": "4,096 (241 on screen)"
+      "en": "4,096 (241 on screen)",
+      "fr": "4 096 (241 à l'écran)",
+      "pt": "4.096 (241 no ecrã)",
+      "it": "4.096 (241 a schermo)",
+      "de": "4.096 (241 auf dem Bildschirm)"
     },
     "sound": {
       "es": "4 canales",
-      "en": "4 channels"
+      "en": "4 channels",
+      "fr": "4 canaux",
+      "pt": "4 canais",
+      "it": "4 canali",
+      "de": "4 Kanäle"
     },
     "media": {
       "es": "Cartucho",
-      "en": "Cartridge"
+      "en": "Cartridge",
+      "fr": "Cartouche",
+      "pt": "Cartucho",
+      "it": "Cartuccia",
+      "de": "Modul"
     },
     "unitsSold": {
       "es": "~3,5 millones (toda la familia)",
-      "en": "~3.5 million (whole family)"
+      "en": "~3.5 million (whole family)",
+      "fr": "~3,5 millions (toute la famille)",
+      "pt": "~3,5 milhões (toda a família)",
+      "it": "~3,5 milioni (tutta la famiglia)",
+      "de": "~3,5 Millionen (ganze Familie)"
     },
     "description": {
       "es": "Versión a color de la WonderSwan, con remakes de Final Fantasy y varios juegos de Gunpey.",
-      "en": "The colour version of the WonderSwan, with Final Fantasy remakes and several Gunpey games."
+      "en": "The colour version of the WonderSwan, with Final Fantasy remakes and several Gunpey games.",
+      "fr": "La version couleur de la WonderSwan, avec des remakes de Final Fantasy et plusieurs jeux Gunpey.",
+      "pt": "A versão a cores da WonderSwan, com remakes de Final Fantasy e vários jogos Gunpey.",
+      "it": "La versione a colori del WonderSwan, con remake di Final Fantasy e diversi giochi di Gunpey.",
+      "de": "Die Farbversion des WonderSwan, mit Remakes von Final Fantasy und mehreren Gunpey-Spielen."
     }
   },
   "x68000": {
@@ -2676,25 +4376,45 @@
     ],
     "cpu": {
       "es": "Motorola 68000 a 10 MHz",
-      "en": "Motorola 68000 at 10 MHz"
+      "en": "Motorola 68000 at 10 MHz",
+      "fr": "Motorola 68000 à 10 MHz",
+      "pt": "Motorola 68000 a 10 MHz",
+      "it": "Motorola 68000 a 10 MHz",
+      "de": "Motorola 68000 mit 10 MHz"
     },
     "memory": "1 – 12 MB",
     "resolution": {
       "es": "Hasta 768×512",
-      "en": "Up to 768×512"
+      "en": "Up to 768×512",
+      "fr": "Jusqu'à 768×512",
+      "pt": "Até 768×512",
+      "it": "Fino a 768×512",
+      "de": "Bis 768×512"
     },
     "colors": {
       "es": "65.536",
-      "en": "65,536"
+      "en": "65,536",
+      "fr": "65 536",
+      "pt": "65.536",
+      "it": "65.536",
+      "de": "65.536"
     },
     "sound": "Yamaha YM2151 (FM) + OKI ADPCM",
     "media": {
       "es": "Disquete 5,25\" / disco duro",
-      "en": "Floppy disk 5.25\" / hard disk"
+      "en": "Floppy disk 5.25\" / hard disk",
+      "fr": "Disquette 5,25\" / disque dur",
+      "pt": "Disquete 5,25\" / disco rígido",
+      "it": "Floppy disk da 5,25\" / disco rigido",
+      "de": "Diskette 5,25\" / Festplatte"
     },
     "description": {
       "es": "Ordenador japonés de gama alta con hardware muy cercano a las recreativas, famoso por sus conversiones casi perfectas.",
-      "en": "A high-end Japanese computer with hardware close to arcade boards, famous for its near-perfect conversions."
+      "en": "A high-end Japanese computer with hardware close to arcade boards, famous for its near-perfect conversions.",
+      "fr": "Un ordinateur japonais haut de gamme au matériel proche des cartes arcade, célèbre pour ses conversions quasi parfaites.",
+      "pt": "Um computador japonês topo de gama com hardware próximo das placas arcade, famoso pelas suas conversões quase perfeitas.",
+      "it": "Un computer giapponese di fascia alta con hardware vicino alle schede arcade, famoso per le sue conversioni quasi perfette.",
+      "de": "Ein japanischer High-End-Computer mit Hardware nah an Arcade-Platinen, berühmt für seine fast perfekten Umsetzungen."
     }
   },
   "zmachine": {
@@ -2707,7 +4427,11 @@
     ],
     "description": {
       "es": "Máquina virtual de Infocom para aventuras conversacionales como Zork.",
-      "en": "Infocom's virtual machine for text adventures such as Zork."
+      "en": "Infocom's virtual machine for text adventures such as Zork.",
+      "fr": "La machine virtuelle d'Infocom pour les jeux d'aventure textuels comme Zork.",
+      "pt": "A máquina virtual da Infocom para aventuras de texto como Zork.",
+      "it": "La macchina virtuale di Infocom per avventure testuali come Zork.",
+      "de": "Infocoms virtuelle Maschine für Textadventures wie Zork."
     }
   },
   "zx81": {
@@ -2720,35 +4444,67 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,25 MHz",
-      "en": "Zilog Z80A at 3.25 MHz"
+      "en": "Zilog Z80A at 3.25 MHz",
+      "fr": "Zilog Z80A à 3,25 MHz",
+      "pt": "Zilog Z80A a 3,25 MHz",
+      "it": "Zilog Z80A a 3,25 MHz",
+      "de": "Zilog Z80A mit 3,25 MHz"
     },
     "memory": {
       "es": "1 KB (ampliable a 16 KB)",
-      "en": "1 KB (expandable to 16 KB)"
+      "en": "1 KB (expandable to 16 KB)",
+      "fr": "1 KB (extensible à 16 KB)",
+      "pt": "1 KB (expansível até 16 KB)",
+      "it": "1 KB (espandibile a 16 KB)",
+      "de": "1 KB (erweiterbar auf 16 KB)"
     },
     "resolution": {
       "es": "32×24 caracteres (64×48 semigráficos)",
-      "en": "32×24 characters (64×48 semigraphics)"
+      "en": "32×24 characters (64×48 semigraphics)",
+      "fr": "32×24 caractères (64×48 semi-graphique)",
+      "pt": "32×24 carateres (64×48 semigráficos)",
+      "it": "32×24 caratteri (64×48 semigrafica)",
+      "de": "32×24 Zeichen (64×48 Blockgrafik)"
     },
     "colors": {
       "es": "Monocromo",
-      "en": "Monochrome"
+      "en": "Monochrome",
+      "fr": "Monochrome",
+      "pt": "Monocromático",
+      "it": "Monocromatico",
+      "de": "Monochrom"
     },
     "sound": {
       "es": "Ninguno",
-      "en": "None"
+      "en": "None",
+      "fr": "Aucun",
+      "pt": "Nenhum",
+      "it": "Nessuno",
+      "de": "Keiner"
     },
     "media": {
       "es": "Casete",
-      "en": "Cassette"
+      "en": "Cassette",
+      "fr": "Cassette",
+      "pt": "Cassete",
+      "it": "Cassetta",
+      "de": "Kassette"
     },
     "unitsSold": {
       "es": "~1,5 millones",
-      "en": "~1.5 million"
+      "en": "~1.5 million",
+      "fr": "~1,5 million",
+      "pt": "~1,5 milhões",
+      "it": "~1,5 milioni",
+      "de": "~1,5 Millionen"
     },
     "description": {
       "es": "Ordenador muy barato de Sinclair que acercó la informática a muchos hogares británicos antes del Spectrum.",
-      "en": "A very cheap Sinclair computer that brought computing to many British homes before the Spectrum."
+      "en": "A very cheap Sinclair computer that brought computing to many British homes before the Spectrum.",
+      "fr": "Un ordinateur Sinclair très bon marché qui a fait entrer l'informatique dans de nombreux foyers britanniques avant le Spectrum.",
+      "pt": "Um computador muito barato da Sinclair que levou a informática a muitos lares britânicos antes do Spectrum.",
+      "it": "Un computer Sinclair molto economico che portò l'informatica in molte case britanniche prima dello Spectrum.",
+      "de": "Ein sehr günstiger Sinclair-Computer, der vor dem Spectrum vielen britischen Haushalten den Computer brachte."
     }
   },
   "zxspectrum": {
@@ -2761,29 +4517,53 @@
     ],
     "cpu": {
       "es": "Zilog Z80A a 3,5 MHz",
-      "en": "Zilog Z80A at 3.5 MHz"
+      "en": "Zilog Z80A at 3.5 MHz",
+      "fr": "Zilog Z80A à 3,5 MHz",
+      "pt": "Zilog Z80A a 3,5 MHz",
+      "it": "Zilog Z80A a 3,5 MHz",
+      "de": "Zilog Z80A mit 3,5 MHz"
     },
     "memory": "16 – 128 KB",
     "resolution": "256×192",
     "colors": {
       "es": "15 (8 colores con brillo)",
-      "en": "15 (8 colours with bright)"
+      "en": "15 (8 colours with bright)",
+      "fr": "15 (8 couleurs avec la brillance)",
+      "pt": "15 (8 cores com brilho)",
+      "it": "15 (8 colori con luminosità)",
+      "de": "15 (8 Farben mit Bright)"
     },
     "sound": {
       "es": "Altavoz de 1 bit (AY-3-8912 en 128K)",
-      "en": "1-bit beeper (AY-3-8912 on 128K)"
+      "en": "1-bit beeper (AY-3-8912 on 128K)",
+      "fr": "Haut-parleur 1 bit (AY-3-8912 sur 128K)",
+      "pt": "Altifalante de 1 bit (AY-3-8912 no 128K)",
+      "it": "Beeper a 1 bit (AY-3-8912 sul 128K)",
+      "de": "1-Bit-Beeper (AY-3-8912 beim 128K)"
     },
     "media": {
       "es": "Casete / disquete (+3)",
-      "en": "Cassette / floppy disk (+3)"
+      "en": "Cassette / floppy disk (+3)",
+      "fr": "Cassette / disquette (+3)",
+      "pt": "Cassete / disquete (+3)",
+      "it": "Cassetta / floppy disk (+3)",
+      "de": "Kassette / Diskette (+3)"
     },
     "unitsSold": {
       "es": "~5 millones",
-      "en": "~5 million"
+      "en": "~5 million",
+      "fr": "~5 millions",
+      "pt": "~5 milhões",
+      "it": "~5 milioni",
+      "de": "~5 Millionen"
     },
     "description": {
       "es": "El ordenador de 8 bits que impulsó la edad de oro del software español y británico, con Dinamic, Ultimate u Ocean.",
-      "en": "The 8-bit computer behind the golden age of Spanish and British software, with Dinamic, Ultimate and Ocean."
+      "en": "The 8-bit computer behind the golden age of Spanish and British software, with Dinamic, Ultimate and Ocean.",
+      "fr": "L'ordinateur 8 bits qui a porté l'âge d'or du logiciel espagnol et britannique, avec Dinamic, Ultimate et Ocean.",
+      "pt": "O computador de 8 bits da idade de ouro do software espanhol e britânico, com a Dinamic, a Ultimate e a Ocean.",
+      "it": "Il computer a 8 bit dell'età d'oro del software spagnolo e britannico, con Dinamic, Ultimate e Ocean.",
+      "de": "Der 8-Bit-Computer hinter dem goldenen Zeitalter der spanischen und britischen Software, mit Dinamic, Ultimate und Ocean."
     }
   }
 }

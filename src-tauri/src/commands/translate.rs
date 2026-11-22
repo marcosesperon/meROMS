@@ -19,6 +19,10 @@ fn api_url(key: &str) -> &'static str {
 fn target_code(lang: &str) -> &'static str {
     match lang {
         "es" => "ES",
+        "fr" => "FR",
+        "pt" => "PT-PT",
+        "it" => "IT",
+        "de" => "DE",
         _ => "EN-US",
     }
 }

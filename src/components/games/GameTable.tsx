@@ -8,8 +8,10 @@ import {
   type ColumnResizeMode,
   type ColumnSizingState,
 } from "@tanstack/react-table";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useListKeyboard } from "../../hooks/useListKeyboard";
+import { useVirtualRows } from "../../hooks/useVirtualRows";
+import { registerGameScroller } from "../../utils/scrollToGame";
 import type { Game } from "../../types";
 import { formatRating, formatReleaseDate } from "../../utils/format";
 import { useAppStore } from "../../store/useAppStore";
@@ -25,6 +27,9 @@ import { clickGame, doubleClickGame } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { effectiveGridField } from "../../utils/systemView";
+
+/** Alto de fila mientras no hay dos filas pintadas para medirlo (px) */
+const ROW_ESTIMATE = 41;
 
 // Texto de la columna Nombre (de él sale la letra de la barra)
 const nameText = (g: Game) => g.name || g.path;
@@ -381,10 +386,51 @@ export function GameTable({ games }: GameTableProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const rows = table.getRowModel().rows;
   const ordered = useMemo(() => rows.map((r) => r.original), [rows]);
+  // Solo se pintan las filas que se ven (con miles de juegos, montarlas todas hace la tabla
+  // lenta). Alto de fila: la distancia entre dos filas pintadas. Lo que hay encima de la primera
+  // fila (cabecera fija y hueco de las de arriba) se mide donde queda de verdad la primera
+  // pintada: los bordes de la tabla hacen que el hueco no mida justo filas × alto.
+  const theadRef = useRef<HTMLTableSectionElement>(null);
+  const tbodyRef = useRef<HTMLTableSectionElement>(null);
+  const [rowHeight, setRowHeight] = useState(0);
+  const [offset, setOffset] = useState(0);
+  const [headHeight, setHeadHeight] = useState(0);
+  const firstShown = useRef(0);
+  useLayoutEffect(() => {
+    const container = scrollRef.current;
+    const body = Array.from(tbodyRef.current?.querySelectorAll<HTMLElement>("tr[data-game-path]") ?? []);
+    if (!container || body.length === 0) return;
+    // Con decimales (offsetTop redondea, y con miles de filas el error se acumula)
+    const top = (el: HTMLElement) => el.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+    const step = body.length >= 2 ? (top(body[body.length - 1]) - top(body[0])) / (body.length - 1) : 0;
+    if (step > 0 && Math.abs(step - rowHeight) > 0.01) setRowHeight(step);
+    const measured = top(body[0]) - firstShown.current * (step || rowHeight || ROW_ESTIMATE);
+    if (Math.abs(measured - offset) > 0.5) setOffset(measured);
+    const head = theadRef.current?.offsetHeight ?? 0;
+    if (head !== headHeight) setHeadHeight(head);
+  });
+  const virtual = useVirtualRows({ containerRef: scrollRef, rowCount: rows.length, rowStride: rowHeight || ROW_ESTIMATE, offset, inset: headHeight });
+  firstShown.current = virtual.first;
+  const shownRows = rows.slice(virtual.first, virtual.last);
+  // Ir a un juego (teclado, barra de letras, búsqueda, ficha completa): a su fila
+  const latest = useRef({ ordered, scrollToRow: virtual.scrollToRow });
+  latest.current = { ordered, scrollToRow: virtual.scrollToRow };
+  useEffect(
+    () =>
+      registerGameScroller((path, block) => {
+        const index = latest.current.ordered.findIndex((g) => g.path === path);
+        if (index < 0) return false;
+        latest.current.scrollToRow(index, block);
+        return true;
+      }),
+    []
+  );
   useListKeyboard({
     items: ordered,
     containerRef: scrollRef,
     getColumns: () => 1,
+    getRowsPerPage: () => virtual.rowsPerPage,
+    scrollToIndex: (index) => virtual.scrollToRow(index, "nearest"),
   });
   // El orden que se ve, para el anterior/siguiente de la ficha a pantalla completa
   const setVisibleOrder = useAppStore((s) => s.setVisibleOrder);
@@ -401,7 +447,7 @@ export function GameTable({ games }: GameTableProps) {
           // (estirar las de verdad descuadraría las congeladas, que se colocan con sus anchos)
           style={{ width: table.getCenterTotalSize(), minWidth: "100%" }}
         >
-          <thead className="bg-zinc-800">
+          <thead ref={theadRef} className="bg-zinc-800">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -454,8 +500,14 @@ export function GameTable({ games }: GameTableProps) {
               </tr>
             ))}
           </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
+          <tbody ref={tbodyRef}>
+            {/* Hueco de las filas de arriba que no se pintan */}
+            {virtual.before > 0 && (
+              <tr aria-hidden>
+                <td colSpan={table.getVisibleLeafColumns().length + 1} style={{ height: virtual.before, padding: 0 }} />
+              </tr>
+            )}
+            {shownRows.map((row) => (
               <tr
                 key={row.id}
                 data-game-path={row.original.path}
@@ -497,11 +549,26 @@ export function GameTable({ games }: GameTableProps) {
                 <td />
               </tr>
             ))}
+            {virtual.after > 0 && (
+              <tr aria-hidden>
+                <td colSpan={table.getVisibleLeafColumns().length + 1} style={{ height: virtual.after, padding: 0 }} />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
       {nameSort && (
-        <LetterBar games={ordered} nameOf={nameText} containerRef={scrollRef} descending={nameSort.desc} />
+        <LetterBar
+          games={ordered}
+          nameOf={nameText}
+          visibleFrom={virtual.visibleFirst}
+          visibleTo={virtual.visibleLast}
+          onJump={(path) => {
+            const index = ordered.findIndex((g) => g.path === path);
+            if (index >= 0) virtual.scrollToRow(index, "start");
+          }}
+          descending={nameSort.desc}
+        />
       )}
     </div>
   );

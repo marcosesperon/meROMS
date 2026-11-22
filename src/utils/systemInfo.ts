@@ -1,7 +1,8 @@
 import data from "../data/systemInfo.json";
 
 /** Texto en los dos idiomas, o el mismo para los dos (nombres propios, cifras…) */
-export type Localized = string | { es: string; en: string };
+/** Un texto fijo o uno por idioma (inglés y español siempre; los demás pueden faltar) */
+export type Localized = string | ({ es: string; en: string } & Partial<Record<"fr" | "pt" | "it" | "de", string>>);
 
 export type SystemType = "console" | "handheld" | "computer" | "arcade" | "engine" | "software";
 
@@ -53,8 +54,9 @@ export function systemBackdrop(name: string): string {
   return `radial-gradient(ellipse at 50% 35%, rgba(255,255,255,0.10), transparent 60%), ${systemGradient(name)}, #0e0d0c`;
 }
 
-/** Elige el texto del idioma de la app */
+/** Elige el texto del idioma de la app (si no lo hay en ese idioma, el inglés) */
 export function localize(value: Localized | undefined, locale: string): string | undefined {
   if (value === undefined) return undefined;
-  return typeof value === "string" ? value : locale === "es" ? value.es : value.en;
+  if (typeof value === "string") return value;
+  return (value as Record<string, string | undefined>)[locale] ?? value.en;
 }

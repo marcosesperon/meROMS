@@ -1,20 +1,21 @@
 import { useTranslation } from "../../i18n";
 
-// Códigos de región de ScreenScraper con su nombre en cada idioma de la app
-const REGIONS: { code: string; es: string; en: string }[] = [
-  { code: "wor", es: "Mundo", en: "World" },
-  { code: "eu", es: "Europa", en: "Europe" },
-  { code: "us", es: "EE. UU.", en: "USA" },
-  { code: "jp", es: "Japón", en: "Japan" },
-  { code: "sp", es: "España", en: "Spain" },
-  { code: "fr", es: "Francia", en: "France" },
-  { code: "de", es: "Alemania", en: "Germany" },
-  { code: "it", es: "Italia", en: "Italy" },
-  { code: "uk", es: "Reino Unido", en: "United Kingdom" },
-  { code: "br", es: "Brasil", en: "Brazil" },
-  { code: "kr", es: "Corea", en: "Korea" },
-  { code: "cn", es: "China", en: "China" },
-  { code: "au", es: "Australia", en: "Australia" },
+// Códigos de región de ScreenScraper con su nombre en español e inglés; en los demás idiomas el
+// nombre lo pone el navegador a partir de `iso` (país o región de la ONU: 001 mundo, 150 Europa)
+const REGIONS: { code: string; iso?: string; es: string; en: string }[] = [
+  { code: "wor", iso: "001", es: "Mundo", en: "World" },
+  { code: "eu", iso: "150", es: "Europa", en: "Europe" },
+  { code: "us", iso: "US", es: "EE. UU.", en: "USA" },
+  { code: "jp", iso: "JP", es: "Japón", en: "Japan" },
+  { code: "sp", iso: "ES", es: "España", en: "Spain" },
+  { code: "fr", iso: "FR", es: "Francia", en: "France" },
+  { code: "de", iso: "DE", es: "Alemania", en: "Germany" },
+  { code: "it", iso: "IT", es: "Italia", en: "Italy" },
+  { code: "uk", iso: "GB", es: "Reino Unido", en: "United Kingdom" },
+  { code: "br", iso: "BR", es: "Brasil", en: "Brazil" },
+  { code: "kr", iso: "KR", es: "Corea", en: "Korea" },
+  { code: "cn", iso: "CN", es: "China", en: "China" },
+  { code: "au", iso: "AU", es: "Australia", en: "Australia" },
   { code: "ss", es: "ScreenScraper (genérica)", en: "ScreenScraper (generic)" },
 ];
 
@@ -87,9 +88,19 @@ interface ScrapeOrderEditorProps {
  */
 export function ScrapeOrderEditor({ regions, languages, onChange }: ScrapeOrderEditorProps) {
   const { t, locale } = useTranslation();
+  const regionNames = (() => {
+    try {
+      return new Intl.DisplayNames([locale], { type: "region" });
+    } catch {
+      return null;
+    }
+  })();
   const regionLabel = (code: string) => {
     const r = REGIONS.find((x) => x.code === code);
-    return r ? (locale === "es" ? r.es : r.en) : code;
+    if (!r) return code;
+    if (locale === "es") return r.es;
+    if (locale === "en" || !r.iso) return r.en;
+    return regionNames?.of(r.iso) ?? r.en;
   };
   const languageNames = (() => {
     try {

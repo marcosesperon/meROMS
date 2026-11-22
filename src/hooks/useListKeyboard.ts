@@ -9,11 +9,10 @@ interface ListKeyboardOptions {
   containerRef: RefObject<HTMLElement | null>;
   /** Games per row (grid); 1 for the table */
   getColumns: () => number;
-}
-
-/** Element of a game inside the list (cards and table rows carry data-game-path) */
-function elementFor(container: HTMLElement, path: string): HTMLElement | null {
-  return container.querySelector<HTMLElement>(`[data-game-path="${CSS.escape(path)}"]`);
+  /** Rows that fit on screen (PageUp/PageDown) */
+  getRowsPerPage: () => number;
+  /** Bring a game into view (the list only paints the rows on screen, so a far game has no element) */
+  scrollToIndex: (index: number) => void;
 }
 
 /**
@@ -21,10 +20,10 @@ function elementFor(container: HTMLElement, path: string): HTMLElement | null {
  * e Intro (abre la ficha completa; también A del mando, que llega como Intro). No hace nada mientras se escribe en un campo ni con una
  * ventana abierta encima.
  */
-export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboardOptions) {
+export function useListKeyboard({ items, containerRef, getColumns, getRowsPerPage, scrollToIndex }: ListKeyboardOptions) {
   // Lo último que se ha pintado, sin volver a registrar el listener en cada cambio
-  const latest = useRef({ items, getColumns });
-  latest.current = { items, getColumns };
+  const latest = useRef({ items, getColumns, getRowsPerPage, scrollToIndex });
+  latest.current = { items, getColumns, getRowsPerPage, scrollToIndex };
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -38,7 +37,7 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
       if (document.querySelector(".fixed.inset-0")) return;
 
       const container = containerRef.current;
-      const { items, getColumns } = latest.current;
+      const { items, getColumns, getRowsPerPage, scrollToIndex } = latest.current;
       if (!container || items.length === 0) return;
 
       const { selectedGame, selectGame, openFullView } = useAppStore.getState();
@@ -56,11 +55,7 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
 
       const columns = Math.max(1, getColumns());
       // Cuántos juegos caben en una pantalla (para RePág/AvPág)
-      const pageSize = () => {
-        const el = current >= 0 ? elementFor(container, items[current].path) : container.querySelector<HTMLElement>("[data-game-path]");
-        const rowHeight = el?.offsetHeight || 1;
-        return Math.max(1, Math.floor(container.clientHeight / rowHeight)) * columns;
-      };
+      const pageSize = () => Math.max(1, getRowsPerPage()) * columns;
 
       let next: number;
       switch (e.key) {
@@ -102,7 +97,7 @@ export function useListKeyboard({ items, containerRef, getColumns }: ListKeyboar
       const game = items[next];
       selectGame(game);
       // Que se vea, sin mover la lista si ya está a la vista
-      elementFor(container, game.path)?.scrollIntoView({ block: "nearest" });
+      scrollToIndex(next);
     }
 
     window.addEventListener("keydown", onKeyDown);

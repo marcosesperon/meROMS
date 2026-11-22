@@ -95,7 +95,7 @@ pub fn list_missing_roms(app: tauri::AppHandle, system_path: String, task: Optio
     find_missing(&system, &games, &progress)
 }
 
-fn find_missing(system: &SystemRef, games: &[Game], progress: &Progress) -> Result<MissingRoms, String> {
+pub(super) fn find_missing(system: &SystemRef, games: &[Game], progress: &Progress) -> Result<MissingRoms, String> {
     let mut missing: Vec<MissingRom> = Vec::new();
     for (i, g) in games.iter().enumerate() {
         progress.check()?;
@@ -174,7 +174,7 @@ pub(super) fn rom_files(system: &SystemRef) -> Vec<PathBuf> {
 }
 
 /// Busca las ROMs de la carpeta del sistema que no tiene ningún juego de la gamelist.
-fn find_new_roms(system: &SystemRef, games: &[Game], rules: &CompiledRules) -> Vec<NewRom> {
+pub(super) fn find_new_roms(system: &SystemRef, games: &[Game], rules: &CompiledRules) -> Vec<NewRom> {
     // Lo que ya está en la gamelist, en ruta absoluta (así da igual «./x» o «x»)
     let in_gamelist: HashSet<PathBuf> = games.iter().map(|g| media::resolve_media_path(system, &g.path)).collect();
     let known: Vec<&str> = extensions_for_system(&system.name);

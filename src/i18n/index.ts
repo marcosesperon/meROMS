@@ -1,10 +1,34 @@
 import { create } from "zustand";
 import en, { type TranslationKeys } from "./en";
 import es from "./es";
+import fr from "./fr";
+import pt from "./pt";
+import it from "./it";
+import de from "./de";
 
-export type Locale = "en" | "es";
+/** Idiomas de la app, en el orden del selector de Ajustes */
+export const LOCALES = ["en", "es", "fr", "pt", "it", "de"] as const;
+export type Locale = (typeof LOCALES)[number];
 
-const translations: Record<Locale, Record<string, string>> = { en, es };
+/** Nombre de cada idioma en su propio idioma (selector de Ajustes) */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  en: "English",
+  es: "Español",
+  fr: "Français",
+  pt: "Português",
+  it: "Italiano",
+  de: "Deutsch",
+};
+
+export const isLocale = (value: unknown): value is Locale => LOCALES.includes(value as Locale);
+
+const translations: Record<Locale, Record<string, string>> = { en, es, fr, pt, it, de };
+
+/** El idioma del sistema operativo si es uno de los de la app; si no, inglés */
+function systemLocale(): Locale {
+  const lang = navigator.language.slice(0, 2).toLowerCase();
+  return isLocale(lang) ? lang : "en";
+}
 
 interface I18nState {
   locale: Locale;
@@ -12,7 +36,7 @@ interface I18nState {
 }
 
 export const useI18nStore = create<I18nState>((set) => ({
-  locale: (navigator.language.startsWith("es") ? "es" : "en") as Locale,
+  locale: systemLocale(),
   setLocale: (locale: Locale) => set({ locale }),
 }));
 

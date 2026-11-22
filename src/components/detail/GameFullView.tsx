@@ -8,6 +8,7 @@ import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
 import { CloseIcon, PencilIcon, PlayIcon, StarIcon, StarOutlineIcon, TrashIcon } from "../common/Icons";
 import { GameTabs } from "./GameTabs";
+import { scrollToGame } from "../../utils/scrollToGame";
 
 /**
  * Ficha de un juego a pantalla completa (idea de RomM): lo del panel derecho en grande, con
@@ -83,7 +84,7 @@ function FullView({ game }: { game: Game }) {
   useEffect(
     () => () => {
       const path = useAppStore.getState().selectedGame?.path;
-      if (path) document.querySelector(`[data-game-path="${CSS.escape(path)}"]`)?.scrollIntoView({ block: "nearest" });
+      if (path) scrollToGame(path);
     },
     []
   );

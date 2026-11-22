@@ -10,12 +10,12 @@ import type {
   ViewMode,
 } from "../types";
 import * as commands from "../commands";
-import { translate, useI18nStore } from "../i18n";
+import { isLocale, translate, useI18nStore } from "../i18n";
 import { showMessage } from "../utils/dialogs";
 import { brokenKey } from "../utils/mediaFilter";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "../utils/profiles";
 import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
-import { shapeField } from "../utils/systemView";
+import { getSystemView, shapeField } from "../utils/systemView";
 import { hideWhilePlaying, showAfterPlaying } from "../utils/playWindow";
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
@@ -74,7 +74,14 @@ interface AppState {
   folders: Folder[];
   provider: Provider | undefined;
   selectedGame: Game | null;
-  loadGames: (systemPath: string) => Promise<void>;
+  /** mediaChanged: media files were added/moved/overwritten (scrape, swap...): the grid's card
+   *  shape is measured again instead of taken from what was saved */
+  loadGames: (systemPath: string, options?: { mediaChanged?: boolean }) => Promise<void>;
+  /** Background jobs still running for the selected system (card shape, statuses, new ROMs...):
+   *  while > 0 a discreet "Analysing..." bar shows above the list */
+  backgroundJobs: number;
+  /** Counts a job in backgroundJobs until it ends (returns the same promise) */
+  trackBackground: <T>(job: Promise<T>) => Promise<T>;
   selectGame: (game: Game | null) => void;
   setGames: (games: Game[]) => void;
   setFolders: (folders: Folder[]) => void;
@@ -129,8 +136,13 @@ interface AppState {
   /** Forma que más se repite en el medio de la cuadrícula de este sistema (la de sus tarjetas) */
   mediaShape: { system: string; field: string; width: number; height: number } | null;
   /** Vuelve a medir esa forma (al cargar un sistema o al cambiar el medio de la cuadrícula) */
-  refreshMediaShape: (systemPath: string) => void;
+  refreshMediaShape: (systemPath: string, force?: boolean) => void;
   /** RetroAchievements marks of the selected system ("Check achievements"), by game path */
+  /** New and missing ROMs per system path (watching the ROM folders; sidebar marks) */
+  romChanges: Record<string, commands.RomChanges>;
+  /** Recount them (the given systems, or every system with a gamelist) */
+  refreshRomChanges: (paths?: string[]) => void;
+  setRomChange: (path: string, changes: commands.RomChanges) => void;
   raMarks: Map<string, commands.RaMark>;
   /** Reads them again (after "Check achievements") */
   refreshRaMarks: () => void;
@@ -221,7 +233,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ settings, settingsLoaded: true, viewMode: settings.last_view ?? "grid" });
       commands.scraperStatus().then((scraperStatus) => set({ scraperStatus })).catch(() => {});
       // Sync saved language with i18n store
-      if (settings.language === "es" || settings.language === "en") {
+      if (isLocale(settings.language)) {
         useI18nStore.getState().setLocale(settings.language);
       }
       if (isProfileComplete(getActiveProfile(settings))) {
@@ -339,7 +351,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   folders: [],
   provider: undefined,
   selectedGame: null,
-  loadGames: async (systemPath: string) => {
+  loadGames: async (systemPath: string, options) => {
     try {
       // Spinner only when there's nothing on screen yet (a system just picked). A reload after
       // scraping, renaming, etc. keeps the list mounted, so the scroll position isn't lost.
@@ -369,20 +381,19 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       // Rutas de media que apuntan a ficheros que ya no existen (para el filtro «Le falta»).
       // Va aparte para no retrasar la lista; en ES-DE siempre sale vacío.
-      commands
-        .findBrokenMediaRefs(systemPath)
+      const track = get().trackBackground;
+      track(commands.findBrokenMediaRefs(systemPath))
         .then((refs) => {
           if (get().selectedSystem?.path !== systemPath) return;
           set({ brokenMedia: new Set(refs.map((r) => brokenKey(r.game_path, r.field, r.value))) });
         })
         .catch(() => set({ brokenMedia: new Set() }));
       // Forma de las tarjetas de la cuadrícula (puede haber cambiado tras scrapear)
-      get().refreshMediaShape(systemPath);
+      get().refreshMediaShape(systemPath, options?.mediaChanged);
       // RetroAchievements: lo que dejó «Comprobar logros» en este sistema (insignia y filtro)
       get().refreshRaMarks();
       // Estados de juego: después de leer la gamelist (lo marcado «completed» en ES-DE se adopta)
-      commands
-        .getGameStatuses(systemPath)
+      track(commands.getGameStatuses(systemPath))
         .then((map) => {
           if (get().selectedSystem?.path !== systemPath) return;
           set({ statuses: new Map(Object.entries(map)) });
@@ -484,12 +495,22 @@ export const useAppStore = create<AppState>((set, get) => ({
           : selectedGame,
     });
   },
+  romChanges: {},
+  refreshRomChanges: (paths) => {
+    const list = paths ?? get().systems.filter((s) => s.has_gamelist).map((s) => s.path);
+    if (list.length === 0) return;
+    commands
+      .romChanges(list)
+      .then((found) => set({ romChanges: paths ? { ...get().romChanges, ...found } : found }))
+      .catch(() => {});
+  },
+  setRomChange: (path, changes) => set({ romChanges: { ...get().romChanges, [path]: changes } }),
   raMarks: new Map(),
   refreshRaMarks: () => {
     const systemPath = get().selectedSystem?.path;
     if (!systemPath) return;
-    commands
-      .raSystemMarks(systemPath)
+    get()
+      .trackBackground(commands.raSystemMarks(systemPath))
       .then((map) => {
         if (get().selectedSystem?.path === systemPath) set({ raMarks: new Map(Object.entries(map)) });
       })
@@ -516,10 +537,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   datMarks: null,
   brokenMedia: new Set(),
   mediaShape: null,
-  refreshMediaShape: (systemPath: string) => {
-    const field = shapeField(get().settings, get().selectedSystem?.name, get().viewMode);
-    commands
-      .usualMediaShape(systemPath, field)
+  backgroundJobs: 0,
+  trackBackground: (job) => {
+    set({ backgroundJobs: get().backgroundJobs + 1 });
+    const done = () => set({ backgroundJobs: Math.max(0, get().backgroundJobs - 1) });
+    job.then(done, done);
+    return job;
+  },
+  refreshMediaShape: (systemPath: string, force?: boolean) => {
+    const { settings, selectedSystem, viewMode } = get();
+    // Con una relación de aspecto elegida a mano para el sistema, esa manda: no hace falta medir
+    if (getSystemView(settings, selectedSystem?.name).aspect_ratio) return;
+    const field = shapeField(settings, selectedSystem?.name, viewMode);
+    get()
+      .trackBackground(commands.usualMediaShape(systemPath, field, force))
       .then((shape) => {
         // Si mientras tanto se ha cambiado de sistema o de medio, esta respuesta ya no vale
         const now = get();

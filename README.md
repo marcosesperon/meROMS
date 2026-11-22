@@ -20,7 +20,7 @@ that from your computer, comfortably and in bulk.
 
 It **manages your library; it doesn't play games**. Your emulator frontend stays the same.
 
-Free and open source, for macOS, Windows and Linux, in English and Spanish.
+Free and open source, for macOS, Windows and Linux, in English, Spanish, French, Portuguese, Italian and German.
 
 ## What it does
 

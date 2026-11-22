@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useListKeyboard } from "../../hooks/useListKeyboard";
+import { useVirtualRows } from "../../hooks/useVirtualRows";
+import { registerGameScroller } from "../../utils/scrollToGame";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { GameCard } from "./GameCard";
@@ -12,6 +14,11 @@ import { systemBackdrop } from "../../utils/systemInfo";
 interface GameGridProps {
   games: Game[];
 }
+
+/** Separación entre tarjetas (px) y relleno del contenedor; la cuenta de filas los necesita */
+const GAP_X = 12;
+const GAP_Y = 16;
+const PADDING = 20;
 
 export function GameGrid({ games }: GameGridProps) {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
@@ -57,38 +64,93 @@ export function GameGrid({ games }: GameGridProps) {
   const byName = !gridSort || gridSort === "name" || gridSort === "sortname";
   const letterText = gridSort === "sortname" ? sortnameText : nameText;
 
+  // Solo se pintan las filas que se ven (con miles de juegos, montar todas las tarjetas hace la
+  // lista lenta y pide todas las imágenes a la vez). Columnas: las que caben con el ancho mínimo
+  // de tarjeta, como hacía «auto-fill»; alto de fila: el de una tarjeta pintada.
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const [innerWidth, setInnerWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const measure = () => setInnerWidth(el.clientWidth - PADDING * 2);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const columns = Math.max(1, Math.floor((innerWidth + GAP_X) / (cardWidth + GAP_X)));
+  // Mientras no hay una tarjeta medida, una estimación con su forma (carátula + dos líneas de texto)
+  const [aw, ah] = aspectRatio.split("/").map(Number);
+  const estimate = ((innerWidth - GAP_X * (columns - 1)) / columns) * (aw > 0 && ah > 0 ? ah / aw : 4 / 3) + 52;
+  const [cardHeight, setCardHeight] = useState(0);
+  useLayoutEffect(() => {
+    // Con decimales: offsetHeight redondea y, con cientos de filas, el error se acumula
+    const height = (gridRef.current?.firstElementChild as HTMLElement | null)?.getBoundingClientRect().height ?? 0;
+    if (height > 0 && Math.abs(height - cardHeight) > 0.01) setCardHeight(height);
+  });
+  const rowCount = Math.ceil(sorted.length / columns);
+  const rows = useVirtualRows({ containerRef: scrollRef, rowCount, rowStride: (cardHeight || estimate) + GAP_Y, offset: PADDING, inset: PADDING });
+  const shown = sorted.slice(rows.first * columns, rows.last * columns);
+
+  // Ir a un juego (teclado, barra de letras, búsqueda, ficha completa): a su fila
+  const latest = useRef({ sorted, columns, scrollToRow: rows.scrollToRow });
+  latest.current = { sorted, columns, scrollToRow: rows.scrollToRow };
+  useEffect(
+    () =>
+      registerGameScroller((path, block) => {
+        const { sorted, columns, scrollToRow } = latest.current;
+        const index = sorted.findIndex((g) => g.path === path);
+        if (index < 0) return false;
+        scrollToRow(Math.floor(index / columns), block);
+        return true;
+      }),
+    []
+  );
+
   useListKeyboard({
     items: sorted,
     containerRef: scrollRef,
-    // Las columnas dependen del ancho: se cuentan las tarjetas de la primera fila
-    getColumns: () => {
-      const cards = Array.from(gridRef.current?.children ?? []) as HTMLElement[];
-      if (cards.length === 0) return 1;
-      const top = cards[0].offsetTop;
-      return cards.filter((c) => c.offsetTop === top).length;
-    },
+    getColumns: () => columns,
+    getRowsPerPage: () => rows.rowsPerPage,
+    scrollToIndex: (index) => rows.scrollToRow(Math.floor(index / columns), "nearest"),
   });
 
   return (
     // Fondo con los colores del sistema (como el carrusel); fijo, las tarjetas se desplazan encima
     <div className="flex-1 flex overflow-hidden" style={{ background: systemBackdrop(selectedSystem?.name || "") }}>
-      <div ref={scrollRef} className="overflow-auto flex-1 p-5">
+      <div ref={scrollRef} className="overflow-auto flex-1" style={{ padding: PADDING }}>
+        <div style={{ height: rows.before }} />
         <div
           ref={gridRef}
-          className="grid gap-x-3 gap-y-4"
+          className="grid"
           style={{
-            gridTemplateColumns: `repeat(auto-fill, minmax(${cardWidth}px, 1fr))`,
+            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+            columnGap: GAP_X,
+            rowGap: GAP_Y,
+            // Sin la separación de la última fila pintada, ya va en el hueco de abajo
+            marginBottom: rows.after > 0 ? GAP_Y : 0,
           }}
         >
-          {sorted.map((game, i) => (
-            <GameCard key={keys[i]} game={game} aspectRatio={aspectRatio} box3d={box3d} />
+          {shown.map((game, i) => (
+            <GameCard key={keys[rows.first * columns + i]} game={game} aspectRatio={aspectRatio} box3d={box3d} />
           ))}
         </div>
+        <div style={{ height: Math.max(0, rows.after - GAP_Y) }} />
       </div>
       {/* Saltar a letra: solo con la lista por nombre (con otro orden las letras van salteadas) */}
-      {byName && <LetterBar games={sorted} nameOf={letterText} containerRef={scrollRef} />}
+      {byName && (
+        <LetterBar
+          games={sorted}
+          nameOf={letterText}
+          visibleFrom={rows.visibleFirst * columns}
+          visibleTo={rows.visibleLast * columns}
+          onJump={(path) => {
+            const index = sorted.findIndex((g) => g.path === path);
+            if (index >= 0) rows.scrollToRow(Math.floor(index / columns), "start");
+          }}
+        />
+      )}
     </div>
   );
 }

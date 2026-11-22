@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { useAppStore } from "../../store/useAppStore";
-import { useTranslation, useI18nStore, type Locale } from "../../i18n";
+import { useTranslation, useI18nStore, isLocale, LOCALES, LOCALE_NAMES } from "../../i18n";
 import { CloseIcon, DownloadIcon, CopyIcon } from "../common/Icons";
 import {
   DEFAULT_MEDIA_PATHS,
@@ -148,7 +148,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
       try {
         const imported = await importSettings(file as string);
         setForm(imported);
-        if (imported.language === "es" || imported.language === "en") {
+        if (isLocale(imported.language)) {
           setLocale(imported.language);
         }
         await showMessage(t("settings.importSuccess"));
@@ -223,8 +223,8 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 <h3 className="text-sm font-medium text-zinc-300 mb-3">
                   {t("settings.language")}
                 </h3>
-                <div className="flex gap-2">
-                  {(["en", "es"] as Locale[]).map((lang) => (
+                <div className="flex flex-wrap gap-2">
+                  {LOCALES.map((lang) => (
                     <button
                       key={lang}
                       onClick={() => {
@@ -237,7 +237,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                           : "bg-zinc-800 text-zinc-400 border border-zinc-600 hover:bg-zinc-700"
                       }`}
                     >
-                      {lang === "en" ? "English" : "Español"}
+                      {LOCALE_NAMES[lang]}
                     </button>
                   ))}
                 </div>
@@ -433,6 +433,23 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                   <span>
                     <span className="block text-sm text-zinc-300">{t("settings.boxVideo")}</span>
                     <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.boxVideoHelp")}</span>
+                  </span>
+                </label>
+              </section>
+
+              {/* Vigilar las carpetas de ROMs: marcas de ROMs nuevas/desaparecidas (activado si no está) */}
+              <section>
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    data-setting="watch-roms"
+                    checked={form.watch_roms !== false}
+                    onChange={(e) => setForm({ ...form, watch_roms: e.target.checked ? undefined : false })}
+                    className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                  />
+                  <span>
+                    <span className="block text-sm text-zinc-300">{t("settings.watchRoms")}</span>
+                    <span className="block text-xs text-zinc-500 mt-0.5">{t("settings.watchRomsHelp")}</span>
                   </span>
                 </label>
               </section>

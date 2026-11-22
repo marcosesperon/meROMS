@@ -41,6 +41,7 @@ pub mod systems;
 pub mod transfer_profile;
 pub mod translate;
 pub mod undo;
+pub mod watch;
 
 use crate::layout::{Layout, SystemRef};
 

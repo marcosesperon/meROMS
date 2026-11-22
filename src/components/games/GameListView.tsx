@@ -11,6 +11,7 @@ import { GameGrid } from "./GameGrid";
 import { GameCarousel } from "./GameCarousel";
 import { EmptyState } from "../common/EmptyState";
 import { WelcomeScreen } from "../common/WelcomeScreen";
+import { BackgroundActivity } from "../common/BackgroundActivity";
 import { Header } from "../layout/Header";
 import { FolderIcon } from "../common/Icons";
 import { showMessage } from "../../utils/dialogs";
@@ -93,7 +94,9 @@ export function GameListView() {
           description={t("gameList.noGamesDesc")}
         />
       ) : (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          {/* Aviso de lo que se sigue analizando del sistema (no bloquea la lista) */}
+          <BackgroundActivity />
           {/* Folder section */}
           {folders.length > 0 && (
             <div className="border-b border-zinc-700">

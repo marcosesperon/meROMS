@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type RefObject } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "../../i18n";
 import type { Game } from "../../types";
 import { LETTERS, letterOf } from "../../utils/letters";
@@ -8,8 +8,11 @@ interface LetterBarProps {
   games: Game[];
   /** El texto por el que va ordenada la lista (de él sale la letra de cada juego) */
   nameOf: (game: Game) => string;
-  /** El contenedor que se desplaza (cada juego lleva data-game-path) */
-  containerRef: RefObject<HTMLDivElement | null>;
+  /** Juegos a la vista ahora mismo: de `visibleFrom` a `visibleTo` (sin incluir) de `games` */
+  visibleFrom: number;
+  visibleTo: number;
+  /** Llevar la lista hasta un juego (la lista solo pinta lo que se ve: lo sabe ella) */
+  onJump: (path: string) => void;
   /** Lista de la Z a la A: las letras van al revés */
   descending?: boolean;
 }
@@ -18,7 +21,7 @@ interface LetterBarProps {
  * Barra «saltar a letra» a la derecha del listado (idea de RomM): las letras sin juegos salen
  * apagadas, un clic lleva al primer juego de esa letra y se resaltan las de los juegos a la vista.
  */
-export function LetterBar({ games, nameOf, containerRef, descending = false }: LetterBarProps) {
+export function LetterBar({ games, nameOf, visibleFrom, visibleTo, onJump, descending = false }: LetterBarProps) {
   const { t } = useTranslation();
   const letters = descending ? [...LETTERS].reverse() : LETTERS;
 
@@ -34,43 +37,19 @@ export function LetterBar({ games, nameOf, containerRef, descending = false }: L
     return { letterByPath, firstByLetter };
   }, [games, nameOf]);
 
-  // Juegos a la vista ahora mismo: se apuntan y se borran según entran y salen del contenedor
-  const [visiblePaths, setVisiblePaths] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    const seen = new Set<string>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const path = (entry.target as HTMLElement).dataset.gamePath;
-          if (!path) continue;
-          if (entry.isIntersecting) seen.add(path);
-          else seen.delete(path);
-        }
-        setVisiblePaths(new Set(seen));
-      },
-      { root: container }
-    );
-    container.querySelectorAll<HTMLElement>("[data-game-path]").forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [containerRef, games]);
-
+  // Letras de los juegos a la vista
   const visibleLetters = useMemo(() => {
     const set = new Set<string>();
-    visiblePaths.forEach((path) => {
-      const letter = letterByPath.get(path);
+    for (const game of games.slice(visibleFrom, visibleTo)) {
+      const letter = letterByPath.get(game.path);
       if (letter) set.add(letter);
-    });
+    }
     return set;
-  }, [visiblePaths, letterByPath]);
+  }, [games, visibleFrom, visibleTo, letterByPath]);
 
   function jump(letter: string) {
     const path = firstByLetter.get(letter);
-    if (!path) return;
-    containerRef.current
-      ?.querySelector<HTMLElement>(`[data-game-path="${CSS.escape(path)}"]`)
-      ?.scrollIntoView({ block: "start" });
+    if (path) onJump(path);
   }
 
   return (

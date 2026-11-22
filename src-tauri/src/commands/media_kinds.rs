@@ -6,9 +6,13 @@
 //! - `detect_swapped_media` → mira la forma de carátulas y capturas y propone las que parecen
 //!   estar al revés (carátula apaisada / captura vertical).
 
+use std::collections::HashMap;
+use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MediaIndex, MediaKind};
@@ -39,7 +43,7 @@ pub struct MediaFileInfo {
 }
 
 /// Tamaño habitual de un tipo de imagen en el sistema (el grupo más grande de su carpeta)
-#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct MediaProfile {
     pub width: u32,
     pub height: u32,
@@ -290,12 +294,90 @@ pub(super) fn usual_sizes(layout: &Layout, system: &SystemRef, games: &[Game]) -
 /// La forma que más se repite en un medio (campo de la gamelist: `image`, `thumbnail`…) del
 /// sistema, para dar esa forma a las tarjetas de la cuadrícula. `None` si no hay bastantes
 /// imágenes de ese tipo (o es un vídeo/PDF): entonces la cuadrícula usa su tabla fija.
+///
+/// Medirla lee la cabecera de cada imagen, y con miles de juegos en un disco externo o en red
+/// eso tarda. Por eso se guarda en `media_shape.json` (carpeta de datos de la app) con la
+/// «firma» de la carpeta de ese medio: mientras la firma no cambie, se devuelve lo guardado sin
+/// abrir ninguna imagen. `force` la vuelve a medir (tras scrapear o cambiar medios: un fichero
+/// sobrescrito con el mismo nombre no cambia la firma).
 #[tauri::command(async)]
-pub fn usual_media_shape(app: tauri::AppHandle, system_path: String, field: String) -> Result<Option<MediaProfile>, String> {
+pub fn usual_media_shape(app: tauri::AppHandle, system_path: String, field: String, force: Option<bool>) -> Result<Option<MediaProfile>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let Some(kind) = media::kind_for_field(&field) else { return Ok(None) };
-    let games = super::gamelist::read_gamelist(&layout, &system)?.games;
-    Ok(usual_shape(&layout, &system, &games, kind))
+    let cache = app.path().app_data_dir().ok().map(|d| d.join("media_shape.json"));
+    cached_shape(cache.as_deref(), &layout, &system, kind, force.unwrap_or(false), || {
+        let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+        Ok(usual_shape(&layout, &system, &games, kind))
+    })
+}
+
+/// Formas guardadas, por carpeta del medio (ruta absoluta: vale para cualquier perfil)
+type ShapeCache = HashMap<String, CachedShape>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct CachedShape {
+    signature: FolderSignature,
+    shape: Option<MediaProfile>,
+}
+
+/// Lo que cambia cuando se añaden, quitan o renombran medios: cuántas entradas tiene la carpeta y
+/// su fecha. En clásica cuenta también la fecha del gamelist (los medios salen de sus rutas).
+/// Mirarla es una sola lectura de carpeta, no una por imagen.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct FolderSignature {
+    entries: usize,
+    modified: u64,
+    gamelist: Option<u64>,
+}
+
+/// Que dos medidas a la vez no se pisen el fichero
+static SHAPE_LOCK: Mutex<()> = Mutex::new(());
+
+fn modified_secs(path: &Path) -> Option<u64> {
+    let time = fs::metadata(path).ok()?.modified().ok()?;
+    time.duration_since(std::time::UNIX_EPOCH).ok().map(|d| d.as_secs())
+}
+
+fn signature(layout: &Layout, system: &SystemRef, dir: &Path) -> FolderSignature {
+    FolderSignature {
+        entries: fs::read_dir(dir).map(|it| it.count()).unwrap_or(0),
+        modified: modified_secs(dir).unwrap_or(0),
+        gamelist: if layout.writes_media_tags() { modified_secs(&layout.gamelist_path(system)) } else { None },
+    }
+}
+
+/// Lo guardado si la firma de la carpeta no ha cambiado; si no (o con `force`), mide y lo guarda.
+/// Sin fichero de caché (tests sin carpeta de datos), siempre mide.
+fn cached_shape(
+    cache_file: Option<&Path>,
+    layout: &Layout,
+    system: &SystemRef,
+    kind: &MediaKind,
+    force: bool,
+    measure: impl FnOnce() -> Result<Option<MediaProfile>, String>,
+) -> Result<Option<MediaProfile>, String> {
+    let Some(cache_file) = cache_file else { return measure() };
+    let dir = layout.media_type_dir(system, kind.folder);
+    let key = dir.to_string_lossy().to_string();
+    let sig = signature(layout, system, &dir);
+    let read = || -> ShapeCache { fs::read_to_string(cache_file).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default() };
+    if !force {
+        if let Some(saved) = read().get(&key).filter(|c| c.signature == sig) {
+            return Ok(saved.shape);
+        }
+    }
+    let shape = measure()?;
+    let _guard = SHAPE_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+    let mut all = read();
+    all.insert(key, CachedShape { signature: sig, shape });
+    // Si no se puede guardar, no pasa nada: la próxima vez se vuelve a medir
+    if let Some(parent) = cache_file.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    if let Ok(text) = serde_json::to_string(&all) {
+        let _ = fs::write(cache_file, text);
+    }
+    Ok(shape)
 }
 
 fn usual_shape(layout: &Layout, system: &SystemRef, games: &[Game], kind: &MediaKind) -> Option<MediaProfile> {
@@ -419,6 +501,36 @@ mod tests {
         assert!(shape.width > shape.height, "apaisada: {:?}", (shape.width, shape.height));
         // Sin capturas no hay forma: la cuadrícula usa la tabla
         assert!(usual_shape(&layout, &system, &games, shot).is_none());
+    }
+
+    #[test]
+    fn la_forma_guardada_se_usa_mientras_la_carpeta_no_cambia() {
+        let tmp = tempfile::tempdir().unwrap();
+        let layout = esde(tmp.path());
+        let system = SystemRef::from_rom_dir(tmp.path().join("roms/n64"));
+        let covers = tmp.path().join("ES-DE/downloaded_media/n64/covers");
+        let cache = tmp.path().join("data/media_shape.json");
+        let (cover, _) = kinds();
+        png(&covers.join("A.png"), 300, 420);
+        let measures = std::cell::Cell::new(0);
+        let shape = |force: bool| {
+            cached_shape(Some(&cache), &layout, &system, cover, force, || {
+                measures.set(measures.get() + 1);
+                Ok(Some(MediaProfile { width: 300, height: 420 }))
+            })
+            .unwrap()
+        };
+        // La primera vez mide; la segunda sale de lo guardado
+        assert_eq!(shape(false), Some(MediaProfile { width: 300, height: 420 }));
+        assert_eq!(shape(false), Some(MediaProfile { width: 300, height: 420 }));
+        assert_eq!(measures.get(), 1);
+        // Con «force», mide aunque la carpeta sea la misma
+        shape(true);
+        assert_eq!(measures.get(), 2);
+        // Un fichero más en la carpeta cambia la firma: vuelve a medir
+        png(&covers.join("B.png"), 300, 420);
+        shape(false);
+        assert_eq!(measures.get(), 3);
     }
 
     #[test]
