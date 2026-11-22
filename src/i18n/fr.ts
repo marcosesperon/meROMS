@@ -809,6 +809,7 @@ const fr: Record<TranslationKeys, string> = {
   "duplicates.scanning": "Recherche des doublons...",
   "duplicates.noDuplicates": "Aucun doublon trouvé",
   "duplicates.removeSelected": "Retirer la sélection ({count})",
+  "duplicates.preparing": "Préparation…",
   "duplicates.summary": "{groups} groupes - {games} jeux",
   "duplicates.reason_screenscraper_id": "Même ID ScreenScraper : {id}",
   "duplicates.reason_hash": "Même fichier (hash)",

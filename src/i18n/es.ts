@@ -809,6 +809,7 @@ const es: Record<TranslationKeys, string> = {
   "duplicates.scanning": "Buscando duplicados...",
   "duplicates.noDuplicates": "No se encontraron duplicados",
   "duplicates.removeSelected": "Eliminar Seleccionados ({count})",
+  "duplicates.preparing": "Preparando…",
   "duplicates.summary": "{groups} grupos · {games} juegos",
   "duplicates.reason_screenscraper_id": "Mismo ID de ScreenScraper: {id}",
   "duplicates.reason_hash": "Mismo fichero (hash)",

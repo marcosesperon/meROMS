@@ -807,6 +807,7 @@ const en = {
   "duplicates.scanning": "Scanning for duplicates...",
   "duplicates.noDuplicates": "No duplicates found",
   "duplicates.removeSelected": "Remove Selected ({count})",
+  "duplicates.preparing": "Preparing...",
   "duplicates.summary": "{groups} groups - {games} games",
   "duplicates.reason_screenscraper_id": "Same ScreenScraper ID: {id}",
   "duplicates.reason_hash": "Same file (hash)",

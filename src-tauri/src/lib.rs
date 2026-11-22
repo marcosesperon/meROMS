@@ -10,8 +10,24 @@ mod rom_hash;
 
 use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, rules, scrape_resume, scraper, scraper_launchbox, settings, systems, transfer_profile, translate, undo};
 
+/// Workers of the async runtime that runs the commands (idle ones cost almost nothing)
+const RUNTIME_WORKERS: usize = 64;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Our disk commands are plain functions marked `#[tauri::command(async)]`: Tauri runs each one
+    // on a worker of its async runtime, which only has one worker per CPU core. A few long ones
+    // (lookups, hashes, scans) could take them all, and then every other call — even a native
+    // dialog — waited minutes for its turn. With many workers a long command never blocks the rest.
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(RUNTIME_WORKERS)
+        .enable_all()
+        .build()
+        .expect("error while starting the async runtime");
+    tauri::async_runtime::set(runtime.handle().clone());
+    // Kept alive for the whole app
+    let _runtime = runtime;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

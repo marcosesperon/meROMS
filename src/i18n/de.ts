@@ -809,6 +809,7 @@ const de: Record<TranslationKeys, string> = {
   "duplicates.scanning": "Suche Duplikate…",
   "duplicates.noDuplicates": "Keine Duplikate gefunden",
   "duplicates.removeSelected": "Auswahl entfernen ({count})",
+  "duplicates.preparing": "Wird vorbereitet…",
   "duplicates.summary": "{groups} Gruppen · {games} Spiele",
   "duplicates.reason_screenscraper_id": "Gleiche ScreenScraper-ID: {id}",
   "duplicates.reason_hash": "Gleiche Datei (Hash)",

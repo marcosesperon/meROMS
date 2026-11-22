@@ -30,6 +30,8 @@ export function DuplicatesModal({
   // Mandar a la papelera: con progreso y Cancelar (se para entre tandas y guarda lo hecho)
   const removeTask = useTask();
   const removing = removeTask.running;
+  // De pulsar «Eliminar» a contestar la confirmación: el botón lo dice y no deja pulsar otra vez
+  const [preparing, setPreparing] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -89,12 +91,18 @@ export function DuplicatesModal({
   }
 
   async function handleRemove() {
-    if (selected.size === 0) return;
+    if (selected.size === 0 || preparing) return;
     try {
       const paths = [...selected];
       // First the list of files, to say what will go to the trash
-      const plan = await removeGamesWithFiles(systemPath, paths, true);
-      const ok = await askConfirm(t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length }));
+      setPreparing(true);
+      let plan, ok;
+      try {
+        plan = await removeGamesWithFiles(systemPath, paths, true);
+        ok = await askConfirm(t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length }));
+      } finally {
+        setPreparing(false);
+      }
       if (!ok) return;
       const removal = await removeTask.run((task) => removeGamesWithFiles(systemPath, paths, false, task));
       if (!removal) return;
@@ -218,7 +226,7 @@ export function DuplicatesModal({
             <div className="flex gap-2">
               <button
                 onClick={autoMark}
-                disabled={removing || scanning}
+                disabled={removing || scanning || preparing}
                 title={t("duplicates.autoMarkHint")}
                 className="px-4 py-2 text-sm bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -226,12 +234,14 @@ export function DuplicatesModal({
               </button>
               <button
                 onClick={handleRemove}
-                disabled={selected.size === 0 || removing}
+                disabled={selected.size === 0 || removing || preparing}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {removing
                   ? "..."
-                  : t("duplicates.removeSelected", { count: selected.size })}
+                  : preparing
+                    ? t("duplicates.preparing")
+                    : t("duplicates.removeSelected", { count: selected.size })}
               </button>
             </div>
           )}
