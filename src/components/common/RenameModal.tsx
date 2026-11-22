@@ -75,6 +75,9 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
       setEditedNames(names);
     } catch (e) {
       console.error("Scan failed:", e);
+      // La lista que hubiera era de la fuente anterior: fuera, para no confundir
+      setEntries([]);
+      setSelected(new Set());
       // Con ScreenScraper puede fallar la consulta (sin conexión, cupo agotado…): se avisa
       await showMessage(t("rename.failed", { error: String(e) }), "error");
     }

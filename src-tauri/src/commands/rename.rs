@@ -44,7 +44,9 @@ pub enum RenameSource {
     Rules,
     /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
     Dat,
-    /// File name ScreenScraper has for the ROM, recognised by content (asked now, cached)
+    /// File name ScreenScraper has for the ROM, recognised by content (asked now, cached).
+    /// "screenscraper" on the wire, like the UI (snake_case would make it "screen_scraper")
+    #[serde(rename = "screenscraper")]
     ScreenScraper,
 }
 
@@ -655,6 +657,13 @@ mod tests {
     fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
         propose(&game, source, &CompiledRules::new(&default_rules()), None)
+    }
+
+    #[test]
+    fn sources_are_read_with_the_names_the_ui_sends() {
+        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("screenscraper", RenameSource::ScreenScraper)] {
+            assert_eq!(serde_json::from_str::<RenameSource>(&format!("\"{}\"", text)).unwrap(), source);
+        }
     }
 
     #[test]
