@@ -31,7 +31,7 @@ pub struct VersionTags {
 }
 
 /// Región de No-Intro → códigos de Ajustes (el primero, el propio; luego la zona)
-fn region_codes(name: &str) -> &'static [&'static str] {
+pub(crate) fn region_codes(name: &str) -> &'static [&'static str] {
     match name.trim().to_lowercase().as_str() {
         "world" => &["wor"],
         "usa" | "us" => &["us"],
@@ -56,7 +56,7 @@ fn region_codes(name: &str) -> &'static [&'static str] {
     }
 }
 
-const UNWANTED: &[&str] = &["beta", "proto", "prototype", "demo", "sample", "pirate", "hack", "unl", "kiosk", "debug"];
+pub(crate) const UNWANTED: &[&str] = &["beta", "proto", "prototype", "demo", "sample", "pirate", "hack", "unl", "kiosk", "debug"];
 
 /// Lee las etiquetas del nombre del fichero: «Juego (USA, Europe) (En,Fr) (Rev 1) [!]»
 pub fn parse_tags(file_stem: &str) -> VersionTags {
@@ -125,7 +125,7 @@ fn read_tag(inner: &str, square: bool, tags: &mut VersionTags) {
 }
 
 /// «En», «Fr», «En-US»: mayúscula + minúscula, opcionalmente «-» y dos mayúsculas
-fn is_language(p: &str) -> bool {
+pub(crate) fn is_language(p: &str) -> bool {
     let c: Vec<char> = p.chars().collect();
     let two = c.len() >= 2 && c[0].is_ascii_uppercase() && c[1].is_ascii_lowercase();
     two && (c.len() == 2 || (c.len() == 5 && c[2] == '-' && c[3].is_ascii_uppercase() && c[4].is_ascii_uppercase()))

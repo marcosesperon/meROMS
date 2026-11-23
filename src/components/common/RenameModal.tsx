@@ -1,106 +1,143 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
-import { listRenameCandidates, renameRoms } from "../../commands";
-import type { NameScraper, RenameEntry, RenameSource } from "../../types";
-import { renameSourceText, usableNameScrapers, usableRenameSources } from "../../utils/renameSources";
-import { NameScraperPicker } from "./NameScraperPicker";
+import { renamePreview, renameRoms } from "../../commands";
+import type { RenameEntry, RenameOptions, RenameRequest } from "../../types";
+import { activeSources, nameSourceText, proposedTitle, renameOptionsFrom } from "../../utils/renameSources";
+import { RenameOptionsPanel } from "./RenameOptionsPanel";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
 import { useTask } from "../../hooks/useTask";
+import { useDebounce } from "../../hooks/useDebounce";
 import { TaskProgress } from "./TaskProgress";
 
 interface RenameModalProps {
   open: boolean;
   systemPath: string;
+  /** Solo estos juegos (uno desde el editor, los marcados en la selección múltiple); sin nada, todos */
+  gamePaths?: string[];
   onClose: () => void;
+  /** Tras aplicar: ruta antigua → nueva de los juegos cuyo fichero cambió */
+  onDone?: (moved: Record<string, string>) => void;
 }
 
-export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
+/** Caracteres que no valen en un nombre de fichero (los mismos que mira el backend) */
+const FORBIDDEN = /[/\\:*?"<>|]/;
+
+/** "./sub/Juego (USA).sfc" + "Juego" → "./sub/Juego.sfc" (solo cambia el nombre, no la carpeta) */
+function pathWithName(entry: RenameEntry, newName: string): string {
+  const slash = entry.current_path.lastIndexOf("/");
+  const fileName = entry.current_path.slice(slash + 1);
+  const ext = fileName.slice(entry.current_name.length);
+  return entry.current_path.slice(0, slash + 1) + newName + ext;
+}
+
+/** Una carpeta como ROM no tiene extensión: su nombre no se toca (el título sí) */
+const hasExtension = (e: RenameEntry) => e.current_path.slice(e.current_path.lastIndexOf("/") + 1) !== e.current_name;
+
+/**
+ * Renombrar: una sola ventana para el nombre de fichero y el título de la gamelist. A la
+ * izquierda las opciones (fuentes en cadena, reglas, etiquetas, artículo); a la derecha lo que
+ * cambia en cada juego, editable a mano. Sirve para todo el sistema, los marcados o un juego.
+ */
+export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: RenameModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
   const scraperStatus = useAppStore((s) => s.scraperStatus);
-  // Fuente «Scraper»: cuál se usa y si ya se pulsó «Buscar» (antes no se pregunta nada)
-  const [scraper, setScraper] = useState<NameScraper | null>(null);
-  const [searched, setSearched] = useState(false);
+  const savedOptions = useAppStore((s) => s.settings.rename_options);
+  const patchSettings = useAppStore((s) => s.patchSettings);
+  const [options, setOptionsState] = useState<RenameOptions>(() => renameOptionsFrom(savedOptions));
   const [entries, setEntries] = useState<RenameEntry[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [editedNames, setEditedNames] = useState<Record<string, string>>({});
-  // Buscar qué se puede renombrar: con progreso y Cancelar
-  const scanTask = useTask();
-  const scanning = scanTask.running;
-  // Cancelar con el botón cierra la ventana; cambiar el origen del nombre también para la búsqueda
-  // anterior, pero entonces sigue la nueva. Con «Scraper» Cancelar solo para las consultas: la
-  // ventana sigue abierta con lo encontrado hasta ahí
-  const userCancelled = useRef(false);
-  const cancelScan = () => {
-    if (source !== "scraper") userCancelled.current = true;
-    scanTask.cancel();
-  };
-  // Renombrar: con progreso y Cancelar (se para entre juegos; lo renombrado se guarda)
+  // Lo escrito a mano (por ruta): se pierde al cambiar las opciones, que rehacen la propuesta
+  const [files, setFiles] = useState<Record<string, string>>({});
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  const previewTask = useTask();
   const renameTask = useTask();
-  const renaming = renameTask.running;
-  const [source, setSource] = useState<RenameSource>("title");
+  const busy = previewTask.running || renameTask.running;
+  // Cada cambio de opciones rehace la vista previa (sin preguntar al scraper: eso es «Buscar»)
+  const debouncedOptions = useDebounce(options, 250);
+  // Cada vista previa lleva un número: si llega una vieja después de otra más nueva, no cuenta
+  const lastAsk = useRef(0);
+  const single = gamePaths?.length === 1;
 
-  useEffect(() => {
-    if (!open) {
-      setEntries([]);
-      setSelected(new Set());
-      setEditedNames({});
-      return;
-    }
-    // «Scraper» gasta cupo: se espera a «Buscar»; mientras, ni lista ni consultas
-    if (source === "scraper") {
-      setScraper((current) => current ?? usableNameScrapers(scraperStatus)[0]?.id ?? null);
-      setSearched(false);
-      setEntries([]);
-      setSelected(new Set());
-      return;
-    }
-    scan();
-    // Al cerrar la ventana (o cambiar el origen del nombre) a medias, la búsqueda se para
-    return () => scanTask.cancel();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, systemPath, source]);
-
-  // A conflicting proposal can't be applied unless the user types another name
-  function isBlocked(entry: RenameEntry, names: Record<string, string> = editedNames): boolean {
-    return !!entry.conflict && (names[entry.current_path] ?? entry.proposed_name) === entry.proposed_name;
+  function setOptions(next: RenameOptions) {
+    setOptionsState(next);
+    patchSettings({ rename_options: next });
   }
 
-  async function scan() {
-    userCancelled.current = false;
-    try {
-      const result = await scanTask.run((task) =>
-        listRenameCandidates(systemPath, source, undefined, task, source === "scraper" ? scraper ?? undefined : undefined)
-      );
-      // Cancelado: no hay nada que enseñar (con «Scraper», parado antes de preguntar nada:
-      // se vuelve a esperar a «Buscar»)
-      if (!result) {
-        if (source === "scraper") setSearched(false);
-        else if (userCancelled.current) onClose();
-        return;
-      }
-      setEntries(result);
-      // Select those that can be renamed by default (conflicts are left out)
-      setSelected(new Set(result.filter((e) => e.can_rename && !e.conflict).map((e) => e.current_path)));
-      // Pre-fill edited names with proposed names
-      const names: Record<string, string> = {};
-      for (const e of result) {
-        names[e.current_path] = e.proposed_name;
-      }
-      setEditedNames(names);
-    } catch (e) {
-      console.error("Scan failed:", e);
-      // La lista que hubiera era de la fuente anterior: fuera, para no confundir
+  // Al abrir: las opciones guardadas
+  useEffect(() => {
+    if (open) setOptionsState(renameOptionsFrom(useAppStore.getState().settings.rename_options));
+    else {
       setEntries([]);
       setSelected(new Set());
-      // Con ScreenScraper puede fallar la consulta (sin conexión, cupo agotado…): se avisa
+    }
+  }, [open]);
+
+  // Solo lo que cambia el nombre propuesto rehace la vista previa (no los interruptores ni el artículo)
+  const request = useMemo(
+    () => ({ sources: activeSources(debouncedOptions, scraperStatus), scraper: debouncedOptions.scraper, rules: debouncedOptions.rules, keep: debouncedOptions.keep }),
+    [debouncedOptions, scraperStatus]
+  );
+  const requestKey = JSON.stringify(request);
+
+  useEffect(() => {
+    if (!open) return;
+    preview(false);
+    // Al cerrar o cambiar de opciones a medias, la vista previa anterior se para
+    return () => previewTask.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, systemPath, gamePaths?.join("\n"), requestKey]);
+
+  async function preview(askScraper: boolean) {
+    const ask = ++lastAsk.current;
+    try {
+      const result = await previewTask.run((task) => renamePreview(systemPath, request, gamePaths, askScraper, task));
+      // Cancelado (o ya hay otra más nueva): se queda lo que había
+      if (!result || ask !== lastAsk.current) return;
+      setEntries(result);
+      setFiles({});
+      setTitles({});
+    } catch (e) {
+      console.error("Rename preview failed:", e);
       await showMessage(t("rename.failed", { error: String(e) }), "error");
     }
   }
 
-  function toggleEntry(path: string) {
+  // Lo que se haría con cada juego, según las opciones, los interruptores y lo escrito a mano
+  const rows = useMemo(
+    () =>
+      entries.map((entry) => {
+        const file = files[entry.current_path] ?? entry.proposed_name;
+        const invalid = !file.trim() || file.trim() !== file || FORBIDDEN.test(file);
+        // Un conflicto se salva escribiendo otro nombre
+        const blocked = invalid || (!!entry.conflict && file === entry.proposed_name);
+        const fileChanges = options.renameFiles && hasExtension(entry) && file !== entry.current_name;
+        const title = titles[entry.current_path] ?? proposedTitle(file, entry.game_title, options.article, entry.source !== "current", entry.current_name);
+        const titleChanges = options.changeTitles && !!title.trim() && title !== (entry.game_title ?? "");
+        return { entry, file, title, invalid, blocked, fileChanges, titleChanges, changes: (fileChanges && !blocked) || titleChanges };
+      }),
+    [entries, files, titles, options.renameFiles, options.changeTitles, options.article]
+  );
+  // Se enseñan los que cambian en algo (aunque sea con un conflicto); con un solo juego, siempre
+  const shown = rows.filter((r) => single || r.fileChanges || r.titleChanges);
+
+  // Al llegar una lista nueva se marcan todos los que cambian
+  useEffect(() => {
+    setSelected(new Set(rows.filter((r) => r.changes).map((r) => r.entry.current_path)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, options.renameFiles, options.changeTitles, options.article]);
+
+  const applicable = rows.filter((r) => r.changes && selected.has(r.entry.current_path));
+  const fileCount = applicable.filter((r) => r.fileChanges && !r.blocked).length;
+  const titleCount = applicable.filter((r) => r.titleChanges).length;
+  const conflictCount = rows.filter((r) => r.fileChanges && r.blocked).length;
+  const scraperOn = activeSources(options, scraperStatus).includes("scraper");
+  const scraperPending = scraperOn ? entries.filter((e) => e.pending || e.unanswered).length : 0;
+  const unanswered = scraperOn ? entries.filter((e) => e.unanswered).length : 0;
+
+  function toggle(path: string) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(path)) next.delete(path);
@@ -110,34 +147,29 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
   }
 
   function toggleAll() {
-    const renameable = entries.filter((e) => e.can_rename && !isBlocked(e));
-    if (selected.size === renameable.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(renameable.map((e) => e.current_path)));
-    }
+    const all = shown.filter((r) => r.changes).map((r) => r.entry.current_path);
+    setSelected(all.every((p) => selected.has(p)) ? new Set() : new Set(all));
   }
 
-  function updateName(path: string, name: string) {
-    setEditedNames((prev) => ({ ...prev, [path]: name }));
-  }
-
-  async function handleRename() {
-    if (selected.size === 0) return;
+  async function apply() {
+    const renames: RenameRequest[] = applicable.map((r) => ({
+      current_path: r.entry.current_path,
+      new_name: r.fileChanges && !r.blocked ? r.file : r.entry.current_name,
+      new_title: r.titleChanges ? r.title.trim() : undefined,
+    }));
+    if (renames.length === 0) return;
     try {
-      const blocked = new Set(entries.filter((e) => isBlocked(e)).map((e) => e.current_path));
-      const renames = Array.from(selected)
-        .filter((path) => !blocked.has(path))
-        .map((path) => ({
-          current_path: path,
-          new_name: editedNames[path] || "",
-        }))
-        .filter((r) => r.new_name.length > 0);
-
       const result = await renameTask.run((task) => renameRoms(systemPath, renames, task));
       if (!result) return;
-      loadGames(systemPath);
-      let message = t("rename.done", { count: result.renamed });
+      await loadGames(systemPath);
+      const moved: Record<string, string> = {};
+      for (const r of applicable) {
+        if (r.fileChanges && !r.blocked && !result.skipped.some((s) => r.entry.current_path.endsWith(s))) {
+          moved[r.entry.current_path] = pathWithName(r.entry, r.file);
+        }
+      }
+      onDone?.(moved);
+      let message = [t("rename.done", { count: result.renamed }), t("rename.doneTitles", { count: result.titled })].join("\n");
       if (renameTask.wasCancelled()) message = t("task.stopped", { done: result.renamed, total: renames.length }) + "\n\n" + message;
       if (result.skipped.length > 0) {
         message += "\n\n" + t("rename.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
@@ -151,201 +183,178 @@ export function RenameModal({ open, systemPath, onClose }: RenameModalProps) {
 
   if (!open) return null;
 
-  const renameableCount = entries.filter((e) => e.can_rename).length;
-  const selectableCount = entries.filter((e) => e.can_rename && !isBlocked(e)).length;
-  const conflictCount = entries.filter((e) => e.can_rename && e.conflict).length;
-  // «Scraper» parado a medias: ROMs por las que no se llegó a preguntar
-  const pendingCount = entries.filter((e) => e.pending).length;
-  // ROMs por las que el scraper no contestó (tiempo de espera…): «Buscar» las reintenta
-  const unansweredCount = entries.filter((e) => e.unanswered).length;
-
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[740px] max-h-[80vh] flex flex-col mx-4">
-        {/* Header */}
-        <div className="px-5 py-4 border-b border-zinc-700">
-          <h3 className="text-base font-semibold text-zinc-100">
-            {t("rename.title")}
-          </h3>
-          {/* Where the new name comes from */}
-          <div className="flex gap-2 mt-3">
-            {usableRenameSources(scraperStatus).map(({ id: s, label }) => (
-              <button
-                key={s}
-                onClick={() => setSource(s)}
-                disabled={scanning || renaming}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
-                  source === s
-                    ? "bg-indigo-600 text-white"
-                    : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
-                }`}
-              >
-                {t(label)}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-zinc-500 mt-2">
-            {t(renameSourceText(source).help)}
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" data-editor-layer>
+      <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[1100px] max-w-[96vw] h-[86vh] flex flex-col mx-4">
+        {/* Cabecera */}
+        <div className="px-5 py-3 border-b border-zinc-700">
+          <h3 className="text-base font-semibold text-zinc-100">{t("rename.title")}</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            {gamePaths ? t("rename.scopeGames", { count: gamePaths.length }) : t("rename.scopeSystem")}
           </p>
-          {source === "scraper" && (
-            <NameScraperPicker
-              scraper={scraper}
-              onChange={setScraper}
-              onSearch={() => {
-                setSearched(true);
-                scan();
-              }}
-              disabled={scanning || renaming}
+        </div>
+
+        <div className="flex-1 flex min-h-0">
+          {/* Opciones */}
+          <aside className="w-80 shrink-0 border-r border-zinc-700 p-4 overflow-y-auto">
+            <RenameOptionsPanel
+              options={options}
+              onChange={setOptions}
+              scraperPending={scraperPending}
+              onSearch={() => preview(true)}
+              disabled={renameTask.running}
             />
-          )}
-          {!scanning && renameableCount > 0 && (
-            <p className="text-sm text-zinc-400 mt-1">
-              {t("rename.found", { count: renameableCount })}
-              {conflictCount > 0 && (
-                <span className="text-amber-400"> · {t("rename.conflicts", { count: conflictCount })}</span>
+          </aside>
+
+          {/* Propuestas */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="px-4 py-2 border-b border-zinc-700/60 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={options.renameFiles}
+                  disabled={busy}
+                  onChange={() => setOptions({ ...options, renameFiles: !options.renameFiles })}
+                  className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                />
+                {t("rename.renameFiles")}
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={options.changeTitles}
+                  disabled={busy}
+                  onChange={() => setOptions({ ...options, changeTitles: !options.changeTitles })}
+                  className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                />
+                {t("rename.changeTitles")}
+              </label>
+              <span className="flex-1" />
+              {!busy && (
+                <span className="text-xs text-zinc-400">
+                  {t("rename.summary", { files: fileCount, titles: titleCount })}
+                  {conflictCount > 0 && <span className="text-amber-400"> · {t("rename.conflicts", { count: conflictCount })}</span>}
+                </span>
               )}
-            </p>
-          )}
-          {!scanning && source === "scraper" && unansweredCount > 0 && (
-            <p className="text-sm text-amber-400 mt-1">{t("rename.scraperUnanswered", { count: unansweredCount })}</p>
-          )}
-          {!scanning && source === "scraper" && pendingCount > 0 && (
-            <p className="text-sm text-amber-400 mt-1">
-              {t("rename.scraperStopped", { done: entries.length - pendingCount, total: entries.length })}
-            </p>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {renaming ? (
-            <TaskProgress progress={renameTask.progress} onCancel={renameTask.cancel} cancelling={renameTask.cancelling} />
-          ) : scanning ? (
-            <TaskProgress progress={scanTask.progress} label={t("rename.scanning")} onCancel={cancelScan} cancelling={scanTask.cancelling} />
-          ) : source === "scraper" && !searched ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {t("rename.scraperHint")}
             </div>
-          ) : renameableCount === 0 ? (
-            <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
-              {/* Parado antes de encontrar nada: el aviso de arriba lo explica */}
-              {pendingCount + unansweredCount > 0 ? "" : t(renameSourceText(source).empty)}
-            </div>
-          ) : (
-            <>
-              {/* Select all */}
-              <div className="px-5 py-2 border-b border-zinc-700/50 flex items-center">
-                <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selected.size === selectableCount && selectableCount > 0
-                    }
-                    onChange={toggleAll}
-                    className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
-                  />
-                  {selected.size === selectableCount
-                    ? t("rename.deselectAll")
-                    : t("rename.selectAll")}
-                </label>
-              </div>
+            {/* Avisos del scraper: ROMs sin preguntar todavía o que no contestaron */}
+            {!busy && scraperPending > 0 && (
+              <p className="px-4 py-1.5 text-xs text-amber-400 border-b border-zinc-700/60">
+                {unanswered > 0 ? t("rename.scraperUnanswered", { count: unanswered }) + " " : ""}
+                {t("rename.scraperPending", { count: scraperPending })}
+              </p>
+            )}
 
-              {/* Table header */}
-              <div className="grid grid-cols-[auto_1fr_1fr] gap-3 px-5 py-2 text-xs text-zinc-500 font-medium border-b border-zinc-700/50">
-                <span className="w-5" />
-                <span>{t("rename.currentName")}</span>
-                <span>{t("rename.newName")}</span>
-              </div>
-
-              {/* Entries */}
-              <div className="divide-y divide-zinc-700/30">
-                {entries.map((entry) => {
-                  const isSelected = selected.has(entry.current_path);
-                  const hasChanged =
-                    (editedNames[entry.current_path] || entry.proposed_name) !==
-                    entry.current_name;
-
-                  return (
-                    <div
-                      key={entry.current_path}
-                      className={`grid grid-cols-[auto_1fr_1fr] gap-3 px-5 py-2 items-center ${
-                        !entry.can_rename ? "opacity-40" : ""
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected && !isBlocked(entry)}
-                        disabled={!entry.can_rename || isBlocked(entry)}
-                        onChange={() => toggleEntry(entry.current_path)}
-                        className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 disabled:opacity-30"
-                      />
-                      <span
-                        className="text-sm text-zinc-400 truncate"
-                        title={entry.current_name}
-                      >
-                        {entry.current_name}
-                      </span>
-                      {entry.can_rename ? (
-                        <div className="flex items-center gap-2 min-w-0">
-                        <input
-                          type="text"
-                          value={editedNames[entry.current_path] || ""}
-                          onChange={(e) =>
-                            updateName(entry.current_path, e.target.value)
-                          }
-                          className={`w-full bg-zinc-900 border rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500 ${
-                            hasChanged
-                              ? "border-indigo-500/50 text-indigo-300"
-                              : "border-zinc-600 text-zinc-300"
-                          }`}
-                        />
-                        {/* Las pistas de un .cue/.gdi con el nombre del juego van con él */}
-                        {!!entry.tracks && (
-                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300" title={t("rename.tracksHelp")}>
-                            {t("rename.tracks", { count: entry.tracks })}
-                          </span>
-                        )}
-                        {isBlocked(entry) && (
-                          <span
-                            className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-300"
-                            title={t(entry.conflict === "duplicate" ? "rename.conflictDuplicateHelp" : "rename.conflictExistsHelp")}
-                          >
-                            {t(entry.conflict === "duplicate" ? "rename.conflictDuplicate" : "rename.conflictExists")}
-                          </span>
-                        )}
+            <div className="flex-1 overflow-y-auto">
+              {renameTask.running ? (
+                <TaskProgress progress={renameTask.progress} onCancel={renameTask.cancel} cancelling={renameTask.cancelling} />
+              ) : previewTask.running ? (
+                <TaskProgress progress={previewTask.progress} label={t("rename.scanning")} onCancel={previewTask.cancel} cancelling={previewTask.cancelling} />
+              ) : shown.length === 0 ? (
+                <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">{t("rename.nothing")}</div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-3 px-4 py-2 text-xs text-zinc-500 font-medium border-b border-zinc-700/50 sticky top-0 bg-zinc-800 z-10">
+                    <input
+                      type="checkbox"
+                      checked={shown.some((r) => r.changes) && shown.filter((r) => r.changes).every((r) => selected.has(r.entry.current_path))}
+                      onChange={toggleAll}
+                      title={t("rename.selectAll")}
+                      className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                    />
+                    <span>{t("rename.currentName")}</span>
+                    <span>{t("rename.newName")}</span>
+                    <span>{t("rename.newTitle")}</span>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">
+                    {shown.map((r) => {
+                      const { entry } = r;
+                      const path = entry.current_path;
+                      return (
+                        <div key={path} className={`grid grid-cols-[auto_1fr_1fr_1fr] gap-3 px-4 py-2 items-start ${r.changes ? "" : "opacity-50"}`}>
+                          <input
+                            type="checkbox"
+                            checked={r.changes && selected.has(path)}
+                            disabled={!r.changes}
+                            onChange={() => toggle(path)}
+                            className="mt-1.5 rounded border-zinc-600 bg-zinc-700 text-indigo-600 disabled:opacity-30"
+                          />
+                          {/* Ahora: fichero y título */}
+                          <div className="min-w-0">
+                            <p className="text-sm text-zinc-300 truncate" title={entry.current_name}>{entry.current_name}</p>
+                            <p className="text-xs text-zinc-500 truncate" title={entry.game_title}>{entry.game_title || "—"}</p>
+                          </div>
+                          {/* Fichero nuevo, de qué fuente sale y si choca */}
+                          <div className="min-w-0">
+                            <input
+                              type="text"
+                              value={r.file}
+                              disabled={!options.renameFiles || !hasExtension(entry)}
+                              onChange={(e) => setFiles((prev) => ({ ...prev, [path]: e.target.value }))}
+                              className={`w-full bg-zinc-900 border rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-50 ${
+                                r.fileChanges && r.blocked
+                                  ? "border-amber-500/70 text-amber-200"
+                                  : r.fileChanges
+                                    ? "border-indigo-500/50 text-indigo-300"
+                                    : "border-zinc-600 text-zinc-400"
+                              }`}
+                            />
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300">
+                                {entry.source === "current" ? t("rename.sourceCurrent") : t(nameSourceText(entry.source).label)}
+                              </span>
+                              {!!entry.tracks && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300" title={t("rename.tracksHelp")}>
+                                  {t("rename.tracks", { count: entry.tracks })}
+                                </span>
+                              )}
+                              {r.fileChanges && r.invalid && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-300" title={t("rename.invalidHelp")}>
+                                  {t("rename.invalid")}
+                                </span>
+                              )}
+                              {r.fileChanges && !r.invalid && r.blocked && (
+                                <span
+                                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-600/20 text-amber-300"
+                                  title={t(entry.conflict === "duplicate" ? "rename.conflictDuplicateHelp" : "rename.conflictExistsHelp")}
+                                >
+                                  {t(entry.conflict === "duplicate" ? "rename.conflictDuplicate" : "rename.conflictExists")}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Título nuevo */}
+                          <input
+                            type="text"
+                            value={r.title}
+                            disabled={!options.changeTitles}
+                            onChange={(e) => setTitles((prev) => ({ ...prev, [path]: e.target.value }))}
+                            className={`w-full bg-zinc-900 border rounded px-2 py-1 text-sm focus:outline-none focus:border-indigo-500 disabled:opacity-50 ${
+                              r.titleChanges ? "border-indigo-500/50 text-indigo-300" : "border-zinc-600 text-zinc-400"
+                            }`}
+                          />
                         </div>
-                      ) : (
-                        <span className="text-sm text-zinc-500 italic">
-                          {entry.current_name}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Footer */}
+        {/* Pie */}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
+          <button onClick={onClose} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors">
             {t("rename.close")}
           </button>
-          {renameableCount > 0 && (
-            <button
-              onClick={handleRename}
-              disabled={selected.size === 0 || renaming}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {renaming
-                ? "..."
-                : t("rename.apply", { count: selected.size })}
-            </button>
-          )}
+          <button
+            onClick={apply}
+            disabled={busy || applicable.length === 0}
+            className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {renameTask.running ? "..." : t("rename.apply", { count: applicable.length })}
+          </button>
         </div>
       </div>
     </div>

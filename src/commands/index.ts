@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, RenameSource, NameScraper, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, NameSource, NameScraper, TagKeep, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -229,23 +229,16 @@ export async function trashMedia(systemPath: string, paths: string[], task?: str
 }
 
 /** With gamePath, only that game is proposed (game detail panel). scraper: which one, for the "scraper" source. */
-export async function listRenameCandidates(
+/** Vista previa de Renombrar: el nombre de fichero propuesto para cada juego (todos o `gamePaths`).
+ *  El scraper solo se pregunta con `askScraper` (botón Buscar); si no, vale su caché. */
+export async function renamePreview(
   systemPath: string,
-  source: RenameSource = "title",
-  gamePath?: string,
-  task?: string,
-  scraper?: NameScraper
+  options: { sources: NameSource[]; scraper: NameScraper; rules: boolean; keep: TagKeep },
+  gamePaths: string[] | undefined,
+  askScraper: boolean,
+  task?: string
 ): Promise<RenameEntry[]> {
-  return invoke("list_rename_candidates", { systemPath, source, gamePath, scraper, task });
-}
-
-/** null = the name can be used; otherwise "invalid" or "exists". */
-export async function checkRenameTarget(
-  systemPath: string,
-  gamePath: string,
-  newName: string
-): Promise<"invalid" | "exists" | null> {
-  return invoke("check_rename_target", { systemPath, gamePath, newName });
+  return invoke("rename_preview", { systemPath, options, gamePaths: gamePaths ?? null, askScraper, task });
 }
 
 export async function renameRoms(

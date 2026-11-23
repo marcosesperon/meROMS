@@ -1,13 +1,14 @@
 use std::fs;
 use std::path::Path;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
 use crate::layout::{Layout, SystemRef};
 use crate::media;
 use crate::models::GameList;
+use crate::rename_rules::name_parts::{self, TagKeep};
 use crate::rename_rules::CompiledRules;
 
 use super::progress::Progress;
@@ -22,6 +23,10 @@ pub struct RenameEntry {
     pub game_title: Option<String>,
     /// Proposed new filename (sanitized title, or the name cleaned by the rules)
     pub proposed_name: String,
+    /// Which source gave the name: "dat" | "scraper" | "goodtools" | "title", or "current" (none did:
+    /// the current name, only cleaned by the rules and the tag boxes)
+    #[serde(default)]
+    pub source: String,
     /// Whether a rename makes sense (there is a proposal and it differs from the current name)
     pub can_rename: bool,
     /// Tracks of a .cue/.gdi renamed along with it (the ones named after the game)
@@ -31,7 +36,7 @@ pub struct RenameEntry {
     /// same name) or "exists" (a different file already has that name)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub conflict: Option<String>,
-    /// «Scraper» source stopped before asking for this ROM: no name yet («Search» goes on)
+    /// «Scraper» source: ROM not asked yet (or the search was stopped before it); «Search» asks
     #[serde(default)]
     pub pending: bool,
     /// «Scraper» source: the scraper didn't answer for this ROM (timeout…); «Search» retries it
@@ -39,28 +44,46 @@ pub struct RenameEntry {
     pub unanswered: bool,
 }
 
-/// Where the proposed name comes from.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Default)]
+/// Fuentes del nombre de fichero, en el orden que elige el usuario: gana la primera que da nombre.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum RenameSource {
-    /// Game title from the gamelist (meROMS' original behaviour)
-    #[default]
-    Title,
-    /// Current file name cleaned with the regex rules (ES-DE-Roms-Renamer style)
-    Rules,
+pub enum NameSource {
     /// Official name from the system's DAT, for ROMs recognised by content (CRC in the cache)
     Dat,
-    /// GoodTools codes translated to No-Intro, keeping the region ((U) → (USA), [h1] → (Hack)…)
-    Goodtools,
-    /// File name a scraper has for the ROM, recognised by content (`scraper` says which one;
-    /// today only "screenscraper": asked now, cached, also filled while scraping)
+    /// File name a scraper has for the ROM, recognised by content (`RenameOptions::scraper` says
+    /// which one; today only "screenscraper": from the cache, asked only with «Search»)
     Scraper,
+    /// GoodTools codes translated to No-Intro, keeping the region ((U) → (USA), [h1] → (Hack)…);
+    /// only when the name has GoodTools codes
+    Goodtools,
+    /// Game title from the gamelist
+    Title,
+}
+
+/// Todo lo que se elige en la pantalla de Renombrar para proponer el nombre de fichero
+/// (el título se saca en la ventana a partir de este nombre)
+#[derive(Debug, Clone, Deserialize)]
+pub struct RenameOptions {
+    /// Fuentes activas, por prioridad
+    #[serde(default)]
+    pub sources: Vec<NameSource>,
+    /// Qué scraper usa la fuente `Scraper`
+    #[serde(default)]
+    pub scraper: Option<String>,
+    /// Reglas de limpieza sobre el nombre (las etiquetas las deciden las casillas `keep`)
+    #[serde(default)]
+    pub rules: bool,
+    #[serde(default)]
+    pub keep: TagKeep,
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RenameResult {
     pub gamelist: GameList,
     pub renamed: usize,
+    /// Games whose title changed
+    #[serde(default)]
+    pub titled: usize,
     /// ROMs not renamed (source missing or destination taken)
     pub skipped: Vec<String>,
 }
@@ -114,16 +137,16 @@ fn sanitize_filename(name: &str) -> String {
     collapsed.trim_matches(|c: char| c == '-' || c.is_whitespace()).to_string()
 }
 
-/// List ROMs with a proposed new name, from the gamelist title or the cleanup rules.
-/// With `game_path` only that game is proposed (game detail panel): the other ROMs keep
-/// their names, so only files already on disk can clash with it.
+/// Vista previa de Renombrar: para cada juego (todos, o solo `game_paths`) el nombre de fichero
+/// propuesto según `options`. El scraper solo se pregunta con `ask_scraper` (botón «Buscar»,
+/// gasta cupo); si no, vale lo que haya en su caché y lo demás sale como pendiente.
 #[tauri::command(async)]
-pub fn list_rename_candidates(
+pub fn rename_preview(
     app: tauri::AppHandle,
     system_path: String,
-    source: Option<RenameSource>,
-    game_path: Option<String>,
-    scraper: Option<String>,
+    options: RenameOptions,
+    game_paths: Option<Vec<String>>,
+    ask_scraper: bool,
     task: Option<String>,
 ) -> Result<Vec<RenameEntry>, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
@@ -131,26 +154,26 @@ pub fn list_rename_candidates(
     let progress = Progress::new(&app, task);
     let gamelist = crate::commands::gamelist::read_gamelist_with(&layout, &system, &progress)?;
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
-    let source = source.unwrap_or_default();
-    let wanted = |game: &&crate::models::Game| game_path.as_ref().is_none_or(|only| &game.path == only);
+    let wanted: Option<HashSet<&str>> = game_paths.as_ref().map(|paths| paths.iter().map(String::as_str).collect());
+    let chosen: Vec<_> = gamelist.games.iter().filter(|g| wanted.as_ref().is_none_or(|w| w.contains(g.path.as_str()))).collect();
     let rom_of = |game: &crate::models::Game| system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path));
+    let uses = |source: NameSource| options.sources.contains(&source);
 
     // «Nombre del DAT»: el del juego que el DAT reconoce por contenido (solo lo que hay en caché)
-    let dat_names = if source == RenameSource::Dat {
-        let roms: Vec<_> = gamelist.games.iter().filter(wanted).map(rom_of).collect();
+    let dat_names = if uses(NameSource::Dat) {
+        let roms: Vec<_> = chosen.iter().map(|g| rom_of(g)).collect();
         crate::commands::dat::names_by_content(&app, &system, &roms)?
     } else {
         HashMap::new()
     };
-
-    let chosen: Vec<_> = gamelist.games.iter().filter(wanted).collect();
-    // «Scraper»: el que se eligió pregunta ahora por lo que no esté en caché (por ruta del juego)
-    let scraped = match (source, scraper.as_deref()) {
-        (RenameSource::Scraper, Some("screenscraper")) => crate::commands::ss_rom_names::names_for(&app, &settings, &system, &chosen, &progress)?,
-        (RenameSource::Scraper, other) => return Err(format!("Unknown scraper for file names: {}", other.unwrap_or("none"))),
-        _ => Default::default(),
+    // «Scraper»: de la caché, o preguntando por lo que falta si se pulsó «Buscar»
+    let scraped = match (uses(NameSource::Scraper), options.scraper.as_deref()) {
+        (false, _) => Default::default(),
+        (true, Some("screenscraper")) if ask_scraper => crate::commands::ss_rom_names::names_for(&app, &settings, &system, &chosen, &progress)?,
+        (true, Some("screenscraper")) => crate::commands::ss_rom_names::cached_names(&app, &system, &chosen)?,
+        (true, other) => return Err(format!("Unknown scraper for file names: {}", other.unwrap_or("none"))),
     };
-    let ss_names = &scraped.names;
+
     let mut entries: Vec<RenameEntry> = Vec::with_capacity(chosen.len());
     for (i, game) in chosen.iter().enumerate() {
         // Tras parar al scraper, lo que queda es local y rápido: se termina la lista
@@ -158,8 +181,11 @@ pub fn list_rename_candidates(
             progress.check()?;
         }
         progress.step("games", i + 1, chosen.len(), &game.path);
-        let official = dat_names.get(&rom_of(game)).or_else(|| ss_names.get(&game.path));
-        let mut entry = propose(game, source, &rules, official.map(String::as_str));
+        let found = Found {
+            dat: dat_names.get(&rom_of(game)).map(String::as_str),
+            scraper: scraped.names.get(&game.path).map(String::as_str),
+        };
+        let mut entry = propose(game, &options, &rules, &found);
         entry.pending = scraped.pending.contains(&game.path);
         entry.unanswered = scraped.failed.contains(&game.path);
         entries.push(entry);
@@ -172,8 +198,46 @@ pub fn list_rename_candidates(
     Ok(entries)
 }
 
-/// `official`: el nombre de la fuente DAT o del scraper (sin extensión), si lo hay
-fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRules, official: Option<&str>) -> RenameEntry {
+/// Los nombres que las fuentes de fuera (DAT, scraper) tienen para un juego, sin extensión
+#[derive(Default)]
+struct Found<'a> {
+    dat: Option<&'a str>,
+    scraper: Option<&'a str>,
+}
+
+/// El nombre de la primera fuente que lo da (y cuál fue), o el actual con "current"
+fn winning_name(game: &crate::models::Game, current: &str, sources: &[NameSource], found: &Found) -> (String, &'static str) {
+    for source in sources {
+        let name = match source {
+            NameSource::Dat => found.dat.map(str::to_string),
+            NameSource::Scraper => found.scraper.map(str::to_string),
+            // Solo si el nombre lleva códigos de GoodTools (si no, sale igual y no cuenta)
+            NameSource::Goodtools => Some(crate::rename_rules::goodtools::to_no_intro(current)).filter(|n| n != current),
+            NameSource::Title => game.name.clone(),
+        };
+        if let Some(name) = name.filter(|n| !n.trim().is_empty()) {
+            let id = match source {
+                NameSource::Dat => "dat",
+                NameSource::Scraper => "scraper",
+                NameSource::Goodtools => "goodtools",
+                NameSource::Title => "title",
+            };
+            return (name, id);
+        }
+    }
+    (current.to_string(), "current")
+}
+
+/// Nombre propuesto: el de la fuente ganadora, con las reglas sobre el nombre y solo las
+/// etiquetas de los tipos marcados
+fn compose(name: &str, options: &RenameOptions, rules: &CompiledRules) -> String {
+    let (base, tags) = name_parts::split(name);
+    let base = if options.rules { rules.apply(base) } else { base.to_string() };
+    let tags = name_parts::filter_tags(tags, &options.keep);
+    sanitize_filename(&format!("{} {}", base.trim(), tags))
+}
+
+fn propose(game: &crate::models::Game, options: &RenameOptions, rules: &CompiledRules, found: &Found) -> RenameEntry {
     let rom_path = Path::new(&game.path);
     let ext = rom_path
         .extension()
@@ -185,23 +249,19 @@ fn propose(game: &crate::models::Game, source: RenameSource, rules: &CompiledRul
         .unwrap_or(&game.path)
         .to_string();
 
-    let game_title = game.name.clone();
-    let proposed = match source {
-        RenameSource::Title => game_title.as_deref().map(sanitize_filename),
-        RenameSource::Rules => Some(sanitize_filename(&rules.apply(&current_name))),
-        RenameSource::Goodtools => Some(sanitize_filename(&crate::rename_rules::goodtools::to_no_intro(&current_name))),
-        RenameSource::Dat | RenameSource::Scraper => official.map(sanitize_filename),
-    }
-    .filter(|p| !p.is_empty())
-    .unwrap_or_else(|| current_name.clone());
+    let (winner, source) = winning_name(game, &current_name, &options.sources, found);
+    let proposed = Some(compose(&winner, options, rules))
+        .filter(|p| !p.is_empty())
+        .unwrap_or_else(|| current_name.clone());
 
     let can_rename = proposed != current_name && !ext.is_empty();
 
     RenameEntry {
         current_path: game.path.clone(),
         current_name,
-        game_title,
+        game_title: game.name.clone(),
         proposed_name: proposed,
+        source: source.to_string(),
         can_rename,
         tracks: 0,
         conflict: None,
@@ -240,20 +300,8 @@ fn mark_conflicts(entries: &mut [RenameEntry], rom_dir: &Path) {
     }
 }
 
-/// Check a name typed by hand for one ROM (game detail panel).
-/// Returns None if it can be used, or why not: "invalid" (empty or with characters not
-/// allowed in file names) or "exists" (another file already has that name).
-#[tauri::command(async)]
-pub fn check_rename_target(
-    app: tauri::AppHandle,
-    system_path: String,
-    game_path: String,
-    new_name: String,
-) -> Result<Option<String>, String> {
-    let (_, system) = super::system_context(&app, &system_path)?;
-    Ok(target_conflict(&system.rom_dir, &game_path, &new_name))
-}
-
+/// Can a name typed by hand be used for this ROM? None if so, or why not: "invalid" (empty or
+/// with characters not allowed in file names) or "exists" (another file already has that name).
 fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<String> {
     // Vacío, con caracteres prohibidos o con espacios al principio/final
     if new_name.trim().is_empty() || new_name.trim() != new_name || new_name.chars().any(is_forbidden) {
@@ -264,6 +312,7 @@ fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<St
         current_name: String::new(),
         game_title: None,
         proposed_name: new_name.to_string(),
+        source: String::new(),
         can_rename: true,
         tracks: 0,
         conflict: None,
@@ -365,7 +414,11 @@ fn rewrite_sheet(sheet: &Path, tracks: &[TrackRename]) {
 #[derive(Debug, Clone, Deserialize)]
 pub struct RenameRequest {
     pub current_path: String,
+    /// New file name without extension (the current one = the file stays as it is)
     pub new_name: String,
+    /// New gamelist title (None = keep it, except a compilation number the file loses)
+    #[serde(default)]
+    pub new_title: Option<String>,
 }
 
 /// Rename ROM files and update all references in gamelist.xml.
@@ -389,6 +442,9 @@ pub fn rename_roms(
     media::journal_begin();
     let mut done: Vec<(String, String)> = Vec::new();
     let mut skipped: Vec<String> = Vec::new();
+    // Juegos a los que solo se les cambia el título (el fichero se queda como está)
+    let mut retitled: Vec<(String, String)> = Vec::new();
+    let mut titled = 0;
 
     for (i, req) in renames.iter().enumerate() {
         // Cancelado: se para aquí y se guarda lo ya renombrado (Deshacer lo cubre)
@@ -406,6 +462,22 @@ pub fn rename_roms(
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("");
+
+        // Solo el título: el fichero no se toca
+        if req.new_name == old_stem {
+            if let Some(game) = gamelist.games.iter_mut().find(|g| g.path == req.current_path) {
+                if set_title(game, req.new_title.as_deref()) {
+                    titled += 1;
+                    retitled.push((req.current_path.clone(), req.current_path.clone()));
+                }
+            }
+            continue;
+        }
+        // Un nombre escrito a mano con caracteres no válidos (o vacío) no se aplica
+        if target_conflict(&sys_path, &req.current_path, &req.new_name).as_deref() == Some("invalid") {
+            skipped.push(old_rel.to_string());
+            continue;
+        }
 
         // Keep the ROM in its own subfolder (only the file name changes)
         let new_filename = format!("{}.{}", req.new_name, ext);
@@ -459,8 +531,12 @@ pub fn rename_roms(
         for game in &mut gamelist.games {
             if game.path == req.current_path {
                 game.path = new_relative.clone();
-                // Recopilatorios: «0004 Green Corps» pierde el número igual que el fichero
-                if let Some(title) = game.name.as_deref().and_then(|t| title_without_number(t, old_stem, &req.new_name)) {
+                if req.new_title.is_some() {
+                    if set_title(game, req.new_title.as_deref()) {
+                        titled += 1;
+                    }
+                } else if let Some(title) = game.name.as_deref().and_then(|t| title_without_number(t, old_stem, &req.new_name)) {
+                    // Recopilatorios: «0004 Green Corps» pierde el número igual que el fichero
                     game.name = Some(title);
                 }
 
@@ -483,7 +559,8 @@ pub fn rename_roms(
         kind: "rename".into(),
         system: sys.clone(),
         files: media::journal_take(),
-        games: super::undo::changes_by_path(&sys, &before, &sys, &gamelist, &done),
+        // Deshacer también devuelve los títulos (los de los ficheros renombrados y los demás)
+        games: super::undo::changes_by_path(&sys, &before, &sys, &gamelist, &[done.clone(), retitled].concat()),
         refs: super::undo::RefUndo::Rename { system: sys.clone(), pairs: done.clone() },
     });
 
@@ -491,8 +568,20 @@ pub fn rename_roms(
         // Re-read so ES-DE media fields reflect the renamed files
         gamelist: crate::commands::gamelist::read_gamelist(&layout, &system)?,
         renamed: done.len(),
+        titled,
         skipped,
     })
+}
+
+/// Pone el título nuevo si lo hay y es distinto (vacío no vale). true = cambió
+fn set_title(game: &mut crate::models::Game, title: Option<&str>) -> bool {
+    match title.map(str::trim).filter(|t| !t.is_empty()) {
+        Some(t) if game.name.as_deref() != Some(t) => {
+            game.name = Some(t.to_string());
+            true
+        }
+        _ => false,
+    }
 }
 
 /// After renaming ROMs, fix what points to them by file name:
@@ -700,9 +789,19 @@ mod tests {
     use crate::models::Game;
     use crate::rename_rules::default_rules;
 
-    fn entry_for(path: &str, source: RenameSource) -> RenameEntry {
+    fn options(sources: &[NameSource], rules: bool) -> RenameOptions {
+        RenameOptions { sources: sources.to_vec(), scraper: None, rules, keep: TagKeep::default() }
+    }
+
+    fn propose_with(game: &Game, opts: &RenameOptions, found: &Found) -> RenameEntry {
+        propose(game, opts, &CompiledRules::new(&default_rules()), found)
+    }
+
+    /// Solo las reglas, como la antigua fuente «Reglas» (todas las etiquetas fuera)
+    fn entry_for(path: &str) -> RenameEntry {
         let game = Game { path: path.into(), name: Some("Titulo".into()), ..Default::default() };
-        propose(&game, source, &CompiledRules::new(&default_rules()), None)
+        let none = TagKeep { region: false, language: false, revision: false, status: false, dump: false, other: false };
+        propose_with(&game, &RenameOptions { keep: none, ..options(&[], true) }, &Found::default())
     }
 
     #[test]
@@ -730,33 +829,54 @@ mod tests {
 
     #[test]
     fn sources_are_read_with_the_names_the_ui_sends() {
-        for (text, source) in [("title", RenameSource::Title), ("rules", RenameSource::Rules), ("dat", RenameSource::Dat), ("goodtools", RenameSource::Goodtools), ("scraper", RenameSource::Scraper)] {
-            assert_eq!(serde_json::from_str::<RenameSource>(&format!("\"{}\"", text)).unwrap(), source);
+        for (text, source) in [("title", NameSource::Title), ("dat", NameSource::Dat), ("goodtools", NameSource::Goodtools), ("scraper", NameSource::Scraper)] {
+            assert_eq!(serde_json::from_str::<NameSource>(&format!("\"{}\"", text)).unwrap(), source);
         }
+        let opts: RenameOptions = serde_json::from_str(r#"{"sources":["dat","scraper"],"scraper":"screenscraper","rules":true,"keep":{"dump":false}}"#).unwrap();
+        assert_eq!(opts.sources, vec![NameSource::Dat, NameSource::Scraper]);
+        assert!(opts.keep.region && !opts.keep.dump, "unsent boxes are kept");
     }
 
     #[test]
-    fn screenscraper_source_keeps_the_file_extension() {
+    fn the_first_source_with_a_name_wins_and_the_extension_stays() {
         // ScreenScraper conoce «Super Mario World (USA).sfc» (el de dentro del zip): llega sin
         // extensión y el fichero sigue siendo .zip
-        let game = Game { path: "./mario mal.zip".into(), ..Default::default() };
-        let e = propose(&game, RenameSource::Scraper, &CompiledRules::new(&default_rules()), Some("Super Mario World (USA)"));
-        assert_eq!(e.proposed_name, "Super Mario World (USA)");
+        let game = Game { path: "./mario mal.zip".into(), name: Some("Super Mario World".into()), ..Default::default() };
+        let chain = options(&[NameSource::Dat, NameSource::Scraper, NameSource::Title], false);
+        let e = propose_with(&game, &chain, &Found { dat: None, scraper: Some("Super Mario World (USA)") });
+        assert_eq!((e.proposed_name.as_str(), e.source.as_str()), ("Super Mario World (USA)", "scraper"));
         assert!(e.can_rename);
-        let e = propose(&game, RenameSource::Scraper, &CompiledRules::new(&default_rules()), None);
-        assert!(!e.can_rename, "without a name from ScreenScraper it stays as it is");
+        let e = propose_with(&game, &chain, &Found { dat: Some("Super Mario World (Europe)"), scraper: Some("Super Mario World (USA)") });
+        assert_eq!((e.proposed_name.as_str(), e.source.as_str()), ("Super Mario World (Europe)", "dat"));
+        // Ni DAT ni scraper: el título
+        let e = propose_with(&game, &chain, &Found::default());
+        assert_eq!((e.proposed_name.as_str(), e.source.as_str()), ("Super Mario World", "title"));
+        // Sin fuentes: se queda como está
+        let e = propose_with(&game, &options(&[NameSource::Dat], false), &Found::default());
+        assert_eq!(e.source, "current");
+        assert!(!e.can_rename);
     }
 
     #[test]
-    fn dat_source_proposes_the_official_name_only_for_recognised_roms() {
-        let game = Game { path: "./smw.sfc".into(), ..Default::default() };
-        let rules = CompiledRules::new(&default_rules());
-        let e = propose(&game, RenameSource::Dat, &rules, Some("Super Mario World (USA)"));
-        assert_eq!(e.proposed_name, "Super Mario World (USA)");
-        assert!(e.can_rename);
-        // No reconocida por contenido: se queda como está
-        let e = propose(&game, RenameSource::Dat, &rules, None);
-        assert_eq!(e.proposed_name, "smw");
+    fn goodtools_only_counts_when_the_name_has_its_codes() {
+        let chain = options(&[NameSource::Goodtools, NameSource::Title], false);
+        let gt = Game { path: "./Gradius (J) [!].nes".into(), name: Some("Gradius".into()), ..Default::default() };
+        let e = propose_with(&gt, &chain, &Found::default());
+        assert_eq!((e.proposed_name.as_str(), e.source.as_str()), ("Gradius (Japan)", "goodtools"));
+        let plain = Game { path: "./Sonic (USA).md".into(), name: Some("Sonic the Hedgehog".into()), ..Default::default() };
+        let e = propose_with(&plain, &chain, &Found::default());
+        assert_eq!(e.source, "title", "no GoodTools codes: the next source");
+    }
+
+    #[test]
+    fn rules_clean_the_name_and_the_boxes_decide_the_tags() {
+        let game = Game { path: "./0004 Green Corps (USA) (En,Fr) (Rev 1) [!].nes".into(), ..Default::default() };
+        // Las reglas de serie quitarían «(USA)» y «(Rev 1)»: aquí solo tocan el nombre
+        let keep = TagKeep { language: false, dump: false, ..Default::default() };
+        let e = propose_with(&game, &RenameOptions { keep, ..options(&[], true) }, &Found::default());
+        assert_eq!(e.proposed_name, "Green Corps (USA) (Rev 1)");
+        // Sin reglas y con todo marcado: igual que estaba
+        let e = propose_with(&game, &options(&[], false), &Found::default());
         assert!(!e.can_rename);
     }
 
@@ -783,12 +903,10 @@ mod tests {
     }
 
     #[test]
-    fn rules_source_cleans_the_file_name() {
-        let e = entry_for("./Super Juego (USA) (Rev 1).sfc", RenameSource::Rules);
+    fn rules_and_no_tags_clean_the_file_name() {
+        let e = entry_for("./Super Juego (USA) (Rev 1).sfc");
         assert_eq!(e.proposed_name, "Super Juego");
         assert!(e.can_rename);
-        let e = entry_for("./Super Juego (USA).sfc", RenameSource::Title);
-        assert_eq!(e.proposed_name, "Titulo");
     }
 
     #[test]
@@ -796,10 +914,10 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         fs::write(tmp.path().join("Otro.sfc"), b"x").unwrap();
         let mut entries = vec![
-            entry_for("./Juego (USA).sfc", RenameSource::Rules),
-            entry_for("./Juego (Europe).sfc", RenameSource::Rules),
-            entry_for("./Otro (Japan).sfc", RenameSource::Rules),
-            entry_for("./Bien (USA).sfc", RenameSource::Rules),
+            entry_for("./Juego (USA).sfc"),
+            entry_for("./Juego (Europe).sfc"),
+            entry_for("./Otro (Japan).sfc"),
+            entry_for("./Bien (USA).sfc"),
         ];
         mark_conflicts(&mut entries, tmp.path());
         assert_eq!(entries[0].conflict.as_deref(), Some("duplicate"));

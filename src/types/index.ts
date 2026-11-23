@@ -178,6 +178,8 @@ export interface AppSettings {
   ss_languages?: string[];
   tgdb_apikey?: string;
   /** "Export to device": destinations used, with their selection */
+  /** Rename window options (managed by the UI; see RenameOptions) */
+  rename_options?: Partial<RenameOptions>;
   export_targets?: { dest: string; systems: string[]; games: "all" | "favorites" | "visible"; media: string[]; remove_extra: boolean }[];
   /** "Compare with another folder": the last folder compared */
   compare_dest?: string;
@@ -306,25 +308,57 @@ export interface RenameEntry {
   current_name: string;
   game_title?: string;
   proposed_name: string;
+  /** Which source gave the name; "current" = none did (current name cleaned by rules/tag boxes) */
+  source: NameSource | "current";
   can_rename: boolean;
   /** Tracks of a .cue/.gdi renamed along with it (the ones named after the game) */
   tracks?: number;
   /** duplicate = another ROM would get the same name · exists = a different file has it */
   conflict?: "duplicate" | "exists";
-  /** "scraper" source stopped before asking for this ROM: no name yet (Search goes on) */
+  /** "scraper" source: ROM not asked yet (or the search stopped before it); Search asks */
   pending?: boolean;
   /** "scraper" source: the scraper didn't answer for this ROM (timeout...); Search retries it */
   unanswered?: boolean;
 }
 
-/** Where the proposed name comes from */
-export type RenameSource = "title" | "rules" | "dat" | "goodtools" | "scraper";
+/** Fuentes del nombre de fichero en Renombrar (en cadena: gana la primera que da nombre) */
+export type NameSource = "dat" | "scraper" | "goodtools" | "title";
+
+/** Qué tipos de etiqueta se quedan en el nombre de fichero */
+export interface TagKeep {
+  region: boolean;
+  language: boolean;
+  revision: boolean;
+  status: boolean;
+  dump: boolean;
+  other: boolean;
+}
+
+/** Artículo en el título: como venga, al final («Zelda, The») o al principio («The Zelda») */
+export type ArticleMode = "keep" | "end" | "front";
+
+/** Opciones de la ventana de Renombrar (se guardan en Ajustes como rename_options) */
+export interface RenameOptions {
+  /** Fuentes activas, por prioridad */
+  sources: NameSource[];
+  /** Fuentes apagadas, para que no pierdan su sitio en la lista */
+  disabled: NameSource[];
+  scraper: NameScraper;
+  /** Reglas de limpieza sobre el nombre (no sobre las etiquetas) */
+  rules: boolean;
+  keep: TagKeep;
+  article: ArticleMode;
+  renameFiles: boolean;
+  changeTitles: boolean;
+}
 /** Scrapers que dan el nombre de fichero de la ROM (fuente «Scraper» de Renombrar) */
 export type NameScraper = "screenscraper";
 
 export interface RenameResult {
   gamelist: GameList;
   renamed: number;
+  /** Games whose title changed */
+  titled: number;
   skipped: string[];
 }
 
@@ -343,7 +377,10 @@ export interface RuleTestResult {
 
 export interface RenameRequest {
   current_path: string;
+  /** New file name without extension (the current one = only the title changes) */
   new_name: string;
+  /** New gamelist title (undefined = keep it) */
+  new_title?: string;
 }
 
 /** What the scraper does with one data field or media type */

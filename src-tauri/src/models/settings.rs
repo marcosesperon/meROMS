@@ -112,6 +112,9 @@ pub struct AppSettings {
     // ROM name cleanup rules (None = built-in defaults)
     #[serde(default)]
     pub rename_rules: Option<Vec<RenameRule>>,
+    // Rename window: sources and their order, rules, tags kept, title options (managed by the UI)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rename_options: Option<serde_json::Value>,
 }
 
 /// One visible column of the table view

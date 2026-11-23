@@ -5,10 +5,10 @@ import type { TranslationKeys } from "../../i18n/en";
 import type { Game } from "../../types";
 import { PLAY_STATUSES, saveGamelist, translateTexts, type PlayStatus, type StatusChange } from "../../commands";
 import { STATUS_FLAGS, STATUS_META } from "../../utils/gameStatus";
-import { articleToEnd, articleToFront } from "../../utils/articles";
 import { toESDate } from "../../utils/format";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { MoveGamesModal } from "../common/MoveGamesModal";
+import { RenameModal } from "../common/RenameModal";
 
 // Campos que se pueden poner igual en varios juegos (nombre, descripción y ruta son de cada uno)
 const BULK_FIELDS: { field: keyof Game; label: TranslationKeys; placeholder?: TranslationKeys }[] = [
@@ -63,6 +63,8 @@ export function BulkEditPanel() {
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const selected = useMemo(() => games.filter((g) => selectedPaths.has(g.path)), [games, selectedPaths]);
   const [moveOpen, setMoveOpen] = useState(false);
+  // Renombrar los marcados (fichero y título; el artículo del nombre también está ahí)
+  const [renameOpen, setRenameOpen] = useState(false);
 
   // Tras mover: recargar la lista y los contadores de los sistemas, y vaciar la selección
   async function afterMove() {
@@ -77,15 +79,33 @@ export function BulkEditPanel() {
       <div className="px-5 py-4 border-b border-zinc-800">
         <h2 className="text-lg font-bold text-zinc-100">{t("bulk.title", { count: selected.length })}</h2>
         <p className="text-xs text-zinc-500 mt-0.5">{t("bulk.help")}</p>
-        {/* Mover los marcados a otro sistema o subcarpeta */}
-        <button
-          onClick={() => setMoveOpen(true)}
-          disabled={selected.length === 0 || !selectedSystem}
-          className="mt-3 px-3 py-1.5 text-xs bg-zinc-800 text-zinc-200 rounded hover:bg-zinc-700 disabled:opacity-40"
-        >
-          {t("move.button")}
-        </button>
+        <div className="flex gap-2 mt-3">
+          {/* Mover los marcados a otro sistema o subcarpeta */}
+          <button
+            onClick={() => setMoveOpen(true)}
+            disabled={selected.length === 0 || !selectedSystem}
+            className="px-3 py-1.5 text-xs bg-zinc-800 text-zinc-200 rounded hover:bg-zinc-700 disabled:opacity-40"
+          >
+            {t("move.button")}
+          </button>
+          <button
+            onClick={() => setRenameOpen(true)}
+            disabled={selected.length === 0 || !selectedSystem}
+            className="px-3 py-1.5 text-xs bg-zinc-800 text-zinc-200 rounded hover:bg-zinc-700 disabled:opacity-40"
+          >
+            {t("rename.marked", { count: selected.length })}
+          </button>
+        </div>
       </div>
+      {selectedSystem && (
+        <RenameModal
+          open={renameOpen}
+          systemPath={selectedSystem.path}
+          gamePaths={selected.map((g) => g.path)}
+          onClose={() => setRenameOpen(false)}
+          onDone={() => useAppStore.getState().setSelectedPaths(new Set())}
+        />
+      )}
       {moveOpen && selectedSystem && (
         <MoveGamesModal
           systemPath={selectedSystem.path}
@@ -97,7 +117,6 @@ export function BulkEditPanel() {
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-8">
         <FieldsSection selected={selected} />
         <ReplaceSection selected={selected} />
-        <ArticleSection selected={selected} />
         <StatusSection selected={selected} />
         <TranslateSection selected={selected} />
       </div>
@@ -316,93 +335,6 @@ function ReplaceSection({ selected }: { selected: Game[] }) {
         className="mt-3 w-full px-4 py-2 text-sm bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {saving ? "..." : t("bulk.replaceApply", { count: preview.fields })}
-      </button>
-    </section>
-  );
-}
-
-/** «The X» ↔ «X, The» en los nombres de los marcados, con vista previa y casilla en cada uno */
-function ArticleSection({ selected }: { selected: Game[] }) {
-  const { t } = useTranslation();
-  const [toEnd, setToEnd] = useState(true);
-  const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
-  const [saving, setSaving] = useState(false);
-
-  const changes = useMemo(
-    () =>
-      selected
-        .map((g) => ({ path: g.path, before: g.name ?? "", after: g.name ? (toEnd ? articleToEnd(g.name) : articleToFront(g.name)) : null }))
-        .filter((c): c is { path: string; before: string; after: string } => !!c.after && c.after !== c.before),
-    [selected, toEnd]
-  );
-  const chosen = changes.filter((c) => !unchecked.has(c.path));
-
-  async function apply() {
-    const names = new Map(chosen.map((c) => [c.path, c.after]));
-    setSaving(true);
-    try {
-      const { games } = useAppStore.getState();
-      await saveGames(games.map((g) => (names.has(g.path) ? { ...g, name: names.get(g.path) } : g)));
-      setUnchecked(new Set());
-    } catch (e) {
-      await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const toggle = (path: string) =>
-    setUnchecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-
-  return (
-    <section>
-      <h3 className="text-sm font-semibold text-zinc-200 mb-1">{t("article.title")}</h3>
-      <p className="text-xs text-zinc-500 mb-3">{t("article.help")}</p>
-      <div className="flex gap-2 mb-3">
-        {[true, false].map((end) => (
-          <button
-            key={String(end)}
-            onClick={() => {
-              setToEnd(end);
-              setUnchecked(new Set());
-            }}
-            className={`px-2.5 py-1 text-xs rounded transition-colors ${toEnd === end ? "bg-indigo-600 text-white" : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"}`}
-          >
-            {t(end ? "article.toEnd" : "article.toFront")}
-          </button>
-        ))}
-      </div>
-      {changes.length === 0 ? (
-        <p className="text-xs text-zinc-500">{t("article.none")}</p>
-      ) : (
-        <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-zinc-800 p-2">
-          {changes.map((c) => (
-            <label key={c.path} className="flex items-start gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!unchecked.has(c.path)}
-                onChange={() => toggle(c.path)}
-                className="mt-0.5 rounded border-zinc-600 bg-zinc-700 text-indigo-600"
-              />
-              <span className="min-w-0">
-                <span className="text-zinc-500 line-through">{c.before}</span>
-                <span className="block text-zinc-200">{c.after}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      )}
-      <button
-        onClick={apply}
-        disabled={chosen.length === 0 || saving}
-        className="mt-3 w-full px-4 py-2 text-sm bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        {saving ? "..." : t("article.apply", { count: chosen.length })}
       </button>
     </section>
   );

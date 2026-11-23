@@ -170,6 +170,30 @@ pub fn names_for(app: &tauri::AppHandle, settings: &AppSettings, system: &System
     result
 }
 
+/// Lo que ya se sabe sin preguntar (caché): para la vista previa de Renombrar, que se recalcula
+/// con cada opción. Las ROMs que nunca se preguntaron salen como pendientes («Buscar»).
+pub fn cached_names(app: &tauri::AppHandle, system: &SystemRef, games: &[&Game]) -> Result<ScraperNames, String> {
+    let cache = NameCache::load(&cache_file(app)?);
+    let mut found = ScraperNames::default();
+    for game in games {
+        let rom = system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path));
+        if !rom.is_file() {
+            continue;
+        }
+        match cache.cached(&rom) {
+            Some(name) => {
+                if let Some(stem) = name.as_deref().and_then(|n| Path::new(n).file_stem()) {
+                    found.names.insert(game.path.clone(), stem.to_string_lossy().to_string());
+                }
+            }
+            None => {
+                found.pending.insert(game.path.clone());
+            }
+        }
+    }
+    Ok(found)
+}
+
 async fn ask_missing(settings: &AppSettings, system: &SystemRef, games: &[&Game], progress: &Progress, cache: &mut NameCache) -> Result<ScraperNames, String> {
     let client = build_http_client()?;
     let mut found = ScraperNames::default();

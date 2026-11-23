@@ -7,7 +7,7 @@ import { ImageManager } from "./ImageManager";
 import { saveGamelist, removeGame, swapMedia, translateTexts } from "../../commands";
 import { ConfirmDialog } from "../common/ConfirmDialog";
 import { CloseIcon } from "../common/Icons";
-import { RenameGameModal } from "../common/RenameGameModal";
+import { RenameModal } from "../common/RenameModal";
 import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
 import { MoveGamesModal } from "../common/MoveGamesModal";
@@ -322,12 +322,12 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
 
       {selectedSystem && selectedGame && (
         <>
-          <RenameGameModal
+          <RenameModal
             open={activeTool === "rename"}
             systemPath={selectedSystem.path}
-            gamePath={selectedGame.path}
+            gamePaths={[selectedGame.path]}
             onClose={() => setActiveTool(null)}
-            onDone={refreshGame}
+            onDone={(moved) => refreshGame(moved[selectedGame.path] ?? selectedGame.path)}
           />
           <NormalizeMediaModal
             open={activeTool === "normalize"}
