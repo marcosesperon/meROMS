@@ -109,6 +109,90 @@ pub fn filter_tags(tags: &str, keep: &TagKeep) -> String {
     kept.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
+/// Región de la gamelist (`us`, `jp`, `wr`…, como la escriben los scrapers) → región de No-Intro
+fn gamelist_region(code: &str) -> Option<&'static str> {
+    Some(match code.trim().to_lowercase().as_str() {
+        "us" | "usa" => "USA",
+        "eu" | "europe" => "Europe",
+        "jp" | "japan" => "Japan",
+        "wr" | "wor" | "world" => "World",
+        "cn" | "china" => "China",
+        "kr" | "korea" => "Korea",
+        "asi" | "asia" => "Asia",
+        "fr" | "france" => "France",
+        "de" | "germany" => "Germany",
+        "es" | "sp" | "spain" => "Spain",
+        "it" | "italy" => "Italy",
+        "uk" => "UK",
+        "nl" | "netherlands" => "Netherlands",
+        "se" | "sweden" => "Sweden",
+        "pt" | "portugal" => "Portugal",
+        "br" | "brazil" => "Brazil",
+        "au" | "australia" => "Australia",
+        "ca" | "canada" => "Canada",
+        "ru" | "russia" => "Russia",
+        _ => return None,
+    })
+}
+
+/// Idioma de la gamelist (`en`, `jp`, `cn`…) → código de No-Intro (`En`, `Ja`, `Zh`…)
+fn gamelist_language(code: &str) -> Option<&'static str> {
+    Some(match code.trim().to_lowercase().as_str() {
+        "en" => "En",
+        "ja" | "jp" => "Ja",
+        "fr" => "Fr",
+        "de" => "De",
+        "es" | "sp" => "Es",
+        "it" => "It",
+        "pt" => "Pt",
+        "nl" => "Nl",
+        "sv" | "se" => "Sv",
+        "zh" | "cn" => "Zh",
+        "ko" | "kr" => "Ko",
+        "ru" => "Ru",
+        "pl" => "Pl",
+        "da" => "Da",
+        "fi" => "Fi",
+        "no" => "No",
+        "el" => "El",
+        "tr" => "Tr",
+        _ => return None,
+    })
+}
+
+/// Los códigos reconocidos de una lista «us, eu» o «jp,fr», traducidos y sin repetir
+fn translate_list(list: Option<&str>, translate: fn(&str) -> Option<&'static str>) -> Vec<&'static str> {
+    let mut out = Vec::new();
+    for code in list.unwrap_or("").split([',', ';', '/']) {
+        if let Some(t) = translate(code) {
+            if !out.contains(&t) {
+                out.push(t);
+            }
+        }
+    }
+    out
+}
+
+/// Fuente «Datos de la gamelist»: el título con su región e idiomas al estilo No-Intro
+/// («Super Mario World» + us + en → «Super Mario World (USA) (En)»). Lo que no se reconoce no se
+/// pone, y si el título ya lleva región o idiomas entre paréntesis, no se repiten.
+pub fn gamelist_name(title: &str, region: Option<&str>, lang: Option<&str>) -> String {
+    let (_, tags) = split(title);
+    let has = |kind: TagKind| {
+        TAG.captures_iter(tags).any(|c| c.get(1).is_some_and(|p| tag_kind(p.as_str(), false) == kind))
+    };
+    let mut name = title.trim().to_string();
+    let regions = translate_list(region, gamelist_region);
+    if !regions.is_empty() && !has(TagKind::Region) {
+        name.push_str(&format!(" ({})", regions.join(", ")));
+    }
+    let languages = translate_list(lang, gamelist_language);
+    if !languages.is_empty() && !has(TagKind::Language) {
+        name.push_str(&format!(" ({})", languages.join(",")));
+    }
+    name
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -139,6 +223,19 @@ mod tests {
         ] {
             assert_eq!(tag_kind(tag, square), kind, "{}", tag);
         }
+    }
+
+    #[test]
+    fn gamelist_data_becomes_no_intro_tags() {
+        assert_eq!(gamelist_name("Super Mario World", Some("us"), Some("en")), "Super Mario World (USA) (En)");
+        assert_eq!(gamelist_name("Gradius", Some("jp"), Some("jp,fr")), "Gradius (Japan) (Ja,Fr)");
+        assert_eq!(gamelist_name("Tetris", Some("wr"), None), "Tetris (World)");
+        assert_eq!(gamelist_name("Sonic", Some("us, eu"), Some("")), "Sonic (USA, Europe)");
+        // Lo que no se reconoce no se pone; sin nada, solo el título
+        assert_eq!(gamelist_name("Juego", Some("xx"), Some("??")), "Juego");
+        assert_eq!(gamelist_name("Juego", None, None), "Juego");
+        // El título ya trae la región: no se repite (el idioma sí se añade)
+        assert_eq!(gamelist_name("Zelda (USA)", Some("us"), Some("en")), "Zelda (USA) (En)");
     }
 
     #[test]

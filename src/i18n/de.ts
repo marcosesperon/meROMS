@@ -1067,8 +1067,8 @@ const de: Record<TranslationKeys, string> = {
   "migration.createAndActivate": "Profil anlegen und nutzen",
   "migration.activate": "Zielprofil nutzen",
   // Rename sources and conflicts
-  "rename.sourceTitle": "Spieletitel",
-  "rename.sourceTitleHelp": "Der neue Dateiname ist der Spieletitel aus der Gamelist.",
+  "rename.sourceTitle": "Gamelist-Daten",
+  "rename.sourceTitleHelp": "Der Spieltitel aus der Gamelist mit Region und Sprachen als No-Intro-Tags: Super Mario World + us + en → Super Mario World (USA) (En). Unbekannte Codes werden weggelassen; ohne Region und Sprache bleibt nur der Titel.",
   "rename.tracks": "+{count} Tracks",
   "rename.tracksHelp": "Die .bin/.raw-Tracks mit dem Namen des Spiels werden mit umbenannt, und die .cue/.gdi wird aktualisiert",
   "rename.sourceDat": "DAT-Name",

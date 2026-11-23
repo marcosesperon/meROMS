@@ -56,7 +56,8 @@ pub enum NameSource {
     /// GoodTools codes translated to No-Intro, keeping the region ((U) → (USA), [h1] → (Hack)…);
     /// only when the name has GoodTools codes
     Goodtools,
-    /// Game title from the gamelist
+    /// «Gamelist data»: the gamelist title plus its region and languages as No-Intro tags
+    /// (`Super Mario World (USA) (En)`); keeps the id "title" so saved options stay valid
     Title,
 }
 
@@ -213,7 +214,8 @@ fn winning_name(game: &crate::models::Game, current: &str, sources: &[NameSource
             NameSource::Scraper => found.scraper.map(str::to_string),
             // Solo si el nombre lleva códigos de GoodTools (si no, sale igual y no cuenta)
             NameSource::Goodtools => Some(crate::rename_rules::goodtools::to_no_intro(current)).filter(|n| n != current),
-            NameSource::Title => game.name.clone(),
+            // «Datos de la gamelist»: título + región + idiomas
+            NameSource::Title => game.name.as_deref().map(|t| name_parts::gamelist_name(t, game.region.as_deref(), game.lang.as_deref())),
         };
         if let Some(name) = name.filter(|n| !n.trim().is_empty()) {
             let id = match source {
