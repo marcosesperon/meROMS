@@ -27,7 +27,7 @@ import { MediaReviewModal } from "./components/common/MediaReviewModal";
 import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
-import { datReport, listMissingRoms, listNewRoms, scrapeSystem, watchRoms } from "./commands";
+import { datReport, listMissingRoms, listNewRoms, profilesAvailable, scrapeSystem, watchRoms } from "./commands";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DatModal } from "./components/common/DatModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
@@ -57,6 +57,9 @@ import { UpdateBanner } from "./components/common/UpdateBanner";
 import { UpdateModal } from "./components/common/UpdateModal";
 import { useUpdateStore } from "./store/useUpdateStore";
 import "./App.css";
+
+/** How often the active profile's folder is checked (SD card plugged in / out) */
+const PROFILE_CHECK_MS = 3000;
 
 function App() {
   const currentView = useAppStore((s) => s.currentView);
@@ -131,9 +134,33 @@ function App() {
   const systemsKey = useAppStore((s) => s.systems.filter((x) => x.has_gamelist).map((x) => x.path).join("\n"));
   // Bumped when the selected system's folder changed: its buttons are recounted
   const [romsTick, setRomsTick] = useState(0);
+  const profileUnavailable = useAppStore((s) => s.profileUnavailable);
   useEffect(() => {
-    watchRoms(watchOn).catch(() => {});
-  }, [watchOn, profileKey]);
+    // Without its folder (SD card not plugged in) there is nothing to watch
+    watchRoms(watchOn && !profileUnavailable).catch(() => {});
+  }, [watchOn, profileKey, profileUnavailable]);
+
+  // A profile on a disk that comes and goes (an SD card): every few seconds check that its folder
+  // exists. When it appears the systems are loaded; when it goes, back to the start screen.
+  useEffect(() => {
+    let busy = false;
+    const timer = setInterval(async () => {
+      const state = useAppStore.getState();
+      const profile = getActiveProfile(state.settings);
+      if (busy || !profile || !isProfileComplete(profile)) return;
+      busy = true;
+      try {
+        const available = (await profilesAvailable([profile]).catch(() => ({}) as Record<string, boolean>))[profile.id] !== false;
+        // The profile may have changed in the meantime
+        if (getActiveProfile(useAppStore.getState().settings)?.id !== profile.id) return;
+        if (available && useAppStore.getState().profileUnavailable) await useAppStore.getState().loadSystems();
+        else if (!available && !useAppStore.getState().profileUnavailable) useAppStore.getState().setProfileUnavailable(true);
+      } finally {
+        busy = false;
+      }
+    }, PROFILE_CHECK_MS);
+    return () => clearInterval(timer);
+  }, []);
   useEffect(() => {
     if (watchOn) useAppStore.getState().refreshRomChanges();
     else useAppStore.setState({ romChanges: {} });

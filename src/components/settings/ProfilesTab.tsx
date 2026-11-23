@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
-import { detectEsdePaths, suggestedBiosDir, suggestedSavesDir } from "../../commands";
+import { detectEsdePaths, profilesAvailable, suggestedBiosDir, suggestedSavesDir } from "../../commands";
 import type { EsdeDetectedPaths, Profile, StructureKind } from "../../types";
 import { createProfile, isDefaultEsdeMedia, isProfileComplete } from "../../utils/profiles";
 import { TrashIcon } from "../common/Icons";
@@ -24,6 +24,22 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
   const [editingId, setEditingId] = useState<string | undefined>(activeProfileId ?? profiles[0]?.id);
   const [detected, setDetected] = useState<EsdeDetectedPaths | null>(null);
   const [detectError, setDetectError] = useState<string | null>(null);
+  // Perfiles cuya carpeta no existe ahora (SD o disco sin conectar): se miran al entrar y cada
+  // pocos segundos, para que se habiliten solos al conectarlos
+  const [available, setAvailable] = useState<Record<string, boolean>>({});
+  const locations = JSON.stringify(profiles.map((p) => [p.id, p.kind, p.rom_root_path, p.esde_home_path]));
+  useEffect(() => {
+    let alive = true;
+    const check = () => profilesAvailable(profiles).then((found) => alive && setAvailable(found)).catch(() => {});
+    check();
+    const timer = setInterval(check, 3000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations]);
+  const isConnected = (p: Profile) => available[p.id] !== false;
 
   const editing = profiles.find((p) => p.id === editingId);
   // Carpeta de BIOS que se usaría si se deja vacía (se enseña como ejemplo)
@@ -106,14 +122,15 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
               setDetected(null);
               setDetectError(null);
               // Pulsar un perfil lo pone en uso al momento (guarda y vuelve a escanear). Uno
-              // incompleto solo se selecciona para rellenarlo; el activo, solo se selecciona
-              if (p.id !== activeProfileId && isProfileComplete(p)) onActivate(p.id);
+              // incompleto o sin conectar solo se selecciona (para verlo o editarlo); el activo, también
+              if (p.id !== activeProfileId && isProfileComplete(p) && isConnected(p)) onActivate(p.id);
             }}
+            title={isConnected(p) ? undefined : t("profiles.notConnectedHelp")}
             className={`w-full text-left px-3 py-2 rounded border transition-colors ${
               p.id === editingId
                 ? "border-indigo-500 bg-indigo-600/10"
                 : "border-zinc-700 hover:bg-zinc-800"
-            }`}
+            } ${isConnected(p) ? "" : "opacity-50"}`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-sm text-zinc-200 truncate">{p.name || t("profiles.defaultName")}</span>
@@ -126,6 +143,7 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
             <span className="text-xs text-zinc-500">
               {p.kind === "esde" ? t("profiles.kindEsde") : t("profiles.kindClassic")}
               {!isProfileComplete(p) && ` · ${t("profiles.incomplete")}`}
+              {isProfileComplete(p) && !isConnected(p) && <span className="text-amber-400"> · {t("profiles.notConnected")}</span>}
             </span>
           </button>
         ))}

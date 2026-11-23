@@ -111,6 +111,24 @@ fn same_dir(a: &str, b: &str) -> bool {
     canon(a) == canon(b)
 }
 
+/// Is the profile's library reachable right now? Its ROM folder (and, in ES-DE, the ES-DE folder)
+/// must exist: a profile on an SD card or a USB disk that isn't plugged in is not available.
+fn is_available(profile: &Profile) -> bool {
+    let exists = |path: &str| !path.trim().is_empty() && Path::new(path).is_dir();
+    let esde_ok = match (&profile.kind, profile.esde_home_path.as_deref()) {
+        (StructureKind::Esde, Some(home)) if !home.trim().is_empty() => exists(home),
+        _ => true,
+    };
+    exists(&profile.rom_root_path) && esde_ok
+}
+
+/// Which profiles are available now (by id). Only checks that the folders exist, so an unmounted
+/// SD answers at once; it runs on a thread in case a network drive is slow.
+#[tauri::command(async)]
+pub fn profiles_available(profiles: Vec<Profile>) -> std::collections::HashMap<String, bool> {
+    profiles.iter().map(|p| (p.id.clone(), is_available(p))).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -193,5 +211,20 @@ mod tests {
         let active = profile("classic", StructureKind::Classic, &roms, None);
         let other = profile("esde", StructureKind::Esde, &tmp.path().join("Otras"), Some(&home));
         assert!(find_pending(&active, &[active.clone(), other], Some(&home)).is_none());
+    }
+
+    #[test]
+    fn a_profile_whose_folders_are_gone_is_not_available() {
+        let tmp = tempfile::tempdir().unwrap();
+        let roms = tmp.path().join("roms");
+        std::fs::create_dir_all(&roms).unwrap();
+        let sd = tmp.path().join("Volumes/GAMES");
+        assert!(is_available(&profile("a", StructureKind::Classic, &roms, None)));
+        assert!(!is_available(&profile("b", StructureKind::Classic, &sd, None)), "SD not plugged in");
+        // ES-DE: también hace falta la carpeta de ES-DE
+        assert!(!is_available(&profile("c", StructureKind::Esde, &roms, Some(&sd))));
+        assert!(is_available(&profile("d", StructureKind::Esde, &roms, Some(&roms))));
+        let found = profiles_available(vec![profile("a", StructureKind::Classic, &roms, None), profile("b", StructureKind::Classic, &sd, None)]);
+        assert_eq!((found["a"], found["b"]), (true, false));
     }
 }

@@ -27,6 +27,9 @@ export function WelcomeScreen() {
   const toggleOnlyWithGames = useAppStore((s) => s.toggleOnlySystemsWithGames);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
   const romFolder = useAppStore((s) => getActiveProfile(s.settings)?.rom_root_path);
+  const profileName = useAppStore((s) => getActiveProfile(s.settings)?.name ?? "");
+  // La carpeta del perfil no existe ahora (SD o disco sin conectar): App la vuelve a mirar sola
+  const unavailable = useAppStore((s) => s.profileUnavailable);
   // La versión se lee de la propia app (tauri.conf.json)
   const [version, setVersion] = useState("");
   useEffect(() => {
@@ -86,7 +89,17 @@ export function WelcomeScreen() {
       <p className="mt-2 max-w-md text-sm text-zinc-400">{t("about.description")}</p>
 
       <div className="mt-8 max-w-md">
-        {loading ? null : systems.length === 0 ? (
+        {unavailable ? (
+          // Perfil en una SD o un disco que no está conectado: se cargará solo al conectarlo
+          <>
+            <p className="text-sm text-amber-300">{t("welcome.unavailable", { name: profileName })}</p>
+            {romFolder && <p className="mt-1 text-xs text-zinc-500 font-mono break-all">{romFolder}</p>}
+            <p className="mt-2 text-xs text-zinc-400">{t("welcome.unavailableHelp")}</p>
+            <button onClick={() => setCurrentView("settings")} className={button}>
+              {t("welcome.openSettings")}
+            </button>
+          </>
+        ) : loading ? null : systems.length === 0 ? (
           // La carpeta del perfil no tiene sistemas (o no hay perfil)
           <>
             <p className="text-sm text-zinc-300">{t("welcome.noSystems")}</p>

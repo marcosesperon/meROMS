@@ -65,6 +65,10 @@ interface AppState {
   systems: SystemInfo[];
   selectedSystem: SystemInfo | null;
   loadSystems: () => Promise<void>;
+  /** La carpeta del perfil activo no existe ahora (SD o disco sin conectar): pantalla inicial con aviso */
+  profileUnavailable: boolean;
+  /** Marca el perfil activo como no disponible (vuelve a la pantalla inicial y vacía los sistemas) o disponible */
+  setProfileUnavailable: (unavailable: boolean) => void;
   selectSystem: (system: SystemInfo) => void;
   /** Back to the start screen (no system chosen; the profile's last system is kept) */
   goHome: () => void;
@@ -287,9 +291,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Systems
   systems: [],
   selectedSystem: null,
+  profileUnavailable: false,
+  setProfileUnavailable: (unavailable) => {
+    if (unavailable) {
+      get().goHome();
+      set({ systems: [], profileUnavailable: true, loading: false, scanProgress: null });
+    } else {
+      set({ profileUnavailable: false });
+    }
+  },
   loadSystems: async () => {
     const profile = getActiveProfile(get().settings);
     if (!profile || !isProfileComplete(profile)) return;
+    // SD o disco sin conectar: ni se intenta (daría error); App vuelve a mirar cada pocos segundos
+    const available = await commands
+      .profilesAvailable([profile])
+      .then((found) => found[profile.id] !== false)
+      .catch(() => true);
+    get().setProfileUnavailable(!available);
+    if (!available) return;
     try {
       set({ loading: true, scanProgress: null });
       const task = newTaskId();

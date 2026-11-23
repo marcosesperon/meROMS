@@ -756,6 +756,11 @@ export async function detectPendingStructure(): Promise<PendingStructure | null>
   return invoke("detect_pending_structure");
 }
 
+/** Qué perfiles están disponibles ahora (por id): su carpeta existe (una SD sin conectar, no) */
+export async function profilesAvailable(profiles: Profile[]): Promise<Record<string, boolean>> {
+  return invoke("profiles_available", { profiles });
+}
+
 // Folders
 export async function addFolder(systemPath: string, folder: Folder): Promise<GameList> {
   return invoke("add_folder", { systemPath, folder });
