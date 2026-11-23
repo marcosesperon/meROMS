@@ -7,8 +7,9 @@ interface RenameOptionsPanelProps {
   options: RenameOptions;
   onChange: (options: RenameOptions) => void;
   /** ROMs que el scraper aún no ha contestado (sin preguntar, paradas o sin respuesta) */
-  scraperPending: number;
-  onSearch: () => void;
+  scraperPending?: number;
+  /** «Buscar» del scraper; sin él (Ajustes) no sale el botón */
+  onSearch?: () => void;
   disabled: boolean;
 }
 
@@ -16,7 +17,7 @@ const TAG_KINDS: (keyof TagKeep)[] = ["region", "language", "revision", "status"
 const ARTICLES: ArticleMode[] = ["keep", "end", "front"];
 
 /** Columna de opciones de Renombrar: fuentes en cadena, reglas, etiquetas y título */
-export function RenameOptionsPanel({ options, onChange, scraperPending, onSearch, disabled }: RenameOptionsPanelProps) {
+export function RenameOptionsPanel({ options, onChange, scraperPending = 0, onSearch, disabled }: RenameOptionsPanelProps) {
   const { t } = useTranslation();
   const scraperStatus = useAppStore((s) => s.scraperStatus);
   const scrapers = usableNameScrapers(scraperStatus);
@@ -109,6 +110,7 @@ export function RenameOptionsPanel({ options, onChange, scraperPending, onSearch
                         </option>
                       ))}
                     </select>
+                    {onSearch && (
                     <button
                       onClick={onSearch}
                       disabled={disabled || scraperPending === 0}
@@ -119,6 +121,7 @@ export function RenameOptionsPanel({ options, onChange, scraperPending, onSearch
                       {t("rename.scraperSearch")}
                       {scraperPending > 0 ? ` (${scraperPending})` : ""}
                     </button>
+                    )}
                   </div>
                 )}
               </div>

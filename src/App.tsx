@@ -36,6 +36,7 @@ import { isArcadeSystem } from "./utils/arcade";
 import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
+import { autoRename } from "./utils/autoRename";
 import { useTranslation } from "./i18n";
 import { getActiveProfile, isProfileComplete, profileLocationKey } from "./utils/profiles";
 import { donationPromptDue } from "./utils/links";
@@ -574,11 +575,15 @@ function App() {
         systemPath={selectedSystem?.path || ""}
         canScrape={hasCredentials}
         onClose={() => setShowNewRomsModal(false)}
-        onAdded={(paths, scrape) => {
+        onAdded={async (paths, scrape, rename) => {
           if (!selectedSystem) return;
+          const systemPath = selectedSystem.path;
           // Scraping reloads the games when it ends; otherwise reload now
-          if (scrape) handleScrapeAll(paths);
-          else loadGames(selectedSystem.path);
+          if (scrape) await handleScrapeAll(paths);
+          else await loadGames(systemPath);
+          // Then rename them with Settings > Rename options (scraping already saved the
+          // ScreenScraper names; without it, those ROMs are asked now)
+          if (rename) await autoRename(systemPath, paths, !scrape);
         }}
       />
 

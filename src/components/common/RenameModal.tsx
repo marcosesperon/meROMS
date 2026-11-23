@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { renamePreview, renameRoms } from "../../commands";
 import type { RenameEntry, RenameOptions, RenameRequest } from "../../types";
-import { activeSources, nameSourceText, proposedTitle, renameOptionsFrom } from "../../utils/renameSources";
+import { activeSources, hasExtension, nameSourceText, planRename, renameOptionsFrom, renameRequestOf } from "../../utils/renameSources";
 import { RenameOptionsPanel } from "./RenameOptionsPanel";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
@@ -21,9 +21,6 @@ interface RenameModalProps {
   onDone?: (moved: Record<string, string>) => void;
 }
 
-/** Caracteres que no valen en un nombre de fichero (los mismos que mira el backend) */
-const FORBIDDEN = /[/\\:*?"<>|]/;
-
 /** "./sub/Juego (USA).sfc" + "Juego" → "./sub/Juego.sfc" (solo cambia el nombre, no la carpeta) */
 function pathWithName(entry: RenameEntry, newName: string): string {
   const slash = entry.current_path.lastIndexOf("/");
@@ -31,9 +28,6 @@ function pathWithName(entry: RenameEntry, newName: string): string {
   const ext = fileName.slice(entry.current_name.length);
   return entry.current_path.slice(0, slash + 1) + newName + ext;
 }
-
-/** Una carpeta como ROM no tiene extensión: su nombre no se toca (el título sí) */
-const hasExtension = (e: RenameEntry) => e.current_path.slice(e.current_path.lastIndexOf("/") + 1) !== e.current_name;
 
 /**
  * Renombrar: una sola ventana para el nombre de fichero y el título de la gamelist. A la
@@ -107,17 +101,8 @@ export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: Re
 
   // Lo que se haría con cada juego, según las opciones, los interruptores y lo escrito a mano
   const rows = useMemo(
-    () =>
-      entries.map((entry) => {
-        const file = files[entry.current_path] ?? entry.proposed_name;
-        const invalid = !file.trim() || file.trim() !== file || FORBIDDEN.test(file);
-        // Un conflicto se salva escribiendo otro nombre
-        const blocked = invalid || (!!entry.conflict && file === entry.proposed_name);
-        const fileChanges = options.renameFiles && hasExtension(entry) && file !== entry.current_name;
-        const title = titles[entry.current_path] ?? proposedTitle(file, entry.game_title, options.article, entry.source !== "current", entry.current_name);
-        const titleChanges = options.changeTitles && !!title.trim() && title !== (entry.game_title ?? "");
-        return { entry, file, title, invalid, blocked, fileChanges, titleChanges, changes: (fileChanges && !blocked) || titleChanges };
-      }),
+    () => entries.map((entry) => planRename(entry, options, files[entry.current_path], titles[entry.current_path])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [entries, files, titles, options.renameFiles, options.changeTitles, options.article]
   );
   // Se enseñan los que cambian en algo (aunque sea con un conflicto); con un solo juego, siempre
@@ -152,11 +137,7 @@ export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: Re
   }
 
   async function apply() {
-    const renames: RenameRequest[] = applicable.map((r) => ({
-      current_path: r.entry.current_path,
-      new_name: r.fileChanges && !r.blocked ? r.file : r.entry.current_name,
-      new_title: r.titleChanges ? r.title.trim() : undefined,
-    }));
+    const renames: RenameRequest[] = applicable.map(renameRequestOf);
     if (renames.length === 0) return;
     try {
       const result = await renameTask.run((task) => renameRoms(systemPath, renames, task));

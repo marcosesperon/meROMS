@@ -178,6 +178,8 @@ export interface AppSettings {
   ss_languages?: string[];
   tgdb_apikey?: string;
   /** "Export to device": destinations used, with their selection */
+  /** New ROMs: rename the added ones automatically (after scraping) with the rename options */
+  new_roms_rename?: boolean;
   /** Rename window options (managed by the UI; see RenameOptions) */
   rename_options?: Partial<RenameOptions>;
   export_targets?: { dest: string; systems: string[]; games: "all" | "favorites" | "visible"; media: string[]; remove_extra: boolean }[];

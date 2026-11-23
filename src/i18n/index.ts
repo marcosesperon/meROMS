@@ -40,10 +40,19 @@ export const useI18nStore = create<I18nState>((set) => ({
   setLocale: (locale: Locale) => set({ locale }),
 }));
 
-/** Texto suelto en el idioma actual, para usar fuera de los componentes (sin parámetros). */
-export function translate(key: TranslationKeys): string {
+/** Pone los valores en los huecos «{nombre}» del texto */
+function fill(text: string, params?: Record<string, string | number>): string {
+  if (!params) return text;
+  for (const [k, v] of Object.entries(params)) {
+    text = text.replace(`{${k}}`, String(v));
+  }
+  return text;
+}
+
+/** Texto suelto en el idioma actual, para usar fuera de los componentes. */
+export function translate(key: TranslationKeys, params?: Record<string, string | number>): string {
   const dict = translations[useI18nStore.getState().locale];
-  return dict[key] || translations.en[key] || key;
+  return fill(dict[key] || translations.en[key] || key, params);
 }
 
 export function useTranslation() {
@@ -51,13 +60,7 @@ export function useTranslation() {
   const dict = translations[locale];
 
   function t(key: TranslationKeys, params?: Record<string, string | number>): string {
-    let text = dict[key] || translations.en[key] || key;
-    if (params) {
-      for (const [k, v] of Object.entries(params)) {
-        text = text.replace(`{${k}}`, String(v));
-      }
-    }
-    return text;
+    return fill(dict[key] || translations.en[key] || key, params);
   }
 
   return { t, locale };

@@ -10,7 +10,7 @@ import {
 } from "../../types";
 import { MediaConfigTab } from "./MediaConfigTab";
 import { ProfilesTab } from "./ProfilesTab";
-import { RenameRulesTab } from "./RenameRulesTab";
+import { RenameSettingsTab } from "./RenameSettingsTab";
 import { AboutTab } from "./AboutTab";
 import { PlaceholdersSetting } from "./PlaceholdersSetting";
 import { LaunchBoxSetting } from "./LaunchBoxSetting";
@@ -564,9 +564,13 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
           )}
 
           {activeTab === "rules" && (
-            <RenameRulesTab
+            <RenameSettingsTab
+              options={form.rename_options}
+              onOptionsChange={(options) => setForm({ ...form, rename_options: options })}
+              newRomsRename={form.new_roms_rename === true}
+              onNewRomsRenameChange={(on) => setForm({ ...form, new_roms_rename: on })}
               rules={form.rename_rules}
-              onChange={(rules) => setForm({ ...form, rename_rules: rules })}
+              onRulesChange={(rules) => setForm({ ...form, rename_rules: rules })}
             />
           )}
 

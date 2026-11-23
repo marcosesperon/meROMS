@@ -5,6 +5,7 @@ import type { NewRom } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useAppStore } from "../../store/useAppStore";
 
 interface NewRomsModalProps {
   open: boolean;
@@ -12,8 +13,8 @@ interface NewRomsModalProps {
   /** false = no hay scraper configurado: no se ofrece scrapear */
   canScrape: boolean;
   onClose: () => void;
-  /** Se llama tras añadir, con las rutas añadidas y si hay que scrapearlas */
-  onAdded: (paths: string[], scrape: boolean) => void;
+  /** Se llama tras añadir, con las rutas añadidas, si hay que scrapearlas y si hay que renombrarlas */
+  onAdded: (paths: string[], scrape: boolean, rename: boolean) => void;
   /** Files were sent to the trash (so the "New ROMs (N)" count can be refreshed) */
   onTrashed: () => void;
 }
@@ -30,6 +31,10 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
   const [names, setNames] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [scrape, setScrape] = useState(true);
+  // Renombrar solas las añadidas (con las opciones de Ajustes → Renombrar), tras scrapearlas;
+  // se recuerda, y de serie va desmarcado porque renombra sin enseñar la lista
+  const rename = useAppStore((s) => s.settings.new_roms_rename === true);
+  const patchSettings = useAppStore((s) => s.patchSettings);
   // Buscar las ROMs nuevas y añadirlas: procesos con progreso y Cancelar
   const scanTask = useTask();
   const addTask = useTask();
@@ -96,7 +101,7 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
         await showMessage(t("task.stopped", { done: added, total: entries.length }));
       }
       onClose();
-      onAdded(entries.slice(0, added ?? 0).map((e) => e.path), canScrape && scrape && !stopped);
+      onAdded(entries.slice(0, added ?? 0).map((e) => e.path), canScrape && scrape && !stopped, rename && !stopped);
     } catch (e) {
       await showMessage(t("newRoms.failed", { error: String(e) }), "error");
     }
@@ -209,6 +214,17 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
                 className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
               />
               {t("newRoms.scrapeAfter")}
+            </label>
+          )}
+          {roms.length > 0 && (
+            <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer" title={t("newRoms.renameAfterHelp")}>
+              <input
+                type="checkbox"
+                checked={rename}
+                onChange={(e) => patchSettings({ new_roms_rename: e.target.checked })}
+                className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+              />
+              {t("newRoms.renameAfter")}
             </label>
           )}
           {roms.length > 0 && (

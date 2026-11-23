@@ -112,6 +112,9 @@ pub struct AppSettings {
     // ROM name cleanup rules (None = built-in defaults)
     #[serde(default)]
     pub rename_rules: Option<Vec<RenameRule>>,
+    // New ROMs: rename the added ROMs automatically (after scraping) with `rename_options`
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub new_roms_rename: Option<bool>,
     // Rename window: sources and their order, rules, tags kept, title options (managed by the UI)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rename_options: Option<serde_json::Value>,
