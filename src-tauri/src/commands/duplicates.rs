@@ -37,7 +37,9 @@ pub struct RemoveResult {
 }
 
 /// Normalize a game name for fuzzy comparison:
-/// lowercase, strip parenthetical tags like (USA), (Rev 1), (En,Fr), [!], etc.
+/// lowercase, strip parenthetical tags like (USA), (Rev 1), (En,Fr), [!], etc. and a leading
+/// compilation number ("0013 Street Fighter 2" = "Street Fighter 2"; years like 1943 stay),
+/// with the same condition as Rename's rule, so names that clash there are grouped here.
 fn normalize_name(name: &str) -> String {
     let mut s = name.to_lowercase();
     // Remove parenthetical and bracket tags
@@ -55,7 +57,92 @@ fn normalize_name(name: &str) -> String {
             break;
         }
     }
+    let s = s.trim();
+    let s = super::rename::leading_number(s).map_or(s, |number| &s[number.len()..]);
     s.trim().to_string()
+}
+
+/// A group found by `group_games`: why its games look the same and which ones (indices)
+#[derive(Debug, PartialEq)]
+struct FoundGroup {
+    reason: &'static str,
+    detail: Option<String>,
+    members: Vec<usize>,
+}
+
+/// Union-find: each game points to another one of its group until the root
+fn root(parent: &mut [usize], i: usize) -> usize {
+    let mut r = i;
+    while parent[r] != r {
+        r = parent[r];
+    }
+    // Shorten the way for next time
+    let mut j = i;
+    while parent[j] != r {
+        let next = parent[j];
+        parent[j] = r;
+        j = next;
+    }
+    r
+}
+
+/// Groups of games that look like the same one. Two games are linked when they share the
+/// ScreenScraper ID, the hash (md5/hash) or the normalized name, and a group is everything linked,
+/// even through different reasons (A and B share the ID, B and C the name: A, B and C). The reason
+/// shown is the strongest link inside the group: ID > hash > name.
+fn group_games(games: &[Game]) -> Vec<FoundGroup> {
+    let mut parent: Vec<usize> = (0..games.len()).collect();
+    // Strength of each kind of link (the lower, the stronger) and the links found per kind
+    const KINDS: [&str; 3] = ["screenscraper_id", "hash", "similar_name"];
+    let mut links: Vec<(usize, usize, usize)> = Vec::new();
+    for (kind, key_of) in [
+        (0, (|g: &Game| g.id.clone()) as fn(&Game) -> Option<String>),
+        (1, |g: &Game| g.md5.clone().or_else(|| g.hash.clone())),
+        (2, |g: &Game| Some(normalize_name(g.name.as_deref().unwrap_or(&g.path)))),
+    ] {
+        let mut first: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+        for (i, game) in games.iter().enumerate() {
+            let Some(key) = key_of(game).filter(|k| !k.trim().is_empty()) else { continue };
+            match first.get(&key) {
+                Some(&j) => links.push((kind, j, i)),
+                None => {
+                    first.insert(key, i);
+                }
+            }
+        }
+    }
+    for &(_, a, b) in &links {
+        let (ra, rb) = (root(&mut parent, a), root(&mut parent, b));
+        if ra != rb {
+            parent[rb] = ra;
+        }
+    }
+
+    // Members of each group (in gamelist order) and its strongest link
+    let mut members: std::collections::BTreeMap<usize, Vec<usize>> = std::collections::BTreeMap::new();
+    for i in 0..games.len() {
+        let r = root(&mut parent, i);
+        members.entry(r).or_default().push(i);
+    }
+    let mut strongest: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+    for &(kind, a, _) in &links {
+        let r = root(&mut parent, a);
+        let best = strongest.entry(r).or_insert(kind);
+        *best = (*best).min(kind);
+    }
+    let mut groups: Vec<FoundGroup> = members
+        .into_iter()
+        .filter(|(_, m)| m.len() > 1)
+        .map(|(r, m)| {
+            let kind = strongest.get(&r).copied().unwrap_or(2);
+            // With the ID as reason, the ID shared by most of them is the detail
+            let detail = (kind == 0).then(|| m.iter().find_map(|&i| games[i].id.clone())).flatten();
+            FoundGroup { reason: KINDS[kind], detail, members: m }
+        })
+        .collect();
+    // Same order as before: by ID first, then hash, then name
+    groups.sort_by_key(|g| KINDS.iter().position(|k| *k == g.reason));
+    groups
 }
 
 #[tauri::command(async)]
@@ -69,67 +156,8 @@ pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<
         let members: Vec<Game> = indices.iter().map(|&i| games[i].clone()).collect();
         suggest(reason, detail, members, &system, &settings.scrape_regions(), &settings.scrape_languages())
     };
-    let mut used_indices: std::collections::HashSet<usize> = std::collections::HashSet::new();
-
-    // 1. Group by same ScreenScraper ID
-    let mut id_map: std::collections::HashMap<String, Vec<usize>> =
-        std::collections::HashMap::new();
-    for (i, game) in games.iter().enumerate() {
-        if let Some(id) = &game.id {
-            if !id.is_empty() {
-                id_map.entry(id.clone()).or_default().push(i);
-            }
-        }
-    }
-    for (id, indices) in &id_map {
-        if indices.len() > 1 {
-            groups.push(new_group("screenscraper_id", Some(id.clone()), indices));
-            for &i in indices {
-                used_indices.insert(i);
-            }
-        }
-    }
-
-    // 2. Group by same hash (md5 or hash)
-    let mut hash_map: std::collections::HashMap<String, Vec<usize>> =
-        std::collections::HashMap::new();
-    for (i, game) in games.iter().enumerate() {
-        if used_indices.contains(&i) {
-            continue;
-        }
-        let h = game.md5.as_ref().or(game.hash.as_ref());
-        if let Some(hash) = h {
-            if !hash.is_empty() {
-                hash_map.entry(hash.clone()).or_default().push(i);
-            }
-        }
-    }
-    for (_hash, indices) in &hash_map {
-        if indices.len() > 1 {
-            groups.push(new_group("hash", None, indices));
-            for &i in indices {
-                used_indices.insert(i);
-            }
-        }
-    }
-
-    // 3. Group by similar name (normalized)
-    let mut name_map: std::collections::HashMap<String, Vec<usize>> =
-        std::collections::HashMap::new();
-    for (i, game) in games.iter().enumerate() {
-        if used_indices.contains(&i) {
-            continue;
-        }
-        let name = game.name.as_deref().unwrap_or(&game.path);
-        let normalized = normalize_name(name);
-        if !normalized.is_empty() {
-            name_map.entry(normalized).or_default().push(i);
-        }
-    }
-    for (_name, indices) in &name_map {
-        if indices.len() > 1 {
-            groups.push(new_group("similar_name", None, indices));
-        }
+    for found in group_games(games) {
+        groups.push(new_group(found.reason, found.detail, &found.members));
     }
 
     Ok(groups)
@@ -366,6 +394,35 @@ mod tests {
 
         let plan = files_to_remove(&Layout::Classic, &system, &[to_remove, stays], &["./SDI.sms".into()]);
         assert_eq!(names(&plan[0].2, &system.rom_dir), vec!["covers/SDI.png", "images/SDI-image.png"]);
+    }
+
+    fn named(path: &str, name: &str, id: Option<&str>) -> Game {
+        Game { path: path.into(), name: Some(name.into()), id: id.map(Into::into), ..Default::default() }
+    }
+
+    #[test]
+    fn the_compilation_number_is_left_out_of_the_name_but_not_years() {
+        assert_eq!(normalize_name("0013 Street Fighter 2"), "street fighter 2");
+        assert_eq!(normalize_name("478 Red Pig (Chinese)"), "red pig");
+        assert_eq!(normalize_name("1943 The Battle of Midway"), "1943 the battle of midway");
+        assert_eq!(normalize_name("1942"), "1942");
+    }
+
+    #[test]
+    fn games_linked_by_different_reasons_end_up_in_one_group() {
+        let games = vec![
+            named("./0082 Castlevania 1.nes", "Castlevania", Some("1268")),
+            named("./CASTLE1.NES", "Castlevania", Some("1268")),
+            // Sin ID: solo se parece por el nombre a los de arriba
+            named("./069 Castlevania.nes", "069 Castlevania", None),
+            named("./0013 Street Fighter 2.nes", "0013 Street Fighter 2", None),
+            named("./Street Fighter 2.nes", "Street Fighter 2", Some("143329")),
+            named("./Otro.nes", "Otro", Some("5")),
+        ];
+        let groups = group_games(&games);
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0], FoundGroup { reason: "screenscraper_id", detail: Some("1268".into()), members: vec![0, 1, 2] });
+        assert_eq!(groups[1], FoundGroup { reason: "similar_name", detail: None, members: vec![3, 4] });
     }
 
     #[test]

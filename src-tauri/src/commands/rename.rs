@@ -96,7 +96,7 @@ static LEADING_NUMBER: std::sync::LazyLock<regex::Regex> =
     std::sync::LazyLock::new(|| regex::Regex::new(r"^(?:\d{2,3}|[03-9]\d{3}|1[0-8]\d{2}|2[1-9]\d{2})\s+").unwrap());
 
 /// El número de delante con su espacio («0004 »), si lo lleva
-fn leading_number(name: &str) -> Option<&str> {
+pub(super) fn leading_number(name: &str) -> Option<&str> {
     LEADING_NUMBER.find(name).filter(|m| m.end() < name.len()).map(|m| m.as_str())
 }
 
