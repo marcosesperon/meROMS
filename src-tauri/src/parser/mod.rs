@@ -95,6 +95,31 @@ const KNOWN_GAME_ATTRS: &[&str] = &["id", "source"];
 /// <alternativeEmulator>) is preserved as raw XML.
 const KNOWN_ROOT_ELEMENTS: &[&str] = &["provider", "folder", "game"];
 
+/// How many games a gamelist has, without building them: counts the <game> elements directly
+/// under the root (the same ones `parse_gamelist` reads). Much cheaper than a full parse; used to
+/// show the game count of every system when a profile is opened.
+pub fn count_games(xml: &str) -> Result<usize, String> {
+    let mut reader = Reader::from_str(xml);
+    let mut depth = 0;
+    let mut games = 0;
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(ref e)) => {
+                depth += 1;
+                if depth == 2 && e.name().as_ref() == b"game" {
+                    games += 1;
+                }
+            }
+            Ok(Event::Empty(ref e)) if depth == 1 && e.name().as_ref() == b"game" => games += 1,
+            Ok(Event::End(_)) => depth -= 1,
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(format!("XML parse error: {}", e)),
+            _ => {}
+        }
+    }
+    Ok(games)
+}
+
 /// Extract the raw XML of unknown direct children of <gameList>, in document order.
 fn extract_root_unknowns(original_xml: &str) -> Result<Vec<String>, String> {
     let mut reader = Reader::from_str(original_xml);

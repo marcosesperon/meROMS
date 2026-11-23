@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
-use serde::Serialize;
-use tauri::AppHandle;
+use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Manager};
 
 use super::progress::Progress;
 
@@ -20,10 +22,17 @@ fn count_roms(dir: &Path, folder_name: &str) -> usize {
     entries
         .filter_map(|e| e.ok())
         .filter(|e| {
-            let path = e.path();
-            if !path.is_file() {
+            // The listing already says what each entry is: no extra disk query per file (on an SD
+            // card that was most of the time). Only a symlink is followed to see what it points to.
+            let is_file = match e.file_type() {
+                Ok(t) if t.is_symlink() => e.path().is_file(),
+                Ok(t) => t.is_file(),
+                Err(_) => false,
+            };
+            if !is_file {
                 return false;
             }
+            let path = e.path();
             let Some(ext) = path.extension().and_then(|e| e.to_str()) else {
                 return false;
             };
@@ -31,6 +40,57 @@ fn count_roms(dir: &Path, folder_name: &str) -> usize {
             extensions.contains(&dot_ext.as_str())
         })
         .count()
+}
+
+/// Game count of each gamelist, kept in `game_counts.json` (app data dir) by path + size + date:
+/// opening a profile doesn't read the gamelists that haven't changed.
+#[derive(Default, Serialize, Deserialize)]
+struct GameCounts {
+    #[serde(default)]
+    entries: HashMap<String, CountEntry>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct CountEntry {
+    size: u64,
+    modified_ms: u64,
+    games: usize,
+}
+
+/// Size and modification date (ms) of a file
+fn stamp(path: &Path) -> Option<(u64, u64)> {
+    let meta = fs::metadata(path).ok()?;
+    let modified = meta.modified().ok()?.duration_since(UNIX_EPOCH).ok()?.as_millis() as u64;
+    Some((meta.len(), modified))
+}
+
+impl GameCounts {
+    fn load(file: &Path) -> Self {
+        fs::read_to_string(file).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default()
+    }
+
+    fn save(&self, file: &Path) {
+        if let (Some(dir), Ok(text)) = (file.parent(), serde_json::to_string(self)) {
+            let _ = fs::create_dir_all(dir);
+            let _ = fs::write(file, text);
+        }
+    }
+
+    /// Games of a gamelist: from the cache if the file is the same, else counted (and remembered)
+    fn games_in(&mut self, gamelist: &Path) -> usize {
+        let key = gamelist.to_string_lossy().to_string();
+        let Some((size, modified_ms)) = stamp(gamelist) else { return 0 };
+        if let Some(e) = self.entries.get(&key).filter(|e| e.size == size && e.modified_ms == modified_ms) {
+            return e.games;
+        }
+        let games = fs::read_to_string(gamelist).ok().and_then(|xml| parser::count_games(&xml).ok()).unwrap_or(0);
+        self.entries.insert(key, CountEntry { size, modified_ms, games });
+        games
+    }
+}
+
+fn counts_file(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_data_dir().ok().map(|d| d.join("game_counts.json"))
 }
 
 #[tauri::command(async)]
@@ -60,6 +120,8 @@ pub fn scan_systems(root_path: String, app: AppHandle, task: Option<String>) -> 
 
     let total = dirs.len();
     let mut systems = Vec::new();
+    let counts_path = counts_file(&app);
+    let mut counts = counts_path.as_deref().map(GameCounts::load).unwrap_or_default();
 
     for (i, entry) in dirs.into_iter().enumerate() {
         let path = entry.path();
@@ -79,17 +141,7 @@ pub fn scan_systems(root_path: String, app: AppHandle, task: Option<String>) -> 
         // Classic: <system>/gamelist.xml — ES-DE: <ES-DE>/gamelists/<system>/gamelist.xml
         let gamelist_path = layout.gamelist_path(&SystemRef::from_rom_dir(&path));
         let has_gamelist = gamelist_path.exists();
-
-        let game_count = if has_gamelist {
-            match fs::read_to_string(&gamelist_path) {
-                Ok(xml) => parser::parse_gamelist(&xml)
-                    .map(|gl| gl.games.len())
-                    .unwrap_or(0),
-                Err(_) => 0,
-            }
-        } else {
-            0
-        };
+        let game_count = if has_gamelist { counts.games_in(&gamelist_path) } else { 0 };
 
         let rom_count = count_roms(&path, &name);
 
@@ -103,6 +155,9 @@ pub fn scan_systems(root_path: String, app: AppHandle, task: Option<String>) -> 
         });
     }
 
+    if let Some(file) = &counts_path {
+        counts.save(file);
+    }
     systems.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     Ok(systems)
 }
@@ -174,6 +229,59 @@ fn locations(layout: &crate::layout::Layout, system: &SystemRef) -> SystemLocati
         media_dir: layout.media_type_dir(system, "covers").parent().map(text).unwrap_or_default(),
         media_folders,
         collections_dir: text(&layout.collections_dir(system)),
+    }
+}
+
+#[cfg(test)]
+mod count_tests {
+    use super::*;
+
+    #[test]
+    fn the_quick_count_matches_the_full_parse() {
+        let xml = r#"<?xml version="1.0"?>
+<gameList>
+  <provider><System>NES</System></provider>
+  <!-- <game><path>./commented.nes</path></game> -->
+  <folder><path>./sub</path><name>Sub</name></folder>
+  <game id="1"><path>./a.nes</path><name>A</name></game>
+  <game><path>./b.nes</path><name>B <![CDATA[<game>]]></name></game>
+  <game><path>./c.nes</path></game>
+  <alternativeEmulator><label>x</label></alternativeEmulator>
+</gameList>"#;
+        assert_eq!(parser::count_games(xml).unwrap(), parser::parse_gamelist(xml).unwrap().games.len());
+        assert_eq!(parser::count_games(xml).unwrap(), 3);
+    }
+
+    #[test]
+    fn the_cached_count_is_dropped_when_the_gamelist_changes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let gamelist = tmp.path().join("gamelist.xml");
+        let cache = tmp.path().join("data/game_counts.json");
+        fs::write(&gamelist, "<gameList><game><path>./a</path></game></gameList>").unwrap();
+        let mut counts = GameCounts::load(&cache);
+        assert_eq!(counts.games_in(&gamelist), 1);
+        counts.save(&cache);
+        // Guardada: sale de la caché aunque el fichero no se lea
+        let mut again = GameCounts::load(&cache);
+        assert_eq!(again.entries.len(), 1);
+        assert_eq!(again.games_in(&gamelist), 1);
+        // Otro tamaño: se vuelve a contar
+        fs::write(&gamelist, "<gameList><game><path>./a</path></game><game><path>./b</path></game></gameList>").unwrap();
+        assert_eq!(again.games_in(&gamelist), 2);
+    }
+
+    #[test]
+    fn roms_are_counted_by_extension_without_folders() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dir = tmp.path().join("nes");
+        fs::create_dir_all(dir.join("sub.nes")).unwrap();
+        fs::write(dir.join("a.nes"), b"x").unwrap();
+        fs::write(dir.join("b.NES"), b"x").unwrap();
+        fs::write(dir.join("gamelist.xml"), b"x").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(dir.join("a.nes"), dir.join("link.nes")).unwrap();
+        let expected = if cfg!(unix) { 3 } else { 2 };
+        assert_eq!(count_roms(&dir, "nes"), expected, "a folder named .nes is not a ROM; a symlink to a ROM is");
     }
 }
 

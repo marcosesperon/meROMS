@@ -23,6 +23,8 @@ export function WelcomeScreen() {
   const { t } = useTranslation();
   const systems = useAppStore((s) => s.systems);
   const loading = useAppStore((s) => s.loading);
+  // Progreso de la lectura de sistemas del perfil (se enseña aquí, con sitio)
+  const scanProgress = useAppStore((s) => s.scanProgress);
   const onlyWithGames = useAppStore((s) => s.onlySystemsWithGames);
   const toggleOnlyWithGames = useAppStore((s) => s.toggleOnlySystemsWithGames);
   const setCurrentView = useAppStore((s) => s.setCurrentView);
@@ -99,7 +101,12 @@ export function WelcomeScreen() {
               {t("welcome.openSettings")}
             </button>
           </>
-        ) : loading ? null : systems.length === 0 ? (
+        ) : loading ? (
+          // Leyendo los sistemas del perfil: cuántos van y cuál está leyendo
+          <div className="w-80 max-w-full">
+            <TaskProgress progress={scanProgress} label={t("sidebar.scanning")} compact />
+          </div>
+        ) : systems.length === 0 ? (
           // La carpeta del perfil no tiene sistemas (o no hay perfil)
           <>
             <p className="text-sm text-zinc-300">{t("welcome.noSystems")}</p>

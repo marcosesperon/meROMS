@@ -4,7 +4,6 @@ import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
 import { HomeIcon, SearchIcon, SettingsIcon } from "../common/Icons";
 import { SEARCH_SHORTCUT } from "../common/GlobalSearch";
 import { Tooltip } from "../common/Tooltip";
-import { TaskProgress } from "../common/TaskProgress";
 import { sidebarSystems } from "../../utils/systems";
 
 export function Sidebar() {
@@ -58,9 +57,12 @@ export function Sidebar() {
       )}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
-          // Escaneando: qué sistema está leyendo y cuántos van (la barra es estrecha: compacto)
-          <div className="px-2 py-4">
-            <TaskProgress progress={scanProgress} label={t("sidebar.scanning")} compact />
+          // Escaneando: aquí solo una línea en movimiento; el detalle (cuántos van, cuál lee) sale
+          // grande en el centro de la ventana, que en esta columna estrecha no cabía
+          <div className="px-3 py-4" role="status" aria-label={t("sidebar.scanning")}>
+            <div className="h-0.5 overflow-hidden rounded bg-indigo-500/15">
+              <div className="h-full w-1/3 bg-indigo-400/80 animate-[task-slide_1.2s_ease-in-out_infinite]" />
+            </div>
           </div>
         ) : visibleSystems.length === 0 ? (
           // Sin sistemas que enseñar la barra queda vacía: lo explica la pantalla del centro
