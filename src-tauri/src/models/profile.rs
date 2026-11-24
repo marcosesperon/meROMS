@@ -41,6 +41,9 @@ pub struct Profile {
     /// Saves folder (save games and states); None = the usual one next to the ROM folder
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub saves_dir: Option<String>,
+    /// Folder where versions and media set aside go (Settings > My collection); None = none chosen
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set_aside_dir: Option<String>,
     /// Cómo se ve cada sistema en este perfil (clave: el nombre del sistema en minúsculas y sin
     /// símbolos, `system_key`). Lo que falta es «automático».
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -95,6 +98,7 @@ impl Profile {
             last_system: None,
             bios_dir: None,
             saves_dir: None,
+            set_aside_dir: None,
             system_views: None,
         }
     }

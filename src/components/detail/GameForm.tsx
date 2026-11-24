@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Game } from "../../types";
 import { useTranslation } from "../../i18n";
 import { formatReleaseDate, toESDate } from "../../utils/format";
@@ -53,6 +54,10 @@ const MAIN_FIELDS: FieldDef[] = [
 
 export function GameForm({ game, onChange, onRenameRom, onMoveRom, onTranslateDesc, translating }: GameFormProps) {
   const { t } = useTranslation();
+  // «Nombre para ordenar» casi nunca se usa: solo se ve si tiene valor o si se pide con el
+  // enlace de debajo del nombre (y entonces se queda a la vista mientras se edita ese juego)
+  const [sortnameShown, setSortnameShown] = useState(() => !!game.sortname?.trim());
+  useEffect(() => setSortnameShown(!!game.sortname?.trim()), [game.path]);
 
   function getValue(field: FieldDef): string {
     const raw = game[field.key] || "";
@@ -106,7 +111,7 @@ export function GameForm({ game, onChange, onRenameRom, onMoveRom, onTranslateDe
       </div>
 
       {/* Main fields */}
-      {MAIN_FIELDS.map((field) => (
+      {MAIN_FIELDS.filter((field) => field.key !== "sortname" || sortnameShown).map((field) => (
         <div key={field.key}>
           <div className="flex items-center justify-between mb-1">
             <label className="text-xs text-zinc-400 block">{t(field.labelKey)}</label>
@@ -158,6 +163,12 @@ export function GameForm({ game, onChange, onRenameRom, onMoveRom, onTranslateDe
                 </button>
               )}
             </div>
+          )}
+          {/* Sin nombre para ordenar: un enlace para añadirlo, debajo del nombre */}
+          {field.key === "name" && !sortnameShown && (
+            <button type="button" onClick={() => setSortnameShown(true)} className="mt-1 text-[11px] text-indigo-400 hover:text-indigo-300">
+              {t("form.addSortname")}
+            </button>
           )}
         </div>
       ))}

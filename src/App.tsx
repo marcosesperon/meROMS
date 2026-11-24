@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAppStore } from "./store/useAppStore";
+import { useAppStore, type ToolId } from "./store/useAppStore";
 import { MainLayout } from "./components/layout/MainLayout";
 import { GameListView } from "./components/games/GameListView";
 import { GameDetailPanel } from "./components/detail/GameDetailPanel";
@@ -8,23 +8,23 @@ import { GameInfoPanel } from "./components/detail/GameInfoPanel";
 import { BulkEditPanel } from "./components/detail/BulkEditPanel";
 import { SettingsView } from "./components/settings/SettingsView";
 import { ScrapeProgressModal } from "./components/common/ScrapeProgressModal";
-import { UnusedMediaModal } from "./components/common/UnusedMediaModal";
 import { RenameModal } from "./components/common/RenameModal";
 import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
 import { runUndo } from "./utils/undo";
-import { BestVersionModal } from "./components/common/BestVersionModal";
 import { ExportDeviceModal } from "./components/common/ExportDeviceModal";
 import { CompareModal } from "./components/common/CompareModal";
 import { ChdModal } from "./components/common/ChdModal";
 import { BiosModal } from "./components/common/BiosModal";
-import { DuplicatesModal } from "./components/common/DuplicatesModal";
 import { CollectionsModal } from "./components/common/CollectionsModal";
-import { NormalizeMediaModal } from "./components/common/NormalizeMediaModal";
 import { NewRomsModal } from "./components/common/NewRomsModal";
 import { ToolsMenu } from "./components/common/ToolsMenu";
-import { MediaReviewModal } from "./components/common/MediaReviewModal";
 import { MediaSwapModal } from "./components/common/MediaSwapModal";
+import { MediaModal } from "./components/common/MediaModal";
+import { VersionsModal } from "./components/common/VersionsModal";
+import { OrderModal } from "./components/common/OrderModal";
+import { MissingModal } from "./components/common/MissingModal";
+import { ClearFieldsModal } from "./components/common/ClearFieldsModal";
 import { MigrationModal } from "./components/common/MigrationModal";
 import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { datReport, listMissingRoms, listNewRoms, profilesAvailable, scrapeSystem, watchRoms } from "./commands";
@@ -52,6 +52,7 @@ import { RaCheckModal } from "./components/common/RaCheckModal";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
+import { ChoiceDialog } from "./components/common/ChoiceDialog";
 import { TransferProfileModal } from "./components/common/TransferProfileModal";
 import { DonationModal } from "./components/common/DonationModal";
 import { UpdateBanner } from "./components/common/UpdateBanner";
@@ -84,28 +85,15 @@ function App() {
   // How the last run ended: stopped by the user, or the error that cut it
   const [scrapeStopped, setScrapeStopped] = useState(false);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
-  const [showCleanupModal, setShowCleanupModal] = useState(false);
-  const [showRenameModal, setShowRenameModal] = useState(false);
-  const [showBackupsModal, setShowBackupsModal] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [showDuplicatesModal, setShowDuplicatesModal] = useState(false);
-  const [showBestVersion, setShowBestVersion] = useState(false);
-  const [showExportDevice, setShowExportDevice] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
-  const [showChd, setShowChd] = useState(false);
-  const [showBios, setShowBios] = useState(false);
-  const [showCollectionsModal, setShowCollectionsModal] = useState(false);
-  const [showNormalizeModal, setShowNormalizeModal] = useState(false);
-  const [showNewRomsModal, setShowNewRomsModal] = useState(false);
-  const [showMediaReview, setShowMediaReview] = useState(false);
-  const [showMediaSwap, setShowMediaSwap] = useState(false);
-  // ROMs of the selected system that aren't in its gamelist (badge on the "New ROMs" button)
-  const [newRomsCount, setNewRomsCount] = useState(0);
-  const [showMissingRoms, setShowMissingRoms] = useState(false);
-  const [showScrapeAll, setShowScrapeAll] = useState(false);
-  const [showDat, setShowDat] = useState(false);
-  const [showTransfer, setShowTransfer] = useState(false);
-  const [showRaCheck, setShowRaCheck] = useState(false);
+  // System tools: one open at a time, kept in the store (the system status, "Put it all in
+  // order" and other windows open them too)
+  const tool = useAppStore((s) => s.tool);
+  const openTool = useAppStore((s) => s.openTool);
+  const closeTool = useAppStore((s) => s.closeTool);
+  const isTool = (id: ToolId) => tool?.id === id;
+  // ROMs of the selected system that aren't in its gamelist (status line and toolbar notice)
+  const newRomsCount = useAppStore((s) => s.newRomsCount);
+  const setNewRomsCount = useAppStore((s) => s.setNewRomsCount);
   const setDatMarks = useAppStore((s) => s.setDatMarks);
   // Bumped when the DAT changes, so the marks are reloaded
   const [datVersion, setDatVersion] = useState(0);
@@ -250,6 +238,19 @@ function App() {
       cancelled = true;
     };
   }, [selectedSystem?.path, datVersion, games.length]);
+
+  // Scrape All with the marked games (multi-select "Scrape (N)..."), else what the list shows
+  const scrapeMarked = tool?.id === "scrapeAll" ? tool.gamePaths : undefined;
+  const scrapeSubset = scrapeMarked ?? visibleGames.map((g) => g.path);
+
+  // The bottom bar notices lead to the system status: no game selected and the right panel open
+  const selectedPaths = useAppStore((s) => s.selectedPaths);
+  function showStatus() {
+    const state = useAppStore.getState();
+    state.setMultiSelect(false);
+    selectGame(null);
+    if (state.infoPanelCollapsed) state.toggleInfoPanel();
+  }
 
   // After media files moved between types: drop cached images, reload and refresh the selection
   async function reloadAfterMediaChange() {
@@ -404,10 +405,11 @@ function App() {
           {!couchMode && <GameListView />}
           {selectedSystem && (
             <div className="px-6 h-12 shrink-0 border-t border-zinc-800 bg-zinc-900 flex items-center gap-2">
+              {/* New ROMs / no ROM: small notices that lead to the system status (right panel) */}
               {newRomsCount > 0 && (
                 <button
-                  onClick={() => setShowNewRomsModal(true)}
-                  className="px-3 py-1.5 text-sm bg-amber-600/20 text-amber-300 border border-amber-700/60 rounded hover:bg-amber-600/30 transition-colors whitespace-nowrap"
+                  onClick={showStatus}
+                  className="px-2 py-1 text-xs bg-amber-600/15 text-amber-300 border border-amber-700/50 rounded hover:bg-amber-600/25 transition-colors whitespace-nowrap"
                   title={t("newRoms.description")}
                 >
                   {t("newRoms.button", { count: newRomsCount })}
@@ -415,64 +417,57 @@ function App() {
               )}
               {missingRomPaths.size > 0 && (
                 <button
-                  onClick={() => setShowMissingRoms(true)}
-                  className="px-3 py-1.5 text-sm bg-red-600/15 text-red-300 border border-red-800/60 rounded hover:bg-red-600/25 transition-colors whitespace-nowrap"
+                  onClick={showStatus}
+                  className="px-2 py-1 text-xs bg-red-600/10 text-red-300 border border-red-800/50 rounded hover:bg-red-600/20 transition-colors whitespace-nowrap"
                   title={t("missingRoms.description")}
                 >
                   {t("missingRoms.button", { count: missingRomPaths.size })}
                 </button>
               )}
               <div className="flex-1" />
-              {/* Secondary tools live in a menu so the bar never wraps */}
+              {/* Tools in three groups: the usual (tied to the status), the library and the rare ones */}
               <ToolsMenu
                 label={t("toolbar.tools")}
                 items={[
-                  // Undo the last rename / move / normalize / swap (only while there is one)
+                  // On top: Undo (while there is something) and Add game
                   ...(undoInfo
                     ? [{ label: t("undo.menu", { what: t(`undo.kind_${undoInfo.kind}`), count: undoInfo.files }), onClick: () => runUndo() }]
                     : []),
-                  { label: t("rename.button"), onClick: () => setShowRenameModal(true), separatorBefore: !!undoInfo },
                   {
-                    label: t("normalize.button"),
-                    onClick: () => setShowNormalizeModal(true),
-                    title: t(activeProfile?.kind === "esde" ? "normalize.descriptionEsde" : "normalize.description"),
+                    label: t("app.addGame"),
+                    onClick: () => {
+                      selectGame(null);
+                      setShowNewGame(true);
+                    },
                   },
-                  { label: t("cleanup.button"), onClick: () => setShowCleanupModal(true) },
-                  { label: t("mediaKinds.reviewButton"), onClick: () => setShowMediaReview(true) },
-                  { label: t("mediaKinds.swapButton"), onClick: () => setShowMediaSwap(true) },
-                  { label: t("duplicates.button"), onClick: () => setShowDuplicatesModal(true) },
-                  { label: t("best.button"), onClick: () => setShowBestVersion(true) },
-                  { label: t("chd.button"), onClick: () => setShowChd(true) },
-                  { label: t("dat.button"), onClick: () => setShowDat(true), separatorBefore: true },
-                  { label: t("bios.button"), onClick: () => setShowBios(true) },
-                  { label: t("ra.toolsButton"), onClick: () => setShowRaCheck(true) },
-                  { label: t("collections.button"), onClick: () => setShowCollectionsModal(true) },
-                  { label: t("backup.button"), onClick: () => setShowBackupsModal(true) },
-                  { label: t("export.button"), onClick: () => setShowExportModal(true) },
-                  { label: t("exportDevice.button"), onClick: () => setShowExportDevice(true) },
-                  { label: t("compare.button"), onClick: () => setShowCompare(true) },
-                  // Llevar el sistema a otro perfil (solo si hay otro perfil al que llevarlo)
-                  ...(hasTransferTarget ? [{ label: t("transfer.button"), onClick: () => setShowTransfer(true) }] : []),
+                  { label: t("order.button"), onClick: () => openTool("order"), groupLabel: t("toolbar.groupCollection"), shot: "tools-order" },
+                  { label: t("versions.button"), onClick: () => openTool("versions") },
+                  { label: t("rename.button"), onClick: () => openTool("rename") },
+                  { label: t("mediaTool.button"), onClick: () => openTool("media"), shot: "tools-media" },
+                  { label: t("clear.button"), onClick: () => openTool("clearFields"), shot: "tools-clear" },
+                  { label: t("dat.button"), onClick: () => openTool("dat") },
+                  { label: t("backup.button"), onClick: () => openTool("backups"), groupLabel: t("toolbar.groupLibrary") },
+                  { label: t("collections.button"), onClick: () => openTool("collections") },
+                  { label: t("chd.button"), onClick: () => openTool("chd") },
+                  { label: t("bios.button"), onClick: () => openTool("bios") },
+                  { label: t("ra.toolsButton"), onClick: () => openTool("ra") },
+                  { label: t("export.button"), onClick: () => openTool("export"), groupLabel: t("toolbar.groupMove") },
+                  { label: t("exportDevice.button"), onClick: () => openTool("exportDevice") },
+                  { label: t("compare.button"), onClick: () => openTool("compare") },
+                  // Take the system to another profile (only if there is one to take it to)
+                  ...(hasTransferTarget ? [{ label: t("transfer.button"), onClick: () => openTool("transfer") }] : []),
+                  { label: t("toolbar.migrate"), onClick: () => openTool("migrate") },
                 ]}
               />
               {hasCredentials && (
                 <button
                   // First choose what to update this time
-                  onClick={() => setShowScrapeAll(true)}
+                  onClick={() => openTool("scrapeAll")}
                   className="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors whitespace-nowrap"
                 >
                   {t("app.scrapeAll")}
                 </button>
               )}
-              <button
-                onClick={() => {
-                  selectGame(null);
-                  setShowNewGame(true);
-                }}
-                className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors whitespace-nowrap"
-              >
-                {t("app.addGame")}
-              </button>
             </div>
           )}
         </div>
@@ -493,7 +488,7 @@ function App() {
       <PlayingBanner />
       <LaunchProblemModal />
       <RandomGameModal />
-      {showRaCheck && <RaCheckModal onClose={() => setShowRaCheck(false)} />}
+      {isTool("ra") && <RaCheckModal onClose={closeTool} />}
       <SystemViewModal open={systemViewOpen} system={selectedSystem} onClose={() => setSystemViewOpen(false)} />
 
       {/* Read-only game page over the whole window (the editor opens on top of it) */}
@@ -511,9 +506,9 @@ function App() {
       )}
 
       <DatModal
-        open={showDat}
+        open={isTool("dat")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowDat(false)}
+        onClose={closeTool}
         onChanged={() => {
           setDatVersion((v) => v + 1);
           if (selectedSystem) {
@@ -524,25 +519,26 @@ function App() {
       />
 
       <ScrapeAllModal
-        open={showScrapeAll}
+        open={isTool("scrapeAll")}
         gameCount={games.length}
-        visibleCount={visibleGames.length}
+        visibleCount={scrapeSubset.length}
+        marked={!!scrapeMarked}
         systemPath={selectedSystem?.path ?? ""}
-        onClose={() => setShowScrapeAll(false)}
+        onClose={closeTool}
         onStart={(policy, onlyVisible) => {
-          setShowScrapeAll(false);
-          handleScrapeAll(onlyVisible ? visibleGames.map((g) => g.path) : undefined, policy);
+          closeTool();
+          handleScrapeAll(onlyVisible ? scrapeSubset : undefined, policy);
         }}
         onContinue={() => {
-          setShowScrapeAll(false);
+          closeTool();
           handleScrapeAll(undefined, undefined, true);
         }}
       />
 
       <MissingRomsModal
-        open={showMissingRoms}
+        open={isTool("missingRoms")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowMissingRoms(false)}
+        onClose={closeTool}
         onDone={() => {
           if (!selectedSystem) return;
           selectGame(null);
@@ -550,19 +546,23 @@ function App() {
         }}
       />
 
-      <MediaReviewModal
-        open={showMediaReview}
+      {/* Media: damaged and placeholders - leftovers - swapped types - old names */}
+      <MediaModal
+        open={isTool("media")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowMediaReview(false)}
+        tab={tool?.tab}
+        onClose={closeTool}
         onDone={reloadAfterMediaChange}
-        onOpenSwap={() => setShowMediaSwap(true)}
+        onOpenSwap={() => openTool("mediaSwap")}
+        // Damaged media sent to the trash: offer to download it again (only with a scraper configured)
+        onRescrape={hasCredentials ? (paths, policy) => handleScrapeAll(paths, policy) : undefined}
       />
 
       <MediaSwapModal
-        open={showMediaSwap}
+        open={isTool("mediaSwap")}
         systemPath={selectedSystem?.path || ""}
         games={games}
-        onClose={() => setShowMediaSwap(false)}
+        onClose={closeTool}
         onDone={reloadAfterMediaChange}
       />
 
@@ -571,10 +571,10 @@ function App() {
           // Deleting files doesn't change the games, so recount by hand
           if (selectedSystem) listNewRoms(selectedSystem.path).then((r) => setNewRomsCount(r.length)).catch(() => {});
         }}
-        open={showNewRomsModal}
+        open={isTool("newRoms")}
         systemPath={selectedSystem?.path || ""}
         canScrape={hasCredentials}
-        onClose={() => setShowNewRomsModal(false)}
+        onClose={closeTool}
         onAdded={async (paths, scrape, rename) => {
           if (!selectedSystem) return;
           const systemPath = selectedSystem.path;
@@ -596,78 +596,82 @@ function App() {
         onClose={() => setShowScrapeModal(false)}
       />
 
-      <UnusedMediaModal
-        open={showCleanupModal}
-        systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowCleanupModal(false)}
-        onDone={reloadAfterMediaChange}
-        // Damaged media sent to the trash: offer to download it again (only with a scraper configured)
-        onRescrape={hasCredentials ? (paths, policy) => handleScrapeAll(paths, policy) : undefined}
-      />
-
       <RenameModal
-        open={showRenameModal}
+        open={isTool("rename")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowRenameModal(false)}
+        onClose={closeTool}
       />
 
       <BackupsModal
-        open={showBackupsModal}
+        open={isTool("backups")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowBackupsModal(false)}
+        onClose={closeTool}
       />
 
       <ExportModal
-        open={showExportModal}
+        open={isTool("export")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowExportModal(false)}
+        onClose={closeTool}
       />
 
-      <ExportDeviceModal open={showExportDevice} onClose={() => setShowExportDevice(false)} />
-      <CompareModal open={showCompare} onClose={() => setShowCompare(false)} />
+      <ExportDeviceModal open={isTool("exportDevice")} onClose={closeTool} />
+      <CompareModal open={isTool("compare")} onClose={closeTool} />
 
-      <BiosModal open={showBios} onClose={() => setShowBios(false)} />
+      <BiosModal open={isTool("bios")} onClose={closeTool} />
 
       <ChdModal
-        open={showChd}
+        open={isTool("chd")}
         systemPath={selectedSystem?.path || ""}
         systemName={selectedSystem?.full_name || selectedSystem?.name || ""}
-        onClose={() => setShowChd(false)}
+        onClose={closeTool}
         onDone={() => {
           if (selectedSystem) loadGames(selectedSystem.path);
         }}
       />
 
-      <BestVersionModal
-        open={showBestVersion}
+      {/* Versions and duplicates (was Duplicates and Best version) */}
+      <VersionsModal
+        open={isTool("versions")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowBestVersion(false)}
+        onlyPaths={tool?.id === "versions" ? tool.gamePaths : undefined}
+        onClose={closeTool}
         onDone={() => {
           if (selectedSystem) loadGames(selectedSystem.path);
           useAppStore.getState().loadSystems();
         }}
       />
 
-      <DuplicatesModal
-        open={showDuplicatesModal}
+      {/* What the required data / media lines are missing, field by field and game by game */}
+      <MissingModal open={isTool("missing")} kind={tool?.tab === "media" ? "media" : tool?.tab === "invalid" ? "invalid" : "data"} onClose={closeTool} />
+
+      {/* Clear fields: a data field, a flag, the stats, the status or a media type, from many games */}
+      <ClearFieldsModal
+        open={isTool("clearFields")}
         systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowDuplicatesModal(false)}
-        onGamesChanged={() => {
-          if (selectedSystem) loadGames(selectedSystem.path);
-        }}
+        visiblePaths={visibleGames.map((g) => g.path)}
+        markedPaths={multiSelect ? [...selectedPaths] : []}
+        initialScope={tool?.id === "clearFields" && tool.tab === "marked" ? "marked" : "all"}
+        onClose={closeTool}
+      />
+
+      {/* Put it all in order: the steps of My collection in one go */}
+      <OrderModal
+        open={isTool("order")}
+        systemPath={selectedSystem?.path || ""}
+        steps={tool?.id === "order" ? tool.steps : undefined}
+        initialScope={tool?.id === "order" && tool.tab === "marked" ? "marked" : "all"}
+        canScrape={hasCredentials}
+        visiblePaths={visibleGames.map((g) => g.path)}
+        markedPaths={multiSelect ? [...selectedPaths] : []}
+        totalGames={games.length}
+        onClose={closeTool}
       />
 
       <CollectionsModal
-        open={showCollectionsModal}
+        open={isTool("collections")}
         systemPath={selectedSystem?.path || ""}
         games={games}
-        onClose={() => setShowCollectionsModal(false)}
-      />
-
-      <NormalizeMediaModal
-        open={showNormalizeModal}
-        systemPath={selectedSystem?.path || ""}
-        onClose={() => setShowNormalizeModal(false)}
+        onClose={closeTool}
       />
 
       <StructurePromptModal />
@@ -677,6 +681,8 @@ function App() {
         preset={migrationPreset}
         onClose={closePresetMigration}
       />
+      {/* Tools > Migrate structure (the active profile; also in Settings > Profiles) */}
+      <MigrationModal open={isTool("migrate")} onClose={closeTool} />
 
       <SettingsView
         open={showSettings}
@@ -690,7 +696,8 @@ function App() {
       {/* Global search (Cmd+K / Ctrl+K) */}
       <GlobalSearch />
       <ResultDialog />
-      <TransferProfileModal open={showTransfer} system={selectedSystem} onClose={() => setShowTransfer(false)} />
+      <ChoiceDialog />
+      <TransferProfileModal open={isTool("transfer")} system={selectedSystem} onClose={closeTool} />
     </MainLayout>
   );
 }

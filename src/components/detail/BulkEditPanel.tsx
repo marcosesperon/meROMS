@@ -8,6 +8,11 @@ import { STATUS_FLAGS, STATUS_META } from "../../utils/gameStatus";
 import { toESDate } from "../../utils/format";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { MoveGamesModal } from "../common/MoveGamesModal";
+import { removeVersions } from "../../utils/collectionActions";
+import { collectionRulesFrom } from "../../utils/collectionRules";
+import { reportWithUndo } from "../../utils/undo";
+import { isArcadeSystem } from "../../utils/arcade";
+import { removeGamesWithFiles } from "../../commands";
 import { RenameModal } from "../common/RenameModal";
 
 // Campos que se pueden poner igual en varios juegos (nombre, descripción y ruta son de cada uno)
@@ -75,11 +80,11 @@ export function BulkEditPanel() {
   }
 
   return (
-    <aside className="w-[420px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden">
+    <aside className="w-[460px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden">
       <div className="px-5 py-4 border-b border-zinc-800">
         <h2 className="text-lg font-bold text-zinc-100">{t("bulk.title", { count: selected.length })}</h2>
         <p className="text-xs text-zinc-500 mt-0.5">{t("bulk.help")}</p>
-        <div className="flex gap-2 mt-3">
+        <div className="flex flex-wrap gap-2 mt-3">
           {/* Mover los marcados a otro sistema o subcarpeta */}
           <button
             onClick={() => setMoveOpen(true)}
@@ -95,7 +100,17 @@ export function BulkEditPanel() {
           >
             {t("rename.marked", { count: selected.length })}
           </button>
+          {/* Vaciar un dato o un medio en los marcados (la ventana deja elegir también otro ámbito) */}
+          <button
+            onClick={() => useAppStore.getState().openTool({ id: "clearFields", tab: "marked" })}
+            disabled={selected.length === 0 || !selectedSystem}
+            className="px-3 py-1.5 text-xs bg-zinc-800 text-zinc-200 rounded hover:bg-zinc-700 disabled:opacity-40"
+          >
+            {t("clear.marked", { count: selected.length })}
+          </button>
         </div>
+        {/* Herramientas del sistema, solo con lo marcado */}
+        <MarkedActions paths={selected.map((g) => g.path)} />
       </div>
       {selectedSystem && (
         <RenameModal
@@ -457,5 +472,72 @@ function TranslateSection({ selected }: { selected: Game[] }) {
         {busy ? "..." : t("translate.bulkButton", { count: withDesc.length })}
       </button>
     </section>
+  );
+}
+
+/**
+ * Herramientas del sistema para lo marcado: Scrapear (la ventana de Scrapear todo con esos
+ * juegos), Ponerlo en orden (con el ámbito «los N marcados»), Versiones y duplicados (solo los
+ * grupos de esos juegos) y Eliminar (fuera de la gamelist; la ROM y sus medios a la papelera o a
+ * la carpeta de apartados, como manda «Mi colección» para las versiones que sobran).
+ */
+function MarkedActions({ paths }: { paths: string[] }) {
+  const { t } = useTranslation();
+  const openTool = useAppStore((s) => s.openTool);
+  // Alguna fuente puede scrapear este sistema (como el botón Scrapear todo; arcade, sin cuenta)
+  const hasScraper = useAppStore((s) => {
+    const st = s.scraperStatus;
+    return st.screenscraper || st.tgdb || st.launchbox || (!!s.selectedSystem && isArcadeSystem(s.selectedSystem.name));
+  });
+  const [busy, setBusy] = useState(false);
+  const none = paths.length === 0 || busy;
+
+  async function remove() {
+    const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths } = useAppStore.getState();
+    if (!selectedSystem) return;
+    // Papelera, o apartar si así lo dice «Mi colección» (ocultar no es eliminar: papelera)
+    const rule = collectionRulesFrom(settings.collection_rules).versions_action;
+    const action = rule === "set_aside" ? "set_aside" : "trash";
+    setBusy(true);
+    try {
+      const plan = await removeGamesWithFiles(selectedSystem.path, paths, true);
+      const question = action === "set_aside" ? t("bulk.removeConfirmSetAside", { count: plan.removed }) : t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length });
+      if (!(await askConfirm(question))) return;
+      const outcome = await removeVersions(selectedSystem.path, paths, action);
+      setSelectedPaths(new Set());
+      await loadGames(selectedSystem.path);
+      loadSystems();
+      const lines = [outcome.line];
+      if (outcome.failed.length) lines.push("", t("duplicates.removeFailed", { count: outcome.failed.length }), ...outcome.failed);
+      if (action === "set_aside") await reportWithUndo(lines.join("\n"));
+      else await showMessage(lines.join("\n"), outcome.failed.length ? "error" : "info");
+    } catch (e) {
+      // Sin carpeta de apartados elegida
+      await showMessage(String(e) === "no_set_aside_dir" ? t("versions.noFolder") : String(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const button = (label: string, onClick: () => void, danger = false, disabled = none) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-3 py-1.5 text-xs rounded disabled:opacity-40 ${danger ? "bg-red-600/20 text-red-300 hover:bg-red-600/30" : "bg-zinc-800 text-zinc-200 hover:bg-zinc-700"}`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="mt-3 pt-3 border-t border-zinc-800">
+      <p className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold mb-2">{t("bulk.toolsTitle")}</p>
+      <div className="flex flex-wrap gap-2">
+        {button(t("bulk.scrape", { count: paths.length }), () => openTool({ id: "scrapeAll", gamePaths: paths }), false, none || !hasScraper)}
+        {button(t("bulk.order", { count: paths.length }), () => openTool({ id: "order", tab: "marked" }))}
+        {button(t("bulk.versions", { count: paths.length }), () => openTool({ id: "versions", gamePaths: paths }))}
+        {button(t("bulk.remove", { count: paths.length }), remove, true)}
+      </div>
+    </div>
   );
 }

@@ -92,7 +92,15 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
                   className="flex items-center gap-3 px-5 py-3 hover:bg-zinc-700/20"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-zinc-200">{backup.timestamp}</p>
+                    <p className="text-sm text-zinc-200">
+                      {backup.timestamp}
+                      {/* Copias hechas a propósito antes de una operación grande */}
+                      {backup.label && (
+                        <span className="ml-2 text-[11px] px-1.5 py-0.5 rounded bg-indigo-600/20 text-indigo-200">
+                          {t(backup.label === "order" ? "backup.label_order" : backup.label === "clear" ? "backup.label_clear" : "backup.label_other")}
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-zinc-500">
                       {formatSize(backup.size)}
                     </p>

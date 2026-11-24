@@ -121,10 +121,24 @@ fn scan_media_files(dir: &Path) -> Vec<(String, String, u64)> {
 /// - ES-DE: files whose name matches no ROM (ES-DE matches media by ROM name).
 #[tauri::command(async)]
 pub fn find_unused_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<UnusedMediaFile>, String> {
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "unused", "", move || find_unused_media_now(a, sp, task))
+}
+
+/// Lo que hace `find_unused_media` cuando no hay nada guardado que valga
+fn find_unused_media_now(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<UnusedMediaFile>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
     let mut unused = match layout {
-        Layout::Classic => find_unused_classic(&layout, &system, &system_path, &progress)?,
+        Layout::Classic => {
+            let mut found = find_unused_classic(&layout, &system, &system_path, &progress)?;
+            // Los que «Normalizar media» recuperaría (p. ej. nombrados con el título del juego)
+            // no sobran: salen aparte, desmarcados, con el juego del que son
+            let games = super::gamelist::read_gamelist(&layout, &system)?.games;
+            let settings = super::settings::get_settings(app.clone())?;
+            mark_recoverable(&layout, &system, &settings, &games, &mut found);
+            found
+        }
         Layout::Esde(_) => {
             let mut found = find_unused_esde(&layout, &system, &progress)?;
             // Y lo que sobra de la estructura clásica dentro de la carpeta de ROMs
@@ -341,6 +355,23 @@ fn find_unused_classic(layout: &Layout, system: &SystemRef, system_path: &str, p
     Ok(unused)
 }
 
+/// Clásica: marca como recuperables los sobrantes que el plan de «Normalizar media» movería a
+/// un juego (`owner` = su ROM). Así Limpiar, Normalizar y el estado del sistema dicen lo mismo.
+fn mark_recoverable(layout: &Layout, system: &SystemRef, settings: &crate::models::AppSettings, games: &[crate::models::Game], files: &mut [UnusedMediaFile]) {
+    let plan = super::normalize::plan(layout, system, settings, games);
+    let owners: std::collections::HashMap<PathBuf, String> = plan
+        .iter()
+        .filter(|i| !matches!(i.status, super::normalize::NormalizeStatus::Conflict))
+        .map(|i| (PathBuf::from(&i.from), i.game_path.clone()))
+        .collect();
+    for file in files.iter_mut() {
+        if let Some(owner) = owners.get(Path::new(&file.path)) {
+            file.recoverable = true;
+            file.owner = Some(owner.trim_start_matches("./").to_string());
+        }
+    }
+}
+
 /// Leftover media of ONE game (game detail panel): files named after its ROM that it
 /// doesn't use.
 /// - ES-DE: in each media folder, the files with the ROM name that lose against the one
@@ -476,7 +507,7 @@ fn unused_file(path: &Path, base: &Path) -> UnusedMediaFile {
 }
 
 /// Un medio que sobra porque es idéntico a otro tipo del mismo juego
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct RepeatedFile {
     pub path: String,
     /// Campo de la gamelist del tipo (image, thumbnail…)
@@ -485,7 +516,7 @@ pub struct RepeatedFile {
 }
 
 /// Un juego con la misma imagen en varios tipos: cuál se queda y cuáles sobran
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct RepeatedMedia {
     pub game_path: String,
     pub game_name: String,
@@ -508,6 +539,16 @@ const KEEP_ORDER: &[&str] = &["image", "boxart", "boxback", "titleshot", "thumbn
 /// Con `game_path`, solo ese juego (desde el detalle).
 #[tauri::command(async)]
 pub fn find_repeated_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
+    // Un solo juego: siempre al momento (es poco); el sistema entero, de lo guardado si nada cambió
+    if game_path.is_some() {
+        return find_repeated_media_now(app, system_path, game_path, task);
+    }
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "repeated", "", move || find_repeated_media_now(a, sp, game_path, task))
+}
+
+/// Lo que hace `find_repeated_media` cuando no hay nada guardado que valga
+fn find_repeated_media_now(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<RepeatedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
     let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
@@ -605,6 +646,16 @@ pub struct BrokenMediaRef {
 /// gamelist no guarda rutas de medios). Con `game_path`, solo ese juego.
 #[tauri::command(async)]
 pub fn find_broken_media_refs(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
+    // Un solo juego: siempre al momento (es poco); el sistema entero, de lo guardado si nada cambió
+    if game_path.is_some() {
+        return find_broken_media_refs_now(app, system_path, game_path, task);
+    }
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "broken", "", move || find_broken_media_refs_now(a, sp, game_path, task))
+}
+
+/// Lo que hace `find_broken_media_refs` cuando no hay nada guardado que valga
+fn find_broken_media_refs_now(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<BrokenMediaRef>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     if !layout.writes_media_tags() {
         return Ok(Vec::new());
@@ -698,7 +749,7 @@ pub fn trash_media(app: tauri::AppHandle, system_path: String, paths: Vec<String
 
 /// Rutas que son ficheros dentro de la carpeta del sistema o de su carpeta de medios (ya
 /// resueltas, así `../` o enlaces no se escapan); el resto, como fallo con el motivo.
-fn allowed_media_paths(layout: &Layout, system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<String>) {
+pub(super) fn allowed_media_paths(layout: &Layout, system: &SystemRef, paths: &[String]) -> (Vec<PathBuf>, Vec<String>) {
     let roots: Vec<PathBuf> = [system.rom_dir.clone(), layout.media_type_dir(system, "")]
         .into_iter()
         .filter_map(|r| r.canonicalize().ok())
@@ -714,14 +765,25 @@ fn allowed_media_paths(layout: &Layout, system: &SystemRef, paths: &[String]) ->
     (ok, rejected)
 }
 
+/// La ruta resuelta (enlaces fuera) aunque el fichero ya no esté: se resuelve su carpeta.
+/// Las rutas quitadas vienen resueltas; sin esto, un fichero ya movido no encajaría con ellas.
+fn real_path(path: &Path) -> PathBuf {
+    if let Ok(real) = path.canonicalize() {
+        return real;
+    }
+    match (path.parent().and_then(|d| d.canonicalize().ok()), path.file_name()) {
+        (Some(dir), Some(name)) => dir.join(name),
+        _ => path.to_path_buf(),
+    }
+}
+
 /// Vacía los campos de medios que apuntan a ficheros quitados. Devuelve si cambió algo.
-fn clear_fields_pointing_to(system: &SystemRef, gamelist: &mut GameList, removed: &HashSet<PathBuf>) -> bool {
+pub(super) fn clear_fields_pointing_to(system: &SystemRef, gamelist: &mut GameList, removed: &HashSet<PathBuf>) -> bool {
     let mut changed = false;
     for game in &mut gamelist.games {
         for field in media::media_fields() {
             let points_to_removed = media::get_field(game, field)
-                .map(|v| media::resolve_media_path(system, v))
-                .and_then(|p| p.canonicalize().ok().or(Some(p)))
+                .map(|v| real_path(&media::resolve_media_path(system, v)))
                 .is_some_and(|p| removed.contains(&p));
             if points_to_removed {
                 media::set_field(game, field, None);

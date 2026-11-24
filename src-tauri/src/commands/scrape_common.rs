@@ -178,3 +178,33 @@ mod tests {
         assert_eq!(extension_for("https://adb/download_file.php?x=1", b"\0\0\0\x18ftypmp42", "video"), "mp4");
     }
 }
+
+/// Nombre para ordenar de ARRM («228 =-  0501 Future Warrior»): un número para fijar el orden y el
+/// nombre que tenía el juego entonces. Al scrapear el juego deja de valer (el título es otro o
+/// se acaba de confirmar), así que se quita: sin él, la lista se ordena por el título. Los
+/// puestos a mano (sin «N =-» delante) se quedan.
+pub fn drop_arrm_sortname(game: &mut Game) {
+    let is_arrm = game.sortname.as_deref().is_some_and(|s| {
+        let s = s.trim_start();
+        let digits = s.len() - s.trim_start_matches(|c: char| c.is_ascii_digit()).len();
+        digits > 0 && s[digits..].trim_start().starts_with("=-")
+    });
+    if is_arrm {
+        game.sortname = None;
+    }
+}
+
+#[cfg(test)]
+mod arrm_tests {
+    use super::*;
+
+    #[test]
+    fn only_the_arrm_sort_name_goes() {
+        let mut g = Game { sortname: Some("103 =-  0159 Billiard [Chinese version]".into()), ..Default::default() };
+        drop_arrm_sortname(&mut g);
+        assert!(g.sortname.is_none());
+        let mut g = Game { sortname: Some("Legend of Zelda".into()), ..Default::default() };
+        drop_arrm_sortname(&mut g);
+        assert_eq!(g.sortname.as_deref(), Some("Legend of Zelda"));
+    }
+}

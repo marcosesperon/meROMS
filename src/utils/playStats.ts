@@ -1,5 +1,6 @@
 import type { Game } from "../types";
 import type { TranslationKeys } from "../i18n/en";
+import { withoutEndArticle } from "./articles";
 
 // Estadísticas de juego que guarda el frontend en la gamelist: partidas (playcount),
 // última vez (lastplayed, AAAAMMDDTHHMMSS) y tiempo jugado (gametime, en segundos).
@@ -24,7 +25,9 @@ const compareText = (a: string, b: string) => a.localeCompare(b, undefined, { nu
 
 /** Por el título, como la columna Nombre de la tabla */
 export const nameText = (g: Game) => g.name || g.path;
-const byName = (a: Game, b: Game) => compareText(nameText(a), nameText(b));
+/** Dos títulos, para ordenar: sin el artículo del final («Bard Tale, The» va antes que «Bard Tale 2») */
+export const compareNames = (a: string, b: string) => compareText(withoutEndArticle(a), withoutEndArticle(b));
+const byName = (a: Game, b: Game) => compareNames(nameText(a), nameText(b));
 
 /**
  * Como ordena ES-DE: el «nombre para ordenar» (sortname) si lo tiene. Aparte de «Nombre»

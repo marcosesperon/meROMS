@@ -35,7 +35,7 @@ pub struct SwapResult {
     pub skipped: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct MediaFileInfo {
     pub path: String,
     pub width: u32,
@@ -49,7 +49,7 @@ pub struct MediaProfile {
     pub height: u32,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct DetectResult {
     pub cover_profile: Option<MediaProfile>,
     pub screenshot_profile: Option<MediaProfile>,
@@ -59,7 +59,7 @@ pub struct DetectResult {
     pub proposals: Vec<SwapProposal>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct SwapProposal {
     pub game_path: String,
     pub game_name: String,
@@ -100,12 +100,19 @@ pub fn swap_media(
         files,
         games: super::undo::changes_same_paths(&sys, &before, &gamelist),
         refs: super::undo::RefUndo::None,
+        ..Default::default()
     });
     Ok(result)
 }
 
 #[tauri::command(async)]
 pub fn detect_swapped_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<DetectResult, String> {
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "swapped", "", move || detect_swapped_media_now(a, sp, task))
+}
+
+/// Lo que hace `detect_swapped_media` cuando no hay nada guardado que valga
+fn detect_swapped_media_now(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<DetectResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
     let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
@@ -399,7 +406,7 @@ pub(super) fn looks_like(i: &MediaFileInfo, cover: Option<MediaProfile>, shot: O
 }
 
 /// ¿Dos tamaños son del mismo tipo de imagen? (misma forma y área parecida)
-fn same_type(w1: u32, h1: u32, w2: u32, h2: u32) -> bool {
+pub(super) fn same_type(w1: u32, h1: u32, w2: u32, h2: u32) -> bool {
     let ratio = |w: u32, h: u32| w as f64 / h.max(1) as f64;
     let shape = (ratio(w1, h1) / ratio(w2, h2) - 1.0).abs() <= SAME_SHAPE;
     let (a1, a2) = ((w1 as f64) * (h1 as f64), (w2 as f64) * (h2 as f64));

@@ -63,7 +63,7 @@ pub enum NameSource {
 
 /// Todo lo que se elige en la pantalla de Renombrar para proponer el nombre de fichero
 /// (el título se saca en la ventana a partir de este nombre)
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameOptions {
     /// Fuentes activas, por prioridad
     #[serde(default)]
@@ -150,6 +150,25 @@ pub fn rename_preview(
     ask_scraper: bool,
     task: Option<String>,
 ) -> Result<Vec<RenameEntry>, String> {
+    // Todo el sistema solo con la caché del scraper (el estado, la ventana al abrirse): de lo
+    // guardado si nada cambió, por opciones. Preguntar al scraper o unos juegos, siempre al momento.
+    if ask_scraper || game_paths.is_some() {
+        return rename_preview_now(app, system_path, options, game_paths, ask_scraper, task);
+    }
+    let extra = serde_json::to_string(&options).unwrap_or_default();
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "rename", &extra, move || rename_preview_now(a, sp, options, None, false, task))
+}
+
+/// Lo que hace `rename_preview` cuando no hay nada guardado que valga
+fn rename_preview_now(
+    app: tauri::AppHandle,
+    system_path: String,
+    options: RenameOptions,
+    game_paths: Option<Vec<String>>,
+    ask_scraper: bool,
+    task: Option<String>,
+) -> Result<Vec<RenameEntry>, String> {
     let settings = crate::commands::settings::get_settings(app.clone())?;
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
@@ -214,8 +233,12 @@ fn winning_name(game: &crate::models::Game, current: &str, sources: &[NameSource
             NameSource::Scraper => found.scraper.map(str::to_string),
             // Solo si el nombre lleva códigos de GoodTools (si no, sale igual y no cuenta)
             NameSource::Goodtools => Some(crate::rename_rules::goodtools::to_no_intro(current)).filter(|n| n != current),
-            // «Datos de la gamelist»: título + región + idiomas
-            NameSource::Title => game.name.as_deref().map(|t| name_parts::gamelist_name(t, game.region.as_deref(), game.lang.as_deref())),
+            // «Datos de la gamelist»: título + región + idiomas (y, si la gamelist no los tiene, las
+            // etiquetas del fichero actual)
+            NameSource::Title => game
+                .name
+                .as_deref()
+                .map(|t| name_parts::with_current_tags(&name_parts::gamelist_name(t, game.region.as_deref(), game.lang.as_deref()), current)),
         };
         if let Some(name) = name.filter(|n| !n.trim().is_empty()) {
             let id = match source {
@@ -564,6 +587,7 @@ pub fn rename_roms(
         // Deshacer también devuelve los títulos (los de los ficheros renombrados y los demás)
         games: super::undo::changes_by_path(&sys, &before, &sys, &gamelist, &[done.clone(), retitled].concat()),
         refs: super::undo::RefUndo::Rename { system: sys.clone(), pairs: done.clone() },
+        ..Default::default()
     });
 
     Ok(RenameResult {

@@ -13,6 +13,7 @@ import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
 import { GameTabs } from "./GameTabs";
+import { CollectionStatus } from "./CollectionStatus";
 import {
   ArcadeBoardIcon,
   CardIcon,
@@ -52,6 +53,7 @@ export function GameInfoPanel({ onClose }: { onClose?: () => void } = {}) {
   // Con onClose (carrusel) el botón lo cierra del todo y el plegado de siempre no cuenta
   const collapsed = useAppStore((s) => s.infoPanelCollapsed) && !onClose;
   const toggleInfoPanel = useAppStore((s) => s.toggleInfoPanel);
+  const selectGame = useAppStore((s) => s.selectGame);
   const { t } = useTranslation();
 
   if (collapsed) {
@@ -69,7 +71,7 @@ export function GameInfoPanel({ onClose }: { onClose?: () => void } = {}) {
   }
 
   return (
-    <aside className="w-[420px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden relative">
+    <aside className="w-[460px] shrink-0 border-l border-zinc-800 bg-zinc-950 flex flex-col overflow-hidden relative">
       <button
         onClick={onClose ?? toggleInfoPanel}
         title={t(onClose ? "info.close" : "info.collapse")}
@@ -77,6 +79,17 @@ export function GameInfoPanel({ onClose }: { onClose?: () => void } = {}) {
       >
         ›
       </button>
+      {/* Con un juego elegido: volver al resumen del sistema (y a su estado de la colección) */}
+      {game && (
+        <button
+          onClick={() => selectGame(null)}
+          title={t("info.backToSystemHint")}
+          data-shot="back-to-system"
+          className="absolute top-3 left-12 z-20 h-7 px-2.5 rounded-full bg-black/50 text-xs text-zinc-200 hover:text-white hover:bg-black/70"
+        >
+          ‹ {t("info.backToSystem")}
+        </button>
+      )}
       <div className="flex-1 overflow-y-auto">{game ? <GameInfo game={game} /> : <SystemSummary />}</div>
     </aside>
   );
@@ -348,6 +361,9 @@ function SystemSummary() {
             </div>
           ))}
         </dl>
+
+        {/* Qué no cumple «Mi colección», justo antes de «Dónde están los datos» */}
+        <CollectionStatus />
 
         <SystemLocationsBlock systemPath={selectedSystem.path} />
       </div>

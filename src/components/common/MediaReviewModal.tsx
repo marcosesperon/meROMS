@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ModalShell } from "./ModalShell";
 import { useTranslation } from "../../i18n";
 import { detectSwappedMedia, swapMedia } from "../../commands";
 import type { DetectResult, MediaFileInfo, MediaProfile, SwapProposal } from "../../types";
@@ -16,6 +17,8 @@ interface MediaReviewModalProps {
   onDone: () => void;
   /** Open "Swap media types" (when the whole system looks the other way round) */
   onOpenSwap: () => void;
+  /** Dentro de la ventana «Medios» (una pestaña): sin marco propio y, al aplicar, vuelve a mirar */
+  embedded?: boolean;
 }
 
 /**
@@ -23,7 +26,7 @@ interface MediaReviewModalProps {
  * comparadas con lo habitual del sistema (el tamaño que más se repite en cada carpeta).
  * Se ven las dos miniaturas y se intercambian las marcadas.
  */
-export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap }: MediaReviewModalProps) {
+export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap, embedded }: MediaReviewModalProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<SwapProposal[]>([]);
   const [result, setResult] = useState<DetectResult | null>(null);
@@ -34,6 +37,8 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   // Intercambiar: con progreso y Cancelar (se para entre juegos; lo hecho se guarda)
   const applyTask = useTask();
   const applying = applyTask.running;
+  // Otra vuelta de búsqueda (en una pestaña de «Medios», tras aplicar)
+  const [round, setRound] = useState(0);
 
   useEffect(() => {
     if (!open) {
@@ -42,20 +47,28 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
       setSelected(new Set());
       return;
     }
+    let alive = true;
     scanTask
       .run((task) => detectSwappedMedia(systemPath, task))
       .then((detected) => {
         // Cancelado: no hay nada que enseñar
-        if (!detected) return onClose();
+        // Cancelado al desmontar (o por React en desarrollo): no se cierra nada
+        if (!detected) {
+          if (alive) onClose();
+          return;
+        }
         setResult(detected);
         setItems(detected.proposals);
         setSelected(new Set(detected.proposals.map((i) => i.game_path)));
       })
       .catch((e) => showMessage(t("mediaKinds.failed", { error: String(e) }), "error"));
     // Al cerrar la ventana a medias, la búsqueda se para
-    return () => scanTask.cancel();
+    return () => {
+      alive = false;
+      scanTask.cancel();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, systemPath]);
+  }, [open, systemPath, round]);
 
   if (!open) return null;
 
@@ -79,7 +92,8 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
         message += "\n\n" + t("mediaKinds.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
       await reportWithUndo(message);
-      onClose();
+      if (embedded) setRound((n) => n + 1);
+      else onClose();
       onDone();
     } catch (e) {
       await showMessage(t("mediaKinds.failed", { error: String(e) }), "error");
@@ -106,8 +120,7 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[640px] max-h-[85vh] flex flex-col mx-4">
+    <ModalShell embedded={embedded} className="w-[640px] max-h-[85vh]">
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("mediaKinds.reviewTitle")}</h3>
           <p className="text-sm text-zinc-400 mt-1">{t("mediaKinds.reviewDescription")}</p>
@@ -192,7 +205,6 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

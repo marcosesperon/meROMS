@@ -35,7 +35,7 @@ pub struct PlaceholderEntry {
 }
 
 /// Un relleno encontrado en el sistema
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct PlaceholderGroup {
     pub md5: String,
     pub size: u64,
@@ -46,7 +46,7 @@ pub struct PlaceholderGroup {
     pub files: Vec<PlaceholderFile>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct PlaceholderFile {
     pub path: String,
     pub field: String,
@@ -144,6 +144,12 @@ pub fn forget_placeholders() -> Result<(), String> {
 /// Rellenos del sistema: ficheros idénticos en PLACEHOLDER_MIN_GAMES juegos distintos o más
 #[tauri::command(async)]
 pub fn find_placeholder_media(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<PlaceholderGroup>, String> {
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "placeholders", "", move || find_placeholder_media_now(a, sp, task))
+}
+
+/// Lo que hace `find_placeholder_media` cuando no hay nada guardado que valga
+fn find_placeholder_media_now(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<PlaceholderGroup>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
     let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;

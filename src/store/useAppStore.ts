@@ -17,6 +17,43 @@ import { getActiveProfile, isProfileComplete, profileLocationKey } from "../util
 import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
 import { getSystemView, shapeField } from "../utils/systemView";
 import { hideWhilePlaying, showAfterPlaying } from "../utils/playWindow";
+import { checkNames, statusChecks, type CollectionStatusState, type IssueKind } from "../utils/collectionStatus";
+
+/** Herramientas del sistema (ventanas que abre App): menú Herramientas, estado del sistema… */
+export type ToolId =
+  | "order"
+  | "versions"
+  | "missing"
+  | "clearFields"
+  | "media"
+  | "mediaSwap"
+  | "rename"
+  | "newRoms"
+  | "missingRoms"
+  | "scrapeAll"
+  | "addGame"
+  | "dat"
+  | "bios"
+  | "ra"
+  | "collections"
+  | "backups"
+  | "export"
+  | "exportDevice"
+  | "compare"
+  | "transfer"
+  | "chd"
+  | "migrate";
+
+/** Qué herramienta abrir y cómo: pestaña (Medios), pasos marcados (Ponerlo todo en orden) o juegos */
+export interface ToolRequest {
+  id: ToolId;
+  tab?: string;
+  steps?: string[];
+  gamePaths?: string[];
+}
+
+// Cada comprobación del estado lleva un número: si llega una vieja después de una nueva, no vale
+let statusRun = 0;
 
 // Library (profile + folders) we already asked about migrating, so the prompt shows
 // once per profile activation and not on every rescan
@@ -79,8 +116,9 @@ interface AppState {
   provider: Provider | undefined;
   selectedGame: Game | null;
   /** mediaChanged: media files were added/moved/overwritten (scrape, swap...): the grid's card
-   *  shape is measured again instead of taken from what was saved */
-  loadGames: (systemPath: string, options?: { mediaChanged?: boolean }) => Promise<void>;
+   *  shape is measured again instead of taken from what was saved. skipStatus: don't check the
+   *  system status now (Put it all in order reloads between steps and checks once at the end) */
+  loadGames: (systemPath: string, options?: { mediaChanged?: boolean; skipStatus?: boolean }) => Promise<void>;
   /** Background jobs still running for the selected system (card shape, statuses, new ROMs...):
    *  while > 0 a discreet "Analysing..." bar shows above the list */
   backgroundJobs: number;
@@ -158,6 +196,17 @@ interface AppState {
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
   setMissingRomPaths: (paths: Set<string>) => void;
+  /** ROMs of the selected system that aren't in its gamelist (status line and toolbar notice) */
+  newRomsCount: number;
+  setNewRomsCount: (count: number) => void;
+  /** La herramienta abierta (una a la vez; App pinta su ventana) */
+  tool: ToolRequest | null;
+  openTool: (request: ToolRequest | ToolId) => void;
+  closeTool: () => void;
+  /** Estado del sistema abierto frente a «Mi colección» (panel derecho, filtro «Con problemas de…») */
+  collectionStatus: CollectionStatusState | null;
+  /** Lo vuelve a comprobar en segundo plano (force: sin caché, «Volver a revisar») */
+  checkCollectionStatus: (force?: boolean) => Promise<void>;
   /** Right-hand game info panel folded away (remembered between sessions) */
   infoPanelCollapsed: boolean;
   /** Carousel with "click shows it in the panel": the panel is open (a click on the centre box
@@ -173,6 +222,10 @@ interface AppState {
   currentView: CurrentView;
   setCurrentView: (view: CurrentView) => void;
   loading: boolean;
+  /** Escaneando las carpetas de sistemas (barra lateral, pantalla de inicio). Aparte de
+   *  `loading` (la lista de juegos): un reescaneo tras eliminar o mover no debe desmontar la
+   *  lista, o se pierde la posición */
+  systemsLoading: boolean;
 
   // Progreso del escaneo de sistemas (barra lateral) y de la carga de un sistema (centro)
   scanProgress: TaskProgressInfo | null;
@@ -197,6 +250,8 @@ interface AppState {
     status?: string;
     /** RetroAchievements: games with achievements (any version) / with a compatible ROM */
     ra?: "with" | "compatible";
+    /** Solo los juegos con ese problema del estado del sistema */
+    issue?: IssueKind;
   };
   setFilters: (filters: Partial<AppState["filters"]>) => void;
   clearFilters: () => void;
@@ -276,7 +331,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         searchQuery: "",
         filters: {},
         activeFolderPath: null,
+        collectionStatus: null,
+        tool: null,
       });
+    } else if (get().selectedSystem) {
+      // Las opciones de nombres pueden haber cambiado: los «fuera de formato» se recalculan
+      get().checkCollectionStatus();
     }
     if (isProfileComplete(active)) {
       get().loadSystems();
@@ -295,7 +355,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setProfileUnavailable: (unavailable) => {
     if (unavailable) {
       get().goHome();
-      set({ systems: [], profileUnavailable: true, loading: false, scanProgress: null });
+      set({ systems: [], profileUnavailable: true, systemsLoading: false, scanProgress: null });
     } else {
       set({ profileUnavailable: false });
     }
@@ -311,18 +371,18 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().setProfileUnavailable(!available);
     if (!available) return;
     try {
-      set({ loading: true, scanProgress: null });
+      set({ systemsLoading: true, scanProgress: null });
       const task = newTaskId();
       const stop = subscribeTask(task, (p) => set({ scanProgress: p }));
       const systems = await commands.scanSystems(profile.rom_root_path, task).finally(stop);
-      set({ systems, loading: false, scanProgress: null });
+      set({ systems, systemsLoading: false, scanProgress: null });
       // Reopen the last system of this profile (if nothing is open and it still exists)
       const last = profile.last_system && systems.find((s) => s.name === profile.last_system);
       if (last && !get().selectedSystem) get().selectSystem(last);
       get().checkPendingStructure();
     } catch (e) {
       console.error("Failed to scan systems:", e);
-      set({ loading: false, scanProgress: null });
+      set({ systemsLoading: false, scanProgress: null });
     }
   },
   goHome: () =>
@@ -337,6 +397,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       selectedPaths: new Set(),
       fullViewOpen: false,
       editorOpen: false,
+      tool: null,
+      collectionStatus: null,
     }),
   selectSystem: (system: SystemInfo) => {
     // Remember it for this profile (reopened next time)
@@ -362,6 +424,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       raMarks: new Map(),
       statuses: new Map(),
       carouselPanelOpen: false,
+      tool: null,
+      collectionStatus: null,
+      newRomsCount: 0,
     });
     get().loadGames(system.path);
   },
@@ -410,6 +475,10 @@ export const useAppStore = create<AppState>((set, get) => ({
         .catch(() => set({ brokenMedia: new Set() }));
       // Forma de las tarjetas de la cuadrícula (puede haber cambiado tras scrapear)
       get().refreshMediaShape(systemPath, options?.mediaChanged);
+      // Estado frente a «Mi colección»: lo caro sale de la caché si nada ha cambiado; tras
+      // scrapear o cambiar medios (un fichero sobrescrito no cambia la firma) se rehace
+      // (no mientras «Ponerlo todo en orden» va recargando entre pasos: se mira al final)
+      if (!options?.skipStatus) get().checkCollectionStatus(options?.mediaChanged);
       // RetroAchievements: lo que dejó «Comprobar logros» en este sistema (insignia y filtro)
       get().refreshRaMarks();
       // Estados de juego: después de leer la gamelist (lo marcado «completed» en ES-DE se adopta)
@@ -606,6 +675,51 @@ export const useAppStore = create<AppState>((set, get) => ({
   setDatMarks: (marks) => set({ datMarks: marks }),
   missingRomPaths: new Set(),
   setMissingRomPaths: (paths) => set({ missingRomPaths: paths }),
+  newRomsCount: 0,
+  setNewRomsCount: (count) => set({ newRomsCount: count }),
+  tool: null,
+  openTool: (request) => set({ tool: typeof request === "string" ? { id: request } : request }),
+  closeTool: () => set({ tool: null }),
+  collectionStatus: null,
+  checkCollectionStatus: async (force) => {
+    const system = get().selectedSystem?.path;
+    if (!system) return;
+    const run = ++statusRun;
+    const previous = get().collectionStatus;
+    // Lo que ya se sabía de este sistema se sigue viendo mientras se comprueba (y los números
+    // se animan hasta el valor nuevo cuando llega)
+    set({
+      collectionStatus:
+        previous?.system === system
+          ? { ...previous, checking: true, errors: [] }
+          : { system, parts: {}, names: null, checking: true, errors: [], checkedAt: null },
+    });
+    const { trackBackground, settings, scraperStatus } = get();
+    const current = () => run === statusRun && get().selectedSystem?.path === system;
+    // «Volver a revisar» (o tras scrapear): lo guardado en el backend ya no vale
+    if (force) await commands.forgetSystemStatus(system).catch(() => {});
+    const failed = (name: string) => (e: unknown) => {
+      console.error(`Status check ${name} failed:`, e);
+      if (current()) set({ collectionStatus: { ...get().collectionStatus!, errors: [...get().collectionStatus!.errors, `${name}: ${String(e)}`] } });
+    };
+    // Todas a la vez; cada parte se enseña en cuanto llega
+    const jobs = statusChecks(system).map(({ name, run: check }) =>
+      trackBackground(check())
+        .then((part) => {
+          if (current()) set({ collectionStatus: { ...get().collectionStatus!, parts: { ...get().collectionStatus!.parts, ...part } } });
+        })
+        .catch(failed(name))
+    );
+    jobs.push(
+      trackBackground(checkNames(system, settings.rename_options, scraperStatus))
+        .then((n) => {
+          if (current()) set({ collectionStatus: { ...get().collectionStatus!, names: n } });
+        })
+        .catch(failed("names"))
+    );
+    await Promise.all(jobs);
+    if (current()) set({ collectionStatus: { ...get().collectionStatus!, checking: false, checkedAt: Date.now() } });
+  },
   infoPanelCollapsed: readFlag(INFO_PANEL_KEY),
   carouselPanelOpen: false,
   setCarouselPanelOpen: (open) => set({ carouselPanelOpen: open }),
@@ -626,6 +740,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentView: "browser",
   setCurrentView: (view: CurrentView) => set({ currentView: view }),
   loading: false,
+  systemsLoading: false,
 
   // Scan progress
   scanProgress: null,

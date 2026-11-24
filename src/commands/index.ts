@@ -603,9 +603,9 @@ export async function checkBios(systems: string[]): Promise<{ bios_dir: string |
   return invoke("check_bios", { systems });
 }
 
-/** The last file operation that can be undone (rename | move | normalize | swap), or null */
+/** The last file operation that can be undone, or null («order» = the steps of Put it all in order) */
 export interface UndoInfo {
-  kind: "rename" | "move" | "normalize" | "swap";
+  kind: "rename" | "move" | "normalize" | "swap" | "set_aside" | "order";
   system: string;
   files: number;
 }
@@ -617,6 +617,44 @@ export async function undoStatus(): Promise<UndoInfo | null> {
 /** Undoes the last rename / move / normalize / swap (files, gamelists, collections) */
 export async function undoLast(): Promise<{ restored: number; skipped: string[] }> {
   return invoke("undo_last");
+}
+
+/** Junta las operaciones siguientes en una sola para Deshacer (Ponerlo todo en orden) */
+export async function undoGroupBegin(): Promise<void> {
+  return invoke("undo_group_begin");
+}
+
+/** Cierra ese grupo: se deshace todo de una vez */
+export async function undoGroupEnd(systemPath: string): Promise<void> {
+  return invoke("undo_group_end", { systemPath });
+}
+
+/** Lo que se apartó a la carpeta de apartados del perfil */
+export interface SetAsideResult {
+  moved: number;
+  skipped: string[];
+  folder: string;
+}
+
+/** Aparta juegos (ROM + medios) a la carpeta de apartados y los quita de la gamelist.
+ *  Sin carpeta elegida falla con «no_set_aside_dir». */
+export async function setAsideGames(systemPath: string, gamePaths: string[], task?: string): Promise<SetAsideResult> {
+  return invoke("set_aside_games", { systemPath, gamePaths, task });
+}
+
+/** Aparta ficheros de medios (sobrantes o dañados) a la carpeta de apartados */
+export async function setAsideMedia(systemPath: string, paths: string[], task?: string): Promise<SetAsideResult> {
+  return invoke("set_aside_media", { systemPath, paths, task });
+}
+
+/** «Volver a revisar» (o tras scrapear): olvida lo guardado de las comprobaciones del sistema */
+export async function forgetSystemStatus(systemPath: string): Promise<void> {
+  return invoke("forget_system_status", { systemPath });
+}
+
+/** Copia de la gamelist con etiqueta (p. ej. «order», antes de Ponerlo todo en orden) */
+export async function backupLabeled(systemPath: string, label: string): Promise<void> {
+  return invoke("backup_labeled", { systemPath, label });
 }
 
 /** One version of a game in "Best version" (tags read from the file name) */

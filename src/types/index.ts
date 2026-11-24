@@ -116,6 +116,8 @@ export interface Profile {
   bios_dir?: string;
   /** Saves folder (save games and states); missing = the usual one next to the ROM folder */
   saves_dir?: string;
+  /** Folder where versions and media set aside go (Settings > My collection); undefined = none chosen */
+  set_aside_dir?: string;
   /** How each system looks in this profile (key: `systemKey(name)`); missing = automatic */
   system_views?: Record<string, SystemView>;
 }
@@ -178,6 +180,8 @@ export interface AppSettings {
   ss_languages?: string[];
   tgdb_apikey?: string;
   /** "Export to device": destinations used, with their selection */
+  /** What the collection must meet (Settings > My collection; see CollectionRules) */
+  collection_rules?: Partial<CollectionRules>;
   /** New ROMs: rename the added ones automatically (after scraping) with the rename options */
   new_roms_rename?: boolean;
   /** Rename window options (managed by the UI; see RenameOptions) */
@@ -303,6 +307,8 @@ export interface BackupEntry {
   path: string;
   timestamp: string;
   size: number;
+  /** Por qué se hizo, si no es la copia de cada guardado («order» = antes de Ponerlo todo en orden) */
+  label?: string;
 }
 
 export interface RenameEntry {
@@ -321,6 +327,22 @@ export interface RenameEntry {
   pending?: boolean;
   /** "scraper" source: the scraper didn't answer for this ROM (timeout...); Search retries it */
   unanswered?: boolean;
+}
+
+/** Qué hacer con las versiones que sobran: apartarlas (carpeta de apartados), ocultarlas o a la papelera */
+export type VersionsAction = "set_aside" | "hide" | "trash";
+
+/** Lo que debe cumplir la colección (Ajustes → Mi colección) */
+export interface CollectionRules {
+  /** Campos de datos que todo juego debería tener */
+  required_data: string[];
+  /** Campos de medios (los del filtro «Le falta…») que todo juego debería tener */
+  required_media: string[];
+  versions_action: VersionsAction;
+  /** No tocar nunca favoritos ni jugados al quitar versiones */
+  protect_played: boolean;
+  /** Medios sobrantes y dañados: a la papelera o a la carpeta de apartados */
+  leftover_media_action: "trash" | "set_aside";
 }
 
 /** Fuentes del nombre de fichero en Renombrar (en cadena: gana la primera que da nombre) */

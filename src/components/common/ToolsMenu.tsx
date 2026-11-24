@@ -6,6 +6,10 @@ export interface ToolsMenuItem {
   title?: string;
   /** Pinta una línea de separación encima de esta opción */
   separatorBefore?: boolean;
+  /** Empieza un grupo: su título encima (Colección, Biblioteca, Mover y copiar) */
+  groupLabel?: string;
+  /** Lo que se ve al pasar por encima, por ejemplo con data-shot */
+  shot?: string;
 }
 
 interface ToolsMenuProps {
@@ -50,16 +54,20 @@ export function ToolsMenu({ label, items }: ToolsMenuProps) {
         {label} <span className="text-xs">▾</span>
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full mb-2 min-w-[200px] py-1 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-40">
-          {items.map((item) => (
+        <div className="absolute right-0 bottom-full mb-2 min-w-[220px] max-h-[75vh] overflow-y-auto py-1 bg-zinc-800 border border-zinc-600 rounded-lg shadow-xl z-40">
+          {items.map((item, i) => (
             <div key={item.label}>
-              {item.separatorBefore && <div className="my-1 border-t border-zinc-700" />}
+              {(item.separatorBefore || (item.groupLabel && i > 0)) && <div className="my-1 border-t border-zinc-700" />}
+              {item.groupLabel && (
+                <p className="px-4 pt-1.5 pb-0.5 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{item.groupLabel}</p>
+              )}
               <button
                 onClick={() => {
                   setOpen(false);
                   item.onClick();
                 }}
                 title={item.title}
+                data-shot={item.shot}
                 className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-700 whitespace-nowrap"
               >
                 {item.label}

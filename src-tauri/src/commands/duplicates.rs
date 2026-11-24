@@ -7,7 +7,7 @@ use crate::models::game::Game;
 
 use super::progress::Progress;
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DuplicateGroup {
     /// Why they are grouped: "screenscraper_id" | "hash" | "similar_name" (translated in the UI)
     pub reason: String,
@@ -87,26 +87,33 @@ fn root(parent: &mut [usize], i: usize) -> usize {
 }
 
 /// Groups of games that look like the same one. Two games are linked when they share the
-/// ScreenScraper ID, the hash (md5/hash) or the normalized name, and a group is everything linked,
-/// even through different reasons (A and B share the ID, B and C the name: A, B and C). The reason
-/// shown is the strongest link inside the group: ID > hash > name.
-fn group_games(games: &[Game]) -> Vec<FoundGroup> {
+/// ScreenScraper ID, the hash (md5/hash), the DAT game (parent and clones, `dat_groups`: what
+/// "Best version" used) or the normalized name (of the title or of the file), and a group is
+/// everything linked, even through different reasons (A and B share the ID, B and C the name:
+/// A, B and C). The reason shown is the strongest link inside the group: ID > hash > DAT > name.
+fn group_games(games: &[Game], dat_groups: &std::collections::HashMap<String, String>) -> Vec<FoundGroup> {
     let mut parent: Vec<usize> = (0..games.len()).collect();
     // Strength of each kind of link (the lower, the stronger) and the links found per kind
-    const KINDS: [&str; 3] = ["screenscraper_id", "hash", "similar_name"];
+    const KINDS: [&str; 4] = ["screenscraper_id", "hash", "dat", "similar_name"];
+    let stem = |g: &Game| std::path::Path::new(&g.path).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
     let mut links: Vec<(usize, usize, usize)> = Vec::new();
-    for (kind, key_of) in [
-        (0, (|g: &Game| g.id.clone()) as fn(&Game) -> Option<String>),
-        (1, |g: &Game| g.md5.clone().or_else(|| g.hash.clone())),
-        (2, |g: &Game| Some(normalize_name(g.name.as_deref().unwrap_or(&g.path)))),
-    ] {
+    for kind in 0..KINDS.len() {
         let mut first: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
         for (i, game) in games.iter().enumerate() {
-            let Some(key) = key_of(game).filter(|k| !k.trim().is_empty()) else { continue };
-            match first.get(&key) {
-                Some(&j) => links.push((kind, j, i)),
-                None => {
-                    first.insert(key, i);
+            let keys: Vec<String> = match kind {
+                0 => game.id.clone().into_iter().collect(),
+                1 => game.md5.clone().or_else(|| game.hash.clone()).into_iter().collect(),
+                2 => dat_groups.get(&game.path).cloned().into_iter().collect(),
+                // The title and also the file name (two ROMs with the same base name)
+                _ => vec![normalize_name(game.name.as_deref().unwrap_or(&game.path)), normalize_name(&stem(game))],
+            };
+            for key in keys.into_iter().filter(|k| !k.trim().is_empty()) {
+                match first.get(&key) {
+                    Some(&j) if j != i => links.push((kind, j, i)),
+                    Some(_) => {}
+                    None => {
+                        first.insert(key, i);
+                    }
                 }
             }
         }
@@ -134,7 +141,7 @@ fn group_games(games: &[Game]) -> Vec<FoundGroup> {
         .into_iter()
         .filter(|(_, m)| m.len() > 1)
         .map(|(r, m)| {
-            let kind = strongest.get(&r).copied().unwrap_or(2);
+            let kind = strongest.get(&r).copied().unwrap_or(KINDS.len() - 1);
             // With the ID as reason, the ID shared by most of them is the detail
             let detail = (kind == 0).then(|| m.iter().find_map(|&i| games[i].id.clone())).flatten();
             FoundGroup { reason: KINDS[kind], detail, members: m }
@@ -147,16 +154,24 @@ fn group_games(games: &[Game]) -> Vec<FoundGroup> {
 
 #[tauri::command(async)]
 pub fn find_duplicates(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<DuplicateGroup>, String> {
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "duplicates", "", move || find_duplicates_now(a, sp, task))
+}
+
+/// Lo que hace `find_duplicates` cuando no hay nada guardado que valga
+fn find_duplicates_now(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Vec<DuplicateGroup>, String> {
     let settings = super::settings::get_settings(app.clone())?;
     let (_, system) = super::system_context(&app, &system_path)?;
-    let gamelist = crate::commands::gamelist::load_gamelist(app, system_path, task)?;
+    let gamelist = crate::commands::gamelist::load_gamelist(app.clone(), system_path, task)?;
     let games = &gamelist.games;
+    // DAT groups (parent and clones, matched by content or by name), if the system has a DAT
+    let dat_groups = super::dat::version_groups(&app, &system, games).unwrap_or_default();
     let mut groups: Vec<DuplicateGroup> = Vec::new();
     let new_group = |reason: &str, detail: Option<String>, indices: &[usize]| {
         let members: Vec<Game> = indices.iter().map(|&i| games[i].clone()).collect();
         suggest(reason, detail, members, &system, &settings.scrape_regions(), &settings.scrape_languages())
     };
-    for found in group_games(games) {
+    for found in group_games(games, &dat_groups) {
         groups.push(new_group(found.reason, found.detail, &found.members));
     }
 
@@ -288,7 +303,7 @@ pub fn remove_games_with_files(
 /// For each game to remove: its path, its ROM (file or folder, if it exists) and its media files.
 /// Media = every file named after the ROM in each media folder (any extension) and, in Classic,
 /// the files its media fields point to, unless a game that stays also uses them.
-fn files_to_remove(
+pub(super) fn files_to_remove(
     layout: &Layout,
     system: &SystemRef,
     games: &[Game],
@@ -419,10 +434,27 @@ mod tests {
             named("./Street Fighter 2.nes", "Street Fighter 2", Some("143329")),
             named("./Otro.nes", "Otro", Some("5")),
         ];
-        let groups = group_games(&games);
+        let groups = group_games(&games, &Default::default());
         assert_eq!(groups.len(), 2);
         assert_eq!(groups[0], FoundGroup { reason: "screenscraper_id", detail: Some("1268".into()), members: vec![0, 1, 2] });
         assert_eq!(groups[1], FoundGroup { reason: "similar_name", detail: None, members: vec![3, 4] });
+    }
+
+    #[test]
+    fn the_dat_and_the_file_name_also_link_versions() {
+        let games = vec![
+            named("./Street Fighter II (USA).sfc", "Street Fighter II", None),
+            named("./Street Fighter II Turbo (Japan).sfc", "SF2 Turbo", None),
+            // Different titles, same file name without tags
+            named("./Contra (USA).nes", "Contra", None),
+            named("./Contra (Europe).nes", "Probotector", None),
+        ];
+        let dat: std::collections::HashMap<String, String> =
+            [("./Street Fighter II (USA).sfc", "sf2"), ("./Street Fighter II Turbo (Japan).sfc", "sf2")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
+        let groups = group_games(&games, &dat);
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0], FoundGroup { reason: "dat", detail: None, members: vec![0, 1] });
+        assert_eq!(groups[1], FoundGroup { reason: "similar_name", detail: None, members: vec![2, 3] });
     }
 
     #[test]

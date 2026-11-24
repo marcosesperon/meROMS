@@ -269,6 +269,20 @@ export function ProfilesTab({ profiles, activeProfileId, onChange, onMigrate, on
             onClear={editing.saves_dir ? () => updateProfile({ saves_dir: undefined }) : undefined}
           />
 
+          {/* Carpeta de apartados: adonde van las versiones y los medios que se apartan (Mi colección) */}
+          <FolderField
+            label={t("collection.setAsideFolder")}
+            help={t("collection.setAsideFolderHelp")}
+            value={editing.set_aside_dir}
+            placeholder={t("settings.noFolder")}
+            browseLabel={t("settings.browse")}
+            onBrowse={async () => {
+              const folder = await pickFolder();
+              if (folder) updateProfile({ set_aside_dir: folder });
+            }}
+            onClear={editing.set_aside_dir ? () => updateProfile({ set_aside_dir: undefined }) : undefined}
+          />
+
           <div className="flex items-center gap-3 pt-2 border-t border-zinc-700/50">
             {/* Sin carpetas no hay nada que migrar */}
             <button
@@ -307,7 +321,7 @@ interface FolderFieldProps {
 }
 
 // Campo de carpeta de solo lectura con su botón «Examinar» (se repite tres veces arriba).
-function FolderField({ label, help, value, placeholder, browseLabel, onBrowse, onClear, children }: FolderFieldProps) {
+export function FolderField({ label, help, value, placeholder, browseLabel, onBrowse, onClear, children }: FolderFieldProps) {
   return (
     <section>
       <label className="text-xs text-zinc-400 mb-1 block">{label}</label>

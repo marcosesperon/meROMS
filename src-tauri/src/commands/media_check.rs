@@ -15,7 +15,7 @@ use crate::media::{self, MediaIndex};
 use super::progress::Progress;
 
 /// Por qué un fichero de media está mal
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Damage {
     /// 0 bytes
@@ -142,7 +142,7 @@ fn check_mp4(file: &mut File, len: u64, is_mov: bool) -> Option<Damage> {
 }
 
 /// Un fichero de media dañado de un juego
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct DamagedMedia {
     pub path: String,
     pub field: String,
@@ -157,6 +157,16 @@ pub struct DamagedMedia {
 /// Media dañada del sistema (o de un juego, con `game_path`)
 #[tauri::command(async)]
 pub fn find_damaged_media(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<DamagedMedia>, String> {
+    // Un solo juego: siempre al momento (es poco); el sistema entero, de lo guardado si nada cambió
+    if game_path.is_some() {
+        return find_damaged_media_now(app, system_path, game_path, task);
+    }
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "damaged", "", move || find_damaged_media_now(a, sp, game_path, task))
+}
+
+/// Lo que hace `find_damaged_media` cuando no hay nada guardado que valga
+fn find_damaged_media_now(app: tauri::AppHandle, system_path: String, game_path: Option<String>, task: Option<String>) -> Result<Vec<DamagedMedia>, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
     let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;

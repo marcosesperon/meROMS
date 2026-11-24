@@ -254,11 +254,11 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
   {
     name: "settings-scraper",
     run: async () => {
-      if (!document.querySelector('[data-shot="settings-tab-general"]')) {
+      if (!document.querySelector('[data-shot="settings-tab-scraper"]')) {
         useAppStore.getState().closeFullView();
         useAppStore.getState().setCurrentView("settings");
       }
-      await click("settings-tab-general");
+      await click("settings-tab-scraper");
       const policy = document.querySelector<HTMLElement>('[data-shot="scrape-policy"]');
       policy?.scrollIntoView({ block: "start" });
       // Un poco de margen para que se vea su título («Qué actualiza el scraper»)

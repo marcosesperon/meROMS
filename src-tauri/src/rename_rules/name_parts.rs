@@ -193,9 +193,52 @@ pub fn gamelist_name(title: &str, region: Option<&str>, lang: Option<&str>) -> S
     name
 }
 
+/// Las etiquetas del fichero actual que le faltan al nombre nuevo («Datos de la gamelist» sin
+/// región ni idioma en la gamelist: el scraper no los rellena). Así «Tonfuu (Japan) (Ja).nes» no
+/// pierde su región e idioma al tomar el título. Se añade cada etiqueta cuyo tipo no tenga ya el
+/// nombre; las de volcado y las «otras», si no están tal cual. Después, las casillas de
+/// Renombrar deciden cuáles se quedan.
+pub fn with_current_tags(name: &str, current: &str) -> String {
+    let (_, new_tags) = split(name);
+    let (_, old_tags) = split(current);
+    let parts = |tags: &str| -> Vec<(String, TagKind)> {
+        TAG.captures_iter(tags)
+            .filter_map(|c| {
+                let whole = c.get(0)?.as_str().to_string();
+                let (inner, square) = match (c.get(1), c.get(2)) {
+                    (Some(p), _) => (p.as_str(), false),
+                    (_, Some(b)) => (b.as_str(), true),
+                    _ => return None,
+                };
+                Some((whole, tag_kind(inner, square)))
+            })
+            .collect()
+    };
+    let have = parts(new_tags);
+    let mut out = name.trim().to_string();
+    for (tag, kind) in parts(old_tags) {
+        let exact_only = matches!(kind, TagKind::Dump | TagKind::Other | TagKind::Disc);
+        let present = if exact_only { have.iter().any(|(t, _)| *t == tag) } else { have.iter().any(|(_, k)| *k == kind) };
+        if !present && !out.contains(&tag) {
+            out.push(' ');
+            out.push_str(&tag);
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_current_file_keeps_its_tags_when_the_gamelist_has_none() {
+        assert_eq!(with_current_tags("Chuugoku Janshi Story - Tonfuu", "Tonfuu (Japan) (Ja)"), "Chuugoku Janshi Story - Tonfuu (Japan) (Ja)");
+        // Lo que ya trae el nombre manda: no se repite ni se mezcla otra región
+        assert_eq!(with_current_tags("Zelda (USA) (En)", "Zelda (Europe) (Fr) (Rev 1)"), "Zelda (USA) (En) (Rev 1)");
+        assert_eq!(with_current_tags("Juego", "Juego"), "Juego");
+        assert_eq!(with_current_tags("Juego", "Juego [!] [b]"), "Juego [!] [b]");
+    }
 
     #[test]
     fn the_name_and_its_tags_are_told_apart() {

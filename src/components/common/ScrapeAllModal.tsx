@@ -9,6 +9,8 @@ interface ScrapeAllModalProps {
   gameCount: number;
   /** Games the list shows now (search, folder, filters); fewer than gameCount = offer «only these» */
   visibleCount: number;
+  /** El subconjunto son los marcados en la selección múltiple (no los que se ven): cambia el texto */
+  marked?: boolean;
   systemPath: string;
   onClose: () => void;
   /** Start scraping the system with this choice (not saved) */
@@ -18,7 +20,7 @@ interface ScrapeAllModalProps {
 }
 
 /** Antes de «Scrapear Todo»: qué se actualiza esta vez (empieza con lo de Ajustes, no se guarda) */
-export function ScrapeAllModal({ open, gameCount, visibleCount, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
+export function ScrapeAllModal({ open, gameCount, visibleCount, marked, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
   const { t, locale } = useTranslation();
   const [policy, setPolicy] = useState<ScrapePolicy | null>(null);
   // Un «Scrapear todo» que se quedó a medias en este sistema (app cerrada, fallo o «Detener»)
@@ -53,7 +55,7 @@ export function ScrapeAllModal({ open, gameCount, visibleCount, systemPath, onCl
             <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-zinc-300">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" checked={onlyVisible} onChange={() => setOnlyVisible(true)} className="text-indigo-600" />
-                {t("scrapePolicy.onlyVisible", { count: visibleCount })}
+                {t(marked ? "scrapePolicy.onlyMarked" : "scrapePolicy.onlyVisible", { count: visibleCount })}
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" checked={!onlyVisible} onChange={() => setOnlyVisible(false)} className="text-indigo-600" />

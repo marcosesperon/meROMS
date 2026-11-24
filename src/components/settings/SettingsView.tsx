@@ -10,7 +10,7 @@ import {
 } from "../../types";
 import { MediaConfigTab } from "./MediaConfigTab";
 import { ProfilesTab } from "./ProfilesTab";
-import { RenameSettingsTab } from "./RenameSettingsTab";
+import { CollectionTab } from "./CollectionTab";
 import { AboutTab } from "./AboutTab";
 import { PlaceholdersSetting } from "./PlaceholdersSetting";
 import { LaunchBoxSetting } from "./LaunchBoxSetting";
@@ -27,7 +27,7 @@ import { RetroAchievementsSettings } from "./RetroAchievementsSettings";
 
 type AppSettingsSort = AppSettings["gamelist_sort"];
 
-type SettingsTab = "profiles" | "general" | "media" | "rules" | "about";
+type SettingsTab = "profiles" | "collection" | "scraper" | "general" | "media" | "about";
 
 interface SettingsViewProps {
   open: boolean;
@@ -161,9 +161,10 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
 
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: "profiles", label: t("settings.tabProfiles") },
+    { id: "collection", label: t("settings.tabCollection") },
+    { id: "scraper", label: t("settings.tabScraper") },
     { id: "general", label: t("settings.tabGeneral") },
     { id: "media", label: t("settings.tabMedia") },
-    { id: "rules", label: t("settings.tabRules") },
     { id: "about", label: t("settings.tabAbout") },
   ];
 
@@ -243,151 +244,10 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 </div>
               </section>
 
-              {/* ScreenScraper: usuario y contraseña solo si hay credenciales de desarrollador
-                  (las que lleva la app o las de «Avanzado»); estas, plegadas en «Avanzado» */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">
-                  {t("settings.ssCredentials")}
-                </h3>
-                <div className="space-y-3">
-                  {showSsAccount && (
-                    <>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs text-zinc-400 mb-1 block">
-                            {t("settings.username")}
-                          </label>
-                          <input
-                            type="text"
-                            value={form.ss_user || ""}
-                            onChange={(e) =>
-                              setForm({ ...form, ss_user: e.target.value || undefined })
-                            }
-                            placeholder="screenscraper username"
-                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-zinc-400 mb-1 block">
-                            {t("settings.password")}
-                          </label>
-                          <input
-                            type="password"
-                            value={form.ss_password || ""}
-                            onChange={(e) =>
-                              setForm({
-                                ...form,
-                                ss_password: e.target.value || undefined,
-                              })
-                            }
-                            placeholder="screenscraper password"
-                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                          />
-                        </div>
-                      </div>
-                      <p className="text-xs text-zinc-500">{t("settings.ssHelp")}</p>
-                    </>
-                  )}
-                  <details open={advancedOpen} onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}>
-                    <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-200 select-none">
-                      {t("settings.advanced")}
-                    </summary>
-                    <div className="grid grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <label className="text-xs text-zinc-400 mb-1 block">
-                          {t("settings.devId")}
-                        </label>
-                        <input
-                          type="text"
-                          value={form.ss_devid || ""}
-                          onChange={(e) =>
-                            setForm({ ...form, ss_devid: e.target.value || undefined })
-                          }
-                          placeholder="devid"
-                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-zinc-400 mb-1 block">
-                          {t("settings.devPassword")}
-                        </label>
-                        <input
-                          type="password"
-                          value={form.ss_devpassword || ""}
-                          onChange={(e) =>
-                            setForm({
-                              ...form,
-                              ss_devpassword: e.target.value || undefined,
-                            })
-                          }
-                          placeholder="devpassword"
-                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    </div>
-                  </details>
-                </div>
-              </section>
-
-              {/* TheGamesDB */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">
-                  {t("settings.tgdbTitle")}
-                </h3>
-                <div>
-                  <label className="text-xs text-zinc-400 mb-1 block">
-                    {t("settings.tgdbApiKey")}
-                  </label>
-                  <input
-                    type="text"
-                    value={form.tgdb_apikey || ""}
-                    onChange={(e) =>
-                      setForm({ ...form, tgdb_apikey: e.target.value || undefined })
-                    }
-                    placeholder="TheGamesDB API key"
-                    className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                  />
-                  <p className="text-xs text-zinc-500 mt-2">
-                    {t("settings.tgdbHelp")}
-                  </p>
-                </div>
-              </section>
-
               {/* BIOS list (libretro System.dat): download / update / delete */}
               <section>
                 <h3 className="text-sm font-medium text-zinc-300 mb-3">BIOS</h3>
                 <BiosListSetting />
-              </section>
-
-              {/* LaunchBox: offline database (download / update / delete) */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">LaunchBox</h3>
-                <LaunchBoxSetting />
-              </section>
-
-              {/* Region / language order of the scraper */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapeOrder.title")}</h3>
-                {form.ss_regions && form.ss_languages && (
-                  <ScrapeOrderEditor
-                    regions={form.ss_regions}
-                    languages={form.ss_languages}
-                    onChange={(ss_regions, ss_languages) => setForm({ ...form, ss_regions, ss_languages })}
-                  />
-                )}
-              </section>
-
-              {/* What the scraper may update (replaces the old "media to download" list) */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapePolicy.title")}</h3>
-                {form.scrape_fields && (
-                  <ScrapePolicyEditor
-                    policy={form.scrape_fields}
-                    onChange={(scrape_fields) => setForm({ ...form, scrape_fields })}
-                  />
-                )}
-                {/* Rellenos aprendidos en «Limpiar media» (el scraper los ignora) */}
-                <PlaceholdersSetting />
               </section>
 
               {/* Grid media field */}
@@ -513,6 +373,164 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 <p className="text-xs text-zinc-500 mt-2">{t("settings.gamelistSortHelp")}</p>
               </section>
 
+              {/* chdman for "Convert to CHD" (empty = look for it) */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("chd.settingsTitle")}</h3>
+                <input
+                  type="text"
+                  value={form.chdman_path || ""}
+                  onChange={(e) => setForm({ ...form, chdman_path: e.target.value || undefined })}
+                  placeholder="chdman"
+                  className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                />
+                <p className="text-xs text-zinc-500 mt-2">{t("chd.settingsHelp")}</p>
+              </section>
+            </>
+          )}
+
+          {activeTab === "scraper" && (
+            <>
+              {/* ScreenScraper: usuario y contraseña solo si hay credenciales de desarrollador
+                  (las que lleva la app o las de «Avanzado»); estas, plegadas en «Avanzado» */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">
+                  {t("settings.ssCredentials")}
+                </h3>
+                <div className="space-y-3">
+                  {showSsAccount && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs text-zinc-400 mb-1 block">
+                            {t("settings.username")}
+                          </label>
+                          <input
+                            type="text"
+                            value={form.ss_user || ""}
+                            onChange={(e) =>
+                              setForm({ ...form, ss_user: e.target.value || undefined })
+                            }
+                            placeholder="screenscraper username"
+                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-400 mb-1 block">
+                            {t("settings.password")}
+                          </label>
+                          <input
+                            type="password"
+                            value={form.ss_password || ""}
+                            onChange={(e) =>
+                              setForm({
+                                ...form,
+                                ss_password: e.target.value || undefined,
+                              })
+                            }
+                            placeholder="screenscraper password"
+                            className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-zinc-500">{t("settings.ssHelp")}</p>
+                    </>
+                  )}
+                  <details open={advancedOpen} onToggle={(e) => setAdvancedOpen(e.currentTarget.open)}>
+                    <summary className="cursor-pointer text-xs text-zinc-400 hover:text-zinc-200 select-none">
+                      {t("settings.advanced")}
+                    </summary>
+                    <div className="grid grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">
+                          {t("settings.devId")}
+                        </label>
+                        <input
+                          type="text"
+                          value={form.ss_devid || ""}
+                          onChange={(e) =>
+                            setForm({ ...form, ss_devid: e.target.value || undefined })
+                          }
+                          placeholder="devid"
+                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">
+                          {t("settings.devPassword")}
+                        </label>
+                        <input
+                          type="password"
+                          value={form.ss_devpassword || ""}
+                          onChange={(e) =>
+                            setForm({
+                              ...form,
+                              ss_devpassword: e.target.value || undefined,
+                            })
+                          }
+                          placeholder="devpassword"
+                          className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              </section>
+
+              {/* TheGamesDB */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">
+                  {t("settings.tgdbTitle")}
+                </h3>
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1 block">
+                    {t("settings.tgdbApiKey")}
+                  </label>
+                  <input
+                    type="text"
+                    value={form.tgdb_apikey || ""}
+                    onChange={(e) =>
+                      setForm({ ...form, tgdb_apikey: e.target.value || undefined })
+                    }
+                    placeholder="TheGamesDB API key"
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+                  />
+                  <p className="text-xs text-zinc-500 mt-2">
+                    {t("settings.tgdbHelp")}
+                  </p>
+                </div>
+              </section>
+
+              {/* LaunchBox: offline database (download / update / delete) */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">LaunchBox</h3>
+                <LaunchBoxSetting />
+              </section>
+
+              {/* Region / language order of the scraper */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapeOrder.title")}</h3>
+                {form.ss_regions && form.ss_languages && (
+                  <ScrapeOrderEditor
+                    regions={form.ss_regions}
+                    languages={form.ss_languages}
+                    onChange={(ss_regions, ss_languages) => setForm({ ...form, ss_regions, ss_languages })}
+                  />
+                )}
+              </section>
+
+              {/* What the scraper may update (replaces the old "media to download" list) */}
+              <section>
+                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("scrapePolicy.title")}</h3>
+                {form.scrape_fields && (
+                  <ScrapePolicyEditor
+                    policy={form.scrape_fields}
+                    onChange={(scrape_fields) => setForm({ ...form, scrape_fields })}
+                  />
+                )}
+                {/* Rellenos aprendidos en «Limpiar media» (el scraper los ignora) */}
+                <PlaceholdersSetting />
+              </section>
+
               {/* RetroAchievements: user and web API key */}
               <RetroAchievementsSettings form={form} setForm={setForm} />
 
@@ -529,18 +547,6 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
                 <p className="text-xs text-zinc-500 mt-2">{t("translate.settingsHelp")}</p>
               </section>
 
-              {/* chdman for "Convert to CHD" (empty = look for it) */}
-              <section>
-                <h3 className="text-sm font-medium text-zinc-300 mb-3">{t("chd.settingsTitle")}</h3>
-                <input
-                  type="text"
-                  value={form.chdman_path || ""}
-                  onChange={(e) => setForm({ ...form, chdman_path: e.target.value || undefined })}
-                  placeholder="chdman"
-                  className="w-full bg-zinc-800 border border-zinc-600 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-                />
-                <p className="text-xs text-zinc-500 mt-2">{t("chd.settingsHelp")}</p>
-              </section>
             </>
           )}
 
@@ -563,17 +569,7 @@ export function SettingsView({ open, onClose }: SettingsViewProps) {
             />
           )}
 
-          {activeTab === "rules" && (
-            <RenameSettingsTab
-              options={form.rename_options}
-              onOptionsChange={(options) => setForm({ ...form, rename_options: options })}
-              newRomsRename={form.new_roms_rename === true}
-              onNewRomsRenameChange={(on) => setForm({ ...form, new_roms_rename: on })}
-              rules={form.rename_rules}
-              onRulesChange={(rules) => setForm({ ...form, rename_rules: rules })}
-            />
-          )}
-
+          {activeTab === "collection" && <CollectionTab form={form} setForm={setForm} />}
 
           {activeTab === "about" && (
             <AboutTab

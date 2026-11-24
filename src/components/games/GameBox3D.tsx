@@ -38,6 +38,9 @@ const GLINT = "linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 30%, r
 /** Volumen del vídeo de la caja abierta (bajito: sale solo al pararse en un juego) */
 const BOX_VIDEO_VOLUME = 0.3;
 
+/** Forma (ancho / alto) de cada vídeo ya visto: la caja se abre la siguiente vez ya con ella */
+const videoAspects = new Map<string, number>();
+
 /**
  * Una caja de juego en 3D hecha con CSS: el frente con la carátula, el lomo a la izquierda (del
  * color del borde de la carátula, con el título en vertical y, en las de plástico, la banda de
@@ -92,6 +95,12 @@ export function GameBox3D({
   const [videoFailed, setVideoFailed] = useState(false);
   useEffect(() => setVideoFailed(false), [videoSrc]);
   const isOpen = open && !!videoSrc && !videoFailed;
+  // Forma del vídeo: abierta, la caja (tapa + interior) toma esa forma para que no queden franjas
+  const [videoAspect, setVideoAspect] = useState<number | null>(() => (videoSrc ? videoAspects.get(videoSrc) ?? null : null));
+  useEffect(() => setVideoAspect(videoSrc ? videoAspects.get(videoSrc) ?? null : null), [videoSrc]);
+  // Abierta mide dos tapas de ancho por una de alto: cada mitad, la mitad del ancho del vídeo a
+  // esa altura. Con la tapa abierta la carátula no se ve, así que cambiar el ancho no la deforma.
+  const boxWidth = isOpen && videoAspect ? (84 * videoAspect) / (2 * ratio) : 84;
 
   const spineFace = (side: "left" | "right") => (
     <div
@@ -150,7 +159,14 @@ export function GameBox3D({
       <div
         className="box3d relative"
         data-front={front}
-        style={{ width: "84%", height: "84%", marginLeft: "8%", transform: rotate !== undefined ? `rotateY(${rotate}deg)` : undefined }}
+        style={{
+          width: `${boxWidth}%`,
+          height: "84%",
+          marginLeft: "8%",
+          transform: rotate !== undefined ? `rotateY(${rotate}deg)` : undefined,
+          // A la vez que la tapa: abre ajustándose al vídeo y, al cerrar, vuelve a su ancho
+          transition: `width 0.6s cubic-bezier(0.2, 0.7, 0.3, 1) ${isOpen ? "0s" : "0.2s"}`,
+        }}
       >
 
         {/* Lomo: girado 90° sobre el borde izquierdo del frente, hacia atrás (y, si se pide, otro
@@ -234,7 +250,16 @@ export function GameBox3D({
         </div>
 
         {/* Vídeo: ocupa la caja abierta entera (tapa + interior), un pelín por delante */}
-        {isOpen && videoSrc && <BoxVideo src={videoSrc} onFailed={() => setVideoFailed(true)} />}
+        {isOpen && videoSrc && (
+          <BoxVideo
+            src={videoSrc}
+            onFailed={() => setVideoFailed(true)}
+            onAspect={(aspect) => {
+              videoAspects.set(videoSrc, aspect);
+              setVideoAspect(aspect);
+            }}
+          />
+        )}
       </div>
     </div>
   );
@@ -244,7 +269,7 @@ export function GameBox3D({
  * Vídeo de la caja abierta: aparece cuando la tapa ya está casi abierta, con sonido bajo. Si el
  * sistema no deja arrancar un vídeo con sonido sin un clic antes, arranca sin sonido.
  */
-function BoxVideo({ src, onFailed }: { src: string; onFailed: () => void }) {
+function BoxVideo({ src, onFailed, onAspect }: { src: string; onFailed: () => void; onAspect: (aspect: number) => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [shown, setShown] = useState(false);
 
@@ -274,7 +299,20 @@ function BoxVideo({ src, onFailed }: { src: string; onFailed: () => void }) {
         transition: "opacity 0.25s",
       }}
     >
-      <video ref={ref} src={src} data-box-video loop playsInline onError={onFailed} className="block w-full h-full object-contain" />
+      <video
+        ref={ref}
+        src={src}
+        data-box-video
+        loop
+        playsInline
+        onError={onFailed}
+        // En cuanto se sabe su tamaño, la caja abierta toma su forma
+        onLoadedMetadata={(e) => {
+          const v = e.currentTarget;
+          if (v.videoWidth > 0 && v.videoHeight > 0) onAspect(v.videoWidth / v.videoHeight);
+        }}
+        className="block w-full h-full object-contain"
+      />
     </div>
   );
 }

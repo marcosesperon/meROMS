@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ModalShell } from "./ModalShell";
 import { useTranslation } from "../../i18n";
 import { applyMediaNormalization, planMediaNormalization } from "../../commands";
 import type { NormalizeItem } from "../../types";
@@ -18,6 +19,8 @@ interface NormalizeMediaModalProps {
   gameName?: string;
   /** Se llama tras aplicar en lugar de recargar la lista (el detalle recarga y reselecciona) */
   onDone?: () => void;
+  /** Dentro de la ventana «Medios» (una pestaña): sin marco propio y, al aplicar, vuelve a mirar */
+  embedded?: boolean;
 }
 
 // Clave única de cada cambio propuesto (un juego puede tener varios campos)
@@ -29,7 +32,7 @@ const itemKey = (item: NormalizeItem) => `${item.game_path}|${item.field}`;
  * pero no se pueden marcar. Con perfil ES-DE sirve para recuperar los medios que se quedaron
  * en la carpeta de ROMs con la estructura clásica.
  */
-export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameName, onDone }: NormalizeMediaModalProps) {
+export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameName, onDone, embedded }: NormalizeMediaModalProps) {
   const { t } = useTranslation();
   const loadGames = useAppStore((s) => s.loadGames);
   const isEsde = useAppStore((s) => getActiveProfile(s.settings)?.kind === "esde");
@@ -50,18 +53,27 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
       setError(null);
       return;
     }
-    scan();
+    // Una búsqueda cancelada al desmontar (o por React en desarrollo, que repite el efecto) no
+    // cierra la ventana: solo el Cancelar del usuario
+    let alive = true;
+    scan(() => alive);
     // Al cerrar la ventana a medias, la búsqueda se para
-    return () => scanTask.cancel();
+    return () => {
+      alive = false;
+      scanTask.cancel();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath, gamePath]);
 
-  async function scan() {
+  async function scan(alive: () => boolean = () => true) {
     setError(null);
     try {
       const plan = await scanTask.run((task) => planMediaNormalization(systemPath, gamePath, task));
       // Cancelado: no hay nada que enseñar
-      if (!plan) return onClose();
+      if (!plan) {
+        if (alive()) onClose();
+        return;
+      }
       setItems(plan);
       setSelected(new Set(plan.filter((i) => i.status !== "conflict").map(itemKey)));
     } catch (e) {
@@ -98,7 +110,9 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
         message += "\n\n" + t("normalize.skipped", { count: result.skipped.length }) + "\n" + result.skipped.join("\n");
       }
       await reportWithUndo(message);
-      onClose();
+      // En una pestaña de «Medios» se queda abierta y vuelve a mirar
+      if (embedded) await scan();
+      else onClose();
     } catch (e) {
       await showMessage(t("normalize.failed", { error: String(e) }), "error");
     }
@@ -113,8 +127,7 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[860px] max-h-[80vh] flex flex-col mx-4">
+    <ModalShell embedded={embedded} className="w-[860px] max-h-[80vh]">
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">
             {gamePath ? t("gameTools.normalizeTitle", { name: gameName || gamePath }) : t("normalize.title")}
@@ -206,7 +219,6 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

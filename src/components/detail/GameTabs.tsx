@@ -60,13 +60,15 @@ export function GameTabs({ game, systemPath, media, shown, onPick, onFailed, fil
 
   return (
     <div className={`flex flex-col ${fill ? "h-full min-h-0" : ""}`}>
-      <div className="flex gap-1 border-b border-zinc-700/70 shrink-0">
+      {/* En el panel derecho (estrecho) siempre en una línea: si no caben, los nombres se cortan con «…» */}
+      <div className={`flex border-b border-zinc-700/70 shrink-0 ${compact ? "gap-x-0.5" : "gap-1"}`}>
         {TABS.map((tb) => (
           <button
             key={tb.id}
             onClick={() => setTab(tb.id)}
             data-shot={`tab-${tb.id}`}
-            className={`${compact ? "px-2 py-1.5 text-xs" : "px-4 py-2 text-sm"} -mb-px border-b-2 transition-colors whitespace-nowrap ${
+            title={compact ? t(tb.label) : undefined}
+            className={`${compact ? "px-1.5 py-1.5 text-xs min-w-0 truncate" : "px-4 py-2 text-sm"} -mb-px border-b-2 transition-colors whitespace-nowrap ${
               tab === tb.id ? "border-indigo-400 text-zinc-100" : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >

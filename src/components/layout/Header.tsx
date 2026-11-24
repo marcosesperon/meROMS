@@ -4,8 +4,9 @@ import { useTranslation } from "../../i18n";
 import { SearchBar } from "../common/SearchBar";
 import { ViewToggle } from "../common/ViewToggle";
 import { SystemLogo } from "../common/SystemLogo";
-import { DiceIcon, FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
+import { CheckIcon, DiceIcon, FilterIcon, GamepadIcon, SlidersIcon } from "../common/Icons";
 import { FilterBar } from "../common/FilterBar";
+import { IssueFilterBanner } from "../common/IssueFilterBanner";
 import { GRID_SORTS, type GridSort } from "../../utils/playStats";
 
 export function Header() {
@@ -68,6 +69,9 @@ export function Header() {
           >
             <FilterIcon size={18} />
           </button>
+          {/* Selección múltiple (también Cmd/Ctrl+clic o Mayús+clic en la lista): el panel derecho
+              pasa a las acciones para lo marcado */}
+          <SelectButton />
           {/* «¿A qué juego?»: uno al azar entre los que se ven (también Cmd/Ctrl+R) */}
           <button
             onClick={() => useAppStore.getState().setRandomOpen(true)}
@@ -113,6 +117,28 @@ export function Header() {
         </div>
       </header>
       {showFilters && <FilterBar />}
+      <IssueFilterBanner />
     </div>
+  );
+}
+
+/** «Seleccionar»: activa o quita la selección múltiple; activa, dice cuántos hay marcados */
+function SelectButton() {
+  const { t } = useTranslation();
+  const multiSelect = useAppStore((s) => s.multiSelect);
+  const count = useAppStore((s) => s.selectedPaths.size);
+  const setMultiSelect = useAppStore((s) => s.setMultiSelect);
+  return (
+    <button
+      onClick={() => setMultiSelect(!multiSelect)}
+      data-shot="select-toggle"
+      title={t("bulk.selectHint")}
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-sm transition-colors ${
+        multiSelect ? "bg-indigo-600 text-white hover:bg-indigo-500" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700"
+      }`}
+    >
+      <CheckIcon size={16} />
+      {multiSelect ? t("bulk.selectOn", { count }) : t("bulk.selectOff")}
+    </button>
   );
 }

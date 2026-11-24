@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { ModalShell } from "./ModalShell";
 import { useTranslation } from "../../i18n";
-import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, trashMedia, type DamagedMedia, type PlaceholderGroup } from "../../commands";
+import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, type DamagedMedia, type PlaceholderGroup } from "../../commands";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
 import type { ScrapePolicy } from "../../types";
@@ -9,6 +10,9 @@ import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMe
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { resolveImageSrc } from "../../utils/images";
 import { MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
+import { mediaAction, removeMedia } from "../../utils/collectionActions";
+import { collectionRulesFrom } from "../../utils/collectionRules";
+import { useAppStore } from "../../store/useAppStore";
 
 interface UnusedMediaModalProps {
   open: boolean;
@@ -21,6 +25,10 @@ interface UnusedMediaModalProps {
   onDone?: () => void;
   /** Download again the media of these games (whole-system mode): Scrape All with this policy */
   onRescrape?: (gamePaths: string[], policy: ScrapePolicy) => void;
+  /** Dentro de la ventana «Medios» (una pestaña): sin marco propio */
+  embedded?: boolean;
+  /** Qué se busca: todo (de serie), solo dañados y placeholders, o solo sobrantes */
+  sections?: "all" | "damaged" | "unused";
 }
 
 // Selection key of a broken reference (files use their path)
@@ -52,8 +60,12 @@ export function UnusedMediaModal({
   gameName,
   onDone,
   onRescrape,
+  embedded,
+  sections = "all",
 }: UnusedMediaModalProps) {
   const { t } = useTranslation();
+  // Papelera (de serie) o carpeta de apartados (Ajustes → Mi colección, si hay carpeta)
+  const action = mediaAction(collectionRulesFrom(useAppStore((s) => s.settings.collection_rules)));
   const [files, setFiles] = useState<UnusedMediaFile[]>([]);
   // Same file in more than one media type: the extra copies
   const [repeated, setRepeated] = useState<RepeatedMedia[]>([]);
@@ -81,26 +93,39 @@ export function UnusedMediaModal({
       setSelected(new Set());
       return;
     }
-    scan();
+    // Una búsqueda cancelada al desmontar (o por React en desarrollo, que repite el efecto) no
+    // cierra la ventana: solo el Cancelar del usuario
+    let alive = true;
+    scan(() => alive);
     // Al cerrar la ventana a medias, la búsqueda se para
-    return () => scanTask.cancel();
+    return () => {
+      alive = false;
+      scanTask.cancel();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, systemPath, gamePath]);
+  }, [open, systemPath, gamePath, sections]);
 
-  async function scan() {
+  async function scan(alive: () => boolean = () => true) {
     try {
       // Una detrás de otra: así la barra cuenta lo que se está haciendo, no cinco cosas a la vez
+      // En la ventana «Medios» cada pestaña busca solo lo suyo: sobrantes (y copias repetidas) o
+      // dañados (y placeholders y rutas rotas)
+      const unusedPart = sections !== "damaged";
+      const damagedPart = sections !== "unused";
       const found = await scanTask.run(async (task) => {
-        const result = gamePath ? await findGameLeftoverMedia(systemPath, gamePath) : await findUnusedMedia(systemPath, task);
-        const dupes = await findRepeatedMedia(systemPath, gamePath, task);
-        const refs = await findBrokenMediaRefs(systemPath, gamePath, task);
+        const result = !unusedPart ? [] : gamePath ? await findGameLeftoverMedia(systemPath, gamePath) : await findUnusedMedia(systemPath, task);
+        const dupes = unusedPart ? await findRepeatedMedia(systemPath, gamePath, task) : [];
+        const refs = damagedPart ? await findBrokenMediaRefs(systemPath, gamePath, task) : [];
         // Los rellenos solo se ven mirando el sistema entero
-        const fillers = gamePath ? ([] as PlaceholderGroup[]) : await findPlaceholderMedia(systemPath, task);
-        const broken_files = await findDamagedMedia(systemPath, gamePath, task);
+        const fillers = gamePath || !damagedPart ? ([] as PlaceholderGroup[]) : await findPlaceholderMedia(systemPath, task);
+        const broken_files = damagedPart ? await findDamagedMedia(systemPath, gamePath, task) : [];
         return [result, dupes, refs, fillers, broken_files] as const;
       });
       // Cancelado: no hay nada que enseñar
-      if (!found) return onClose();
+      if (!found) {
+        if (alive()) onClose();
+        return;
+      }
       const [result, dupes, refs, fillers, broken_files] = found;
       setFiles(result);
       setRepeated(dupes);
@@ -161,16 +186,18 @@ export function UnusedMediaModal({
         ...fillers.flatMap((g) => g.files.map((f) => f.path)),
       ]),
     ];
-    if (!(await askConfirm(t("cleanup.cleanConfirm", { files: paths.length, refs: refs.length })))) return;
+    const confirmKey = action === "set_aside" ? "cleanup.setAsideConfirm" : "cleanup.cleanConfirm";
+    if (!(await askConfirm(t(confirmKey, { files: paths.length, refs: refs.length })))) return;
     setDeleting(true);
     try {
       const lines: string[] = [];
       let failed = false;
       if (paths.length > 0) {
-        const result = await trashTask.run((task) => trashMedia(systemPath, paths, task));
+        // Papelera o carpeta de apartados, según «Mi colección»
+        const result = await trashTask.run((task) => removeMedia(systemPath, paths, action, [], task));
         if (!result) return;
-        if (trashTask.wasCancelled()) lines.push(t("task.stopped", { done: result.trashed, total: paths.length }), "");
-        lines.push(t("cleanup.deleted", { count: result.trashed }));
+        if (trashTask.wasCancelled()) lines.push(t("task.stopped", { done: result.done, total: paths.length }), "");
+        lines.push(result.line);
         if (result.failed.length > 0) {
           failed = true;
           lines.push("", t("cleanup.trashFailed", { count: result.failed.length }), ...result.failed);
@@ -215,7 +242,9 @@ export function UnusedMediaModal({
   const totalSize = allItems.reduce((sum, f) => sum + f.size, 0);
   // Los ficheros sin usar, en tres grupos: los de siempre y (ES-DE) los sobrantes de la
   // estructura clásica en la carpeta de ROMs, sin ROM o de una ROM
-  const plainFiles = files.filter((f) => !f.leftover);
+  const plainFiles = files.filter((f) => !f.leftover && !f.recoverable);
+  // Clásica: con nombre antiguo (o con el título del juego) que «Normalizar» coloca: no sobran
+  const classicRecoverable = files.filter((f) => !f.leftover && f.recoverable);
   const orphanLeftovers = files.filter((f) => f.leftover && !f.owner);
   // De una ROM: copias de algo que ES-DE ya tiene (sobran) o medios que «Normalizar» recupera
   const copyLeftovers = files.filter((f) => f.leftover && f.owner && !f.recoverable);
@@ -253,8 +282,7 @@ export function UnusedMediaModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-800 border border-zinc-600 rounded-lg w-[640px] max-h-[80vh] flex flex-col mx-4">
+    <ModalShell embedded={embedded} className="w-[640px] max-h-[80vh]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">
@@ -312,6 +340,17 @@ export function UnusedMediaModal({
                 <p className="px-5 pt-3 pb-1 text-xs font-semibold text-zinc-400">{t("cleanup.unusedSection")}</p>
               )}
               <div className="divide-y divide-zinc-700/30">{plainFiles.map((file) => fileRow(file))}</div>
+
+              {/* Clásica: los que «Normalizar» recupera (desmarcados, con el juego del que son) */}
+              {classicRecoverable.length > 0 && (
+                <>
+                  <div className="px-5 pt-4 pb-1 border-t border-zinc-700/50">
+                    <p className="text-xs font-semibold text-zinc-400">{t("cleanup.recoverableSection")}</p>
+                    <p className="text-xs text-zinc-500">{t("cleanup.recoverableHelp")}</p>
+                  </div>
+                  <div className="divide-y divide-zinc-700/30">{classicRecoverable.map((file) => fileRow(file))}</div>
+                </>
+              )}
 
               {/* ES-DE: lo que queda de la estructura clásica en la carpeta de ROMs, sin ROM (marcados) */}
               {orphanLeftovers.length > 0 && (
@@ -519,11 +558,10 @@ export function UnusedMediaModal({
             >
               {deleting
                 ? "..."
-                : t("cleanup.clean", { count: selected.size })}
+                : t(action === "set_aside" ? "cleanup.setAside" : "cleanup.clean", { count: selected.size })}
             </button>
           )}
         </div>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

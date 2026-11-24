@@ -368,6 +368,7 @@ pub fn move_games(
             files,
             games: super::undo::changes_by_path(&fs_, &before, &ts, if same { &src_list } else { &dst_list }, &moved),
             refs: super::undo::RefUndo::Move { from: fs_, to: ts, pairs: moved.clone() },
+            ..Default::default()
         });
     }
     Ok(MoveResult { moved: moved.len(), skipped })

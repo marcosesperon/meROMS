@@ -13,9 +13,6 @@ interface ImageManagerProps {
   game: Game;
   systemPath: string;
   onUpdate: (field: keyof Game, value: string) => void;
-  /** Per-game tools in the section header; each button shows only if its handler is given */
-  onNormalize?: () => void;
-  onClean?: () => void;
   /** "This is...": move a media file to another type (swap if that type already has one) */
   onChangeKind?: (from: keyof Game, to: keyof Game) => void;
 }
@@ -38,7 +35,7 @@ const EXTENDED_IMAGE_FIELDS: { key: keyof Game; labelKey: TranslationKeys }[] = 
   { key: "manual", labelKey: "images.manual" },
 ];
 
-export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean, onChangeKind }: ImageManagerProps) {
+export function ImageManager({ game, systemPath, onUpdate, onChangeKind }: ImageManagerProps) {
   const { t } = useTranslation();
   // Options of the "This is..." menu for one field (only swappable image types, never itself)
   const kindProps = (field: keyof Game) =>
@@ -131,22 +128,6 @@ export function ImageManager({ game, systemPath, onUpdate, onNormalize, onClean,
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-zinc-300">{t("images.title")}</h4>
         <div className="flex items-center gap-1.5">
-          {onNormalize && (
-            <button
-              onClick={onNormalize}
-              className="px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-            >
-              {t("gameTools.normalize")}
-            </button>
-          )}
-          {onClean && (
-            <button
-              onClick={onClean}
-              className="px-2.5 py-1 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-            >
-              {t("gameTools.clean")}
-            </button>
-          )}
           <button
             onClick={handleScanMedia}
             disabled={scanning}

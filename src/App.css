@@ -73,6 +73,24 @@ textarea,
   background-clip: padding-box;
 }
 
+/* Tarjetas «fantasma» mientras se espera una respuesta (búsqueda del scraper): un brillo que
+   pasa de izquierda a derecha */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.06), transparent);
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
 /* Barra de progreso sin total (TaskProgress): un trozo que va de un lado a otro */
 @keyframes task-slide {
   0% { transform: translateX(-100%); }

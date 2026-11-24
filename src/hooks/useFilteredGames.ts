@@ -3,6 +3,8 @@ import type { Game } from "../types";
 import { useAppStore } from "../store/useAppStore";
 import { lacksMedia } from "../utils/mediaFilter";
 import { isPlayed } from "../utils/playStats";
+import { issueContextOf, issueGames } from "../utils/collectionStatus";
+import { getActiveProfile } from "../utils/profiles";
 
 /** Region codes of a game: the field may hold several («us, eu», «us/eu») */
 export function regionsOf(region?: string): string[] {
@@ -21,6 +23,10 @@ export function useFilteredGames(): Game[] {
   const statuses = useAppStore((s) => s.statuses);
   const raMarks = useAppStore((s) => s.raMarks);
   const brokenMedia = useAppStore((s) => s.brokenMedia);
+  // «Con problemas de…» (pulsar un número del estado del sistema)
+  const collectionStatus = useAppStore((s) => s.collectionStatus);
+  const missingRomPaths = useAppStore((s) => s.missingRomPaths);
+  const settings = useAppStore((s) => s.settings);
 
   return useMemo(() => {
     let result = games;
@@ -105,6 +111,14 @@ export function useFilteredGames(): Game[] {
       });
     }
 
+    // Estado del sistema: solo los juegos con ese problema (si aún no se sabe, no se filtra)
+    if (filters.issue) {
+      const isEsde = getActiveProfile(settings)?.kind === "esde";
+      const ctx = issueContextOf({ games, settings, brokenMedia, collectionStatus, missingRomPaths, isEsde });
+      const wanted = issueGames(filters.issue, ctx);
+      if (wanted) result = result.filter((g) => wanted.has(g.path));
+    }
+
     return result;
-  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses, raMarks]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses, raMarks, collectionStatus, missingRomPaths, settings]);
 }

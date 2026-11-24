@@ -12,11 +12,14 @@ import { NormalizeMediaModal } from "../common/NormalizeMediaModal";
 import { UnusedMediaModal } from "../common/UnusedMediaModal";
 import { MoveGamesModal } from "../common/MoveGamesModal";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
+import { VersionsModal } from "../common/VersionsModal";
+import { GameReviewModal } from "./GameReviewModal";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { bumpMediaVersion } from "../../utils/images";
+import { offerRename } from "../../utils/autoRename";
 
 // Per-game tools (the same ones the system toolbar has, limited to this game)
-type GameTool = "rename" | "normalize" | "clean" | "move";
+type GameTool = "rename" | "normalize" | "clean" | "move" | "review" | "versions";
 
 interface GameDetailPanelProps {
   isNewGame?: boolean;
@@ -124,8 +127,17 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
     }
   }
 
+  // Se ha scrapeado en esta edición: al guardar se propone renombrar (como desde la ficha)
+  const [scraped, setScraped] = useState(false);
+
   async function handleSave() {
-    if (await persist()) onClose();
+    if (!(await persist())) return;
+    onClose();
+    if (!scraped || isNewGame || !selectedSystem) return;
+    const path = editedGame.path;
+    const renamed = await offerRename(selectedSystem.path, path);
+    const fresh = useAppStore.getState().games.find((g) => g.path === renamed);
+    if (fresh) selectGame(fresh);
   }
 
   // The tools write the gamelist themselves: unsaved edits must be saved first
@@ -220,6 +232,14 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
           <div className="flex items-center gap-2">
             {!isNewGame && (
               <>
+                {/* El estado del sistema, de este juego: qué le falta y su «Arreglar» */}
+                <button
+                  onClick={() => runTool("review")}
+                  data-shot="game-review-open"
+                  className="px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-300 rounded hover:bg-indigo-600/30 transition-colors"
+                >
+                  {t("review.button")}
+                </button>
                 <button
                   onClick={handleScrape}
                   disabled={scrapeSearchOpen}
@@ -253,8 +273,6 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               game={editedGame}
               systemPath={selectedSystem.path}
               onUpdate={handleFieldChange}
-              onNormalize={!isNewGame ? () => runTool("normalize") : undefined}
-              onClean={!isNewGame ? () => runTool("clean") : undefined}
               onChangeKind={!isNewGame ? handleChangeKind : undefined}
             />
           )}
@@ -352,6 +370,35 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
               }}
             />
           )}
+          {activeTool === "review" && (
+            <GameReviewModal
+              systemPath={selectedSystem.path}
+              game={selectedGame}
+              onClose={() => setActiveTool(null)}
+              onFix={(fix) => {
+                // Scrapear abre la búsqueda manual de siempre; lo demás, su herramienta de un juego
+                if (fix === "scrape") {
+                  setActiveTool(null);
+                  handleScrape();
+                } else setActiveTool(fix);
+              }}
+            />
+          )}
+          <VersionsModal
+            open={activeTool === "versions"}
+            systemPath={selectedSystem.path}
+            onlyPaths={[selectedGame.path]}
+            onClose={() => setActiveTool(null)}
+            onDone={async () => {
+              // Este juego puede haberse apartado: se cierra el editor si ya no está
+              await loadGames(selectedSystem.path);
+              const still = useAppStore.getState().games.find((g) => g.path === selectedGame.path);
+              if (!still) {
+                selectGame(null);
+                onClose();
+              } else selectGame(still);
+            }}
+          />
           <UnusedMediaModal
             open={activeTool === "clean"}
             systemPath={selectedSystem.path}
@@ -409,7 +456,10 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
           systemPath={selectedSystem.path}
           game={editedGame}
           onClose={() => setScrapeSearchOpen(false)}
-          onApplied={(game) => setEditedGame(game)}
+          onApplied={(game) => {
+            setEditedGame(game);
+            setScraped(true);
+          }}
         />
       )}
     </>

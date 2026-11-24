@@ -160,6 +160,7 @@ async fn download_media(
 }
 
 /// Parse the API response JSON and extract game metadata + download media.
+#[allow(clippy::too_many_arguments)]
 async fn process_scrape_response(
     client: &Client,
     jeu: &Value,
@@ -168,6 +169,8 @@ async fn process_scrape_response(
     system: &SystemRef,
     media_types: &[String],
     settings: &AppSettings,
+    // La huella de nuestra ROM: con ella se sabe cuál de las ROMs del juego es (región e idiomas)
+    rom_key: Option<&RomKey>,
 ) -> Result<Game, String> {
     // Preferred language from app settings
     // Preferred regions (names, dates, media) and languages (texts), from Settings
@@ -210,7 +213,9 @@ async fn process_scrape_response(
         .and_then(|s| s.parse::<f64>().ok())
         .map(|r| format!("{:.2}", r / 20.0));
 
-    let releasedate = extract_regional(&jeu["dates"], &regions);
+    // «1988-07-01» → «19880701T000000» (el formato de EmulationStation; antes se guardaba tal cual
+    // y se leía mal: «1988--0-7-»)
+    let releasedate = extract_regional(&jeu["dates"], &regions).and_then(|d| crate::commands::scrape_common::es_date(&d));
 
     // What may be updated (Settings, or the choice made when launching «Scrape all»)
     let policy = settings.scrape_policy();
@@ -282,12 +287,18 @@ async fn process_scrape_response(
     policy.data("players").apply(&mut game.players, players);
     policy.data("rating").apply(&mut game.rating, rating);
     policy.data("releasedate").apply(&mut game.releasedate, releasedate);
+    // Región e idiomas de nuestra ROM (no del juego): Renombrar los usa como etiquetas
+    // («Datos de la gamelist»: «Tonfuu» + jp + ja → «Tonfuu (Japan) (Ja)»)
+    let (rom_regions, rom_languages) = rom_regions_and_languages(jeu, rom_key);
+    policy.data("region").apply(&mut game.region, rom_regions);
+    policy.data("lang").apply(&mut game.lang, rom_languages);
     for (field, value) in downloaded {
         media::set_field(&mut game, &field, Some(value));
     }
 
-    // Extract ScreenScraper game ID
-    if let Some(id) = jeu.get("id").and_then(|v| v.as_u64()) {
+    // Extract ScreenScraper game ID (ScreenScraper lo manda como texto; antes solo se leía como
+    // número y no se guardaba nunca)
+    if let Some(id) = jeu.get("id").and_then(|v| v.as_str().map(String::from).or_else(|| v.as_u64().map(|n| n.to_string()))).filter(|id| !id.is_empty()) {
         game.id = Some(id.to_string());
         game.source = Some("screenscraper".to_string());
     }
@@ -410,9 +421,52 @@ fn rom_file(game: &Game, system: &SystemRef) -> std::path::PathBuf {
     system.rom_dir.join(game.path.strip_prefix("./").unwrap_or(&game.path))
 }
 
-/// ScreenScraper sometimes answers «nothing» with an empty or id-less game: that's no game
+/// Región e idiomas de nuestra ROM entre las del juego (la que tiene nuestra huella; si no se
+/// sabe, la que vino con la consulta por ROM), como los guarda la gamelist: «jp», «us,eu»,
+/// «ja,en». ScreenScraper los da como listas (`regions.regions_shortname`,
+/// `langues.langues_shortname`) o como texto (`romregions`, `romlangues`).
+fn rom_regions_and_languages(jeu: &Value, key: Option<&RomKey>) -> (Option<String>, Option<String>) {
+    let listed = jeu["roms"].as_array().into_iter().flatten();
+    let candidates: Vec<&Value> = std::iter::once(&jeu["rom"]).chain(listed).filter(|r| r.is_object()).collect();
+    let ours = match key {
+        Some(key) => {
+            let (field, value) = match key {
+                RomKey::Crc(crc) => ("romcrc", crc),
+                RomKey::Md5(md5) => ("rommd5", md5),
+            };
+            candidates.iter().find(|r| r[field].as_str().is_some_and(|v| v.eq_ignore_ascii_case(value))).copied()
+        }
+        None => None,
+    }
+    .or_else(|| jeu["rom"].is_object().then_some(&jeu["rom"]));
+    let Some(rom) = ours else { return (None, None) };
+    let codes = |list: &Value, text: &Value| -> Option<String> {
+        let mut out: Vec<String> = match list.as_array() {
+            Some(items) => items.iter().filter_map(|v| v.as_str()).map(|s| s.trim().to_lowercase()).collect(),
+            None => text.as_str().map(|t| t.split([',', ';', '/']).map(|s| s.trim().to_lowercase()).collect()).unwrap_or_default(),
+        };
+        out.retain(|s| !s.is_empty() && s != "ss");
+        out.dedup();
+        (!out.is_empty()).then(|| out.join(","))
+    };
+    (
+        codes(&rom["regions"]["regions_shortname"], &rom["romregions"]),
+        codes(&rom["langues"]["langues_shortname"], &rom["romlangues"]),
+    )
+}
+
+/// ScreenScraper sometimes answers «nothing» with an empty or id-less game: that's no game.
+/// Neither is its catch-all entry for ROMs it knows but aren't a game (hacks, demos, unknown
+/// dumps), named «ZZZ(notgame):#NONGAME…»: scraping it would fill the game with that.
 fn real_game(jeu: &Value) -> Option<Value> {
-    jeu.get("id").is_some().then(|| jeu.clone())
+    (jeu.get("id").is_some() && !is_not_game(jeu)).then(|| jeu.clone())
+}
+
+/// ScreenScraper's «not a game» entry: some name starts with «ZZZ(notgame)»
+fn is_not_game(jeu: &Value) -> bool {
+    jeu["noms"].as_array().is_some_and(|names| {
+        names.iter().any(|n| n["text"].as_str().is_some_and(|t| t.trim_start().to_lowercase().starts_with("zzz(notgame)")))
+    })
 }
 
 /// Scrape a single game using ScreenScraper API.
@@ -436,7 +490,7 @@ async fn scrape_game_screenscraper(
 
     let media_types = settings.media_types();
     let updated_game =
-        process_scrape_response(&client, &jeu, existing_game, layout, system, &media_types, settings).await?;
+        process_scrape_response(&client, &jeu, existing_game, layout, system, &media_types, settings, Some(&key)).await?;
 
     Ok(ScrapeResult {
         game: updated_game,
@@ -459,6 +513,10 @@ fn ss_thumbnails() -> &'static std::sync::Mutex<std::collections::HashMap<String
 
 /// The card of one ScreenScraper game, plus its cover URL (to be kept server-side)
 fn parse_ss_candidate(jeu: &Value, regions: &[String], rom_match: bool) -> Option<(ScrapeCandidate, Option<String>)> {
+    // La entrada «no es un juego» de ScreenScraper no se ofrece (ni por la ROM ni por el texto)
+    if is_not_game(jeu) {
+        return None;
+    }
     let id = jeu.get("id").and_then(|v| v.as_str().map(String::from).or_else(|| v.as_u64().map(|n| n.to_string())))?;
     let name = extract_regional(&jeu["noms"], regions)?;
     let year = extract_regional(&jeu["dates"], regions).filter(|d| d.len() >= 4).map(|d| d[..4].to_string());
@@ -653,7 +711,14 @@ pub async fn apply_scrape(
     source: String,
     id: String,
 ) -> Result<ScrapeResult, String> {
-    let settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    let mut settings: AppSettings = crate::commands::settings::get_settings(app.clone())?;
+    // Elegido a mano: el usuario dice «este juego es este», así que el título se toma del
+    // resultado aunque «Qué actualiza el scraper» diga «solo si está vacío» (con «no tocar», no)
+    let mut policy = settings.scrape_policy();
+    if policy.data("name") != crate::models::settings::FieldPolicy::Keep {
+        policy.data.insert("name".into(), crate::models::settings::FieldPolicy::Overwrite);
+    }
+    settings.scrape_fields = Some(policy);
     let (layout, system) = super::system_context(&app, &system_path)?;
     let game = crate::commands::gamelist::read_gamelist(&layout, &system)?
         .games
@@ -661,8 +726,27 @@ pub async fn apply_scrape(
         .find(|g| g.path == game_path)
         .ok_or("Game not found in gamelist")?;
     let client = build_http_client()?;
+    let mut result = apply_by_source(&app, &client, &settings, &source, &id, &game, &layout, &system).await?;
+    // El nombre para ordenar de ARRM ya no vale (ni el número ni el nombre de entonces)
+    crate::commands::scrape_common::drop_arrm_sortname(&mut result.game);
+    Ok(result)
+}
 
-    match source.as_str() {
+/// Los datos y medios del resultado `id` de una fuente, aplicados al juego (sin guardar)
+#[allow(clippy::too_many_arguments)]
+async fn apply_by_source(
+    app: &tauri::AppHandle,
+    client: &Client,
+    settings: &AppSettings,
+    source: &str,
+    id: &str,
+    game: &Game,
+    layout: &Layout,
+    system: &SystemRef,
+) -> Result<ScrapeResult, String> {
+    let (app, settings, layout, system) = (app.clone(), settings.clone(), layout.clone(), system.clone());
+    let (client, game, id) = (client.clone(), game.clone(), id.to_string());
+    match source {
         "screenscraper" => {
             let body = ss_get(&client, &settings, "jeuInfos.php", &[("gameid", id.as_str())])
                 .await?
@@ -671,13 +755,12 @@ pub async fn apply_scrape(
             // De paso, el nombre de fichero de la ROM, si está en la lista de ROMs de ese juego
             // con nuestra huella (calculada aquí: la consulta fue por id, no por la ROM)
             let rom = rom_file(&game, &system);
-            if rom.is_file() {
-                if let Ok((key, _)) = rom_probe(&game, &system) {
-                    crate::commands::ss_rom_names::remember(&app, &rom, Some(&jeu), &key);
-                }
+            let key = rom.is_file().then(|| rom_probe(&game, &system).ok()).flatten().map(|(key, _)| key);
+            if let Some(key) = &key {
+                crate::commands::ss_rom_names::remember(&app, &rom, Some(&jeu), key);
             }
             let media_types = settings.media_types();
-            let game = process_scrape_response(&client, &jeu, &game, &layout, &system, &media_types, &settings).await?;
+            let game = process_scrape_response(&client, &jeu, &game, &layout, &system, &media_types, &settings, key.as_ref()).await?;
             Ok(ScrapeResult { game, found: true })
         }
         "thegamesdb" => {
@@ -833,7 +916,12 @@ async fn scrape_one(
     let mut answered = false;
     for source in source_order(app, settings, system) {
         match try_source(source, app, settings, client, game, layout, system).await {
-            Ok(r) if r.found => return ("success", r.game),
+            Ok(r) if r.found => {
+            let mut scraped = r.game;
+            // El nombre para ordenar de ARRM ya no vale tras scrapear
+            crate::commands::scrape_common::drop_arrm_sortname(&mut scraped);
+            return ("success", scraped);
+        }
             Ok(_) => answered = true,
             Err(_) => {}
         }
@@ -847,6 +935,32 @@ async fn scrape_one(
 
 /// «Scrape All» saves the gamelist every this many games (and at the end)
 const SAVE_EVERY: usize = 10;
+
+/// Espera a `job`, pero si mientras tanto se pulsa Parar (`cancel_scrape`) lo abandona y da `None`.
+/// Lo abandonado se suelta en el acto: sus consultas y descargas a medias se cortan. Se mira la
+/// marca cada décima de segundo (sin `tokio::select!`, que pide otra función de tokio).
+async fn until_scrape_cancelled<F: std::future::Future>(job: F) -> Option<F::Output> {
+    use std::future::Future;
+    use std::task::Poll;
+    let mut job = std::pin::pin!(job);
+    loop {
+        let mut tick = std::pin::pin!(sleep(Duration::from_millis(100)));
+        let step = std::future::poll_fn(|cx| {
+            if let Poll::Ready(out) = job.as_mut().poll(cx) {
+                return Poll::Ready(Some(Some(out)));
+            }
+            if CANCEL_SCRAPE.load(std::sync::atomic::Ordering::SeqCst) {
+                return Poll::Ready(Some(None));
+            }
+            // Ni ha acabado ni se ha parado: otra vuelta cuando pase la décima
+            tick.as_mut().poll(cx).map(|_| None)
+        })
+        .await;
+        if let Some(result) = step {
+            return result;
+        }
+    }
+}
 
 /// «Stop» pressed: the batch ends before its next game
 static CANCEL_SCRAPE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -968,8 +1082,12 @@ pub async fn scrape_system(
             sleep(Duration::from_millis(REQUEST_DELAY_MS)).await;
         }
 
-        let (status, updated_game) =
-            scrape_one(&app, &settings, &client, &game, &layout, &system).await;
+        // Parar no espera a que acabe este juego (varias consultas y descargas, cada una con su
+        // tiempo de espera): se abandona en el acto y el juego se queda como estaba
+        let Some((status, updated_game)) = until_scrape_cancelled(scrape_one(&app, &settings, &client, &game, &layout, &system)).await else {
+            stopped = true;
+            break;
+        };
         gamelist.games[index] = updated_game;
         done += 1;
 
@@ -1003,6 +1121,34 @@ pub async fn scrape_system(
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn the_region_and_languages_are_those_of_our_rom() {
+        let jeu = serde_json::json!({
+            "id": "65414",
+            "roms": [
+                {"romcrc": "AAAA0000", "regions": {"regions_shortname": ["us"]}, "langues": {"langues_shortname": ["en"]}},
+                {"romcrc": "1B2C3D4E", "regions": {"regions_shortname": ["jp"]}, "langues": {"langues_shortname": ["ja"]}}
+            ]
+        });
+        let (r, l) = rom_regions_and_languages(&jeu, Some(&RomKey::Crc("1b2c3d4e".into())));
+        assert_eq!((r.as_deref(), l.as_deref()), (Some("jp"), Some("ja")));
+        // Como texto, en la ROM de la consulta
+        let jeu = serde_json::json!({"rom": {"romregions": "us, eu", "romlangues": "en,fr"}});
+        let (r, l) = rom_regions_and_languages(&jeu, None);
+        assert_eq!((r.as_deref(), l.as_deref()), (Some("us,eu"), Some("en,fr")));
+        // Sin ROM conocida, nada
+        assert_eq!(rom_regions_and_languages(&serde_json::json!({}), None), (None, None));
+    }
+
+    #[test]
+    fn the_not_a_game_entry_is_no_game() {
+        let not_game = serde_json::json!({"id": "1", "noms": [{"region": "ss", "text": "ZZZ(notgame):#NONGAME"}]});
+        assert!(real_game(&not_game).is_none());
+        assert!(parse_ss_candidate(&not_game, &["us".to_string()], true).is_none());
+        let game = serde_json::json!({"id": "2", "noms": [{"region": "us", "text": "Adventure Island 4"}]});
+        assert!(real_game(&game).is_some());
+    }
     use super::*;
 
     #[test]

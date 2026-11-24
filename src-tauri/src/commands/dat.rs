@@ -224,7 +224,7 @@ fn dats_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 }
 
 /// Fichero de la copia resumida de un sistema (por el nombre de su carpeta)
-fn dat_file(app: &tauri::AppHandle, system_name: &str) -> Result<PathBuf, String> {
+pub(super) fn dat_file(app: &tauri::AppHandle, system_name: &str) -> Result<PathBuf, String> {
     let key: String = system_name.to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_').collect();
     Ok(dats_dir(app)?.join(format!("{}.json", key)))
 }

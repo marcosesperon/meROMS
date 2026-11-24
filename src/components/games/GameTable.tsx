@@ -22,8 +22,8 @@ import { getFlag } from "../../utils/flags";
 import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
 import { ColumnsMenu } from "./ColumnsMenu";
-import { formatPlayTime } from "../../utils/playStats";
-import { clickGame, doubleClickGame } from "../../utils/gameClick";
+import { formatPlayTime, compareNames } from "../../utils/playStats";
+import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { effectiveGridField } from "../../utils/systemView";
@@ -154,6 +154,8 @@ export function GameTable({ games }: GameTableProps) {
         ),
         size: 250,
         minSize: 100,
+        // Como la cuadrícula: sin el artículo del final y con los números en su orden
+        sortingFn: (a, b) => compareNames(a.original.name || a.original.path, b.original.name || b.original.path),
       }),
       columnHelper.accessor("genre", {
         header: t("table.genre"),
@@ -511,7 +513,7 @@ export function GameTable({ games }: GameTableProps) {
               <tr
                 key={row.id}
                 data-game-path={row.original.path}
-                onClick={() => clickGame(row.original)}
+                onClick={(e) => clickGame(row.original, clickKeys(e))}
                 onDoubleClick={() => doubleClickGame(row.original)}
                 // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
                 className={`group cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${

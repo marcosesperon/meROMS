@@ -31,3 +31,16 @@ export function articleToFront(name: string): string | null {
   if (!ARTICLES.some((a) => a.toLowerCase() === last.toLowerCase())) return null;
   return `${last} ${title.slice(0, comma).trim()}${tags}`;
 }
+
+/**
+ * Para ordenar: el nombre sin el artículo del final («Bard Tale, The» → «Bard Tale»). Si no, la
+ * coma va detrás del espacio y «Bard Tale 2…» saldría antes que «Bard Tale, The».
+ */
+export function withoutEndArticle(name: string): string {
+  const [title, tags] = splitTags(name.trim());
+  const comma = title.lastIndexOf(", ");
+  if (comma <= 0) return name;
+  const last = title.slice(comma + 2).trim();
+  if (!ARTICLES.some((a) => a.toLowerCase() === last.toLowerCase())) return name;
+  return `${title.slice(0, comma).trim()}${tags}`;
+}

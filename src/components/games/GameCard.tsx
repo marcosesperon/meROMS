@@ -8,7 +8,7 @@ import { StarIcon, TrophyIcon } from "../common/Icons";
 import { raBadge } from "../../utils/retroachievements";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
-import { clickGame, doubleClickGame } from "../../utils/gameClick";
+import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { effectiveGridField } from "../../utils/systemView";
 import { GameBox3D } from "./GameBox3D";
@@ -66,7 +66,7 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
     <div
       data-game-path={game.path}
       // Clic: marcar (selección múltiple) o enseñar el juego; doble clic: el editor (utils/gameClick)
-      onClick={() => clickGame(game)}
+      onClick={(e) => clickGame(game, clickKeys(e))}
       onDoubleClick={() => doubleClickGame(game)}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}

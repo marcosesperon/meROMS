@@ -13,7 +13,8 @@ export function Sidebar() {
   const setCurrentView = useAppStore((s) => s.setCurrentView);
   const setSearchOpen = useAppStore((s) => s.setSearchOpen);
   const goHome = useAppStore((s) => s.goHome);
-  const loading = useAppStore((s) => s.loading);
+  // Escaneando los sistemas (no la carga de la lista de juegos)
+  const loading = useAppStore((s) => s.systemsLoading);
   const scanProgress = useAppStore((s) => s.scanProgress);
   const pendingStructure = useAppStore((s) => s.pendingStructure);
   const romChanges = useAppStore((s) => s.romChanges);

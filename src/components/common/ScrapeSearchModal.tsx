@@ -3,6 +3,8 @@ import { useTranslation } from "../../i18n";
 import { applyScrape, scrapeThumbnail, searchScrape } from "../../commands";
 import type { Game, ScrapeCandidate } from "../../types";
 import { showMessage } from "../../utils/dialogs";
+import { useAppStore } from "../../store/useAppStore";
+import { isArcadeSystem } from "../../utils/arcade";
 import { SearchIcon } from "./Icons";
 
 interface ScrapeSearchModalProps {
@@ -33,6 +35,65 @@ const SOURCE_LABEL: Record<ScrapeCandidate["source"], string> = {
 };
 
 const candidateKey = (c: ScrapeCandidate) => `${c.source}:${c.id}`;
+
+/** Segundos desde que algo empezó (se pone a 0 cuando `running` vuelve a ser verdad) */
+function useElapsed(running: boolean): number {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    setSeconds(0);
+    const start = Date.now();
+    const timer = setInterval(() => setSeconds(Math.floor((Date.now() - start) / 1000)), 1000);
+    return () => clearInterval(timer);
+  }, [running]);
+  return seconds;
+}
+
+/** Barra fina que se mueve sin fin (algo está en marcha y no se sabe cuánto falta) */
+function MovingBar() {
+  return (
+    <div className="h-0.5 w-full overflow-hidden bg-zinc-700/40">
+      <div className="h-full w-1/3 bg-indigo-500" style={{ animation: "task-slide 1.1s ease-in-out infinite" }} />
+    </div>
+  );
+}
+
+/**
+ * Mientras se espera al scraper: qué fuentes se están consultando (con un punto que late), los
+ * segundos que lleva y unas tarjetas «fantasma» con la forma de los resultados que van a llegar.
+ * También al descargar el elegido (`applying`), con su propio texto.
+ */
+function Waiting({ sources, applying }: { sources: string[]; applying: string | null }) {
+  const { t } = useTranslation();
+  const seconds = useElapsed(true);
+  return (
+    <div className="px-2 py-2" role="status" aria-live="polite">
+      <div className="flex flex-wrap items-center gap-2 px-1 pb-3">
+        <span className="text-sm text-zinc-300">{applying ? t("scrapeSearch.downloading", { name: applying }) : t("scrapeSearch.asking")}</span>
+        {!applying &&
+          sources.map((s, i) => (
+            <span key={s} className="flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full bg-zinc-700/60 text-zinc-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
+              {s}
+            </span>
+          ))}
+        {seconds >= 2 && <span className="ml-auto text-[11px] text-zinc-500 tabular-nums">{t("scrapeSearch.seconds", { count: seconds })}</span>}
+      </div>
+      <div className="space-y-1">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-2 rounded" style={{ opacity: 1 - i * 0.16 }}>
+            <div className="shimmer w-12 h-16 shrink-0 rounded bg-zinc-700/50" />
+            <div className="flex-1 space-y-2">
+              <div className="shimmer h-3.5 rounded bg-zinc-700/50" style={{ width: `${70 - i * 8}%` }} />
+              <div className="shimmer h-2.5 rounded bg-zinc-700/40" style={{ width: `${45 - i * 4}%` }} />
+              <div className="shimmer h-3 w-20 rounded bg-zinc-700/40" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Búsqueda manual para scrapear un juego: busca un texto en ScreenScraper y TheGamesDB,
@@ -121,6 +182,15 @@ export function ScrapeSearchModal({ systemPath, game, onClose, onApplied }: Scra
 
   const selectedCandidate = candidates.find((c) => candidateKey(c) === selected) ?? null;
   const busy = searching || applying;
+  // Las fuentes que se consultan (las que hay configuradas; ArcadeItalia, solo en arcade)
+  const scraperStatus = useAppStore((s) => s.scraperStatus);
+  const systemName = systemPath.split(/[\\/]/).pop() ?? "";
+  const sources = [
+    scraperStatus.screenscraper && "ScreenScraper",
+    isArcadeSystem(systemName) && "ArcadeItalia",
+    scraperStatus.launchbox && "LaunchBox",
+    scraperStatus.tgdb && "TheGamesDB",
+  ].filter(Boolean) as string[];
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]" onClick={() => !applying && onClose()}>
@@ -179,11 +249,17 @@ export function ScrapeSearchModal({ systemPath, game, onClose, onApplied }: Scra
           </div>
         )}
 
-        <div className={`flex-1 overflow-y-auto px-3 py-3 space-y-1 ${searching ? "opacity-50" : ""}`}>
+        {/* Buscando otra vez con resultados en pantalla: una barra que se mueve encima de la lista */}
+        {searching && candidates.length > 0 && <MovingBar />}
+        <div className={`flex-1 overflow-y-auto px-3 py-3 space-y-1 ${searching && candidates.length > 0 ? "opacity-50" : ""}`}>
+          {/* Primera búsqueda (o descargando el elegido): fuentes, segundos y tarjetas fantasma */}
+          {((searching && candidates.length === 0) || applying) && (
+            <Waiting sources={sources} applying={applying ? selectedCandidate?.name ?? "" : null} />
+          )}
           {searched && !searching && candidates.length === 0 && (
             <p className="px-2 py-8 text-sm text-zinc-500 text-center">{t("scrapeSearch.noResults")}</p>
           )}
-          {candidates.map((c) => {
+          {!applying && candidates.map((c) => {
             const key = candidateKey(c);
             const isSelected = key === selected;
             const details = [c.system, c.year, c.developer].filter(Boolean).join(" · ");

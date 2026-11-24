@@ -4,6 +4,7 @@ import { useTranslation } from "../i18n";
 import { removeGame, saveGamelist } from "../commands";
 import type { Game } from "../types";
 import { askConfirm, showMessage } from "../utils/dialogs";
+import { offerRename } from "../utils/autoRename";
 
 /**
  * Guarda en la gamelist un juego recién scrapeado y recarga, para que la media nueva se vea
@@ -39,6 +40,17 @@ export function useGameActions() {
       await saveScrapedGame(game);
     } catch (e) {
       await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
+      return;
+    }
+    // Con los datos nuevos, ¿el fichero o el título quedarían distintos? Se propone renombrar
+    const { selectedSystem, selectedGame, selectGame } = useAppStore.getState();
+    if (!selectedSystem) return;
+    const path = await offerRename(selectedSystem.path, game.path);
+    if (path !== game.path && selectedGame?.path === game.path) {
+      selectGame(useAppStore.getState().games.find((g) => g.path === path) ?? null);
+    } else if (selectedGame?.path === game.path) {
+      // El título puede haber cambiado: el juego seleccionado, con lo nuevo
+      selectGame(useAppStore.getState().games.find((g) => g.path === game.path) ?? selectedGame);
     }
   }
 

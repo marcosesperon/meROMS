@@ -1,6 +1,8 @@
 //! «Deshacer»: la última operación que movió o renombró ficheros (Renombrar, Mover a…,
-//! Normalizar media, Intercambiar tipos). Solo se recuerda la última, en memoria (se olvida
-//! al cerrar la app). Lo que va a la papelera no: eso se recupera desde la papelera del sistema.
+//! Normalizar media, Intercambiar tipos, Apartar). Solo se recuerda la última, en memoria (se
+//! olvida al cerrar la app). Lo que va a la papelera no: eso se recupera desde la papelera del
+//! sistema. «Ponerlo todo en orden» junta sus pasos en una sola operación (`group_begin` /
+//! `group_end`), que se deshace entera, del último paso al primero.
 //!
 //! Se guardan los pasos de ficheros tal cual se dieron (el diario de `media.rs`), una foto de
 //! antes y después de cada juego tocado (ruta y campos de media) y qué hay que revertir en
@@ -27,8 +29,9 @@ pub struct GameChange {
 }
 
 /// Qué hay que revertir fuera de la gamelist
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum RefUndo {
+    #[default]
     None,
     /// Renombrar: colecciones y .m3u de un sistema (pares antigua → nueva)
     Rename { system: String, pairs: Vec<(String, String)> },
@@ -36,26 +39,85 @@ pub enum RefUndo {
     Move { from: String, to: String, pairs: Vec<(String, String)> },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct UndoOp {
-    /// rename | move | normalize | swap
+    /// rename | move | normalize | swap | set_aside | order (varias juntas)
     pub kind: String,
     pub system: String,
     pub files: Vec<Journaled>,
     pub games: Vec<GameChange>,
     pub refs: RefUndo,
+    /// Entradas que la operación sacó de la gamelist (apartar), con su sistema: vuelven al deshacer
+    pub removed: Vec<(String, Game)>,
+    /// Operación compuesta (Ponerlo todo en orden): sus partes, en el orden en que se hicieron
+    pub parts: Vec<UndoOp>,
+}
+
+impl UndoOp {
+    fn is_empty(&self) -> bool {
+        self.files.is_empty() && self.games.is_empty() && self.removed.is_empty() && self.parts.is_empty()
+    }
+
+    /// Ficheros que mueve, contando los de sus partes
+    fn file_count(&self) -> usize {
+        self.files.len() + self.parts.iter().map(UndoOp::file_count).sum::<usize>()
+    }
 }
 
 static LAST: Mutex<Option<UndoOp>> = Mutex::new(None);
+/// Mientras hay un grupo abierto, las operaciones se juntan aquí en lugar de ser «la última»
+static GROUP: Mutex<Option<Vec<UndoOp>>> = Mutex::new(None);
 
-/// Guarda la operación como «la última» (si movió algo). El diario ya se ha recogido.
+/// Guarda la operación como «la última» (si movió algo), o como una parte más del grupo abierto.
+/// El diario ya se ha recogido.
 pub fn record(op: UndoOp) {
-    if op.files.is_empty() && op.games.is_empty() {
+    if op.is_empty() {
         return;
+    }
+    if let Ok(mut group) = GROUP.lock() {
+        if let Some(parts) = group.as_mut() {
+            parts.push(op);
+            return;
+        }
     }
     if let Ok(mut last) = LAST.lock() {
         *last = Some(op);
     }
+}
+
+/// Empieza a juntar operaciones (Ponerlo todo en orden). Un grupo que quedara abierto se descarta.
+pub fn group_begin() {
+    if let Ok(mut group) = GROUP.lock() {
+        *group = Some(Vec::new());
+    }
+}
+
+/// Cierra el grupo: si algo se movió, queda como «la última» operación (`kind`), una sola
+pub fn group_end(kind: &str, system: &str) {
+    let parts = GROUP.lock().ok().and_then(|mut g| g.take()).unwrap_or_default();
+    if parts.is_empty() {
+        return;
+    }
+    let op = if parts.len() == 1 {
+        parts.into_iter().next().unwrap_or_default()
+    } else {
+        UndoOp { kind: kind.to_string(), system: system.to_string(), parts, ..Default::default() }
+    };
+    if let Ok(mut last) = LAST.lock() {
+        *last = Some(op);
+    }
+}
+
+/// Abre un grupo de deshacer (lo usa «Ponerlo todo en orden» antes del primer paso)
+#[tauri::command(async)]
+pub fn undo_group_begin() {
+    group_begin();
+}
+
+/// Cierra el grupo: todos sus pasos se deshacen de una vez
+#[tauri::command(async)]
+pub fn undo_group_end(system_path: String) {
+    group_end("order", &system_path);
 }
 
 /// Juegos cuya ruta cambió (`pairs` antigua → nueva), con su foto de antes y de después
@@ -102,7 +164,7 @@ pub fn undo_status() -> Option<UndoInfo> {
     let last = LAST.lock().ok()?;
     let op = last.as_ref()?;
     let name = Path::new(&op.system).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
-    Some(UndoInfo { kind: op.kind.clone(), system: name, files: op.files.len() })
+    Some(UndoInfo { kind: op.kind.clone(), system: name, files: op.file_count() })
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -172,12 +234,32 @@ fn undo_gamelists(lists: &mut HashMap<String, GameList>, games: &[GameChange]) {
     }
 }
 
+/// Vuelve a meter en su gamelist las entradas que se apartaron (si nadie ha puesto otra con esa ruta)
+fn restore_removed(lists: &mut HashMap<String, GameList>, removed: &[(String, Game)]) {
+    for (sys, game) in removed {
+        let Some(list) = lists.get_mut(sys) else { continue };
+        if !list.games.iter().any(|g| g.path == game.path) {
+            list.games.push(game.clone());
+        }
+    }
+}
+
 fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     let mut result = UndoResult::default();
+    // Compuesta: cada parte al revés, de la última a la primera
+    if !op.parts.is_empty() {
+        for part in op.parts.iter().rev() {
+            let r = undo_op(layout, part)?;
+            result.restored += r.restored;
+            result.skipped.extend(r.skipped);
+        }
+        return Ok(result);
+    }
     undo_files(&op.files, &mut result);
 
     // Gamelists de los sistemas tocados
     let mut systems: Vec<String> = op.games.iter().flat_map(|c| [c.before_sys.clone(), c.after_sys.clone()]).collect();
+    systems.extend(op.removed.iter().map(|(sys, _)| sys.clone()));
     systems.sort();
     systems.dedup();
     let mut lists: HashMap<String, GameList> = HashMap::new();
@@ -185,7 +267,8 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
         lists.insert(s.clone(), super::gamelist::read_gamelist(layout, &SystemRef::from_rom_dir(s))?);
     }
     undo_gamelists(&mut lists, &op.games);
-    if layout.writes_media_tags() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
+    restore_removed(&mut lists, &op.removed);
+    if layout.writes_media_tags() || !op.removed.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
         for (s, list) in &lists {
             super::gamelist::write_gamelist(layout, &SystemRef::from_rom_dir(s), list)?;
         }
@@ -212,7 +295,16 @@ pub fn undo_last(app: tauri::AppHandle) -> Result<UndoResult, String> {
     let op = LAST.lock().map_err(|e| e.to_string())?.take().ok_or("Nothing to undo")?;
     // Por si una operación anterior falló a medias y dejó el diario abierto: deshacer no se apunta
     let _ = media::journal_take();
+    if let Ok(mut group) = GROUP.lock() {
+        *group = None;
+    }
     undo_op(&super::active_layout(&app)?, &op)
+}
+
+/// Para los tests de otros módulos: deshacer una operación sin pasar por «la última» (global)
+#[cfg(test)]
+pub fn undo_op_for_tests(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
+    undo_op(layout, op)
 }
 
 /// Para los tests: la ruta absoluta de un juego
@@ -264,6 +356,7 @@ mod tests {
             files: media::journal_take(),
             games: changes_by_path(&sys_s, &before, &sys_s, &after, &pairs),
             refs: RefUndo::Rename { system: sys_s.clone(), pairs },
+            ..Default::default()
         };
 
         // Después se edita la descripción: deshacer no la toca
@@ -309,6 +402,7 @@ mod tests {
             files: media::journal_take(),
             games: changes_by_path(&fs_, &before, &ts, &dst_after, &pairs),
             refs: RefUndo::Move { from: fs_.clone(), to: ts.clone(), pairs },
+            ..Default::default()
         };
         // Alguien ocupa el sitio original de uno
         touch(&rom(&from, "./Otro.gbc"), "nuevo");
@@ -339,6 +433,26 @@ mod tests {
         assert_eq!(r.restored, 3);
         assert_eq!(fs::read_to_string(d.join("covers/J.png")).unwrap(), "captura");
         assert_eq!(fs::read_to_string(d.join("screenshots/J.png")).unwrap(), "caratula");
+    }
+
+    #[test]
+    fn a_compound_operation_is_undone_from_the_last_part_to_the_first() {
+        let tmp = tempfile::tempdir().unwrap();
+        let d = tmp.path();
+        touch(&d.join("A.png"), "a");
+        // Dos partes: A → B y luego B → C. Al revés: C → B y B → A
+        media::journal_begin();
+        media::move_file(&d.join("A.png"), &d.join("B.png")).unwrap();
+        let first = UndoOp { kind: "normalize".into(), files: media::journal_take(), ..Default::default() };
+        media::journal_begin();
+        media::move_file(&d.join("B.png"), &d.join("C.png")).unwrap();
+        let second = UndoOp { kind: "rename".into(), files: media::journal_take(), ..Default::default() };
+        let op = UndoOp { kind: "order".into(), parts: vec![first, second], ..Default::default() };
+        assert_eq!(op.file_count(), 2);
+        let r = undo_op(&Layout::Classic, &op).unwrap();
+        assert_eq!(r.restored, 2, "{:?}", r.skipped);
+        assert!(d.join("A.png").is_file());
+        assert!(!d.join("C.png").exists());
     }
 
     #[test]

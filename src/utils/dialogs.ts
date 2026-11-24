@@ -9,12 +9,13 @@ import { translate } from "../i18n";
 const TITLE = "meROMS";
 
 /** Pregunta Sí/No. Devuelve true si el usuario acepta. */
-export function askConfirm(text: string): Promise<boolean> {
+/** Pregunta Sí / No. `labels`: otros textos para los botones (p. ej. «Renombrar» / «Ahora no») */
+export function askConfirm(text: string, labels?: { ok: string; cancel: string; kind?: "info" | "warning" }): Promise<boolean> {
   return ask(text, {
     title: TITLE,
-    kind: "warning",
-    okLabel: translate("dialog.yes"),
-    cancelLabel: translate("dialog.no"),
+    kind: labels?.kind ?? "warning",
+    okLabel: labels?.ok ?? translate("dialog.yes"),
+    cancelLabel: labels?.cancel ?? translate("dialog.no"),
   });
 }
 

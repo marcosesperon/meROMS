@@ -22,7 +22,8 @@ import { TaskProgress } from "./TaskProgress";
 export function WelcomeScreen() {
   const { t } = useTranslation();
   const systems = useAppStore((s) => s.systems);
-  const loading = useAppStore((s) => s.loading);
+  // Escaneando los sistemas (no la carga de la lista de juegos)
+  const loading = useAppStore((s) => s.systemsLoading);
   // Progreso de la lectura de sistemas del perfil (se enseña aquí, con sitio)
   const scanProgress = useAppStore((s) => s.scanProgress);
   const onlyWithGames = useAppStore((s) => s.onlySystemsWithGames);

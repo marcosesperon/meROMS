@@ -12,6 +12,9 @@ export const DATA_FIELDS: { field: string; label: TranslationKeys }[] = [
   { field: "players", label: "form.players" },
   { field: "rating", label: "form.rating" },
   { field: "releasedate", label: "form.releaseDate" },
+  // De la ROM reconocida (ScreenScraper): Renombrar los usa como etiquetas «(Japan) (Ja)»
+  { field: "region", label: "form.region" },
+  { field: "lang", label: "form.lang" },
 ];
 
 const CHOICES: FieldPolicy[] = ["overwrite", "if_empty", "keep"];

@@ -112,6 +112,10 @@ pub struct AppSettings {
     // ROM name cleanup rules (None = built-in defaults)
     #[serde(default)]
     pub rename_rules: Option<Vec<RenameRule>>,
+    // What the collection must meet: required data and media, versions and leftover media actions
+    // (Settings > My collection; managed by the UI)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub collection_rules: Option<serde_json::Value>,
     // New ROMs: rename the added ROMs automatically (after scraping) with `rename_options`
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub new_roms_rename: Option<bool>,
@@ -352,6 +356,23 @@ impl AppSettings {
 #[cfg(test)]
 mod tests {
     use super::{FieldPolicy, ScrapePolicy};
+
+    #[test]
+    fn collection_rules_and_the_set_aside_folder_are_kept_and_old_settings_still_load() {
+        // Ajustes de una versión anterior: sin los campos nuevos
+        let old: super::AppSettings = serde_json::from_str(r#"{"profiles":[{"id":"a","name":"A","kind":"classic","rom_root_path":"/roms"}]}"#).unwrap();
+        assert!(old.collection_rules.is_none());
+        assert!(old.profiles[0].set_aside_dir.is_none());
+        // Con ellos: salen igual al guardar
+        let new: super::AppSettings = serde_json::from_str(
+            r#"{"collection_rules":{"required_media":["image"],"versions_action":"hide"},"profiles":[{"id":"a","name":"A","kind":"classic","rom_root_path":"/roms","set_aside_dir":"/apartados"}]}"#,
+        )
+        .unwrap();
+        let text = serde_json::to_string(&new).unwrap();
+        let back: super::AppSettings = serde_json::from_str(&text).unwrap();
+        assert_eq!(back.collection_rules.unwrap()["versions_action"], "hide");
+        assert_eq!(back.profiles[0].set_aside_dir.as_deref(), Some("/apartados"));
+    }
 
     #[test]
     fn field_policies() {

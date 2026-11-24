@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
 // No context menu (right click): it's the browser's menu (Reload, Inspect…), out of place in a
 // desktop app. Text fields keep it (copy/paste), and so does development (to inspect).
@@ -20,6 +21,9 @@ document.addEventListener("dragstart", (e) => {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {/* A failure while drawing shows what failed (and Reload) instead of a black window */}
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 );
