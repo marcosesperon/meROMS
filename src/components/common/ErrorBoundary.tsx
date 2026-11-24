@@ -30,7 +30,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
         <h1 className="text-lg font-semibold text-red-300">{translate("crash.title")}</h1>
         <p className="mt-2 text-sm text-zinc-400">{translate("crash.help")}</p>
         <pre className="mt-4 p-3 rounded bg-zinc-900 text-xs text-red-200 whitespace-pre-wrap select-text">
-          {String(error.stack || error.message || error)}
+          {/* En macOS (WebKit) la traza no lleva el mensaje: se pone delante si falta */}
+          {error.stack && error.message && !error.stack.includes(error.message)
+            ? `${error.name}: ${error.message}\n\n${error.stack}`
+            : String(error.stack || error.message || error)}
         </pre>
         {stack && <pre className="mt-2 p-3 rounded bg-zinc-900 text-[11px] text-zinc-500 whitespace-pre-wrap select-text">{stack.trim()}</pre>}
         <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500">

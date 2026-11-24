@@ -5,9 +5,11 @@ import { useTranslation } from "../../i18n";
 import { ImagePreview } from "./ImagePreview";
 import { scanGameMedia, setGameMedia, trashMedia } from "../../commands";
 import { absoluteMediaPath, resolveImageSrc } from "../../utils/images";
-import { ExpandIcon, PencilIcon, TrashIcon, CloseIcon, SearchIcon } from "../common/Icons";
+import { PencilIcon, TrashIcon, SearchIcon } from "../common/Icons";
 import type { TranslationKeys } from "../../i18n/en";
 import { askConfirm } from "../../utils/dialogs";
+import { useAppStore } from "../../store/useAppStore";
+import { FramedVideo } from "../common/FramedVideo";
 
 interface ImageManagerProps {
   game: Game;
@@ -45,7 +47,6 @@ export function ImageManager({ game, systemPath, onUpdate, onChangeKind }: Image
           onChangeKind: (to: string) => onChangeKind(field, to as keyof Game),
         }
       : {};
-  const [videoFullscreen, setVideoFullscreen] = useState(false);
   const [showExtended, setShowExtended] = useState(false);
   const [scanning, setScanning] = useState(false);
 
@@ -122,6 +123,9 @@ export function ImageManager({ game, systemPath, onUpdate, onChangeKind }: Image
   }
 
   const videoSrc = resolveImageSrc(game.video, systemPath);
+  // The frame around the video: arcade cabinet (with the game's marquee) or CRT TV, per system
+  const systemName = useAppStore((s) => s.selectedSystem?.name) ?? "";
+  const marqueeSrc = game.marquee ? resolveImageSrc(game.marquee, systemPath) : null;
 
   return (
     <div className="space-y-3">
@@ -189,27 +193,17 @@ export function ImageManager({ game, systemPath, onUpdate, onChangeKind }: Image
         <label className="text-xs text-zinc-400 mb-1 block">
           {t("images.video")}
         </label>
-        <div className="relative group w-full aspect-video bg-zinc-800 rounded overflow-hidden border border-zinc-700">
+        {/* With a video: its CRT TV (or arcade cabinet) frame and its own controls below; no box */}
+        <div
+          className={`relative group w-full aspect-video rounded ${
+            videoSrc ? "" : "bg-zinc-800 overflow-hidden border border-zinc-700"
+          }`}
+        >
           {videoSrc ? (
             <>
-              <video
-                src={videoSrc}
-                className="w-full h-full object-contain"
-                controls
-                autoPlay
-                loop
-                muted
-                preload="auto"
-              />
+              <FramedVideo src={videoSrc} system={systemName} marqueeSrc={marqueeSrc} />
               {/* Action buttons for video */}
               <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={() => setVideoFullscreen(true)}
-                  className="bg-zinc-700/80 hover:bg-zinc-600 text-white p-1.5 rounded transition-colors"
-                  title={t("images.fullscreen")}
-                >
-                  <ExpandIcon size={14} />
-                </button>
                 <button
                   onClick={handleChangeVideo}
                   className="bg-indigo-600/80 hover:bg-indigo-500 text-white p-1.5 rounded transition-colors"
@@ -237,27 +231,6 @@ export function ImageManager({ game, systemPath, onUpdate, onChangeKind }: Image
         </div>
       </div>
 
-      {/* Video fullscreen modal */}
-      {videoFullscreen && videoSrc && (
-        <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-          onClick={() => setVideoFullscreen(false)}
-        >
-          <video
-            src={videoSrc}
-            className="max-w-[90vw] max-h-[90vh]"
-            controls
-            autoPlay
-            onClick={(e) => e.stopPropagation()}
-          />
-          <button
-            onClick={() => setVideoFullscreen(false)}
-            className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/80 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
-          >
-            <CloseIcon size={20} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

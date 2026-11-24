@@ -69,3 +69,16 @@ export function doubleClickGame(game: Game) {
   selectGame(game);
   openEditor();
 }
+
+/**
+ * Botón derecho en un juego del listado: su menú (GameContextMenu). Si está marcado en la
+ * selección múltiple, el de los marcados; si no, el juego pasa a ser el elegido (se ve en el
+ * panel) y sale el suyo. No lo marca ni lo desmarca.
+ */
+export function contextMenuGame(game: Game, e: { clientX: number; clientY: number; preventDefault: () => void }) {
+  e.preventDefault();
+  window.clearTimeout(pendingFullView);
+  const state = useAppStore.getState();
+  if (!(state.multiSelect && state.selectedPaths.has(game.path))) state.selectGame(game);
+  state.openGameMenu(e.clientX, e.clientY, game.path);
+}

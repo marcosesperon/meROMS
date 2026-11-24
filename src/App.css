@@ -114,6 +114,20 @@ textarea,
   -webkit-backface-visibility: hidden;
 }
 
+/* Cristal de tubo sobre el vídeo de la caja abierta (GameBox3D, BoxScreen): reflejo en diagonal,
+   esquinas más oscuras y líneas de barrido finas. Solo degradados: no cuesta rendimiento */
+.crt-glass {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.03) 28%, transparent 42%),
+    radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.5) 100%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0px, rgba(0, 0, 0, 0.2) 1px, transparent 1px, transparent 3px);
+  box-shadow: inset 0 0 1.5cqh rgba(0, 0, 0, 0.85);
+}
+
 /* Barra deslizante del carrusel: fina y translúcida, lo recorrido más claro (--progress lo pone
    el componente) y un punto blanco que crece al pasar el ratón o al arrastrar */
 .carousel-range {

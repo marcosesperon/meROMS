@@ -1,5 +1,7 @@
 import { useTranslation } from "../../i18n";
 import type { GalleryItem } from "../../hooks/useGameDetails";
+import { useAppStore } from "../../store/useAppStore";
+import { FramedVideo } from "../common/FramedVideo";
 
 interface GameMediaViewerProps {
   media: GalleryItem[];
@@ -15,12 +17,21 @@ interface GameMediaViewerProps {
 /** Visor de un medio (vídeo o imagen) con la tira de miniaturas para elegir otro */
 export function GameMediaViewer({ media, shown, onPick, onFailed, large = false, fit = false }: GameMediaViewerProps) {
   const { t } = useTranslation();
+  const system = useAppStore((s) => s.selectedSystem?.name) ?? "";
+  const isVideo = shown.field === "video";
+  // El cartel de la recreativa: el marquee del juego, si está en su galería
+  const marquee = media.find((m) => m.field === "marquee")?.url ?? null;
   return (
     <div className={fit ? "h-full flex flex-col min-h-0" : ""}>
-      {/* Con «fit», todo el alto que quede libre (la imagen o el vídeo, enteros dentro) */}
-      <div className={`w-full bg-black rounded-lg overflow-hidden flex items-center justify-center ${fit ? "flex-1 min-h-0" : "aspect-video"}`}>
-        {shown.field === "video" ? (
-          <video key={shown.url} src={shown.url} onError={() => onFailed(shown.url)} controls autoPlay muted loop className="w-full h-full object-contain" />
+      {/* Con «fit», todo el alto que quede libre (la imagen o el vídeo, enteros dentro). El vídeo
+          va en su tele (o recreativa), sin fondo negro detrás */}
+      <div
+        className={`w-full rounded-lg flex items-center justify-center ${isVideo ? "" : "bg-black overflow-hidden"} ${
+          fit ? "flex-1 min-h-0" : "aspect-video"
+        }`}
+      >
+        {isVideo ? (
+          <FramedVideo src={shown.url} system={system} marqueeSrc={marquee} onFailed={() => onFailed(shown.url)} />
         ) : (
           <img src={shown.url} alt={t(shown.label)} onError={() => onFailed(shown.url)} className="w-full h-full object-contain" />
         )}

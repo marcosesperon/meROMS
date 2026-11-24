@@ -12,6 +12,9 @@ import { translate } from "../i18n";
 import { useAppStore } from "../store/useAppStore";
 import type { CollectionRules, VersionsAction } from "../types";
 import { getActiveProfile } from "./profiles";
+import { collectionRulesFrom } from "./collectionRules";
+import { askConfirm, showMessage } from "./dialogs";
+import { reportWithUndo } from "./undo";
 
 /**
  * Lo que hacen las reglas de «Mi colección» con lo que sobra: las versiones que no se quedan
@@ -89,4 +92,39 @@ export async function removeMedia(
     await learnPlaceholders(fillers.map((g) => ({ size: g.size, md5: g.md5, field: g.fields[0] ?? "" })));
   }
   return outcome;
+}
+
+/**
+ * Quitar juegos de la colección (los marcados o uno desde el menú del botón derecho): papelera
+ * o apartar si así lo dice «Mi colección» (ocultar no es eliminar: papelera). Pregunta antes con
+ * lo que se va a quitar y luego recarga y da el resumen (apartar, con Deshacer).
+ * Devuelve si se quitó algo.
+ */
+export async function removeGames(paths: string[]): Promise<boolean> {
+  const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths, selectedGame, selectGame } = useAppStore.getState();
+  if (!selectedSystem || paths.length === 0) return false;
+  const rule = collectionRulesFrom(settings.collection_rules).versions_action;
+  const action = rule === "set_aside" ? "set_aside" : "trash";
+  try {
+    const plan = await removeGamesWithFiles(selectedSystem.path, paths, true);
+    const question =
+      action === "set_aside"
+        ? translate("bulk.removeConfirmSetAside", { count: plan.removed })
+        : translate("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length });
+    if (!(await askConfirm(question))) return false;
+    const outcome = await removeVersions(selectedSystem.path, paths, action);
+    setSelectedPaths(new Set());
+    if (selectedGame && paths.includes(selectedGame.path)) selectGame(null);
+    await loadGames(selectedSystem.path);
+    loadSystems();
+    const lines = [outcome.line];
+    if (outcome.failed.length) lines.push("", translate("duplicates.removeFailed", { count: outcome.failed.length }), ...outcome.failed);
+    if (action === "set_aside") await reportWithUndo(lines.join("\n"));
+    else await showMessage(lines.join("\n"), outcome.failed.length ? "error" : "info");
+    return true;
+  } catch (e) {
+    // Sin carpeta de apartados elegida
+    await showMessage(String(e) === "no_set_aside_dir" ? translate("versions.noFolder") : String(e), "error");
+    return false;
+  }
 }

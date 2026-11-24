@@ -149,7 +149,12 @@ export function CollectionStatus() {
         mediaLine("swapped", parts.swapped, (p) => p.games.length, "colstatus.swapped", "swapped"),
         mediaLine("damaged", parts.damaged, (p) => p.files, "colstatus.damaged", "damaged"),
         mediaLine("placeholders", parts.placeholders, (p) => p.files, "colstatus.placeholders", "damaged"),
-        { ...mediaLine("unused", parts.unused, (p) => p.files, "colstatus.unused", "unused"), filter: false },
+        // Primero lo que se puede aprovechar; los sobrantes de verdad son los demás
+        mediaLine("reuse", parts.reuse, (p) => p.files, "colstatus.reuse", "unused"),
+        {
+          ...mediaLine("unused", parts.unused, (p) => Math.max(0, p.files - (parts.reuse?.files ?? 0)), "colstatus.unused", "unused"),
+          filter: false,
+        },
         {
           kind: "media",
           values: [noMedia],

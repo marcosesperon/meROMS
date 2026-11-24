@@ -9,6 +9,8 @@ import { BulkEditPanel } from "./components/detail/BulkEditPanel";
 import { SettingsView } from "./components/settings/SettingsView";
 import { ScrapeProgressModal } from "./components/common/ScrapeProgressModal";
 import { RenameModal } from "./components/common/RenameModal";
+import { GameContextMenu } from "./components/games/GameContextMenu";
+import { GameToolsHost } from "./components/games/GameToolsHost";
 import { BackupsModal } from "./components/common/BackupsModal";
 import { ExportModal } from "./components/common/ExportModal";
 import { runUndo } from "./utils/undo";
@@ -518,6 +520,10 @@ function App() {
           }
         }}
       />
+
+      {/* Right-click menu of a game in the list, and the per-game tools it opens (no editor) */}
+      <GameContextMenu />
+      <GameToolsHost />
 
       <ScrapeAllModal
         open={isTool("scrapeAll")}

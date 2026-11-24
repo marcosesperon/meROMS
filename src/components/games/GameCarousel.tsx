@@ -103,6 +103,8 @@ export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dent
   const centreVideo =
     settings.box_video !== false && sorted[center] ? resolveImageSrc(sorted[center].video, selectedSystem?.path || "") || null : null;
   const centreOpen = useOpenAfter(!!centreVideo, center);
+  // Medio ancho de la caja del centro abierta (en anchos de caja): depende de la forma del vídeo
+  const [openHalf, setOpenHalf] = useState(0.84);
 
   // Clic en la caja del centro: como en la cuadrícula y, con «panel», además abre el panel
   const clickCentre = (game: Game) => {
@@ -215,8 +217,9 @@ export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dent
     if (d === 0) return { x: 0, scale: 1, angle: 0, light: 1 };
     const side = Math.sign(d);
     return {
-      // Con la del centro abierta (el doble de ancha), las de los lados se apartan medio ancho
-      x: side * (firstGap + (Math.abs(d) - 1) * stackStep + (centreOpen ? boxW * 0.42 : 0)),
+      // Con la del centro abierta, las de los lados se apartan lo que crece (más el marco de la
+      // pantalla); con la forma de la carátula, 0.42 anchos como antes
+      x: side * (firstGap + (Math.abs(d) - 1) * stackStep + (centreOpen ? boxW * Math.max(0, openHalf - 0.38) : 0)),
       scale: SIDE_SCALE,
       angle: side < 0 ? SIDE_ANGLE : -SIDE_ANGLE,
       light: Math.max(0.35, 0.85 - 0.05 * Math.abs(d)),
@@ -279,7 +282,9 @@ export function GameCarousel({ games, couch = false }: { games: Game[]; /** Dent
                   shadow={false}
                   glint={effects && d === 0 && glint.index === i ? glint.count : undefined}
                   videoSrc={d === 0 ? centreVideo : null}
+                  marqueeSrc={d === 0 && centreVideo ? resolveImageSrc(game.marquee, selectedSystem?.path || "") : null}
                   open={d === 0 && centreOpen}
+                  onOpenHalfWidth={d === 0 ? setOpenHalf : undefined}
                 />
               </div>
             );

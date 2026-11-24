@@ -206,7 +206,7 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
 /// Clave para comparar un nombre con un título: en minúsculas, sin etiquetas entre paréntesis o
 /// corchetes y solo con letras y números. «007: El Mundo…», «007 El Mundo…» y
 /// «007 - El Mundo… (USA, Europe)» dan la misma.
-fn title_key(name: &str) -> String {
+pub(super) fn title_key(name: &str) -> String {
     let mut out = String::new();
     let mut depth = 0usize;
     for c in name.chars() {
@@ -222,7 +222,7 @@ fn title_key(name: &str) -> String {
 
 /// Sufijos antiguos y el tipo de medio que suelen ser (los de `guess_kind`). `-boxart` es
 /// ambiguo: unas colecciones lo usan para la carátula y otras para la caja 3D.
-const TITLE_SUFFIXES: &[(&str, &str)] = &[
+pub(super) const TITLE_SUFFIXES: &[(&str, &str)] = &[
     ("-image", "covers"),
     ("-box2d", "covers"),
     ("-box-2d", "covers"),
@@ -485,7 +485,7 @@ fn legacy_file_for(settings: &AppSettings, system: &SystemRef, rom_path: &str, f
 }
 
 /// Ruta corta para enseñar: dentro de la carpeta del sistema, o (ES-DE) dentro de la de medios.
-fn relative_to(layout: &Layout, system: &SystemRef, path: &Path) -> String {
+pub(super) fn relative_to(layout: &Layout, system: &SystemRef, path: &Path) -> String {
     let media_root = match layout {
         Layout::Esde(paths) => Some(paths.media_root.as_path()),
         Layout::Classic => None,

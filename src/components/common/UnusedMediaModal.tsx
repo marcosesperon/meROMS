@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { ModalShell } from "./ModalShell";
 import { useTranslation } from "../../i18n";
-import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, type DamagedMedia, type PlaceholderGroup } from "../../commands";
+import { clearMediaRefs, findBrokenMediaRefs, findDamagedMedia, findPlaceholderMedia, findReusableMedia, findUnusedMedia, findGameLeftoverMedia, findRepeatedMedia, learnPlaceholders, undoGroupBegin, undoGroupEnd, type DamagedMedia, type PlaceholderGroup } from "../../commands";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
 import type { ScrapePolicy } from "../../types";
 import { DATA_FIELDS } from "./ScrapePolicyEditor";
-import { SWAPPABLE_MEDIA, type BrokenMediaRef, type RepeatedMedia, type UnusedMediaFile } from "../../types";
+import { SWAPPABLE_MEDIA, type BrokenMediaRef, type Game, type RepeatedMedia, type ReusableMedia, type UnusedMediaFile } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
-import { resolveImageSrc } from "../../utils/images";
+import { absoluteMediaPath, resolveImageSrc } from "../../utils/images";
+import { applyReuse } from "../../utils/mediaReuse";
+import { reportWithUndo } from "../../utils/undo";
+import { ReuseSection } from "./ReuseSection";
 import { MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
 import { mediaAction, removeMedia } from "../../utils/collectionActions";
 import { collectionRulesFrom } from "../../utils/collectionRules";
@@ -75,6 +78,14 @@ export function UnusedMediaModal({
   const [placeholders, setPlaceholders] = useState<PlaceholderGroup[]>([]);
   // Empty, not a real image/video, or cut short (a download left halfway)
   const [damaged, setDamaged] = useState<DamagedMedia[]>([]);
+  // Sobrantes que son de un juego (con otro nombre) y ficheros de referencias rotas encontrados
+  const [reusable, setReusable] = useState<ReusableMedia[]>([]);
+  // Sobrantes asignados a mano a un juego («Asignar…»)
+  const [assigned, setAssigned] = useState<ReusableMedia[]>([]);
+  // El sobrante que se está asignando ahora (su ruta)
+  const [assigning, setAssigning] = useState<string | null>(null);
+  const [reusing, setReusing] = useState(false);
+  const games = useAppStore((s) => s.games);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   // Las cinco búsquedas van una detrás de otra con el mismo progreso (y un solo Cancelar)
   const scanTask = useTask();
@@ -90,6 +101,9 @@ export function UnusedMediaModal({
       setBroken([]);
       setPlaceholders([]);
       setDamaged([]);
+      setReusable([]);
+      setAssigned([]);
+      setAssigning(null);
       setSelected(new Set());
       return;
     }
@@ -119,15 +133,24 @@ export function UnusedMediaModal({
         // Los rellenos solo se ven mirando el sistema entero
         const fillers = gamePath || !damagedPart ? ([] as PlaceholderGroup[]) : await findPlaceholderMedia(systemPath, task);
         const broken_files = damagedPart ? await findDamagedMedia(systemPath, gamePath, task) : [];
-        return [result, dupes, refs, fillers, broken_files] as const;
+        // Lo que se puede reaprovechar (solo mirando el sistema entero)
+        const reuse = gamePath ? [] : await findReusableMedia(systemPath, task);
+        return [result, dupes, refs, fillers, broken_files, reuse] as const;
       });
       // Cancelado: no hay nada que enseñar
       if (!found) {
         if (alive()) onClose();
         return;
       }
-      const [result, dupes, refs, fillers, broken_files] = found;
-      setFiles(result);
+      const [result, dupes, refs, fillers, broken_files, reuse] = found;
+      // En Sobrantes, los sobrantes que son de un juego; en Dañados, los que arreglan una referencia rota
+      const shown = reuse.filter((i) => (sections === "damaged" ? i.fixes_broken : sections === "unused" ? i.reason !== "broken_ref" : true));
+      const reusedPaths = new Set(shown.map((i) => i.path));
+      const linkable = new Set(shown.filter((i) => i.fixes_broken).map((i) => `${i.game_path}|${i.field}`));
+      setReusable(shown);
+      setAssigned([]);
+      setAssigning(null);
+      setFiles(result.filter((f) => !reusedPaths.has(f.path)));
       setRepeated(dupes);
       setBroken(refs);
       setPlaceholders(fillers);
@@ -137,7 +160,8 @@ export function UnusedMediaModal({
           // Los sobrantes que «Normalizar» recuperaría empiezan sin marcar
           ...result.filter((f) => !f.recoverable).map((f) => f.path),
           ...dupes.flatMap((r) => r.remove.map((f) => f.path)),
-          ...refs.map(refKey),
+          // Las rotas que se pueden volver a enlazar no se quitan de serie
+          ...refs.filter((r) => !linkable.has(`${r.game_path}|${r.field}`)).map(refKey),
           ...fillers.map(placeholderKey),
           ...broken_files.map((d) => d.path),
         ])
@@ -234,15 +258,70 @@ export function UnusedMediaModal({
     }
   }
 
+  /** Incorporar lo elegido: lo que no se queda, fuera; lo que se queda, a su nombre (un solo Deshacer) */
+  async function handleReuse(items: ReusableMedia[], keepNew: (item: ReusableMedia) => boolean) {
+    if (items.length === 0) return;
+    setReusing(true);
+    try {
+      await undoGroupBegin();
+      let outcome: { lines: string[]; failed: string[] };
+      try {
+        outcome = await applyReuse(systemPath, items, keepNew, action);
+      } finally {
+        await undoGroupEnd(systemPath);
+      }
+      const lines = [...outcome.lines];
+      if (outcome.failed.length > 0) lines.push("", t("reuse.failed", { count: outcome.failed.length }), ...outcome.failed);
+      onDone?.();
+      await reportWithUndo(lines.join("\n"));
+      await scan();
+    } catch (e) {
+      await showMessage(t("reuse.error", { error: String(e) }), "error");
+    } finally {
+      setReusing(false);
+    }
+  }
+
+  /** «Asignar…»: un sobrante que no se ha reconocido, a un juego y tipo elegidos a mano */
+  function assign(file: UnusedMediaFile, game: Game, field: string) {
+    const value = (game as unknown as Record<string, string | undefined>)[field];
+    const current = value ? absoluteMediaPath(value, systemPath) : null;
+    setAssigned((prev) => [
+      ...prev.filter((i) => i.path !== file.path),
+      {
+        path: file.path,
+        relative: file.relative,
+        size: file.size,
+        width: null,
+        height: null,
+        game_path: game.path,
+        game_name: game.name || game.path,
+        field,
+        reason: "manual",
+        current: current && current !== file.path ? { path: current, relative: value ?? "", size: 0, width: null, height: null } : null,
+        keep_new: true,
+        fixes_broken: false,
+      },
+    ]);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.delete(file.path);
+      return next;
+    });
+    setAssigning(null);
+  }
+
   if (!open) return null;
 
   const damageLabel = (d: DamagedMedia) =>
     t(d.damage === "empty" ? "cleanup.damageEmpty" : d.damage === "not_media" ? "cleanup.damageNotMedia" : "cleanup.damageTruncated");
 
+  const assignedPaths = new Set(assigned.map((i) => i.path));
+  const reuseItems = [...assigned, ...reusable];
   const totalSize = allItems.reduce((sum, f) => sum + f.size, 0);
   // Los ficheros sin usar, en tres grupos: los de siempre y (ES-DE) los sobrantes de la
   // estructura clásica en la carpeta de ROMs, sin ROM o de una ROM
-  const plainFiles = files.filter((f) => !f.leftover && !f.recoverable);
+  const plainFiles = files.filter((f) => !f.leftover && !f.recoverable && !assignedPaths.has(f.path));
   // Clásica: con nombre antiguo (o con el título del juego) que «Normalizar» coloca: no sobran
   const classicRecoverable = files.filter((f) => !f.leftover && f.recoverable);
   const orphanLeftovers = files.filter((f) => f.leftover && !f.owner);
@@ -267,6 +346,18 @@ export function UnusedMediaModal({
         {file.owner && <span className="block text-xs text-zinc-500 font-mono truncate">{t("cleanup.leftoverOwner", { rom: file.owner })}</span>}
       </span>
       <span className="text-xs text-zinc-500 shrink-0">{formatSize(file.size)}</span>
+      {/* Sin juego reconocido: asignarlo a mano (sistema entero, sobrantes de la clásica) */}
+      {!gamePath && !file.leftover && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            setAssigning(assigning === file.path ? null : file.path);
+          }}
+          className="text-xs text-indigo-400 hover:text-indigo-300 shrink-0"
+        >
+          {t("reuse.assign")}
+        </button>
+      )}
     </label>
   );
   const selectedSize = allItems.filter((f) => selected.has(f.path)).reduce((sum, f) => sum + f.size, 0);
@@ -309,12 +400,13 @@ export function UnusedMediaModal({
             <TaskProgress progress={trashTask.progress} onCancel={trashTask.cancel} cancelling={trashTask.cancelling} />
           ) : scanning ? (
             <TaskProgress progress={scanTask.progress} label={t("cleanup.scanning")} onCancel={scanTask.cancel} cancelling={scanTask.cancelling} />
-          ) : allItems.length === 0 ? (
+          ) : allItems.length === 0 && reuseItems.length === 0 ? (
             <div className="flex items-center justify-center py-12 text-zinc-500 text-sm px-8 text-center">
               {gamePath ? t("gameTools.cleanNothing") : t("cleanup.noUnused")}
             </div>
           ) : (
             <>
+              <ReuseSection systemPath={systemPath} items={reuseItems} kindLabel={kindLabel} onApply={handleReuse} busy={reusing} />
               {/* Select all toggle */}
               <div className="px-5 py-2 border-b border-zinc-700/50 flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
@@ -339,7 +431,16 @@ export function UnusedMediaModal({
               {plainFiles.length > 0 && (
                 <p className="px-5 pt-3 pb-1 text-xs font-semibold text-zinc-400">{t("cleanup.unusedSection")}</p>
               )}
-              <div className="divide-y divide-zinc-700/30">{plainFiles.map((file) => fileRow(file))}</div>
+              <div className="divide-y divide-zinc-700/30">
+                {plainFiles.map((file) => (
+                  <div key={file.path}>
+                    {fileRow(file)}
+                    {assigning === file.path && (
+                      <AssignForm games={games} kindLabel={kindLabel} onCancel={() => setAssigning(null)} onAssign={(game, field) => assign(file, game, field)} />
+                    )}
+                  </div>
+                ))}
+              </div>
 
               {/* Clásica: los que «Normalizar» recupera (desmarcados, con el juego del que son) */}
               {classicRecoverable.length > 0 && (
@@ -532,6 +633,9 @@ export function UnusedMediaModal({
                           <p className="text-xs text-zinc-500 font-mono truncate" title={r.value}>
                             {r.value}
                           </p>
+                          {reusable.some((i) => i.fixes_broken && i.game_path === r.game_path && i.field === r.field) && (
+                            <p className="text-xs text-emerald-400/90">{t("reuse.brokenFound")}</p>
+                          )}
                         </div>
                       </label>
                     ))}
@@ -563,5 +667,57 @@ export function UnusedMediaModal({
           )}
         </div>
     </ModalShell>
+  );
+}
+
+/** Formulario de «Asignar…»: el juego (buscando por nombre) y el tipo de medio */
+function AssignForm({
+  games,
+  kindLabel,
+  onAssign,
+  onCancel,
+}: {
+  games: Game[];
+  kindLabel: (field: string) => string;
+  onAssign: (game: Game, field: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [field, setField] = useState<string>("image");
+  const q = query.trim().toLowerCase();
+  const matches = q ? games.filter((g) => (g.name || g.path).toLowerCase().includes(q)).slice(0, 8) : [];
+  return (
+    <div className="px-5 pb-3 pt-1 bg-zinc-800/40 space-y-2">
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && (e.stopPropagation(), onCancel())}
+          placeholder={t("reuse.assignGame")}
+          className="flex-1 px-2 py-1 text-sm bg-zinc-900 border border-zinc-700 rounded text-zinc-200"
+        />
+        <select value={field} onChange={(e) => setField(e.target.value)} className="px-2 py-1 text-sm bg-zinc-900 border border-zinc-700 rounded text-zinc-200">
+          {MEDIA_FILTER_FIELDS.map((m) => (
+            <option key={m.field as string} value={m.field as string}>
+              {kindLabel(m.field as string)}
+            </option>
+          ))}
+        </select>
+        <button onClick={onCancel} className="text-xs text-zinc-400 hover:text-zinc-200">
+          {t("reuse.assignCancel")}
+        </button>
+      </div>
+      {matches.length > 0 && (
+        <div className="flex flex-col">
+          {matches.map((g) => (
+            <button key={g.path} onClick={() => onAssign(g, field)} className="text-left px-2 py-1 text-sm text-zinc-300 rounded hover:bg-zinc-700/60 truncate">
+              {g.name || g.path}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

@@ -299,6 +299,45 @@ pub fn rename_rom_media(
             }
         }
     }
+    moved.extend(rename_legacy_media(layout, system, &old_stem, &new_stem));
+    moved
+}
+
+/// Ficheros con el nombre antiguo de la ROM y un sufijo antiguo en las carpetas de siempre
+/// (`images/3wonders-image.jpg`, `videos/3wonders-video.mp4`…): al renombrar la ROM pasan al
+/// nombre unificado nuevo de su tipo (`covers/Three Wonders.jpg`). Si no, se quedaban huérfanos
+/// con un nombre que ya no es de nadie. Solo cuando ese tipo aún no tiene fichero con el nombre
+/// nuevo; si lo tiene, el viejo se queda (y sale en Medios → Sobrantes para reaprovecharlo).
+fn rename_legacy_media(layout: &Layout, system: &SystemRef, old_stem: &Path, new_stem: &Path) -> Vec<(PathBuf, PathBuf)> {
+    let mut moved = Vec::new();
+    let Some(old_name) = old_stem.file_name().map(|n| n.to_string_lossy().to_string()) else { return moved };
+    let base = system.rom_dir.join(old_stem.parent().unwrap_or(Path::new("")));
+    for (folders, field, suffixes) in crate::commands::images::legacy_targets() {
+        let Some(kind) = kind_for_field(field) else { continue };
+        for folder in folders {
+            for suffix in &suffixes {
+                for ext in kind.extensions() {
+                    let old = base.join(folder).join(format!("{}{}.{}", old_name, suffix, ext));
+                    if !old.is_file() {
+                        continue;
+                    }
+                    // ¿Ya hay de ese tipo con el nombre nuevo (con cualquier extensión)?
+                    let taken = kind.extensions().iter().any(|e| layout.media_file_for_stem(system, kind.folder, new_stem, e).exists());
+                    if taken {
+                        continue;
+                    }
+                    let new = layout.media_file_for_stem(system, kind.folder, new_stem, ext);
+                    if let Some(dir) = new.parent() {
+                        let _ = fs::create_dir_all(dir);
+                    }
+                    if fs::rename(&old, &new).is_ok() {
+                        journal_move(&old, &new);
+                        moved.push((old, new));
+                    }
+                }
+            }
+        }
+    }
     moved
 }
 
@@ -609,5 +648,28 @@ mod rename_tests {
         assert!(system.rom_dir.join("videos/Nuevo.mp4").exists());
         assert_eq!(fs::read(system.rom_dir.join("screenshots/Nuevo.png")).unwrap(), b"keep");
         assert!(system.rom_dir.join("screenshots/Viejo.png").exists());
+    }
+
+    #[test]
+    fn se_lleva_los_ficheros_con_el_nombre_antiguo_y_sufijo() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("cps1"));
+        let images = system.rom_dir.join("images");
+        fs::create_dir_all(&images).unwrap();
+        fs::write(images.join("3wonders-image.jpg"), b"c").unwrap();
+        fs::write(images.join("3wonders-fanart.jpg"), b"f").unwrap();
+        fs::create_dir_all(system.rom_dir.join("videos")).unwrap();
+        fs::write(system.rom_dir.join("videos/3wonders-video.mp4"), b"v").unwrap();
+        // El fanart nuevo ya existe: el viejo se queda donde está
+        fs::create_dir_all(system.rom_dir.join("fanart")).unwrap();
+        fs::write(system.rom_dir.join("fanart/Three Wonders.png"), b"keep").unwrap();
+
+        let moved = rename_rom_media(&Layout::Classic, &system, "./3wonders.zip", "./Three Wonders.zip", false);
+
+        assert_eq!(moved.len(), 2);
+        assert!(system.rom_dir.join("covers/Three Wonders.jpg").exists());
+        assert!(system.rom_dir.join("videos/Three Wonders.mp4").exists());
+        assert!(images.join("3wonders-fanart.jpg").exists());
+        assert!(!images.join("3wonders-image.jpg").exists());
     }
 }

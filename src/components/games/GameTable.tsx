@@ -23,7 +23,7 @@ import { resolveImageSrc } from "../../utils/images";
 import { DatTag } from "../common/DatTag";
 import { ColumnsMenu } from "./ColumnsMenu";
 import { formatPlayTime, compareNames } from "../../utils/playStats";
-import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
+import { clickGame, doubleClickGame, clickKeys, contextMenuGame } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { scrapeMissText } from "../../utils/scrapeMiss";
@@ -534,6 +534,7 @@ export function GameTable({ games }: GameTableProps) {
                 key={row.id}
                 data-game-path={row.original.path}
                 onClick={(e) => clickGame(row.original, clickKeys(e))}
+                onContextMenu={(e) => contextMenuGame(row.original, e)}
                 onDoubleClick={() => doubleClickGame(row.original)}
                 // scroll-mt: que al subir con el teclado la fila no quede bajo la cabecera fija
                 className={`group cursor-pointer scroll-mt-11 border-b border-zinc-800 transition-colors ${

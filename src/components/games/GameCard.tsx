@@ -8,7 +8,7 @@ import { StarIcon, TrophyIcon } from "../common/Icons";
 import { raBadge } from "../../utils/retroachievements";
 import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
-import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
+import { clickGame, doubleClickGame, clickKeys, contextMenuGame } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
 import { scrapeMissText } from "../../utils/scrapeMiss";
 import { effectiveGridField } from "../../utils/systemView";
@@ -63,13 +63,15 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   const videoSrc = box3d && boxVideo && !multiSelect ? resolveImageSrc(game.video, selectedSystem?.path || "") : null;
   const [hovering, setHovering] = useState(false);
   const open = useOpenAfter(hovering && !!videoSrc);
-  const { slotRef, shift } = useOpenShift(open);
+  const { slotRef, room } = useOpenRoom(open);
+  const marqueeSrc = videoSrc ? resolveImageSrc(game.marquee, selectedSystem?.path || "") : null;
 
   return (
     <div
       data-game-path={game.path}
       // Clic: marcar (selección múltiple) o enseñar el juego; doble clic: el editor (utils/gameClick)
       onClick={(e) => clickGame(game, clickKeys(e))}
+      onContextMenu={(e) => contextMenuGame(game, e)}
       onDoubleClick={() => doubleClickGame(game)}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
@@ -139,7 +141,8 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
             front={selected}
             videoSrc={videoSrc}
             open={open}
-            openShift={shift}
+            openRoom={room}
+            marqueeSrc={marqueeSrc}
           />
         ) : imageSrc ? (
           <img
@@ -164,7 +167,9 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
         <p className="text-[13px] font-medium text-zinc-100 truncate" title={game.name || game.path}>
           {game.name || game.path}
         </p>
-        <div className="flex items-center justify-between gap-2 mt-0.5">
+        {/* Alto fijo: una bandera (emoji) hacía la línea más alta y las filas de la cuadrícula
+            medían distinto; GameGrid supone que todas miden lo mismo */}
+        <div className="flex items-center justify-between gap-2 mt-0.5 h-4 leading-4 overflow-hidden">
           {/* Algo más claro que el gris de siempre: va sobre los colores del sistema */}
           <span className="text-[11px] text-zinc-400 truncate">{subtitle || game.genre || ""}</span>
           <span className="flex items-center gap-1 shrink-0">
@@ -184,25 +189,24 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
 }
 
 /**
- * Hacia dónde se abre la caja de una tarjeta: abierta mide el doble, así que normalmente queda
- * centrada en su sitio (0.5), pero en la primera o la última columna se corre hacia dentro para
- * no salirse de la cuadrícula. Se mide al abrirse, antes de pintar.
+ * Sitio libre a cada lado de la tarjeta dentro de la cuadrícula, en % del ancho de la tarjeta:
+ * la caja abierta queda centrada en la tarjeta y, en la primera o la última columna, GameBox3D la
+ * corre hacia dentro para no salirse. Se mide al abrirse, antes de pintar.
  */
-function useOpenShift(open: boolean) {
+function useOpenRoom(open: boolean) {
   const slotRef = useRef<HTMLDivElement>(null);
-  const [shift, setShift] = useState(0.5);
+  const [room, setRoom] = useState<{ left: number; right: number } | undefined>(undefined);
   useLayoutEffect(() => {
     const slot = slotRef.current;
     const area = slot?.closest(".overflow-auto");
     if (!open || !slot || !area) return;
     const card = slot.getBoundingClientRect();
     const bounds = area.getBoundingClientRect();
-    // La caja ocupa el 84 % de la tarjeta y empieza en el 12 % (GameBox3D: centrada y corrida un 8 %)
-    const boxW = card.width * 0.84;
-    const boxLeft = card.left + card.width * 0.12;
-    const roomLeft = boxLeft - bounds.left;
-    const roomRight = bounds.right - (boxLeft + boxW);
-    setShift(Math.min(Math.max(0.5, 1 - roomLeft / boxW), Math.max(0, roomRight / boxW)));
+    if (card.width <= 0) return;
+    setRoom({
+      left: ((card.left - bounds.left) / card.width) * 100,
+      right: ((bounds.right - card.right) / card.width) * 100,
+    });
   }, [open]);
-  return { slotRef, shift };
+  return { slotRef, room };
 }

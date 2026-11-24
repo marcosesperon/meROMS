@@ -8,11 +8,8 @@ import { STATUS_FLAGS, STATUS_META } from "../../utils/gameStatus";
 import { toESDate } from "../../utils/format";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { MoveGamesModal } from "../common/MoveGamesModal";
-import { removeVersions } from "../../utils/collectionActions";
-import { collectionRulesFrom } from "../../utils/collectionRules";
-import { reportWithUndo } from "../../utils/undo";
+import { removeGames } from "../../utils/collectionActions";
 import { isArcadeSystem } from "../../utils/arcade";
-import { removeGamesWithFiles } from "../../commands";
 import { RenameModal } from "../common/RenameModal";
 
 // Campos que se pueden poner igual en varios juegos (nombre, descripción y ruta son de cada uno)
@@ -497,27 +494,9 @@ function MarkedActions({ paths }: { paths: string[] }) {
   const allMissed = paths.length > 0 && paths.every((p) => scrapeMisses.has(p));
 
   async function remove() {
-    const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths } = useAppStore.getState();
-    if (!selectedSystem) return;
-    // Papelera, o apartar si así lo dice «Mi colección» (ocultar no es eliminar: papelera)
-    const rule = collectionRulesFrom(settings.collection_rules).versions_action;
-    const action = rule === "set_aside" ? "set_aside" : "trash";
     setBusy(true);
     try {
-      const plan = await removeGamesWithFiles(selectedSystem.path, paths, true);
-      const question = action === "set_aside" ? t("bulk.removeConfirmSetAside", { count: plan.removed }) : t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length });
-      if (!(await askConfirm(question))) return;
-      const outcome = await removeVersions(selectedSystem.path, paths, action);
-      setSelectedPaths(new Set());
-      await loadGames(selectedSystem.path);
-      loadSystems();
-      const lines = [outcome.line];
-      if (outcome.failed.length) lines.push("", t("duplicates.removeFailed", { count: outcome.failed.length }), ...outcome.failed);
-      if (action === "set_aside") await reportWithUndo(lines.join("\n"));
-      else await showMessage(lines.join("\n"), outcome.failed.length ? "error" : "info");
-    } catch (e) {
-      // Sin carpeta de apartados elegida
-      await showMessage(String(e) === "no_set_aside_dir" ? t("versions.noFolder") : String(e), "error");
+      await removeGames(paths);
     } finally {
       setBusy(false);
     }

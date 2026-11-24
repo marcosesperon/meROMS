@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { boxStyleFor, cachedSpineColor, spineColor, SPINE_FALLBACK, textColorOn } from "../../utils/boxStyles";
 import { getSystemInfo, systemGradient } from "../../utils/systemInfo";
+import { ScreenFrame, screenLook, type ScreenFrameLook } from "../common/ScreenFrame";
 import { logoUrl } from "../common/SystemLogo";
 
 interface GameBox3DProps {
@@ -26,10 +27,36 @@ interface GameBox3DProps {
   /** Abrir la caja (la tapa gira sobre el lomo) y poner el vídeo; sin vídeo no se abre */
   open?: boolean;
   /**
-   * Cuánto se corre la caja abierta, en anchos de caja: 0.5 = abierta centrada en su sitio (lo
-   * normal), 1 = toda hacia la derecha, 0 = toda hacia la izquierda (en los bordes de la cuadrícula)
+   * Sitio libre a cada lado de la tarjeta (en % de su ancho) para la caja abierta: abierta queda
+   * centrada en la tarjeta y, si se saldría por un lado (bordes de la cuadrícula), se corre hacia
+   * dentro. Sin él (carrusel), siempre centrada.
    */
-  openShift?: number;
+  openRoom?: { left: number; right: number };
+  /** Logo del juego (medio `marquee`) ya resuelto a URL: va en el cartel de la recreativa */
+  marqueeSrc?: string | null;
+  /**
+   * Abierta: medio ancho de lo abierto, en anchos de tarjeta (0.84 con la forma de la carátula;
+   * más o menos según la del vídeo). El carrusel lo usa para apartar las cajas de los lados.
+   */
+  onOpenHalfWidth?: (half: number) => void;
+}
+
+/**
+ * Cuánto se corre la caja abierta (en % del ancho de la tarjeta) para quedar centrada en ella.
+ * La caja mide `boxWidth` % y está centrada con un margen del 8 % a la izquierda, así que su
+ * borde izquierdo queda en el 54 % - boxWidth / 2. Abierta, la tapa queda tumbada a la izquierda
+ * de ese borde, así que lo abierto va de borde - boxWidth a borde + boxWidth: su centro es el
+ * borde. Con `room`, se corre lo justo para no pasarse del sitio libre de cada lado.
+ */
+export function openOffset(boxWidth: number, room?: { left: number; right: number }): number {
+  let offset = boxWidth / 2 - 4;
+  if (!room) return offset;
+  // Centrada en la tarjeta, lo abierto va de 50 - boxWidth a 50 + boxWidth
+  const overLeft = -room.left - (50 - boxWidth);
+  if (overLeft > 0) offset += overLeft;
+  const overRight = 50 + boxWidth + (offset - (boxWidth / 2 - 4)) - (100 + room.right);
+  if (overRight > 0) offset -= overRight;
+  return offset;
 }
 
 /** Franja de luz del destello: blanca en el centro y desvanecida a los lados */
@@ -59,7 +86,9 @@ export function GameBox3D({
   glint,
   videoSrc,
   open = false,
-  openShift = 0.5,
+  openRoom,
+  marqueeSrc,
+  onOpenHalfWidth,
 }: GameBox3DProps) {
   const style = useMemo(() => boxStyleFor(system), [system]);
   const [failed, setFailed] = useState(false);
@@ -101,6 +130,9 @@ export function GameBox3D({
   // Abierta mide dos tapas de ancho por una de alto: cada mitad, la mitad del ancho del vídeo a
   // esa altura. Con la tapa abierta la carátula no se ve, así que cambiar el ancho no la deforma.
   const boxWidth = isOpen && videoAspect ? (84 * videoAspect) / (2 * ratio) : 84;
+  useEffect(() => {
+    if (isOpen) onOpenHalfWidth?.(boxWidth / 100);
+  }, [isOpen, boxWidth, onOpenHalfWidth]);
 
   const spineFace = (side: "left" | "right") => (
     <div
@@ -149,7 +181,7 @@ export function GameBox3D({
       style={{
         perspective: "800px",
         // Abierta mide el doble (la tapa queda a la izquierda): se corre para quedar centrada
-        transform: isOpen ? `translateX(${openShift * 84}%)` : undefined,
+        transform: isOpen ? `translateX(${openOffset(boxWidth, openRoom)}%)` : undefined,
         transition: "transform 0.6s cubic-bezier(0.2, 0.7, 0.3, 1)",
       }}
     >
@@ -249,10 +281,12 @@ export function GameBox3D({
           </div>
         </div>
 
-        {/* Vídeo: ocupa la caja abierta entera (tapa + interior), un pelín por delante */}
+        {/* Vídeo: ocupa la caja abierta entera (tapa + interior), un pelín por delante, dentro de
+            una pantalla (recreativa en los sistemas arcade, tele de tubo en el resto) */}
         {isOpen && videoSrc && (
-          <BoxVideo
+          <BoxScreen
             src={videoSrc}
+            {...screenLook(system, marqueeSrc)}
             onFailed={() => setVideoFailed(true)}
             onAspect={(aspect) => {
               videoAspects.set(videoSrc, aspect);
@@ -265,11 +299,20 @@ export function GameBox3D({
   );
 }
 
+interface BoxScreenProps extends ScreenFrameLook {
+  src: string;
+  onFailed: () => void;
+  onAspect: (aspect: number) => void;
+}
+
 /**
- * Vídeo de la caja abierta: aparece cuando la tapa ya está casi abierta, con sonido bajo. Si el
- * sistema no deja arrancar un vídeo con sonido sin un clic antes, arranca sin sonido.
+ * Vídeo de la caja abierta, dentro de una pantalla: aparece cuando la tapa ya está casi abierta,
+ * con sonido bajo (si el sistema no deja arrancar un vídeo con sonido sin un clic antes, arranca
+ * sin sonido). El vídeo llena la caja abierta y el marco sobresale alrededor, así que el vídeo
+ * conserva su forma. Las medidas del marco van en `cqh` (alto de la caja), para que sea igual de
+ * grueso en una tarjeta pequeña que en el carrusel. Encima, el cristal de tubo (App.css).
  */
-function BoxVideo({ src, onFailed, onAspect }: { src: string; onFailed: () => void; onAspect: (aspect: number) => void }) {
+function BoxScreen({ src, arcade, marquee, marqueeIsLogo, molding, onFailed, onAspect }: BoxScreenProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const [shown, setShown] = useState(false);
 
@@ -290,29 +333,32 @@ function BoxVideo({ src, onFailed, onAspect }: { src: string; onFailed: () => vo
     // El hueco va en un div: un <video> con posición absoluta se quedaba a su tamaño original
     // (arriba a la izquierda) en vez de llenar la caja abierta
     <div
-      className="absolute top-0 h-full bg-black rounded-[3px] overflow-hidden pointer-events-none"
+      className="absolute top-0 h-full pointer-events-none"
       style={{
         left: "-100%",
         width: "200%",
         transform: "translateZ(2px)",
         opacity: shown ? 1 : 0,
         transition: "opacity 0.25s",
+        containerType: "size",
       }}
     >
-      <video
-        ref={ref}
-        src={src}
-        data-box-video
-        loop
-        playsInline
-        onError={onFailed}
-        // En cuanto se sabe su tamaño, la caja abierta toma su forma
-        onLoadedMetadata={(e) => {
-          const v = e.currentTarget;
-          if (v.videoWidth > 0 && v.videoHeight > 0) onAspect(v.videoWidth / v.videoHeight);
-        }}
-        className="block w-full h-full object-contain"
-      />
+      <ScreenFrame arcade={arcade} marquee={marquee} marqueeIsLogo={marqueeIsLogo} molding={molding}>
+        <video
+          ref={ref}
+          src={src}
+          data-box-video
+          loop
+          playsInline
+          onError={onFailed}
+          // En cuanto se sabe su tamaño, la caja abierta toma su forma
+          onLoadedMetadata={(e) => {
+            const v = e.currentTarget;
+            if (v.videoWidth > 0 && v.videoHeight > 0) onAspect(v.videoWidth / v.videoHeight);
+          }}
+          className="block w-full h-full object-contain"
+        />
+      </ScreenFrame>
     </div>
   );
 }

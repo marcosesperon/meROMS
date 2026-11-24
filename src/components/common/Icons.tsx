@@ -312,6 +312,24 @@ export function PlayIcon({ size = 16, className = "" }: IconProps) {
   );
 }
 
+export function PauseIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
+      <rect x="6" y="4.5" width="4" height="15" rx="1" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1" />
+    </svg>
+  );
+}
+
+export function SpeakerOffIcon({ size = 16, className = "" }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M11 5 6 9H2v6h4l5 4z" />
+      <path d="m16 9 6 6M22 9l-6 6" />
+    </svg>
+  );
+}
+
 export function GamepadIcon({ size = 16, className = "" }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>

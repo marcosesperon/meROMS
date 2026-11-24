@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, PendingStructure, Profile, RenameResult, RenameRule, NameSource, NameScraper, TagKeep, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, ReusableMedia, PendingStructure, Profile, RenameResult, RenameRule, NameSource, NameScraper, TagKeep, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -770,6 +770,20 @@ export async function planMediaNormalization(systemPath: string, gamePath?: stri
 
 export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[], task?: string): Promise<NormalizeResult> {
   return invoke("apply_media_normalization", { systemPath, items, task });
+}
+
+// Reaprovechar medios: sobrantes que son de un juego con otro nombre (y referencias rotas)
+export async function findReusableMedia(systemPath: string, task?: string): Promise<ReusableMedia[]> {
+  return invoke("find_reusable_media", { systemPath, task });
+}
+
+/** Incorpora esos ficheros al nombre unificado de su juego y tipo (se puede deshacer) */
+export async function applyMediaReuse(
+  systemPath: string,
+  choices: { path: string; game_path: string; field: string }[],
+  task?: string
+): Promise<NormalizeResult> {
+  return invoke("apply_media_reuse", { systemPath, choices, task });
 }
 
 // Structure migration (Classic <-> ES-DE). The target always keeps the source's ROM folder.

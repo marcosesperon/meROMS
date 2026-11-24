@@ -5,6 +5,7 @@ import {
   findDamagedMedia,
   findDuplicates,
   findPlaceholderMedia,
+  findReusableMedia,
   findUnusedMedia,
   listMissingRoms,
   listNewRoms,
@@ -27,6 +28,7 @@ import { AVAILABLE_MEDIA_TYPES } from "../types";
 import { hasSetAsideDir, mediaAction, removeMedia, removeVersions, versionsToRemove } from "./collectionActions";
 import { hasArrmSortname, hasInvalidData, hasNotGameData, lacksData, missingMedia, requiredMediaFields, withoutInvalidData } from "./collectionStatus";
 import { activeSources, planRename, renameRequestOf } from "./renameSources";
+import { applyReuse } from "./mediaReuse";
 
 /**
  * «Ponerlo todo en orden»: los pasos, en este orden y por esto:
@@ -179,6 +181,12 @@ async function gatherRelocate(ctx: OrderContext) {
   };
 }
 
+/** Sobrantes que son de un juego (y ficheros de referencias rotas): se incorporan con la propuesta */
+async function gatherReuse(ctx: OrderContext) {
+  const list = await findReusableMedia(ctx.systemPath);
+  return list.filter((i) => inScope(ctx)(i.game_path));
+}
+
 async function gatherLeftovers(ctx: OrderContext) {
   const [damaged, fillers, unused] = await Promise.all([
     findDamagedMedia(ctx.systemPath),
@@ -197,11 +205,15 @@ async function gatherLeftovers(ctx: OrderContext) {
 }
 
 async function planMedia(ctx: OrderContext): Promise<StepPlan> {
-  const [{ legacy, swapped }, { damaged, placeholderFiles, unused }] = await Promise.all([gatherRelocate(ctx), gatherLeftovers(ctx)]);
+  const [{ legacy, swapped }, { damaged, placeholderFiles, unused: allUnused }, reuse] = await Promise.all([gatherRelocate(ctx), gatherLeftovers(ctx), gatherReuse(ctx)]);
   const action = mediaAction(ctx.rules);
   const lines: string[] = [];
   if (legacy.length) lines.push(translate("order.mediaLegacy", { count: legacy.length }));
   if (swapped.length) lines.push(translate("order.mediaSwapped", { count: swapped.length }));
+  // Lo que se aprovecha no cuenta como sobrante (aunque su copia peor también se vaya)
+  if (reuse.length) lines.push(translate("order.mediaReuse", { count: reuse.length, filled: reuse.filter((i) => i.keep_new).length }));
+  const reused = new Set(reuse.map((i) => i.path));
+  const unused = allUnused.filter((p) => !reused.has(p));
   const gone = damaged.length + placeholderFiles.length + unused.length;
   if (damaged.length) lines.push(translate("order.mediaDamaged", { count: damaged.length }));
   if (placeholderFiles.length) lines.push(translate("order.mediaPlaceholders", { count: placeholderFiles.length }));
@@ -210,8 +222,9 @@ async function planMedia(ctx: OrderContext): Promise<StepPlan> {
   const examples = [
     ...legacy.slice(0, 2).map((i) => `${i.from_relative} → ${i.to_relative}`),
     ...swapped.slice(0, 1).map((p) => translate("order.mediaSwappedExample", { name: p.game_name })),
+    ...reuse.filter((i) => i.keep_new).slice(0, 2).map((i) => `${i.relative} → ${i.game_name}`),
   ];
-  return { step: "media", count: legacy.length + swapped.length + gone, lines, examples };
+  return { step: "media", count: legacy.length + swapped.length + reuse.length + gone, lines, examples };
 }
 
 async function applyMedia(ctx: OrderContext, run: StepRunner): Promise<StepOutcome> {
@@ -227,6 +240,14 @@ async function applyMedia(ctx: OrderContext, run: StepRunner): Promise<StepOutco
     const r = await swapMedia(ctx.systemPath, swapped.map((p) => p.game_path), "image", "thumbnail", run.task());
     out.lines.push(translate("mediaKinds.done", { swapped: r.swapped }));
     out.failed.push(...r.skipped);
+  }
+  if (run.stopped()) return out;
+  // Lo que es de un juego, a su sitio (con la propuesta: el de más resolución) antes de tirar nada
+  const reuse = await gatherReuse(ctx);
+  if (reuse.length) {
+    const r = await applyReuse(ctx.systemPath, reuse, (i) => i.keep_new, mediaAction(ctx.rules), run.task());
+    out.lines.push(...r.lines);
+    out.failed.push(...r.failed);
   }
   if (run.stopped()) return out;
   // Después, lo que sobra, mirado otra vez

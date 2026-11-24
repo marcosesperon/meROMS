@@ -5,6 +5,7 @@ import {
   findDuplicates,
   findPlaceholderMedia,
   findRepeatedMedia,
+  findReusableMedia,
   findUnusedMedia,
   planMediaNormalization,
   renamePreview,
@@ -38,6 +39,8 @@ export type IssueKind =
   | "damaged"
   | "placeholders"
   | "unused"
+  /** Sobrantes que son de un juego con otro nombre (Reaprovechar) */
+  | "reuse"
   | "swapped"
   | "legacy"
   /** No encontrados por el scraper (solo informa: no hay nada que arreglar solo) */
@@ -63,6 +66,8 @@ export interface StatusParts {
   placeholders?: StatusItems;
   /** Medios que no usa ningún juego (sin los que «Normalizar» recupera) */
   unused?: StatusItems;
+  /** Sobrantes que se pueden incorporar a un juego (cuentan aparte de los que sobran de verdad) */
+  reuse?: StatusItems;
   swapped?: StatusItems;
   /** Todo el sistema parece al revés (mejor «Intercambiar tipos») */
   swappedWhole?: boolean;
@@ -104,6 +109,8 @@ export function statusChecks(systemPath: string): { name: string; run: () => Pro
     { name: "placeholders", run: () => findPlaceholderMedia(systemPath).then((groups) => ({ placeholders: items(groups.flatMap((g) => g.files.map((f) => f.game_path))) })) },
     // Los que «Normalizar» recupera no sobran (cuentan como nombre antiguo)
     { name: "unused", run: () => findUnusedMedia(systemPath).then((files) => ({ unused: items(files.filter((f) => !f.recoverable).map(() => "")) })) },
+    // Sobrantes con dueño (sin las referencias rotas, que no son ficheros de más)
+    { name: "reuse", run: () => findReusableMedia(systemPath).then((list) => ({ reuse: items(list.filter((i) => i.reason !== "broken_ref").map((i) => i.game_path)) })) },
     { name: "repeated", run: () => findRepeatedMedia(systemPath).then(() => ({})) },
   ];
 }
@@ -221,6 +228,7 @@ export function issueGames(kind: IssueKind, ctx: IssueContext): Set<string> | nu
     case "placeholders":
     case "swapped":
     case "legacy":
+    case "reuse":
       return parts?.[kind] ? new Set(parts[kind]!.games) : null;
     default:
       return null;

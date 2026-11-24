@@ -35,6 +35,8 @@ export function useListKeyboard({ items, containerRef, getColumns, getRowsPerPag
       if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
       // Una ventana abierta (todas las ventanas de la app son capas «fixed inset-0»)
       if (document.querySelector(".fixed.inset-0")) return;
+      // Un menú abierto (el del botón derecho de un juego, el de estado…)
+      if (document.querySelector("[data-popup-open]")) return;
 
       const container = containerRef.current;
       const { items, getColumns, getRowsPerPage, scrollToIndex } = latest.current;

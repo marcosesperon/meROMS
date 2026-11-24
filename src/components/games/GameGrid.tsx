@@ -85,12 +85,15 @@ export function GameGrid({ games }: GameGridProps) {
   const estimate = ((innerWidth - GAP_X * (columns - 1)) / columns) * (aw > 0 && ah > 0 ? ah / aw : 4 / 3) + 52;
   const [cardHeight, setCardHeight] = useState(0);
   useLayoutEffect(() => {
-    // Con decimales: offsetHeight redondea y, con cientos de filas, el error se acumula
+    // Con decimales: offsetHeight redondea y, con cientos de filas, el error se acumula.
+    // Por debajo de 1 px no se toca: si dos filas midieran casi lo mismo, cambiar la medida
+    // cambia qué fila se pinta primero, que vuelve a cambiar la medida… y no para nunca.
     const height = (gridRef.current?.firstElementChild as HTMLElement | null)?.getBoundingClientRect().height ?? 0;
-    if (height > 0 && Math.abs(height - cardHeight) > 0.01) setCardHeight(height);
+    if (height > 0 && Math.abs(height - cardHeight) >= 1) setCardHeight(height);
   });
   const rowCount = Math.ceil(sorted.length / columns);
-  const rows = useVirtualRows({ containerRef: scrollRef, rowCount, rowStride: (cardHeight || estimate) + GAP_Y, offset: PADDING, inset: PADDING });
+  const stride = (cardHeight || estimate) + GAP_Y;
+  const rows = useVirtualRows({ containerRef: scrollRef, rowCount, rowStride: stride, offset: PADDING, inset: PADDING });
   const shown = sorted.slice(rows.first * columns, rows.last * columns);
 
   // Ir a un juego (teclado, barra de letras, búsqueda, ficha completa): a su fila
@@ -120,23 +123,26 @@ export function GameGrid({ games }: GameGridProps) {
     // Fondo con los colores del sistema (como el carrusel); fijo, las tarjetas se desplazan encima
     <div className="flex-1 flex overflow-hidden" style={{ background: systemBackdrop(selectedSystem?.name || "") }}>
       <div ref={scrollRef} className="overflow-auto flex-1" style={{ padding: PADDING }}>
-        <div style={{ height: rows.before }} />
-        <div
-          ref={gridRef}
-          className="grid"
-          style={{
-            gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
-            columnGap: GAP_X,
-            rowGap: GAP_Y,
-            // Sin la separación de la última fila pintada, ya va en el hueco de abajo
-            marginBottom: rows.after > 0 ? GAP_Y : 0,
-          }}
-        >
-          {shown.map((game, i) => (
-            <GameCard key={keys[rows.first * columns + i]} game={game} aspectRatio={aspectRatio} box3d={box3d} />
-          ))}
+        {/* Un bloque con el alto de todas las filas y, dentro, las pintadas movidas con transform
+            hasta su sitio. Antes eran huecos arriba y abajo que cambiaban de alto al desplazarse, y
+            WebKit (macOS) a veces no redibujaba las filas nuevas hasta el siguiente scroll: se veía
+            el fondo vacío un rato */}
+        <div className="relative" style={{ height: Math.max(0, rowCount * stride - GAP_Y) }}>
+          <div
+            ref={gridRef}
+            className="grid absolute inset-x-0 top-0"
+            style={{
+              gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+              columnGap: GAP_X,
+              rowGap: GAP_Y,
+              transform: `translateY(${rows.before}px)`,
+            }}
+          >
+            {shown.map((game, i) => (
+              <GameCard key={keys[rows.first * columns + i]} game={game} aspectRatio={aspectRatio} box3d={box3d} />
+            ))}
+          </div>
         </div>
-        <div style={{ height: Math.max(0, rows.after - GAP_Y) }} />
       </div>
       {/* Saltar a letra: solo con la lista por nombre (con otro orden las letras van salteadas) */}
       {byName && (
@@ -154,3 +160,4 @@ export function GameGrid({ games }: GameGridProps) {
     </div>
   );
 }
+

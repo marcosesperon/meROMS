@@ -3,14 +3,16 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import { ErrorBoundary } from "./components/common/ErrorBoundary";
 
-// No context menu (right click): it's the browser's menu (Reload, Inspect…), out of place in a
-// desktop app. Text fields keep it (copy/paste), and so does development (to inspect).
-if (!import.meta.env.DEV) {
-  document.addEventListener("contextmenu", (e) => {
-    const target = e.target as HTMLElement | null;
-    if (!target?.closest("input, textarea, [contenteditable='true']")) e.preventDefault();
-  });
-}
+// No native context menu (right click): it's the webview's menu (Reload, Inspect…), out of place
+// in a desktop app; the game list has its own (GameContextMenu). Text fields and selected text
+// keep it (copy/paste). In development, Alt + right click still opens it (Inspect).
+document.addEventListener("contextmenu", (e) => {
+  const target = e.target as HTMLElement | null;
+  if (target?.closest("input, textarea, [contenteditable='true']")) return;
+  if (String(window.getSelection() ?? "").trim()) return;
+  if (import.meta.env.DEV && e.altKey) return;
+  e.preventDefault();
+});
 
 // Images can't be dragged out (covers, boxes, logos…): App.css turns it off with
 // -webkit-user-drag, and this catches any webview that ignores it. Dropping files from outside

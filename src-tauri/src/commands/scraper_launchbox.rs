@@ -660,6 +660,15 @@ fn load_platform(app: &tauri::AppHandle, platform: &str) -> Option<Arc<LbPlatfor
     Some(loaded)
 }
 
+/// Toda la lista de LaunchBox nombre corto de MAME → título (vacía si no se ha descargado)
+pub(crate) fn mame_titles(app: &tauri::AppHandle) -> HashMap<String, String> {
+    data_dir(app)
+        .ok()
+        .and_then(|d| fs::read(d.join("mame.json")).ok())
+        .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+        .unwrap_or_default()
+}
+
 /// Título de LaunchBox de un nombre corto de MAME
 fn mame_title(app: &tauri::AppHandle, short_name: &str) -> Option<String> {
     let map: HashMap<String, String> = serde_json::from_slice(&fs::read(data_dir(app).ok()?.join("mame.json")).ok()?).ok()?;

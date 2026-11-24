@@ -45,6 +45,9 @@ export type ToolId =
   | "migrate";
 
 /** Qué herramienta abrir y cómo: pestaña (Medios), pasos marcados (Ponerlo todo en orden) o juegos */
+/** Herramientas de un juego (o de los marcados) que el menú del botón derecho abre sin el editor */
+export type GameToolId = "scrape" | "rename" | "review" | "normalize" | "clean" | "versions" | "move";
+
 export interface ToolRequest {
   id: ToolId;
   tab?: string;
@@ -128,6 +131,16 @@ interface AppState {
   setGames: (games: Game[]) => void;
   setFolders: (folders: Folder[]) => void;
   toggleGameFlag: (gamePath: string, field: "favorite" | "hidden" | "kidgame") => Promise<void>;
+  /** Poner o quitar una marca (favorito, oculto…) en varios juegos a la vez, con un solo guardado */
+  setGameFlag: (gamePaths: string[], field: "favorite" | "hidden" | "kidgame", on: boolean) => Promise<void>;
+  /** Menú del botón derecho sobre un juego de la lista (GameContextMenu): dónde y sobre cuál */
+  gameMenu: { x: number; y: number; path: string } | null;
+  openGameMenu: (x: number, y: number, path: string) => void;
+  closeGameMenu: () => void;
+  /** Herramienta de uno o varios juegos abierta desde ese menú, sin el editor (GameToolsHost) */
+  gameTool: { id: GameToolId; paths: string[] } | null;
+  openGameTool: (id: GameToolId, paths: string[]) => void;
+  closeGameTool: () => void;
 
   // UI
   viewMode: ViewMode;
@@ -541,6 +554,26 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error("Failed to save toggle:", e);
     }
   },
+
+  setGameFlag: async (gamePaths, field, on) => {
+    const { games, folders, provider, selectedSystem, selectedGame } = get();
+    if (!selectedSystem) return;
+    const wanted = new Set(gamePaths);
+    const updatedGames = games.map((g) => (wanted.has(g.path) ? { ...g, [field]: on ? "true" : undefined } : g));
+    const updatedSelected = selectedGame && wanted.has(selectedGame.path) ? updatedGames.find((g) => g.path === selectedGame.path) ?? selectedGame : selectedGame;
+    set({ games: updatedGames, selectedGame: updatedSelected });
+    try {
+      await commands.saveGamelist(selectedSystem.path, { games: updatedGames, folders, provider });
+    } catch (e) {
+      console.error("Failed to save flags:", e);
+    }
+  },
+  gameMenu: null,
+  openGameMenu: (x, y, path) => set({ gameMenu: { x, y, path } }),
+  closeGameMenu: () => set({ gameMenu: null }),
+  gameTool: null,
+  openGameTool: (id, paths) => set({ gameTool: { id, paths }, gameMenu: null }),
+  closeGameTool: () => set({ gameTool: null }),
 
   // UI
   viewMode: "grid",

@@ -18,6 +18,7 @@ pub mod rules;
 pub mod images;
 pub mod media_check;
 pub mod media_kinds;
+pub mod media_reuse;
 pub mod migrate;
 pub mod move_games;
 pub mod new_roms;

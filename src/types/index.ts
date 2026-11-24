@@ -510,6 +510,35 @@ export interface NormalizeItem {
   status: "move" | "link" | "conflict";
 }
 
+/** Lo que un juego ya tiene de un tipo de medio (Reaprovechar medios) */
+export interface CurrentMedia {
+  path: string;
+  relative: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+}
+
+/** Un sobrante (o el fichero de una referencia rota) que se puede incorporar a un juego */
+export interface ReusableMedia {
+  path: string;
+  relative: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  game_path: string;
+  game_name: string;
+  /** Campo de la gamelist del tipo (image, fanart, video…) */
+  field: string;
+  /** Por qué se sabe de qué juego es (manual = asignado a mano en la ventana) */
+  reason: "name" | "old_name" | "dat" | "mame" | "broken_ref" | "manual";
+  current: CurrentMedia | null;
+  /** Propuesta: quedarse con este (true) o con el actual (false) */
+  keep_new: boolean;
+  /** Arregla una referencia rota de la gamelist */
+  fixes_broken: boolean;
+}
+
 export interface NormalizeResult {
   moved: number;
   linked: number;

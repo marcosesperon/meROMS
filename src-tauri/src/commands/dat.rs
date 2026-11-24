@@ -421,6 +421,24 @@ pub(crate) fn match_rom(app: &tauri::AppHandle, system: &SystemRef, rom: &Path) 
     Ok(Some(match_in(&dat, rom, crcs.get(rom).map(String::as_str))))
 }
 
+/// El nombre del DAT de varias ROMs a la vez (con el DAT leído una sola vez): por contenido si
+/// su CRC está en caché, si no por el nombre del fichero. Sin DAT, vacío. Para reconocer medios
+/// con el nombre corto de MAME (Reaprovechar medios).
+pub(crate) fn dat_names(app: &tauri::AppHandle, system: &SystemRef, roms: &[PathBuf]) -> Result<HashMap<PathBuf, String>, String> {
+    let Some(dat) = load_dat(app, &system.name)? else { return Ok(HashMap::new()) };
+    let crcs = cached_crcs(app, roms)?;
+    let by_crc = crc_index(&dat);
+    let by_name: HashMap<String, &DatGame> = dat.games.iter().map(|g| (g.name.to_lowercase(), g)).collect();
+    Ok(roms
+        .iter()
+        .filter_map(|rom| {
+            let key = match_key(&rom.to_string_lossy());
+            let game = crcs.get(rom).and_then(|crc| pick_by_crc(&by_crc, crc, &key)).or_else(|| by_name.get(&key).copied())?;
+            Some((rom.clone(), game.name.clone()))
+        })
+        .collect())
+}
+
 fn match_in(dat: &Dat, rom: &Path, crc: Option<&str>) -> DatMatch {
     let key = match_key(&rom.to_string_lossy());
     let by_crc = crc_index(dat);
