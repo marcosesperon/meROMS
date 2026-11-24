@@ -26,6 +26,7 @@ import { formatPlayTime, compareNames } from "../../utils/playStats";
 import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
 import { LetterBar } from "./LetterBar";
 import { statusBadge, statusText } from "../../utils/gameStatus";
+import { scrapeMissText } from "../../utils/scrapeMiss";
 import { effectiveGridField } from "../../utils/systemView";
 
 /** Alto de fila mientras no hay dos filas pintadas para medirlo (px) */
@@ -128,7 +129,8 @@ export function GameTable({ games }: GameTableProps) {
   const selectedGame = useAppStore((s) => s.selectedGame);
   const statuses = useAppStore((s) => s.statuses);
   const raMarks = useAppStore((s) => s.raMarks);
-  const { t } = useTranslation();
+  const scrapeMisses = useAppStore((s) => s.scrapeMisses);
+  const { t, locale } = useTranslation();
 
   // Todas las columnas posibles; las que se ven (y en qué orden) salen de Ajustes
   const allColumns = useMemo(
@@ -300,6 +302,24 @@ export function GameTable({ games }: GameTableProps) {
           minSize: 60,
         },
       ),
+      // No encontrado por el scraper: «?» y la fecha; se ordena por la fecha (los demás, al final)
+      columnHelper.accessor((g) => scrapeMisses.get(g.path)?.at ?? -1, {
+        id: "scrapemiss",
+        header: t("scrapeMiss.column"),
+        cell: (i) => {
+          const miss = scrapeMisses.get(i.row.original.path);
+          if (!miss) return "";
+          const text = scrapeMissText(miss, locale);
+          return (
+            <span className="flex items-center gap-1.5 min-w-0" title={text}>
+              <span className="shrink-0 font-bold text-amber-400">?</span>
+              <span className="truncate tabular-nums">{new Date(miss.at * 1000).toLocaleDateString(locale)}</span>
+            </span>
+          );
+        },
+        size: 110,
+        minSize: 60,
+      }),
       columnHelper.accessor("arcadesystemname", { header: t("table.arcadesystem"), cell: (i) => i.getValue() || "", size: 110, minSize: 70 }),
       columnHelper.accessor("sortname", { header: t("form.sortname"), cell: (i) => i.getValue() || "", size: 180, minSize: 80 }),
       columnHelper.accessor("path", {
@@ -323,7 +343,7 @@ export function GameTable({ games }: GameTableProps) {
         minSize: 50,
       }),
     ],
-    [t, statuses, raMarks]
+    [t, locale, statuses, raMarks, scrapeMisses]
   );
 
   // Columnas visibles: miniatura y nombre siempre (congeladas), y el resto en el orden guardado

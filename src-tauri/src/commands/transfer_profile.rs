@@ -331,6 +331,7 @@ fn transfer(src_layout: &Layout, dst_layout: &Layout, from: &SystemRef, to: &Sys
         // El estado de cada juego (guardado por la ruta absoluta de la ROM) va con él
         if mode == MigrationMode::Move {
             super::game_status::remap(&from.rom_dir, &to.rom_dir, &done);
+            super::scrape_misses::remap(&from.rom_dir, &to.rom_dir, &done);
         }
     }
 

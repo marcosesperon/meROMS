@@ -8,7 +8,7 @@ mod rename_rules;
 mod retroachievements;
 mod rom_hash;
 
-use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, rules, scrape_resume, scraper, scraper_launchbox, set_aside, settings, system_status, systems, transfer_profile, translate, undo};
+use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, rules, scrape_misses, scrape_resume, scraper, scraper_launchbox, set_aside, settings, system_status, systems, transfer_profile, translate, undo};
 
 /// Workers of the async runtime that runs the commands (idle ones cost almost nothing)
 const RUNTIME_WORKERS: usize = 64;
@@ -76,6 +76,7 @@ pub fn run() {
         .setup(|app| {
             placeholders::init(app.handle());
             game_status::init(app.handle());
+            scrape_misses::init(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -166,6 +167,8 @@ pub fn run() {
             commands::retroachievements::ra_check_system,
             commands::retroachievements::ra_system_marks,
             game_status::set_game_statuses,
+            scrape_misses::get_scrape_misses,
+            scrape_misses::set_scrape_misses,
             saves::suggested_saves_dir,
             saves::list_saves,
             saves::trash_save,

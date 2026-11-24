@@ -54,6 +54,8 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
   const [checked, setChecked] = useState<Set<OrderStep>>(new Set(ORDER_STEPS));
   const [plans, setPlans] = useState<Partial<Record<OrderStep, StepPlan | "error">>>({});
   const [scope, setScope] = useState<Scope>("all");
+  // Scrapear también los que el scraper ya no encontró (casilla del paso de scrapeo)
+  const [retryMisses, setRetryMisses] = useState(false);
   const [running, setRunning] = useState<OrderStep | null>(null);
   const [progress, setProgress] = useState<TaskProgressInfo | null>(null);
   const stopRef = useRef(false);
@@ -74,6 +76,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
       canScrape,
       isEsde: getActiveProfile(settings)?.kind === "esde",
       scope: scope === "visible" ? new Set(visiblePaths) : scope === "marked" ? new Set(markedPaths) : null,
+      retryMisses,
     };
   }
 
@@ -82,6 +85,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
     if (!open) return;
     setChecked(new Set(steps?.length ? (steps.filter((s) => ORDER_STEPS.includes(s as OrderStep)) as OrderStep[]) : ORDER_STEPS));
     setScope(initialScope === "marked" && markedPaths.length > 0 ? "marked" : "all");
+    setRetryMisses(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -106,7 +110,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, scope, systemPath]);
+  }, [open, scope, systemPath, retryMisses]);
 
   // Progreso del scrapeo (no usa las tareas: tiene su propio aviso)
   useEffect(() => {
@@ -277,6 +281,19 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
                         )}
                         {plan.blocked && <p className="text-xs text-amber-400 mt-1">{plan.blocked}</p>}
                       </>
+                    )}
+                    {/* Scrapeo: los que el scraper ya no encontró se saltan, salvo que se pida */}
+                    {step === "scrape" && plan && plan !== "error" && (retryMisses || !!plan.skipped) && (
+                      <label className="mt-1.5 flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={retryMisses}
+                          disabled={!!running}
+                          onChange={(e) => setRetryMisses(e.target.checked)}
+                          className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+                        />
+                        {retryMisses ? t("scrapeMiss.retry") : t("scrapeMiss.retryCount", { count: plan.skipped ?? 0 })}
+                      </label>
                     )}
                     {isRunning && (
                       <div className="mt-2">

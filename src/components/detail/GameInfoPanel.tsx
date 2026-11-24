@@ -12,6 +12,7 @@ import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from ".
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { StatusMenu } from "../common/StatusMenu";
+import { ScrapeMissNote } from "../common/ScrapeMissNote";
 import { GameTabs } from "./GameTabs";
 import { CollectionStatus } from "./CollectionStatus";
 import {
@@ -202,6 +203,9 @@ function GameInfo({ game }: { game: Game }) {
         </button>
       </div>
 
+      {/* El scraper no lo encontró (o se marcó a mano): se dice aquí, con «Quitar marca» */}
+      <ScrapeMissNote gamePath={game.path} show="note" className="mx-5 mt-3" />
+
       {/* Las mismas pestañas que la ficha a pantalla completa, en su propio recuadro */}
       <section className="mx-5 mt-4 p-3 rounded-lg border border-zinc-800 bg-zinc-900/60">
         <GameTabs game={game} systemPath={systemPath} media={media} shown={shown} onPick={setCurrent} onFailed={markFailed} compact />
@@ -222,6 +226,8 @@ function GameInfo({ game }: { game: Game }) {
         </dl>
         {game.desc && <p className="mt-4 text-sm leading-relaxed text-zinc-400 whitespace-pre-line">{game.desc}</p>}
         <p className="mt-4 text-[11px] text-zinc-600 font-mono break-all">{game.path}</p>
+        {/* Sin marca: ponerla a mano (juego dado por imposible) */}
+        <ScrapeMissNote gamePath={game.path} show="mark" className="mt-2" />
       </div>
       {/* Scrapear = búsqueda manual; lo elegido se guarda en el acto */}
       {scrapeTarget && (

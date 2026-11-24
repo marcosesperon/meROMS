@@ -56,6 +56,8 @@ export interface OrderContext {
   isEsde: boolean;
   /** Solo estos juegos (los mostrados o los marcados); null = el sistema entero */
   scope: Set<string> | null;
+  /** Scrapear también los que el scraper ya no encontró (si no, se los salta) */
+  retryMisses: boolean;
 }
 
 /** Vista previa de un paso */
@@ -69,6 +71,8 @@ export interface StepPlan {
   examples: string[];
   /** Por qué no se puede hacer (sin carpeta de apartados, sin scraper…) */
   blocked?: string;
+  /** Scrapeo: juegos con algo que buscar que se saltan por no encontrados antes */
+  skipped?: number;
 }
 
 /** Lo que hace falta mientras se aplica: el id de tarea para el progreso y si se ha parado */
@@ -267,11 +271,15 @@ export function requiredScrapePolicy(rules: CollectionRules, isEsde: boolean): S
   };
 }
 
-function gatherScrape(ctx: OrderContext): Game[] {
-  const { games, brokenMedia } = useAppStore.getState();
-  return games.filter(
+/** Juegos con algo que buscar; `skipped` = los que se dejan por no encontrados antes */
+function gatherScrape(ctx: OrderContext): { games: Game[]; skipped: number } {
+  const { games, brokenMedia, scrapeMisses } = useAppStore.getState();
+  const wanted = games.filter(
     (g) => inScope(ctx)(g.path) && (hasNotGameData(g) || !g.name?.trim() || lacksData(g, ctx.rules) || missingMedia(g, ctx.rules, brokenMedia, ctx.isEsde).length > 0)
   );
+  if (ctx.retryMisses) return { games: wanted, skipped: 0 };
+  const kept = wanted.filter((g) => !scrapeMisses.has(g.path));
+  return { games: kept, skipped: wanted.length - kept.length };
 }
 
 /** Juegos del ámbito con datos no válidos del scraper («ZZZ(notgame):…») */
@@ -279,7 +287,7 @@ function gatherScrape(ctx: OrderContext): Game[] {
 const invalidGames = (ctx: OrderContext) => useAppStore.getState().games.filter((g) => inScope(ctx)(g.path) && hasInvalidData(g));
 
 async function planScrape(ctx: OrderContext): Promise<StepPlan> {
-  const games = gatherScrape(ctx);
+  const { games, skipped } = gatherScrape(ctx);
   const invalid = invalidGames(ctx).length;
   return {
     step: "scrape",
@@ -288,6 +296,7 @@ async function planScrape(ctx: OrderContext): Promise<StepPlan> {
       ...(invalid ? [translate("order.scrapeInvalid", { count: invalid })] : []),
       ...(games.length ? [translate("order.scrapeLine", { count: games.length })] : []),
     ],
+    skipped,
     examples: games.slice(0, 3).map((g) => g.name || nameOf(g.path)),
     // Sin scraper, si hay datos no válidos que quitar el paso sigue sirviendo (solo para eso)
     blocked: games.length && !ctx.canScrape && !invalid ? translate("order.noScraper") : undefined,
@@ -305,9 +314,10 @@ async function applyScrape(ctx: OrderContext): Promise<StepOutcome> {
     lines.push(translate("order.scrapeInvalidDone", { count: invalid.size }));
   }
   if (!ctx.canScrape) return { lines, failed: [] };
-  const games = gatherScrape(ctx);
+  const { games } = gatherScrape(ctx);
   if (games.length === 0) return { lines, failed: [] };
-  const r = await scrapeSystem(ctx.systemPath, games.map((g) => g.path), requiredScrapePolicy(ctx.rules, ctx.isEsde));
+  // La lista ya viene sin los no encontrados (si no se pidió reintentarlos): va tal cual
+  const r = await scrapeSystem(ctx.systemPath, games.map((g) => g.path), requiredScrapePolicy(ctx.rules, ctx.isEsde), false, true);
   lines.push(translate(r.stopped ? "order.scrapeStopped" : "order.scrapeDone", { count: games.length }));
   return { lines, failed: [] };
 }

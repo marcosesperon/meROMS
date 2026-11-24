@@ -121,6 +121,8 @@ export function ScrapeSearchModal({ systemPath, game, onClose, onApplied }: Scra
       if (run !== searchRun.current) return;
       setCandidates(result.candidates);
       setSourceErrors(result.errors);
+      // Sin ningún resultado (y sin fallos) el backend lo ha marcado «no encontrado»: a la vista
+      if (result.candidates.length === 0 && result.errors.length === 0) useAppStore.getState().refreshScrapeMisses();
       // La que coincide con la ROM sale marcada; si no, la primera
       const first = result.candidates.find((c) => c.rom_match) ?? result.candidates[0];
       setSelected(first ? candidateKey(first) : null);
@@ -171,6 +173,8 @@ export function ScrapeSearchModal({ systemPath, game, onClose, onApplied }: Scra
     setApplying(true);
     try {
       const result = await applyScrape(systemPath, game.path, candidate.source, candidate.id);
+      // Encontrado: el backend ha quitado la marca de «no encontrado»
+      useAppStore.getState().refreshScrapeMisses();
       await onApplied(result.game);
       onClose();
     } catch (e) {

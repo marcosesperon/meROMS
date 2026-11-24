@@ -491,6 +491,10 @@ function MarkedActions({ paths }: { paths: string[] }) {
   });
   const [busy, setBusy] = useState(false);
   const none = paths.length === 0 || busy;
+  // «No encontrado por el scraper» a mano: si ya lo están todos, se ofrece quitarlo
+  const scrapeMisses = useAppStore((s) => s.scrapeMisses);
+  const setScrapeMisses = useAppStore((s) => s.setScrapeMisses);
+  const allMissed = paths.length > 0 && paths.every((p) => scrapeMisses.has(p));
 
   async function remove() {
     const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths } = useAppStore.getState();
@@ -536,6 +540,7 @@ function MarkedActions({ paths }: { paths: string[] }) {
         {button(t("bulk.scrape", { count: paths.length }), () => openTool({ id: "scrapeAll", gamePaths: paths }), false, none || !hasScraper)}
         {button(t("bulk.order", { count: paths.length }), () => openTool({ id: "order", tab: "marked" }))}
         {button(t("bulk.versions", { count: paths.length }), () => openTool({ id: "versions", gamePaths: paths }))}
+        {button(t(allMissed ? "scrapeMiss.bulkUnmark" : "scrapeMiss.bulkMark", { count: paths.length }), () => setScrapeMisses(paths, !allMissed))}
         {button(t("bulk.remove", { count: paths.length }), remove, true)}
       </div>
     </div>

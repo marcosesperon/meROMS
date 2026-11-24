@@ -192,6 +192,12 @@ interface AppState {
   statuses: Map<string, commands.GameStatus>;
   /** Change the status of some games (saved by meROMS; "completed" also in the gamelist) */
   setStatuses: (gamePaths: string[], change: commands.StatusChange) => Promise<void>;
+  /** Games of the selected system the scraper didn't find (or marked by hand), by game path */
+  scrapeMisses: Map<string, commands.ScrapeMiss>;
+  /** Reads them again (after a scrape) */
+  refreshScrapeMisses: () => Promise<void>;
+  /** Mark or unmark some games by hand */
+  setScrapeMisses: (gamePaths: string[], marked: boolean) => Promise<void>;
   setDatMarks: (marks: Map<string, commands.DatMark> | null) => void;
   /** Games of the selected system whose ROM is missing on disk (marked in the grid/table) */
   missingRomPaths: Set<string>;
@@ -250,6 +256,8 @@ interface AppState {
     status?: string;
     /** RetroAchievements: games with achievements (any version) / with a compatible ROM */
     ra?: "with" | "compatible";
+    /** Not found by the scraper (marked) / the rest */
+    scrapeMiss?: "yes" | "no";
     /** Solo los juegos con ese problema del estado del sistema */
     issue?: IssueKind;
   };
@@ -423,6 +431,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       selectedPaths: new Set(),
       raMarks: new Map(),
       statuses: new Map(),
+      scrapeMisses: new Map(),
       carouselPanelOpen: false,
       tool: null,
       collectionStatus: null,
@@ -488,6 +497,8 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ statuses: new Map(Object.entries(map)) });
         })
         .catch(() => set({ statuses: new Map() }));
+      // Los que el scraper no encontró (insignia, filtro, línea del estado)
+      get().refreshScrapeMisses();
     } catch (e) {
       console.error("Failed to load gamelist:", e);
       set({ loading: false });
@@ -671,6 +682,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     };
     const { games, selectedGame } = get();
     set({ statuses, games: games.map(fix), selectedGame: selectedGame ? fix(selectedGame) : null });
+  },
+  scrapeMisses: new Map(),
+  refreshScrapeMisses: async () => {
+    const systemPath = get().selectedSystem?.path;
+    if (!systemPath) return;
+    const map = await commands.getScrapeMisses(systemPath).catch(() => ({}));
+    if (get().selectedSystem?.path === systemPath) set({ scrapeMisses: new Map(Object.entries(map)) });
+  },
+  setScrapeMisses: async (gamePaths, marked) => {
+    const { selectedSystem } = get();
+    if (!selectedSystem || gamePaths.length === 0) return;
+    const updated = await commands.setScrapeMisses(selectedSystem.path, gamePaths, marked);
+    const misses = new Map(get().scrapeMisses);
+    for (const path of gamePaths) {
+      if (updated[path]) misses.set(path, updated[path]);
+      else misses.delete(path);
+    }
+    set({ scrapeMisses: misses });
   },
   setDatMarks: (marks) => set({ datMarks: marks }),
   missingRomPaths: new Set(),

@@ -39,7 +39,9 @@ export type IssueKind =
   | "placeholders"
   | "unused"
   | "swapped"
-  | "legacy";
+  | "legacy"
+  /** No encontrados por el scraper (solo informa: no hay nada que arreglar solo) */
+  | "scrapeMiss";
 
 /** Nombres fuera de formato: juegos cuyo fichero o cuyo título cambiarían al renombrar */
 export interface NamesStatus {
@@ -114,6 +116,8 @@ export interface IssueContext {
   isEsde: boolean;
   status: CollectionStatusState | null;
   missingRomPaths: Set<string>;
+  /** Juegos que el scraper no encontró (o marcados a mano) */
+  scrapeMisses: Set<string>;
 }
 
 /** Medios obligatorios que existen en esta estructura (ES-DE no tiene wheels) */
@@ -207,6 +211,8 @@ export function issueGames(kind: IssueKind, ctx: IssueContext): Set<string> | nu
       return new Set(ctx.games.filter(hasArrmSortname).map((g) => g.path));
     case "missingRoms":
       return ctx.missingRomPaths;
+    case "scrapeMiss":
+      return ctx.scrapeMisses;
     case "names":
       return ctx.status?.names ? new Set([...ctx.status.names.files, ...ctx.status.names.titles]) : null;
     case "versions":
@@ -228,6 +234,7 @@ export function issueContextOf(s: {
   brokenMedia: Set<string>;
   collectionStatus: CollectionStatusState | null;
   missingRomPaths: Set<string>;
+  scrapeMisses: Map<string, unknown>;
   isEsde: boolean;
 }): IssueContext {
   return {
@@ -237,6 +244,7 @@ export function issueContextOf(s: {
     isEsde: s.isEsde,
     status: s.collectionStatus,
     missingRomPaths: s.missingRomPaths,
+    scrapeMisses: new Set(s.scrapeMisses.keys()),
   };
 }
 

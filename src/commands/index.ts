@@ -132,9 +132,11 @@ export async function scrapeSystem(
   gamePaths?: string[],
   policy?: ScrapePolicy,
   /** Continue the run left halfway in this system (its games and rules) */
-  resume?: boolean
+  resume?: boolean,
+  /** Scrape again the games the scraper didn't find before (missing = skip them) */
+  retryMisses?: boolean
 ): Promise<ScrapeRunResult> {
-  return invoke("scrape_system", { systemPath, gamePaths, policy, resume });
+  return invoke("scrape_system", { systemPath, gamePaths, policy, resume, retryMisses });
 }
 
 /** Stop the running Scrape All (the game in progress finishes; what's done is saved) */
@@ -831,6 +833,24 @@ export async function getGameStatuses(systemPath: string): Promise<Record<string
 
 export async function setGameStatuses(systemPath: string, gamePaths: string[], change: StatusChange): Promise<Record<string, GameStatus>> {
   return invoke("set_game_statuses", { systemPath, gamePaths, change });
+}
+
+// Not found by the scraper (scrape_misses.rs): games a scrape didn't find, or marked by hand
+export interface ScrapeMiss {
+  /** When (Unix seconds): the last scrape that didn't find it, or when it was marked by hand */
+  at: number;
+  /** Marked by hand, not by a scrape */
+  manual?: boolean;
+}
+
+/** The marks of a system's games (only the marked ones), by game path */
+export async function getScrapeMisses(systemPath: string): Promise<Record<string, ScrapeMiss>> {
+  return invoke("get_scrape_misses", { systemPath });
+}
+
+/** Mark (by hand, today) or unmark some games; returns their marks as they are now */
+export async function setScrapeMisses(systemPath: string, gamePaths: string[], marked: boolean): Promise<Record<string, ScrapeMiss>> {
+  return invoke("set_scrape_misses", { systemPath, gamePaths, marked });
 }
 
 // Saves (saves.rs): save games and states of a game, in the profile's saves folder

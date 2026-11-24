@@ -261,15 +261,16 @@ function App() {
     if (current) selectGame(fresh.find((g) => g.path === current.path) ?? null);
   }
 
-  // resume = continue the run left halfway in this system (its own games and rules)
-  async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy, resume?: boolean) {
+  // resume = continue the run left halfway in this system (its own games and rules);
+  // retryMisses = also the games the scraper didn't find before (else they are skipped)
+  async function handleScrapeAll(gamePaths?: string[], policy?: ScrapePolicy, resume?: boolean, retryMisses?: boolean) {
     if (!selectedSystem) return;
     setScrapeFinished(false);
     setScrapeStopped(false);
     setScrapeError(null);
     setShowScrapeModal(true);
     try {
-      const result = await scrapeSystem(selectedSystem.path, gamePaths, policy, resume);
+      const result = await scrapeSystem(selectedSystem.path, gamePaths, policy, resume, retryMisses);
       setScrapeStopped(result.stopped);
     } catch (e) {
       console.error("Batch scrape failed:", e);
@@ -522,12 +523,13 @@ function App() {
         open={isTool("scrapeAll")}
         gameCount={games.length}
         visibleCount={scrapeSubset.length}
+        subsetPaths={scrapeSubset}
         marked={!!scrapeMarked}
         systemPath={selectedSystem?.path ?? ""}
         onClose={closeTool}
-        onStart={(policy, onlyVisible) => {
+        onStart={(policy, onlyVisible, retryMisses) => {
           closeTool();
-          handleScrapeAll(onlyVisible ? scrapeSubset : undefined, policy);
+          handleScrapeAll(onlyVisible ? scrapeSubset : undefined, policy, false, retryMisses);
         }}
         onContinue={() => {
           closeTool();

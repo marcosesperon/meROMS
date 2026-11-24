@@ -26,6 +26,7 @@ export function useFilteredGames(): Game[] {
   // «Con problemas de…» (pulsar un número del estado del sistema)
   const collectionStatus = useAppStore((s) => s.collectionStatus);
   const missingRomPaths = useAppStore((s) => s.missingRomPaths);
+  const scrapeMisses = useAppStore((s) => s.scrapeMisses);
   const settings = useAppStore((s) => s.settings);
 
   return useMemo(() => {
@@ -102,6 +103,12 @@ export function useFilteredGames(): Game[] {
       });
     }
 
+    // No encontrados por el scraper (marcados solos al scrapear, o a mano) / los demás
+    if (filters.scrapeMiss) {
+      const wanted = filters.scrapeMiss === "yes";
+      result = result.filter((g) => scrapeMisses.has(g.path) === wanted);
+    }
+
     // RetroAchievements («Comprobar logros»): con logros (cualquier versión) o con ROM compatible
     if (filters.ra) {
       const wanted = filters.ra;
@@ -114,11 +121,11 @@ export function useFilteredGames(): Game[] {
     // Estado del sistema: solo los juegos con ese problema (si aún no se sabe, no se filtra)
     if (filters.issue) {
       const isEsde = getActiveProfile(settings)?.kind === "esde";
-      const ctx = issueContextOf({ games, settings, brokenMedia, collectionStatus, missingRomPaths, isEsde });
+      const ctx = issueContextOf({ games, settings, brokenMedia, collectionStatus, missingRomPaths, scrapeMisses, isEsde });
       const wanted = issueGames(filters.issue, ctx);
       if (wanted) result = result.filter((g) => wanted.has(g.path));
     }
 
     return result;
-  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses, raMarks, collectionStatus, missingRomPaths, settings]);
+  }, [games, searchQuery, filters, activeFolderPath, datMarks, brokenMedia, statuses, raMarks, collectionStatus, missingRomPaths, scrapeMisses, settings]);
 }

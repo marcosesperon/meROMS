@@ -19,8 +19,9 @@ interface StatusLine {
   /** Al pulsar el número, la lista se filtra a esos juegos */
   filter: boolean;
   view?: ToolRequest;
-  /** Pasos que lo arreglan (los medios que faltan: antes colocar lo que ya hay, después scrapear) */
-  fix: OrderStep | OrderStep[];
+  /** Pasos que lo arreglan (los medios que faltan: antes colocar lo que ya hay, después scrapear).
+   *  Sin pasos, la línea solo informa (no hay «Arreglar») */
+  fix?: OrderStep | OrderStep[];
 }
 
 /** Duración de la animación de los números al cambiar */
@@ -68,6 +69,7 @@ export function CollectionStatus() {
   const broken = useAppStore((s) => s.brokenMedia);
   const newRoms = useAppStore((s) => s.newRomsCount);
   const missingRoms = useAppStore((s) => s.missingRomPaths.size);
+  const scrapeMisses = useAppStore((s) => s.scrapeMisses.size);
   const issue = useAppStore((s) => s.filters.issue);
   const setFilters = useAppStore((s) => s.setFilters);
   const openTool = useAppStore((s) => s.openTool);
@@ -134,6 +136,8 @@ export function CollectionStatus() {
         // Primero lo falso que dejó el scraper (lo arregla el mismo paso, antes de scrapear)
         { kind: "invalid", values: [invalid], text: ([n]) => t("colstatus.invalid", { count: n }), filter: true, view: { id: "missing", tab: "invalid" }, fix: "scrape" },
         { kind: "data", values: [noData], text: ([n]) => t("colstatus.data", { count: n }), filter: true, view: { id: "missing", tab: "data" }, fix: "scrape" },
+        // Ya intentados sin éxito: el paso de scrapeo se los salta (solo se dice cuántos son)
+        { kind: "scrapeMiss", values: [scrapeMisses], text: ([n]) => t("colstatus.scrapeMiss", { count: n }), filter: true },
       ],
     },
     {
@@ -162,7 +166,8 @@ export function CollectionStatus() {
   // Solo lo que falla (o lo que aún no se sabe); los grupos sin nada desaparecen
   const visible = lines.map((g) => ({ ...g, items: g.items.filter((l) => l.values === null || total(l) > 0) })).filter((g) => g.items.length > 0);
   const pending = visible.some((g) => g.items.some((l) => l.values === null));
-  const anything = visible.some((g) => g.items.some((l) => total(l) > 0));
+  // Algo que arreglar (las líneas que solo informan no cuentan)
+  const anything = visible.some((g) => g.items.some((l) => l.fix && total(l) > 0));
   const checking = status?.checking ?? true;
   const errors = status?.errors ?? [];
 
@@ -192,7 +197,7 @@ export function CollectionStatus() {
                   active={issue === line.kind}
                   onFilter={() => setFilters({ issue: issue === line.kind ? undefined : line.kind })}
                   onView={line.view ? () => openTool(line.view!) : line.filter ? () => setFilters({ issue: line.kind }) : undefined}
-                  onFix={() => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix] })}
+                  onFix={line.fix ? () => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix!] }) : undefined}
                 />
               ))}
             </div>
@@ -223,7 +228,7 @@ export function CollectionStatus() {
   );
 }
 
-function Line({ line, active, onFilter, onView, onFix }: { line: StatusLine; active: boolean; onFilter: () => void; onView?: () => void; onFix: () => void }) {
+function Line({ line, active, onFilter, onView, onFix }: { line: StatusLine; active: boolean; onFilter: () => void; onView?: () => void; onFix?: () => void }) {
   const { t } = useTranslation();
   const known = line.values !== null;
   // Los números cuentan hasta su valor (los de una línea que aún no se sabe, desde 0)
@@ -250,7 +255,7 @@ function Line({ line, active, onFilter, onView, onFix }: { line: StatusLine; act
       {known && (
         <span className="shrink-0 flex gap-2 text-xs pt-0.5">
           {onView && link(t("colstatus.view"), onView)}
-          {link(t("colstatus.fix"), onFix)}
+          {onFix && link(t("colstatus.fix"), onFix)}
         </span>
       )}
     </div>

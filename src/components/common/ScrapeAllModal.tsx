@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { getScrapePolicy, getScrapeResume } from "../../commands";
 import type { ScrapePolicy, ScrapeResumeInfo } from "../../types";
+import { useAppStore } from "../../store/useAppStore";
 import { ScrapePolicyEditor } from "./ScrapePolicyEditor";
 
 interface ScrapeAllModalProps {
@@ -9,18 +10,20 @@ interface ScrapeAllModalProps {
   gameCount: number;
   /** Games the list shows now (search, folder, filters); fewer than gameCount = offer «only these» */
   visibleCount: number;
+  /** Those games' paths (to count the ones the scraper didn't find before) */
+  subsetPaths: string[];
   /** El subconjunto son los marcados en la selección múltiple (no los que se ven): cambia el texto */
   marked?: boolean;
   systemPath: string;
   onClose: () => void;
-  /** Start scraping the system with this choice (not saved) */
-  onStart: (policy: ScrapePolicy, onlyVisible: boolean) => void;
+  /** Start scraping the system with this choice (not saved); retryMisses = also the games not found before */
+  onStart: (policy: ScrapePolicy, onlyVisible: boolean, retryMisses: boolean) => void;
   /** Continue the run left halfway (its games and rules) */
   onContinue: () => void;
 }
 
 /** Antes de «Scrapear Todo»: qué se actualiza esta vez (empieza con lo de Ajustes, no se guarda) */
-export function ScrapeAllModal({ open, gameCount, visibleCount, marked, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
+export function ScrapeAllModal({ open, gameCount, visibleCount, subsetPaths, marked, systemPath, onClose, onStart, onContinue }: ScrapeAllModalProps) {
   const { t, locale } = useTranslation();
   const [policy, setPolicy] = useState<ScrapePolicy | null>(null);
   // Un «Scrapear todo» que se quedó a medias en este sistema (app cerrada, fallo o «Detener»)
@@ -28,14 +31,23 @@ export function ScrapeAllModal({ open, gameCount, visibleCount, marked, systemPa
   // Con búsqueda o filtros, por defecto solo los juegos que se ven
   const [onlyVisible, setOnlyVisible] = useState(true);
   const filtered = visibleCount < gameCount;
+  // Los que el scraper ya no encontró: se saltan salvo que se marque «Reintentar»
+  const scrapeMisses = useAppStore((s) => s.scrapeMisses);
+  const [retryMisses, setRetryMisses] = useState(false);
+  const subsetMisses = subsetPaths.filter((p) => scrapeMisses.has(p)).length;
+  const missCount = filtered && onlyVisible ? subsetMisses : scrapeMisses.size;
 
   useEffect(() => {
     if (!open) {
       setPolicy(null);
       setPending(null);
       setOnlyVisible(true);
+      setRetryMisses(false);
       return;
     }
+    // Si lo que se ve son solo juegos no encontrados (p. ej. con ese filtro), se entiende que
+    // es para reintentarlos: la casilla empieza marcada
+    setRetryMisses(filtered && subsetPaths.length > 0 && subsetMisses === subsetPaths.length);
     getScrapePolicy().then(setPolicy).catch(() => setPolicy({ data: {}, media: {} }));
     getScrapeResume(systemPath).then(setPending).catch(() => setPending(null));
   }, [open, systemPath]);
@@ -62,6 +74,18 @@ export function ScrapeAllModal({ open, gameCount, visibleCount, marked, systemPa
                 {t("scrapePolicy.wholeSystem", { count: gameCount })}
               </label>
             </div>
+          )}
+          {/* Los que el scraper no encontró en otra pasada: fuera, salvo que se pida */}
+          {missCount > 0 && (
+            <label className="mt-3 flex items-center gap-2 text-sm text-zinc-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={retryMisses}
+                onChange={(e) => setRetryMisses(e.target.checked)}
+                className="rounded border-zinc-600 bg-zinc-700 text-indigo-600"
+              />
+              {t("scrapeMiss.retryCount", { count: missCount })}
+            </label>
           )}
         </div>
         {/* A medias: «Continuar» sigue con sus juegos y sus reglas; «Empezar de nuevo» usa la tabla de abajo */}
@@ -93,7 +117,7 @@ export function ScrapeAllModal({ open, gameCount, visibleCount, marked, systemPa
             {t("rename.close")}
           </button>
           <button
-            onClick={() => policy && onStart(policy, filtered && onlyVisible)}
+            onClick={() => policy && onStart(policy, filtered && onlyVisible, retryMisses)}
             disabled={!policy || (filtered && onlyVisible && visibleCount === 0)}
             className="px-4 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-500 transition-colors disabled:opacity-50"
           >

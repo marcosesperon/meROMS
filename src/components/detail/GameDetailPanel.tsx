@@ -14,6 +14,7 @@ import { MoveGamesModal } from "../common/MoveGamesModal";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
 import { VersionsModal } from "../common/VersionsModal";
 import { GameReviewModal } from "./GameReviewModal";
+import { ScrapeMissNote } from "../common/ScrapeMissNote";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { bumpMediaVersion } from "../../utils/images";
 import { offerRename } from "../../utils/autoRename";
@@ -278,6 +279,8 @@ export function GameDetailPanel({ isNewGame, onClose }: GameDetailPanelProps) {
           )}
           </div>
           <div className="p-5 lg:overflow-y-auto">
+          {/* No encontrado por el scraper: el aviso con «Quitar marca», o el enlace para ponerla */}
+          {!isNewGame && selectedGame && <ScrapeMissNote gamePath={selectedGame.path} className="mb-4" />}
           <GameForm
             game={editedGame}
             onChange={handleFieldChange}

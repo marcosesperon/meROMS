@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -669,7 +670,13 @@ pub async fn search_scrape(
         Vec::new()
     };
 
-    Ok(ScrapeSearch { candidates: merge_candidates(rom_match, vec![ss, adb, launchbox, tgdb]), errors })
+    let candidates = merge_candidates(rom_match, vec![ss, adb, launchbox, tgdb]);
+    // Ninguna fuente sabe nada de este juego (y ninguna ha fallado): queda marcado como «no
+    // encontrado por el scraper». Con algún error no se sabe, así que no se marca
+    if candidates.is_empty() && errors.is_empty() {
+        super::scrape_misses::mark_not_found(&system.rom_dir, &game_path);
+    }
+    Ok(ScrapeSearch { candidates, errors })
 }
 
 /// Small cover of a ScreenScraper result of the last search, as a data: URI (None if it has none).
@@ -729,6 +736,8 @@ pub async fn apply_scrape(
     let mut result = apply_by_source(&app, &client, &settings, &source, &id, &game, &layout, &system).await?;
     // El nombre para ordenar de ARRM ya no vale (ni el número ni el nombre de entonces)
     crate::commands::scrape_common::drop_arrm_sortname(&mut result.game);
+    // Encontrado (elegido a mano): fuera la marca de «no encontrado»
+    super::scrape_misses::clear(&system.rom_dir, &game_path);
     Ok(result)
 }
 
@@ -897,10 +906,9 @@ pub async fn scrape_game(
         return Err(NO_SCRAPER.into());
     }
     let client = build_http_client()?;
-    match scrape_one(&app, &settings, &client, &existing_game, &layout, &system).await {
-        ("success", game) => Ok(ScrapeResult { game, found: true }),
-        (_, game) => Ok(ScrapeResult { game, found: false }),
-    }
+    let (status, game) = scrape_one(&app, &settings, &client, &existing_game, &layout, &system).await;
+    remember_outcome(&system, &game_path, status);
+    Ok(ScrapeResult { game, found: status == "success" })
 }
 
 /// Scrape a single game internally (used by batch): each source in order until one finds it.
@@ -930,6 +938,16 @@ async fn scrape_one(
         ("not_found", game.clone())
     } else {
         ("error", game.clone())
+    }
+}
+
+/// Lo que deja un scrapeo en la marca de «no encontrado»: encontrado la quita, no encontrado
+/// la pone (con la fecha de hoy); un error (sin respuesta) no la toca
+fn remember_outcome(system: &SystemRef, game_path: &str, status: &str) {
+    match status {
+        "success" => super::scrape_misses::clear(&system.rom_dir, game_path),
+        "not_found" => super::scrape_misses::mark_not_found(&system.rom_dir, game_path),
+        _ => {}
     }
 }
 
@@ -977,12 +995,13 @@ pub struct ScrapeRunResult {
     pub stopped: bool,
 }
 
-/// ROM paths a batch will scrape, in gamelist order: all of them, or only `only`
-fn paths_to_scrape(gamelist: &GameList, only: Option<&[String]>) -> Vec<String> {
+/// ROM paths a batch will scrape, in gamelist order: all of them, or only `only`, without the
+/// ones in `skip` (los que el scraper ya no encontró, si no se pide reintentarlos)
+fn paths_to_scrape(gamelist: &GameList, only: Option<&[String]>, skip: &HashSet<String>) -> Vec<String> {
     gamelist
         .games
         .iter()
-        .filter(|g| only.map_or(true, |only| only.contains(&g.path)))
+        .filter(|g| only.map_or(true, |only| only.contains(&g.path)) && !skip.contains(&g.path))
         .map(|g| g.path.clone())
         .collect()
 }
@@ -999,6 +1018,8 @@ pub async fn scrape_system(
     policy: Option<crate::models::settings::ScrapePolicy>,
     // Continue the run left halfway in this system (its games and rules)
     resume: Option<bool>,
+    // Scrape again the games the scraper didn't find before (missing = skip them)
+    retry_misses: Option<bool>,
 ) -> Result<ScrapeRunResult, String> {
     use super::scrape_resume::{self, ResumeEntry};
 
@@ -1019,7 +1040,15 @@ pub async fn scrape_system(
     };
     // Con `game_paths` solo se scrapean esos juegos (p. ej. las ROMs recién añadidas);
     // el resto pasa tal cual
-    let todo = paths_to_scrape(&gamelist, only.as_deref());
+    // Los marcados como «no encontrado» se saltan, salvo que se pida reintentarlos. Al continuar,
+    // la lista que quedaba ya se hizo así al empezar: va tal cual
+    let skip: HashSet<String> = if retry_misses == Some(true) || previous.is_some() {
+        HashSet::new()
+    } else {
+        let paths: Vec<String> = gamelist.games.iter().map(|g| g.path.clone()).collect();
+        super::scrape_misses::misses_of(&system.rom_dir, &paths).into_keys().collect()
+    };
+    let todo = paths_to_scrape(&gamelist, only.as_deref(), &skip);
     let total = todo.len();
 
     if total == 0 {
@@ -1089,6 +1118,7 @@ pub async fn scrape_system(
             break;
         };
         gamelist.games[index] = updated_game;
+        remember_outcome(&system, &game.path, status);
         done += 1;
 
         let _ = app.emit(
@@ -1277,9 +1307,13 @@ mod tests {
                 .collect(),
             ..Default::default()
         };
-        assert_eq!(paths_to_scrape(&gamelist, None), langs(&["./a.sfc", "./b.sfc", "./c.sfc"]));
+        let none = HashSet::new();
+        assert_eq!(paths_to_scrape(&gamelist, None, &none), langs(&["./a.sfc", "./b.sfc", "./c.sfc"]));
         // Continuar: solo los que quedaban (y uno que ya no está en la gamelist no cuenta)
         let remaining = langs(&["./c.sfc", "./zz.sfc", "./b.sfc"]);
-        assert_eq!(paths_to_scrape(&gamelist, Some(&remaining)), langs(&["./b.sfc", "./c.sfc"]));
+        assert_eq!(paths_to_scrape(&gamelist, Some(&remaining), &none), langs(&["./b.sfc", "./c.sfc"]));
+        // Los que el scraper ya no encontró se saltan
+        let skip: HashSet<String> = langs(&["./b.sfc"]).into_iter().collect();
+        assert_eq!(paths_to_scrape(&gamelist, None, &skip), langs(&["./a.sfc", "./c.sfc"]));
     }
 }

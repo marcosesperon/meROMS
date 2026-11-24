@@ -30,6 +30,7 @@ pub mod search;
 pub mod shots;
 pub mod profiles;
 pub mod progress;
+pub mod scrape_misses;
 pub mod scrape_resume;
 pub mod scrape_common;
 pub mod scraper;

@@ -69,7 +69,8 @@ export function FilterBar() {
     filters.missingMedia ||
     filters.played ||
     filters.status ||
-    filters.ra;
+    filters.ra ||
+    filters.scrapeMiss;
 
   return (
     <div className="flex items-center gap-3 px-6 py-2.5 bg-zinc-800/50 border-b border-zinc-700 flex-wrap">
@@ -181,6 +182,19 @@ export function FilterBar() {
         <option value="">{t("ra.filter")}: —</option>
         <option value="with">{t("ra.filterWith")}</option>
         <option value="compatible">{t("ra.filterCompatible")}</option>
+      </select>
+
+      {/* Scraper: los que no encontró (o marcados a mano) / los demás */}
+      <select
+        value={filters.scrapeMiss || ""}
+        onChange={(e) => setFilters({ scrapeMiss: (e.target.value || undefined) as "yes" | "no" | undefined })}
+        className={SELECT_CLASS}
+        style={SELECT_ARROW}
+        title={t("scrapeMiss.filterHelp")}
+      >
+        <option value="">{t("scrapeMiss.filter")}: —</option>
+        <option value="yes">{t("scrapeMiss.filterYes")}</option>
+        <option value="no">{t("scrapeMiss.filterNo")}</option>
       </select>
 
       {/* Toggle buttons */}

@@ -10,6 +10,7 @@ import { getFlag } from "../../utils/flags";
 import { DatTag } from "../common/DatTag";
 import { clickGame, doubleClickGame, clickKeys } from "../../utils/gameClick";
 import { statusBadge, statusText } from "../../utils/gameStatus";
+import { scrapeMissText } from "../../utils/scrapeMiss";
 import { effectiveGridField } from "../../utils/systemView";
 import { GameBox3D } from "./GameBox3D";
 import { useOpenAfter } from "../../hooks/useOpenAfter";
@@ -29,7 +30,7 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   const romMissing = useAppStore((s) => s.missingRomPaths.has(game.path));
   const multiSelect = useAppStore((s) => s.multiSelect);
   const checked = useAppStore((s) => s.selectedPaths.has(game.path));
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   // El medio de la cuadrícula de este sistema (el suyo en el perfil o el global)
   const gridMediaField = useAppStore((s) => effectiveGridField(s.settings, s.selectedSystem?.name));
 
@@ -52,6 +53,8 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   // RetroAchievements («Comprobar logros»): trofeo abajo a la derecha
   const ra = raBadge(useAppStore((s) => s.raMarks.get(game.path)));
   const badge = statusBadge(status);
+  // El scraper no lo encontró (o se marcó a mano): «?» ámbar bajo el favorito y el estado
+  const miss = useAppStore((s) => s.scrapeMisses.get(game.path));
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
 
@@ -108,12 +111,21 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
           </div>
         )}
         {/* Arriba a la derecha: favorito y, debajo, el estado del juego */}
-        {(game.favorite === "true" || badge) && (
+        {(game.favorite === "true" || badge || miss) && (
           <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-center gap-1 drop-shadow-lg">
             {game.favorite === "true" && <StarIcon size={16} className="text-yellow-400" />}
             {badge && (
               <span className="p-0.5 rounded bg-black/60" title={statusText(status, t)}>
                 <badge.icon size={13} className={badge.color} />
+              </span>
+            )}
+            {miss && (
+              <span
+                data-scrape-miss
+                className="w-[17px] h-[17px] flex items-center justify-center rounded bg-black/60 text-[11px] font-bold text-amber-400"
+                title={scrapeMissText(miss, locale)}
+              >
+                ?
               </span>
             )}
           </div>
