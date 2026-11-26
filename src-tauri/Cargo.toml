@@ -1,6 +1,6 @@
 [package]
 name = "meroms"
-version = "0.1.26"
+version = "0.1.27"
 description = "ROM manager for EmulationStation gamelist.xml files"
 authors = ["marcosesperon"]
 edition = "2021"
