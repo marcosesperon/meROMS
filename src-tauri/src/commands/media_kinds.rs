@@ -278,8 +278,14 @@ fn detect(layout: &Layout, system: &SystemRef, games: &[Game], progress: &Progre
         }
     }
 
+    // Todo al revés: se arregla intercambiando el sistema entero, no juego a juego (lo de cada
+    // carpeta se ha comparado con lo habitual, que también está al revés)
+    let looks_swapped = whole_system_swapped(cover_profile, shot_profile);
+    if looks_swapped {
+        proposals.clear();
+    }
     Ok(DetectResult {
-        looks_swapped: whole_system_swapped(cover_profile, shot_profile),
+        looks_swapped,
         cover_profile,
         screenshot_profile: shot_profile,
         proposals,
@@ -446,8 +452,14 @@ fn profile<'a>(images: impl Iterator<Item = &'a MediaFileInfo>) -> Option<MediaP
 fn whole_system_swapped(cover: Option<MediaProfile>, shot: Option<MediaProfile>) -> bool {
     let (Some(c), Some(s)) = (cover, shot) else { return false };
     let area = |p: MediaProfile| p.width as f64 * p.height as f64;
-    let ratio = c.width as f64 / c.height.max(1) as f64;
-    area(c) * 2.0 <= area(s) && (1.1..=1.5).contains(&ratio)
+    let ratio = |p: MediaProfile| p.width as f64 / p.height.max(1) as f64;
+    // La «portada» tiene forma de pantalla 4:3 y es bastante más pequeña que la «captura»
+    let screen_as_cover = area(c) * 2.0 <= area(s) && (1.1..=1.5).contains(&ratio(c));
+    // La «portada» es claramente apaisada y la «captura» claramente vertical, con forma de caja
+    // (MSX: 480×250 y 484×680). Una caja apaisada (SNES PAL, N64) va con capturas apaisadas, y
+    // las capturas verticales (recreativas de pantalla vertical) van con flyers verticales
+    let wide_cover_tall_shot = ratio(c) >= 1.15 && ratio(s) <= 0.87;
+    screen_as_cover || wide_cover_tall_shot
 }
 
 /// Tamaño de una imagen leyendo solo su cabecera. None si no se puede leer.
@@ -612,6 +624,18 @@ mod tests {
     }
 
     #[test]
+    fn portadas_apaisadas_y_capturas_verticales_es_todo_al_reves() {
+        let profile = |width, height| Some(MediaProfile { width, height });
+        // MSX: «portadas» de 480×250 y «capturas» con forma de caja
+        assert!(whole_system_swapped(profile(480, 250), profile(484, 680)));
+        // Normal: caja vertical y captura 4:3, o caja apaisada (SNES PAL) con captura apaisada
+        assert!(!whole_system_swapped(profile(484, 680), profile(320, 224)));
+        assert!(!whole_system_swapped(profile(640, 456), profile(256, 224)));
+        // Recreativa de pantalla vertical con flyer vertical
+        assert!(!whole_system_swapped(profile(500, 700), profile(224, 288)));
+    }
+
+    #[test]
     fn mismo_perfil_en_las_dos_carpetas_no_propone_nada() {
         let tmp = tempfile::tempdir().unwrap();
         let layout = esde(tmp.path());
@@ -692,3 +716,4 @@ mod tests {
         assert!(!system.rom_dir.join("images").exists());
     }
 }
+

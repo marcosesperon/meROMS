@@ -9,7 +9,7 @@ import { hasNotGameData, missingData, missingMedia } from "../../utils/collectio
 import { isBadReleaseDate } from "../../utils/format";
 import { MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
 import { getActiveProfile } from "../../utils/profiles";
-import { activeSources, planRename, renameOptionsFrom } from "../../utils/renameSources";
+import { planRename, previewRequest, renameOptionsFrom } from "../../utils/renameSources";
 import { CheckIcon } from "../common/Icons";
 
 /** Lo que «Arreglar» abre en el editor: las herramientas de un juego de siempre */
@@ -65,7 +65,7 @@ export function GameReviewModal({ systemPath, game, onClose, onFix }: GameReview
   useEffect(() => {
     let cancelled = false;
     const options = renameOptionsFrom(settings.rename_options);
-    const request = { sources: activeSources(options, scraperStatus), scraper: options.scraper, rules: options.rules, keep: options.keep };
+    const request = previewRequest(options, scraperStatus);
     Promise.all([
       renamePreview(systemPath, request, [game.path], false).catch(() => []),
       findDamagedMedia(systemPath, game.path).catch(() => []),

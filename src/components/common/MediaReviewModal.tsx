@@ -145,6 +145,18 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
               </button>
             </div>
           )}
+          {/* Sin aviso, el intercambio de todo el sistema sigue a mano (lo detectado puede fallar) */}
+          {result && !result.looks_swapped && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenSwap();
+              }}
+              className="mt-2 text-xs text-indigo-400 hover:text-indigo-300"
+            >
+              {t("mediaKinds.swapAnyLink")}
+            </button>
+          )}
           {!scanning && items.length > 0 && (
             <div className="flex items-center gap-4 mt-2 text-xs">
               <span className="text-zinc-500">{t("mediaKinds.found", { count: items.length })}</span>

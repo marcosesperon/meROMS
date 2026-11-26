@@ -49,13 +49,15 @@ pub struct UndoOp {
     pub refs: RefUndo,
     /// Entradas que la operación sacó de la gamelist (apartar), con su sistema: vuelven al deshacer
     pub removed: Vec<(String, Game)>,
+    /// Entradas repetidas fusionadas (sistema, la que quedó, las de antes): vuelven al deshacer
+    pub merged: Vec<(String, Game, Vec<Game>)>,
     /// Operación compuesta (Ponerlo todo en orden): sus partes, en el orden en que se hicieron
     pub parts: Vec<UndoOp>,
 }
 
 impl UndoOp {
     fn is_empty(&self) -> bool {
-        self.files.is_empty() && self.games.is_empty() && self.removed.is_empty() && self.parts.is_empty()
+        self.files.is_empty() && self.games.is_empty() && self.removed.is_empty() && self.merged.is_empty() && self.parts.is_empty()
     }
 
     /// Ficheros que mueve, contando los de sus partes
@@ -244,6 +246,18 @@ fn restore_removed(lists: &mut HashMap<String, GameList>, removed: &[(String, Ga
     }
 }
 
+/// Vuelve a poner las entradas repetidas que se fusionaron, en el sitio de la fusionada, si
+/// sigue ahí (una sola entrada con esa ruta)
+fn unmerge(lists: &mut HashMap<String, GameList>, merged: &[(String, Game, Vec<Game>)]) {
+    for (sys, after, before) in merged {
+        let Some(list) = lists.get_mut(sys) else { continue };
+        let positions: Vec<usize> = list.games.iter().enumerate().filter(|(_, g)| g.path == after.path).map(|(i, _)| i).collect();
+        if let [pos] = positions[..] {
+            list.games.splice(pos..=pos, before.iter().cloned());
+        }
+    }
+}
+
 fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     let mut result = UndoResult::default();
     // Compuesta: cada parte al revés, de la última a la primera
@@ -260,6 +274,7 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     // Gamelists de los sistemas tocados
     let mut systems: Vec<String> = op.games.iter().flat_map(|c| [c.before_sys.clone(), c.after_sys.clone()]).collect();
     systems.extend(op.removed.iter().map(|(sys, _)| sys.clone()));
+    systems.extend(op.merged.iter().map(|(sys, _, _)| sys.clone()));
     systems.sort();
     systems.dedup();
     let mut lists: HashMap<String, GameList> = HashMap::new();
@@ -268,7 +283,8 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     }
     undo_gamelists(&mut lists, &op.games);
     restore_removed(&mut lists, &op.removed);
-    if layout.writes_media_tags() || !op.removed.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
+    unmerge(&mut lists, &op.merged);
+    if layout.writes_media_tags() || !op.removed.is_empty() || !op.merged.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
         for (s, list) in &lists {
             super::gamelist::write_gamelist(layout, &SystemRef::from_rom_dir(s), list)?;
         }
@@ -317,6 +333,18 @@ fn rom(system: &SystemRef, path: &str) -> std::path::PathBuf {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn deshacer_una_fusion_devuelve_las_entradas_repetidas_a_su_sitio() {
+        let g = |path: &str, name: &str| Game { path: path.into(), name: Some(name.into()), ..Default::default() };
+        let before = vec![g("./Rep.bin", "Uno"), g("./Rep.bin", "Dos")];
+        let merged = g("./Rep.bin", "Dos");
+        let mut lists = HashMap::new();
+        lists.insert("sys".to_string(), GameList { games: vec![g("./A.bin", "A"), merged.clone(), g("./B.bin", "B")], ..Default::default() });
+        unmerge(&mut lists, &[("sys".to_string(), merged, before)]);
+        let names: Vec<_> = lists["sys"].games.iter().map(|x| x.name.clone().unwrap()).collect();
+        assert_eq!(names, ["A", "Uno", "Dos", "B"]);
+    }
 
     fn touch(path: &Path, text: &str) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();

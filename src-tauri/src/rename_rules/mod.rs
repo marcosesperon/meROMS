@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod goodtools;
 pub mod name_parts;
+pub mod titles;
 
 const DEFAULT_RULES_JSON: &str = include_str!("default_rules.json");
 

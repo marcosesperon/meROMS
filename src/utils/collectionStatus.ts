@@ -14,7 +14,7 @@ import {
 import { collectionRulesFrom } from "./collectionRules";
 import { hasMedia, MEDIA_FILTER_FIELDS } from "./mediaFilter";
 import { isBadReleaseDate } from "./format";
-import { activeSources, planRename, renameOptionsFrom } from "./renameSources";
+import { planRename, renameOptionsFrom, previewRequest } from "./renameSources";
 
 /**
  * Estado del sistema: qué no cumple lo que pide «Mi colección» (Ajustes). Lo caro (versiones,
@@ -30,6 +30,8 @@ import { activeSources, planRename, renameOptionsFrom } from "./renameSources";
 export type IssueKind =
   | "newRoms"
   | "missingRoms"
+  /** La misma ROM más de una vez en la gamelist */
+  | "entries"
   | "versions"
   | "names"
   | "arrmSort"
@@ -42,6 +44,8 @@ export type IssueKind =
   /** Sobrantes que son de un juego con otro nombre (Reaprovechar) */
   | "reuse"
   | "swapped"
+  /** Carátulas y capturas al revés en todo el sistema (se intercambia el sistema entero) */
+  | "swappedWhole"
   | "legacy"
   /** No encontrados por el scraper (solo informa: no hay nada que arreglar solo) */
   | "scrapeMiss";
@@ -50,6 +54,20 @@ export type IssueKind =
 export interface NamesStatus {
   files: string[];
   titles: string[];
+}
+
+/**
+ * ROMs con la entrada repetida: la misma ruta en más de un `<game>`. Sale de los juegos en
+ * memoria, sin preguntar al backend (qué entrada se queda lo decide la fusión, con el MD5).
+ */
+export function repeatedPaths(games: Game[]): Set<string> {
+  const seen = new Set<string>();
+  const repeated = new Set<string>();
+  for (const g of games) {
+    if (seen.has(g.path)) repeated.add(g.path);
+    else seen.add(g.path);
+  }
+  return repeated;
 }
 
 /** Cuántos ficheros y de qué juegos */
@@ -101,7 +119,7 @@ export function statusChecks(systemPath: string): { name: string; run: () => Pro
   return [
     {
       name: "versions",
-      run: () => findDuplicates(systemPath).then((groups) => ({ versions: groups.filter((g) => !g.discs).map((g) => g.games.map((x) => x.path)) })),
+      run: () => findDuplicates(systemPath).then((groups) => ({ versions: groups.map((g) => g.games.map((x) => x.path)) })),
     },
     { name: "legacy", run: () => planMediaNormalization(systemPath).then((list) => ({ legacy: items(list.filter((i) => i.status !== "conflict").map((i) => i.game_path)) })) },
     { name: "swapped", run: () => detectSwappedMedia(systemPath).then((r) => ({ swapped: items(r.proposals.map((p) => p.game_path)), swappedWhole: r.looks_swapped })) },
@@ -218,6 +236,8 @@ export function issueGames(kind: IssueKind, ctx: IssueContext): Set<string> | nu
       return new Set(ctx.games.filter(hasArrmSortname).map((g) => g.path));
     case "missingRoms":
       return ctx.missingRomPaths;
+    case "entries":
+      return repeatedPaths(ctx.games);
     case "scrapeMiss":
       return ctx.scrapeMisses;
     case "names":
@@ -263,7 +283,7 @@ export function issueContextOf(s: {
  */
 export async function checkNames(systemPath: string, saved: Partial<RenameOptions> | undefined, scraper: ScraperStatus): Promise<NamesStatus> {
   const options = renameOptionsFrom(saved);
-  const request = { sources: activeSources(options, scraper), scraper: options.scraper, rules: options.rules, keep: options.keep };
+  const request = previewRequest(options, scraper);
   const entries = await renamePreview(systemPath, request, undefined, false);
   const plans = entries.map((e) => planRename(e, options));
   return {

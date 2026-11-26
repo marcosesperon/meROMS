@@ -1,5 +1,5 @@
 import type { ArticleMode, NameScraper, NameSource, RenameEntry, RenameOptions, RenameRequest } from "../types";
-import type { ScraperStatus } from "../commands";
+import type { RenamePreviewOptions, ScraperStatus } from "../commands";
 import type { TranslationKeys } from "../i18n/en";
 import { articleToEnd, articleToFront } from "./articles";
 
@@ -106,14 +106,35 @@ export interface RenamePlan {
   changes: boolean;
 }
 
-/** Decide fichero y título de un juego: lo comparten la ventana de Renombrar y el renombrado automático */
+/** Lo que se pide a la vista previa del backend con estas opciones */
+export function previewRequest(options: RenameOptions, scraperStatus: ScraperStatus): RenamePreviewOptions {
+  return {
+    sources: activeSources(options, scraperStatus),
+    scraper: options.scraper,
+    rules: options.rules,
+    keep: options.keep,
+    article: options.article,
+    rename_files: options.renameFiles,
+    change_titles: options.changeTitles,
+  };
+}
+
+/**
+ * Decide fichero y título de un juego: lo comparten la ventana de Renombrar y el renombrado
+ * automático. El título propuesto viene del backend (`proposed_title`), ya repetido hasta que no
+ * cambia, así una pasada deja lo mismo que varias. Con un nombre de fichero escrito a mano se
+ * calcula aquí, con `proposedTitle` (la misma lógica que `rename_rules/titles.rs`).
+ */
 export function planRename(entry: RenameEntry, options: RenameOptions, typedFile?: string, typedTitle?: string): RenamePlan {
   const file = typedFile ?? entry.proposed_name;
   const invalid = !file.trim() || file.trim() !== file || FORBIDDEN.test(file);
   // Un conflicto se salva escribiendo otro nombre
   const blocked = invalid || (!!entry.conflict && file === entry.proposed_name);
   const fileChanges = options.renameFiles && hasExtension(entry) && file !== entry.current_name;
-  const title = typedTitle ?? proposedTitle(file, entry.game_title, options.article, entry.source !== "current", entry.current_name);
+  const typedName = typedFile !== undefined && typedFile !== entry.proposed_name;
+  const title =
+    typedTitle ??
+    (typedName ? proposedTitle(file, entry.game_title, options.article, entry.source !== "current", entry.current_name) : entry.proposed_title ?? entry.game_title ?? "");
   const titleChanges = options.changeTitles && !!title.trim() && title !== (entry.game_title ?? "");
   return { entry, file, title, invalid, blocked, fileChanges, titleChanges, changes: (fileChanges && !blocked) || titleChanges };
 }

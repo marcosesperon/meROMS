@@ -9,6 +9,7 @@ use crate::layout::{Layout, SystemRef};
 use crate::media;
 use crate::models::GameList;
 use crate::rename_rules::name_parts::{self, TagKeep};
+use crate::rename_rules::titles::{self, ArticleMode};
 use crate::rename_rules::CompiledRules;
 
 use super::progress::Progress;
@@ -23,6 +24,10 @@ pub struct RenameEntry {
     pub game_title: Option<String>,
     /// Proposed new filename (sanitized title, or the name cleaned by the rules)
     pub proposed_name: String,
+    /// Título propuesto para ese nombre (`rename_rules::titles`), ya estable: lo que quedaría
+    /// tras repetir la propuesta hasta que no cambie. None = el título no se toca
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub proposed_title: Option<String>,
     /// Which source gave the name: "dat" | "scraper" | "goodtools" | "title", or "current" (none did:
     /// the current name, only cleaned by the rules and the tag boxes)
     #[serde(default)]
@@ -61,8 +66,7 @@ pub enum NameSource {
     Title,
 }
 
-/// Todo lo que se elige en la pantalla de Renombrar para proponer el nombre de fichero
-/// (el título se saca en la ventana a partir de este nombre)
+/// Todo lo que se elige en la pantalla de Renombrar para proponer el nombre de fichero y el título
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenameOptions {
     /// Fuentes activas, por prioridad
@@ -76,7 +80,22 @@ pub struct RenameOptions {
     pub rules: bool,
     #[serde(default)]
     pub keep: TagKeep,
+    /// Dónde va el artículo del título propuesto
+    #[serde(default)]
+    pub article: ArticleMode,
+    /// «Renombrar ficheros» / «Cambiar títulos»: lo apagado no cambia al repetir la propuesta
+    #[serde(default = "yes")]
+    pub rename_files: bool,
+    #[serde(default = "yes")]
+    pub change_titles: bool,
 }
+
+fn yes() -> bool {
+    true
+}
+
+/// Vueltas como mucho al repetir la propuesta (en la práctica bastan dos o tres)
+const MAX_PROPOSE_ROUNDS: usize = 5;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RenameResult {
@@ -262,7 +281,56 @@ fn compose(name: &str, options: &RenameOptions, rules: &CompiledRules) -> String
     sanitize_filename(&format!("{} {}", base.trim(), tags))
 }
 
+/// Propuesta de un juego, repetida sobre su propio resultado hasta que deja de cambiar. El
+/// nombre de fichero puede salir del título («Datos de la gamelist») y el título sale del nombre
+/// de fichero, así que una vuelta sola a veces no basta: el artículo que se mueve al final del
+/// título, GoodTools que deja paso a la gamelist, las etiquetas que cambian de orden… Antes eso
+/// obligaba a renombrar dos o tres veces seguidas. Lo del DAT y del scraper va por el contenido
+/// de la ROM, así que sirve igual en todas las vueltas.
 fn propose(game: &crate::models::Game, options: &RenameOptions, rules: &CompiledRules, found: &Found) -> RenameEntry {
+    let first = propose_once(game, options, rules, found);
+    let mut state = game.clone();
+    let mut last = first.clone();
+    for round in 1..=MAX_PROPOSE_ROUNDS {
+        let file_changes = options.rename_files && last.can_rename;
+        let title_changes = last.proposed_title.is_some();
+        if !file_changes && !title_changes {
+            break;
+        }
+        // Como si ya se hubiera aplicado: el fichero nuevo (misma carpeta y extensión) y el título
+        if file_changes {
+            state.path = with_stem(&state.path, &last.proposed_name);
+        }
+        if title_changes {
+            state.name = last.proposed_title.clone();
+        }
+        if round < MAX_PROPOSE_ROUNDS {
+            last = propose_once(&state, options, rules, found);
+        }
+    }
+    // Lo que se enseña es el juego como está ahora, con el nombre y el título del final
+    let proposed_name = Path::new(&state.path).file_stem().and_then(|s| s.to_str()).unwrap_or(&first.current_name).to_string();
+    let proposed_title = state.name.clone().filter(|t| options.change_titles && !t.trim().is_empty() && Some(t) != game.name.as_ref());
+    RenameEntry {
+        can_rename: proposed_name != first.current_name && Path::new(&game.path).extension().is_some(),
+        proposed_name,
+        proposed_title,
+        ..first
+    }
+}
+
+/// La misma ruta con otro nombre de fichero (misma carpeta y extensión)
+fn with_stem(path: &str, stem: &str) -> String {
+    let p = Path::new(path);
+    let file = match p.extension().and_then(|e| e.to_str()) {
+        Some(ext) => format!("{stem}.{ext}"),
+        None => stem.to_string(),
+    };
+    p.with_file_name(file).to_string_lossy().replace('\\', "/")
+}
+
+/// Una vuelta: nombre de la fuente ganadora, compuesto, y el título que saldría de él
+fn propose_once(game: &crate::models::Game, options: &RenameOptions, rules: &CompiledRules, found: &Found) -> RenameEntry {
     let rom_path = Path::new(&game.path);
     let ext = rom_path
         .extension()
@@ -280,12 +348,19 @@ fn propose(game: &crate::models::Game, options: &RenameOptions, rules: &Compiled
         .unwrap_or_else(|| current_name.clone());
 
     let can_rename = proposed != current_name && !ext.is_empty();
+    // El fichero con el que se queda (si no se renombran ficheros, el de ahora)
+    let file = if options.rename_files && !ext.is_empty() { &proposed } else { &current_name };
+    let title = options
+        .change_titles
+        .then(|| titles::proposed_title(file, game.name.as_deref(), options.article, source != "current", &current_name))
+        .filter(|t| !t.trim().is_empty() && Some(t.as_str()) != game.name.as_deref());
 
     RenameEntry {
         current_path: game.path.clone(),
         current_name,
         game_title: game.name.clone(),
         proposed_name: proposed,
+        proposed_title: title,
         source: source.to_string(),
         can_rename,
         tracks: 0,
@@ -337,6 +412,7 @@ fn target_conflict(rom_dir: &Path, game_path: &str, new_name: &str) -> Option<St
         current_name: String::new(),
         game_title: None,
         proposed_name: new_name.to_string(),
+        proposed_title: None,
         source: String::new(),
         can_rename: true,
         tracks: 0,
@@ -819,11 +895,56 @@ mod tests {
     use crate::rename_rules::default_rules;
 
     fn options(sources: &[NameSource], rules: bool) -> RenameOptions {
-        RenameOptions { sources: sources.to_vec(), scraper: None, rules, keep: TagKeep::default() }
+        RenameOptions { sources: sources.to_vec(), scraper: None, rules, keep: TagKeep::default(), article: ArticleMode::Keep, rename_files: true, change_titles: true }
     }
 
     fn propose_with(game: &Game, opts: &RenameOptions, found: &Found) -> RenameEntry {
         propose(game, opts, &CompiledRules::new(&default_rules()), found)
+    }
+
+    /// Una pasada deja lo que dejarían varias: lo propuesto ya no cambia al volver a proponer
+    fn assert_stable(game: &Game, opts: &RenameOptions) -> RenameEntry {
+        let e = propose_with(game, opts, &Found::default());
+        let mut after = game.clone();
+        let ext = Path::new(&game.path).extension().and_then(|x| x.to_str()).unwrap_or("");
+        after.path = format!("./{}.{}", e.proposed_name, ext);
+        if let Some(t) = &e.proposed_title {
+            after.name = Some(t.clone());
+        }
+        let again = propose_with(&after, opts, &Found::default());
+        assert!(!again.can_rename && again.proposed_title.is_none(), "{e:?} -> {again:?}");
+        e
+    }
+
+    #[test]
+    fn una_pasada_basta_con_el_articulo() {
+        let opts = RenameOptions { article: ArticleMode::End, ..options(&[NameSource::Title], false) };
+        let mut game = Game { path: "./lkage.zip".into(), name: Some("The Legend of Kage".into()), ..Default::default() };
+        game.region = Some("us".into());
+        game.lang = Some("en".into());
+        let e = assert_stable(&game, &opts);
+        assert_eq!(e.proposed_name, "Legend of Kage, The (USA) (En)");
+        assert_eq!(e.proposed_title.as_deref(), Some("Legend of Kage, The"));
+    }
+
+    #[test]
+    fn una_pasada_basta_con_goodtools_y_la_gamelist() {
+        let opts = options(&[NameSource::Goodtools, NameSource::Title], false);
+        let mut game = Game { path: "./Wild Card (J) [!].wsc".into(), name: Some("Wild Card".into()), ..Default::default() };
+        game.region = Some("jp".into());
+        game.lang = Some("ja".into());
+        let e = assert_stable(&game, &opts);
+        assert_eq!(e.proposed_name, "Wild Card (Japan) (Ja)");
+        assert_eq!(e.proposed_title, None);
+    }
+
+    #[test]
+    fn con_los_ficheros_apagados_solo_cambia_el_titulo() {
+        let opts = RenameOptions { article: ArticleMode::End, rename_files: false, ..options(&[NameSource::Title], false) };
+        let game = Game { path: "./The Firemen.zip".into(), name: Some("The Firemen".into()), ..Default::default() };
+        let e = propose_with(&game, &opts, &Found::default());
+        assert!(!e.can_rename);
+        assert_eq!(e.proposed_title.as_deref(), Some("Firemen, The"));
     }
 
     /// Solo las reglas, como la antigua fuente «Reglas» (todas las etiquetas fuera)

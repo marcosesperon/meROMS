@@ -316,6 +316,8 @@ export interface RenameEntry {
   current_name: string;
   game_title?: string;
   proposed_name: string;
+  /** Título propuesto (ya estable: repetido hasta que no cambia); sin él, el título no cambia */
+  proposed_title?: string;
   /** Which source gave the name; "current" = none did (current name cleaned by rules/tag boxes) */
   source: NameSource | "current";
   can_rename: boolean;

@@ -134,7 +134,13 @@ pub(super) fn plan(layout: &Layout, system: &SystemRef, settings: &AppSettings, 
     // (p. ej. «images/Juego.png» sin sufijo sirve para cualquier campo; gana el primero)
     let mut sources: HashMap<PathBuf, PathBuf> = HashMap::new();
 
+    // Una ROM con la entrada repetida: solo cuenta la primera, que es la que cambia `apply`
+    // (si no, lo de la otra se proponía una y otra vez). Se arreglan con repeated_entries.rs
+    let mut seen: HashSet<&str> = HashSet::new();
     for game in games {
+        if !seen.insert(game.path.as_str()) {
+            continue;
+        }
         for field in media::media_fields() {
             let Some(field_kind) = media::kind_for_field(field) else { continue };
             let current = media::get_field(game, field).map(|v| media::resolve_media_path(system, v));

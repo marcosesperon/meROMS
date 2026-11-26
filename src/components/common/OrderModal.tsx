@@ -7,12 +7,12 @@ import { newTaskId, subscribeTask, type TaskProgressInfo } from "../../hooks/use
 import { useAppStore, type ToolRequest } from "../../store/useAppStore";
 import type { ScrapeProgress } from "../../types";
 import { collectionRulesFrom } from "../../utils/collectionRules";
-import { showMessage } from "../../utils/dialogs";
 import { bumpMediaVersion } from "../../utils/images";
 import { ORDER_STEPS, STEP_APPLIERS, STEP_PLANNERS, type OrderContext, type OrderStep, type StepPlan } from "../../utils/orderSteps";
 import { getActiveProfile } from "../../utils/profiles";
 import { renameOptionsFrom } from "../../utils/renameSources";
-import { reportWithUndo } from "../../utils/undo";
+import { runUndo } from "../../utils/undo";
+import { showOrderSummary, type StepSummary } from "./OrderSummaryDialog";
 import { TaskProgress } from "./TaskProgress";
 
 interface OrderModalProps {
@@ -154,7 +154,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
     const { loadGames, refreshUndo, loadSystems } = useAppStore.getState();
     stopRef.current = false;
     setStopping(false);
-    const summary: string[] = [];
+    const summary: StepSummary[] = [];
     const failed: string[] = [];
     // La suscripción al progreso de la operación en curso (una a la vez)
     const listening: { stop: (() => void) | null } = { stop: null };
@@ -179,10 +179,10 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
         try {
           // Cada paso mira la gamelist como la dejó el anterior
           const out = await STEP_APPLIERS[step](context(), runner);
-          if (out.lines.length) summary.push(`${t(`order.step_${step}` as TranslationKeys)}: ${out.lines.join(" · ")}`);
+          summary.push({ step, items: out.items });
           failed.push(...out.failed);
         } catch (e) {
-          failed.push(`${t(`order.step_${step}` as TranslationKeys)}: ${String(e)}`);
+          summary.push({ step, items: [], error: String(e) });
         }
         await loadGames(systemPath, { skipStatus: true });
       }
@@ -200,11 +200,9 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
       await refreshUndo();
     }
     onClose();
-    const lines = [t(stopRef.current ? "order.stoppedTitle" : "order.doneTitle"), "", ...(summary.length ? summary : [t("order.nothingDone")])];
-    lines.push("", t("order.backupNote"));
-    if (failed.length) lines.push("", t("order.failed", { count: failed.length }), ...failed.slice(0, 20));
-    if (useAppStore.getState().undoInfo) await reportWithUndo(lines.join("\n"));
-    else await showMessage(lines.join("\n"), failed.length ? "error" : "info");
+    // El resumen con un bloque por paso (OrderSummaryDialog); «Deshacer», como en los demás avisos
+    const undo = await showOrderSummary({ steps: summary, stopped: stopRef.current, failed, canUndo: !!useAppStore.getState().undoInfo });
+    if (undo) await runUndo();
   }
 
   return (

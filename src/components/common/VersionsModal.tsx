@@ -5,7 +5,7 @@ import { findDuplicates, removeGamesWithFiles, type DuplicateGroup } from "../..
 import { useTask } from "../../hooks/useTask";
 import { useAppStore } from "../../store/useAppStore";
 import type { VersionsAction } from "../../types";
-import { hasSetAsideDir, removeVersions, versionsToRemove } from "../../utils/collectionActions";
+import { hasSetAsideDir, keptVersion, removeVersions, versionsToRemove } from "../../utils/collectionActions";
 import { collectionRulesFrom } from "../../utils/collectionRules";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
@@ -68,11 +68,17 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
     }
   }
 
-  function toggle(path: string) {
+  /** Marca o desmarca el juego con todos los discos de su versión (se van o se quedan juntos) */
+  function toggle(group: DuplicateGroup, index: number) {
+    const path = group.games[index].path;
+    const together = group.games.filter((_, i) => group.versions[i] === group.versions[index]).map((g) => g.path);
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
+      const on = !next.has(path);
+      for (const p of together) {
+        if (on) next.add(p);
+        else next.delete(p);
+      }
       return next;
     });
   }
@@ -160,7 +166,7 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
                         <input
                           type="checkbox"
                           checked={selected.has(game.path)}
-                          onChange={() => toggle(game.path)}
+                          onChange={() => toggle(group, i)}
                           className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
                         />
                         <div className="flex-1 min-w-0">
@@ -169,7 +175,7 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
                           </span>
                           <span className="text-xs text-zinc-500 truncate block">{game.path}</span>
                         </div>
-                        {game.path === group.keep && !group.discs && (
+                        {keptVersion(group, i) && (
                           <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded shrink-0">{keepReason(group)}</span>
                         )}
                         {group.protected[i] && <span className="text-xs text-sky-400 bg-sky-400/10 px-2 py-0.5 rounded shrink-0">{t("duplicates.protected")}</span>}

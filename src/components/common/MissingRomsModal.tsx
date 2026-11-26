@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { listMissingRoms, removeGamesWithFiles, type MissingRoms } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
@@ -27,6 +27,12 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
   // Quitarlos: con progreso y Cancelar (se para entre tandas y guarda lo hecho)
   const removeTask = useTask();
   const removing = removeTask.running;
+  // Calculando qué ficheros se irían (antes de preguntar): con miles de juegos tarda, y más si el
+  // sistema aún se está analizando; mientras tanto el botón dice «Preparando…» y no se toca nada
+  const [preparing, setPreparing] = useState(false);
+  // Si se cierra la ventana mientras se prepara, ya no se pregunta
+  const openRef = useRef(open);
+  openRef.current = open;
 
   useEffect(() => {
     if (!open) {
@@ -62,9 +68,17 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
   }
 
   async function handleRemove() {
+    if (preparing) return;
     const paths = [...selected];
     try {
-      const plan = await removeGamesWithFiles(systemPath, paths, true);
+      setPreparing(true);
+      let plan;
+      try {
+        plan = await removeGamesWithFiles(systemPath, paths, true);
+      } finally {
+        setPreparing(false);
+      }
+      if (!openRef.current) return;
       if (!(await askConfirm(t("missingRoms.confirm", { games: plan.removed, files: plan.files.length })))) return;
       const result = await removeTask.run((task) => removeGamesWithFiles(systemPath, paths, false, task));
       if (!result) return;
@@ -93,10 +107,14 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
           {!scanning && games.length > 0 && (
             <div className="flex items-center gap-4 mt-2 text-xs">
               <span className="text-zinc-500">{t("missingRoms.found", { count: games.length })}</span>
-              <button onClick={() => setSelected(new Set(games.map((g) => g.path)))} className="text-indigo-400 hover:text-indigo-300">
+              <button
+                onClick={() => setSelected(new Set(games.map((g) => g.path)))}
+                disabled={preparing}
+                className="text-indigo-400 hover:text-indigo-300 disabled:opacity-50"
+              >
                 {t("rename.selectAll")}
               </button>
-              <button onClick={() => setSelected(new Set())} className="text-indigo-400 hover:text-indigo-300">
+              <button onClick={() => setSelected(new Set())} disabled={preparing} className="text-indigo-400 hover:text-indigo-300 disabled:opacity-50">
                 {t("rename.deselectAll")}
               </button>
             </div>
@@ -118,6 +136,7 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
                     type="checkbox"
                     checked={selected.has(g.path)}
                     onChange={() => toggle(g.path)}
+                    disabled={preparing}
                     className="rounded border-zinc-600 bg-zinc-700 text-indigo-600 shrink-0"
                   />
                   <div className="min-w-0">
@@ -140,10 +159,11 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
           {games.length > 0 && (
             <button
               onClick={handleRemove}
-              disabled={selected.size === 0 || removing}
-              className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={selected.size === 0 || removing || preparing}
+              className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {removing ? "..." : t("missingRoms.remove", { count: selected.size })}
+              {preparing && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" aria-hidden />}
+              {removing ? "..." : preparing ? t("duplicates.preparing") : t("missingRoms.remove", { count: selected.size })}
             </button>
           )}
         </div>

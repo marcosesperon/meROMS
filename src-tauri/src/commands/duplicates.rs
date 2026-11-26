@@ -23,8 +23,12 @@ pub struct DuplicateGroup {
     pub media: Vec<usize>,
     /// Favourite or played (same order as `games`): never marked automatically
     pub protected: Vec<bool>,
-    /// Different discs of one game ("(Disc 1)", "(Disc 2)"...): not marked automatically
+    /// Some version has several discs ("(Disc 1)", "(Disc 2)"...): each version goes or stays
+    /// with all its discs (only for the label)
     pub discs: bool,
+    /// Version of each game (same order as `games`): the discs of one version (and its .m3u)
+    /// share the number. `keep` stays with every game of its version
+    pub versions: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Default, serde::Serialize)]
@@ -163,7 +167,11 @@ fn find_duplicates_now(app: tauri::AppHandle, system_path: String, task: Option<
     let settings = super::settings::get_settings(app.clone())?;
     let (_, system) = super::system_context(&app, &system_path)?;
     let gamelist = crate::commands::gamelist::load_gamelist(app.clone(), system_path, task)?;
-    let games = &gamelist.games;
+    // The same ROM twice in the gamelist is not two versions: removing one would trash the ROM
+    // the other one uses. Only its first entry counts here (they are merged by repeated_entries.rs)
+    let mut seen = HashSet::new();
+    let unique: Vec<Game> = gamelist.games.iter().filter(|g| seen.insert(g.path.clone())).cloned().collect();
+    let games = &unique;
     // DAT groups (parent and clones, matched by content or by name), if the system has a DAT
     let dat_groups = super::dat::version_groups(&app, &system, games).unwrap_or_default();
     let mut groups: Vec<DuplicateGroup> = Vec::new();
@@ -171,28 +179,94 @@ fn find_duplicates_now(app: tauri::AppHandle, system_path: String, task: Option<
         let members: Vec<Game> = indices.iter().map(|&i| games[i].clone()).collect();
         suggest(reason, detail, members, &system, &settings.scrape_regions(), &settings.scrape_languages())
     };
-    for found in group_games(games, &dat_groups) {
-        groups.push(new_group(found.reason, found.detail, &found.members));
-    }
+    // A group that is only the discs of one version is one game, not a duplicate
+    groups.extend(group_games(games, &dat_groups).into_iter().filter_map(|found| new_group(found.reason, found.detail, &found.members)));
 
     Ok(groups)
 }
 
-/// Build a group with its suggestion: which game stays (best_version::pick_keeper), how many
-/// media files each one has and which ones are protected (favourite or played).
-fn suggest(reason: &str, detail: Option<String>, games: Vec<Game>, system: &SystemRef, regions: &[String], languages: &[String]) -> DuplicateGroup {
+/// Build a group with its suggestion: which version stays, how many media files each game has
+/// and which ones are protected (favourite or played). Versions, not games, are compared: the
+/// discs of one version (and its .m3u) go or stay together. None = the group is only one version
+/// (the discs of one game), so there is nothing to choose.
+fn suggest(reason: &str, detail: Option<String>, games: Vec<Game>, system: &SystemRef, regions: &[String], languages: &[String]) -> Option<DuplicateGroup> {
+    let versions = version_of_each(&games);
+    let count = versions.iter().max().map_or(0, |m| m + 1);
+    if count < 2 {
+        return None;
+    }
     let media: Vec<usize> = games.iter().map(|g| media_count(system, g)).collect();
-    let (keep, why) = super::best_version::pick_keeper(&games, &media, regions, languages);
-    DuplicateGroup {
+    // A protected disc protects its whole version
+    let protected_version: Vec<bool> = (0..count).map(|v| games.iter().zip(&versions).any(|(g, &w)| w == v && super::best_version::is_protected(g))).collect();
+    let protected = versions.iter().map(|&v| protected_version[v]).collect();
+
+    // One sample game per version (its first disc) with the media of all its discs
+    let discs_of = |v: usize| games.iter().zip(&versions).filter(|(g, &w)| w == v && disc_number(&g.path).is_some()).filter_map(|(g, _)| disc_number(&g.path)).collect::<HashSet<_>>().len();
+    let most_discs = (0..count).map(discs_of).max().unwrap_or(0);
+    // Versions with every disc first: one with a disc missing never stays over a complete one
+    let candidates: Vec<usize> = (0..count).filter(|&v| discs_of(v) == most_discs).collect();
+    let sample = |v: usize| versions.iter().position(|&w| w == v).unwrap_or(0);
+    let samples: Vec<Game> = candidates.iter().map(|&v| games[sample(v)].clone()).collect();
+    let sample_media: Vec<usize> = candidates.iter().map(|&v| versions.iter().zip(&media).filter(|(&w, _)| w == v).map(|(_, m)| m).sum()).collect();
+    let (best, why) = super::best_version::pick_keeper(&samples, &sample_media, regions, languages);
+    let why = if candidates.len() < count && candidates.len() == 1 { "complete" } else { why };
+    Some(DuplicateGroup {
         reason: reason.to_string(),
         detail,
-        keep: games[keep].path.clone(),
+        keep: games[sample(candidates[best])].path.clone(),
         keep_reason: why.to_string(),
-        protected: games.iter().map(super::best_version::is_protected).collect(),
-        discs: different_discs(&games),
+        protected,
+        discs: most_discs > 1,
+        versions,
         media,
         games,
+    })
+}
+
+/// The file name without its disc tag, lower case and without extension: the discs of one
+/// version share it ("FF7 (USA) (Disc 1).cue" and "(Disc 2)" -> "ff7 (usa)")
+fn version_key(path: &str) -> String {
+    static DISC_TAG: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| regex::Regex::new(r"(?i)\s*\((disc|disk|cd)\s*([0-9]+|[a-z])\b[^)]*\)").unwrap());
+    let stem = std::path::Path::new(path).file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    DISC_TAG.replace_all(&stem, "").trim().to_lowercase()
+}
+
+fn is_m3u(path: &str) -> bool {
+    std::path::Path::new(path).extension().is_some_and(|e| e.eq_ignore_ascii_case("m3u"))
+}
+
+/// Version number of each game. The discs of one version share the key and the extension (a
+/// .cue and a .chd of the same disc are two copies, two versions); a .m3u joins the discs with
+/// its key. Two games with the same disc number are never the same version.
+fn version_of_each(games: &[Game]) -> Vec<usize> {
+    let mut versions: Vec<(String, String, HashSet<String>)> = Vec::new();
+    let mut out = vec![0; games.len()];
+    let ext = |p: &str| std::path::Path::new(p).extension().map(|e| e.to_string_lossy().to_lowercase()).unwrap_or_default();
+    // The discs first, then the .m3u files (they join an existing version)
+    let mut order: Vec<usize> = (0..games.len()).collect();
+    order.sort_by_key(|&i| is_m3u(&games[i].path));
+    for i in order {
+        let path = &games[i].path;
+        let key = version_key(path);
+        let found = if is_m3u(path) {
+            versions.iter().position(|(k, _, _)| *k == key)
+        } else {
+            let (e, disc) = (ext(path), disc_number(path));
+            versions.iter().position(|(k, x, discs)| *k == key && *x == e && disc.as_ref().is_some_and(|d| !discs.contains(d)))
+        };
+        let v = match found {
+            Some(v) => v,
+            None => {
+                versions.push((key, ext(path), HashSet::new()));
+                versions.len() - 1
+            }
+        };
+        if let Some(d) = disc_number(path) {
+            versions[v].2.insert(d);
+        }
+        out[i] = v;
     }
+    out
 }
 
 /// Disc number from the file name: "(Disc 2)", "(Disk 2 of 3)", "(CD2)" -> "2"
@@ -203,12 +277,6 @@ fn disc_number(path: &str) -> Option<String> {
         let number: String = rest.trim_start().chars().take_while(|c| c.is_ascii_alphanumeric()).collect();
         (!number.is_empty()).then_some(number)
     })
-}
-
-/// True when the group has at least two different disc numbers (they are not copies)
-fn different_discs(games: &[Game]) -> bool {
-    let numbers: HashSet<String> = games.iter().filter_map(|g| disc_number(&g.path)).collect();
-    numbers.len() > 1
 }
 
 /// Media files of a game: its media fields that point to an existing file (in ES-DE the
@@ -463,10 +531,13 @@ mod tests {
         assert_eq!(disc_number("./FF7 (Disk 1 of 3).chd").as_deref(), Some("1"));
         assert_eq!(disc_number("./Game (CD2).iso").as_deref(), Some("2"));
         assert_eq!(disc_number("./Sonic (USA).md"), None);
-        assert!(different_discs(&[game("./FF7 (Disc 1).cue"), game("./FF7 (Disc 2).cue")]));
-        // Same disc in two regions: copies, so they can be marked
-        assert!(!different_discs(&[game("./FF7 (USA) (Disc 1).cue"), game("./FF7 (Europe) (Disc 1).cue")]));
-        assert!(!different_discs(&[game("./Sonic (USA).md"), game("./Sonic (Europe).md")]));
+        // Discs of one version share it; the same disc in two regions or two formats are two versions
+        let v = |paths: &[&str]| version_of_each(&paths.iter().map(|p| game(p)).collect::<Vec<_>>());
+        assert_eq!(v(&["./FF7 (Disc 1).cue", "./FF7 (Disc 2).cue", "./FF7.m3u"]), vec![0, 0, 0]);
+        assert_eq!(v(&["./FF7 (USA) (Disc 1).cue", "./FF7 (Europe) (Disc 1).cue"]), vec![0, 1]);
+        assert_eq!(v(&["./FF7 (Disc 1).cue", "./FF7 (Disc 1).chd"]), vec![0, 1]);
+        assert_eq!(v(&["./Sonic (USA).md", "./Sonic (Europe).md"]), vec![0, 1]);
+        assert_eq!(version_key("./Discovery (Discovery Channel).iso"), "discovery (discovery channel)");
     }
 
     #[test]
@@ -476,5 +547,39 @@ mod tests {
         let plan = files_to_remove(&Layout::Classic, &system, &[game("./Nada.sms")], &["./Nada.sms".into()]);
         assert!(plan[0].1.is_none());
         assert!(plan[0].2.is_empty());
+    }
+
+    fn suggest_for(paths: &[&str]) -> Option<DuplicateGroup> {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path());
+        let games = paths.iter().map(|p| game(p)).collect();
+        suggest("similar_name", None, games, &system, &["eu".to_string()], &["es".to_string()])
+    }
+
+    #[test]
+    fn the_discs_of_one_version_are_not_a_duplicate() {
+        assert!(suggest_for(&["./Atlantis (Europe) (Disc 1).chd", "./Atlantis (Europe) (Disc 2).chd", "./Atlantis (Europe) (Disc 3).chd"]).is_none());
+    }
+
+    #[test]
+    fn versions_with_several_discs_go_or_stay_whole() {
+        let g = suggest_for(&["./Legend (USA) (Disc 1).chd", "./Legend (USA) (Disc 2).chd", "./Legend (Europe) (Disc 1).chd", "./Legend (Europe) (Disc 2).chd"]).unwrap();
+        assert!(g.discs);
+        assert_eq!(g.versions, vec![0, 0, 1, 1]);
+        assert_eq!(g.keep, "./Legend (Europe) (Disc 1).chd", "the user's region");
+        // A complete version stays over the user's region with a disc missing
+        let g = suggest_for(&["./Legend (USA) (Disc 1).chd", "./Legend (USA) (Disc 2).chd", "./Legend (Europe) (Disc 1).chd"]).unwrap();
+        assert_eq!(g.keep, "./Legend (USA) (Disc 1).chd");
+        assert_eq!(g.keep_reason, "complete");
+    }
+
+    #[test]
+    fn a_protected_disc_protects_its_version() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path());
+        let mut games: Vec<Game> = ["./L (USA) (Disc 1).chd", "./L (USA) (Disc 2).chd", "./L (Europe) (Disc 1).chd", "./L (Europe) (Disc 2).chd"].iter().map(|p| game(p)).collect();
+        games[1].favorite = Some("true".into());
+        let g = suggest("similar_name", None, games, &system, &["eu".to_string()], &[]).unwrap();
+        assert_eq!(g.protected, vec![true, true, false, false]);
     }
 }

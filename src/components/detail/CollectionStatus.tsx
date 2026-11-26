@@ -3,7 +3,7 @@ import { useTranslation } from "../../i18n";
 import type { TranslationKeys } from "../../i18n/en";
 import { useAppStore, type ToolRequest } from "../../store/useAppStore";
 import { collectionRulesFrom } from "../../utils/collectionRules";
-import { hasArrmSortname, hasInvalidData, lacksData, missingMedia, type IssueKind, type StatusItems } from "../../utils/collectionStatus";
+import { hasArrmSortname, hasInvalidData, lacksData, missingMedia, repeatedPaths, type IssueKind, type StatusItems } from "../../utils/collectionStatus";
 import { formatAgo } from "../../utils/format";
 import { getActiveProfile } from "../../utils/profiles";
 import type { OrderStep } from "../../utils/orderSteps";
@@ -83,6 +83,7 @@ export function CollectionStatus() {
   const noMedia = games.filter((g) => missingMedia(g, rules, broken, isEsde).length > 0).length;
   const invalid = games.filter(hasInvalidData).length;
   const arrmSort = games.filter(hasArrmSortname).length;
+  const repeated = repeatedPaths(games).size;
 
   // Línea de medios: se ve en su pestaña de la ventana Medios y la arregla «Limpiar medios»
   const mediaLine = (kind: IssueKind, part: StatusItems | undefined, count: (p: StatusItems) => number, key: TranslationKeys, tab: string): StatusLine => ({
@@ -100,6 +101,8 @@ export function CollectionStatus() {
       items: [
         { kind: "newRoms", values: [newRoms], text: ([n]) => t("colstatus.newRoms", { count: n }), filter: false, view: { id: "newRoms" }, fix: "roms" },
         { kind: "missingRoms", values: [missingRoms], text: ([n]) => t("colstatus.missingRoms", { count: n }), filter: true, view: { id: "missingRoms" }, fix: "roms" },
+        // La misma ROM dos veces: no hay ventana propia, el número filtra la lista
+        { kind: "entries", values: [repeated], text: ([n]) => t("colstatus.entries", { count: n }), filter: true, fix: "roms" },
       ],
     },
     {
@@ -147,6 +150,15 @@ export function CollectionStatus() {
       items: [
         mediaLine("legacy", parts.legacy, (p) => p.files, "colstatus.legacy", "legacy"),
         mediaLine("swapped", parts.swapped, (p) => p.games.length, "colstatus.swapped", "swapped"),
+        // Todo el sistema al revés: sin número ni filtro (son todos); lo arregla el paso de medios
+        {
+          kind: "swappedWhole",
+          values: parts.swappedWhole === undefined ? null : [parts.swappedWhole ? 1 : 0],
+          text: () => t("colstatus.swappedWhole"),
+          filter: false,
+          view: { id: "media", tab: "swapped" },
+          fix: "media",
+        },
         mediaLine("damaged", parts.damaged, (p) => p.files, "colstatus.damaged", "damaged"),
         mediaLine("placeholders", parts.placeholders, (p) => p.files, "colstatus.placeholders", "damaged"),
         // Primero lo que se puede aprovechar; los sobrantes de verdad son los demás

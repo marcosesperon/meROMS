@@ -28,7 +28,7 @@ type FolderSig = (usize, u64);
 
 /// Sube cuando cambia lo que se comprueba (p. ej. Normalizar también busca por el título):
 /// lo guardado con otra versión no vale y se vuelve a mirar
-const STATUS_VERSION: u32 = 4;
+const STATUS_VERSION: u32 = 6;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Signature {

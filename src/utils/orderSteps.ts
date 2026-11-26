@@ -9,6 +9,9 @@ import {
   findUnusedMedia,
   listMissingRoms,
   listNewRoms,
+  findRepeatedEntries,
+  mergeRepeatedEntries,
+  type RepeatedEntry,
   planMediaNormalization,
   removeGamesWithFiles,
   renamePreview,
@@ -27,8 +30,9 @@ import { DATA_FIELDS as POLICY_DATA_FIELDS } from "../components/common/ScrapePo
 import { AVAILABLE_MEDIA_TYPES } from "../types";
 import { hasSetAsideDir, mediaAction, removeMedia, removeVersions, versionsToRemove } from "./collectionActions";
 import { hasArrmSortname, hasInvalidData, hasNotGameData, lacksData, missingMedia, requiredMediaFields, withoutInvalidData } from "./collectionStatus";
-import { activeSources, planRename, renameRequestOf } from "./renameSources";
+import { planRename, renameRequestOf, previewRequest } from "./renameSources";
 import { applyReuse } from "./mediaReuse";
+import { outcomeItem, type OutcomeItem } from "./outcome";
 
 /**
  * «Ponerlo todo en orden»: los pasos, en este orden y por esto:
@@ -83,9 +87,9 @@ export interface StepRunner {
   stopped: () => boolean;
 }
 
-/** Resumen de lo hecho en un paso */
+/** Resumen de lo hecho en un paso: piezas con su número (el resumen las enseña destacadas) */
 export interface StepOutcome {
-  lines: string[];
+  items: OutcomeItem[];
   failed: string[];
 }
 
@@ -95,8 +99,14 @@ const nameOf = (path: string) => path.replace(/^.*\//, "");
 // ---------- 1. ROMs ----------
 
 async function gatherRoms(ctx: OrderContext) {
-  const [news, missing] = await Promise.all([ctx.scope ? Promise.resolve([]) : listNewRoms(ctx.systemPath), listMissingRoms(ctx.systemPath)]);
+  const [news, missing, repeated] = await Promise.all([
+    ctx.scope ? Promise.resolve([]) : listNewRoms(ctx.systemPath),
+    listMissingRoms(ctx.systemPath),
+    findRepeatedEntries(ctx.systemPath),
+  ]);
   return {
+    // La misma ROM más de una vez: se deja una entrada (lo primero, para que lo demás vea una sola)
+    repeated: repeated.filter((r) => inScope(ctx)(r.path)),
     // Las de extensión rara salen desmarcadas en ROMs nuevas: aquí no se añaden solas
     newRoms: news.filter((r) => r.known_extension),
     // Si faltan todas, la carpeta o el disco no está conectado: no se quita nada
@@ -106,31 +116,43 @@ async function gatherRoms(ctx: OrderContext) {
 }
 
 async function planRoms(ctx: OrderContext): Promise<StepPlan> {
-  const { newRoms, missing, disconnected } = await gatherRoms(ctx);
+  const { repeated, newRoms, missing, disconnected } = await gatherRoms(ctx);
   const lines: string[] = [];
+  if (repeated.length) lines.push(translate("order.romsMerge", { count: repeated.length }));
   if (newRoms.length) lines.push(translate("order.romsAdd", { count: newRoms.length }));
   if (missing.length) lines.push(translate(mediaAction(ctx.rules) === "set_aside" ? "order.romsRemoveSetAside" : "order.romsRemove", { count: missing.length }));
   if (disconnected) lines.push(translate("order.romsDisconnected"));
-  const examples = [...newRoms.slice(0, 2).map((r) => `+ ${r.proposed_name}`), ...missing.slice(0, 2).map((g) => `− ${g.name || nameOf(g.path)}`)];
-  return { step: "roms", count: newRoms.length + missing.length, lines, examples };
+  const examples = [...repeated.slice(0, 2).map(mergeExample), ...newRoms.slice(0, 2).map((r) => `+ ${r.proposed_name}`), ...missing.slice(0, 2).map((g) => `− ${g.name || nameOf(g.path)}`)];
+  return { step: "roms", count: repeated.length + newRoms.length + missing.length, lines, examples };
+}
+
+/** «Spider-Man: se queda la de 1991 · SEGA» */
+function mergeExample(r: RepeatedEntry): string {
+  const keep = r.entries[r.keep];
+  const what = [keep.year, keep.publisher || keep.developer].filter(Boolean).join(" · ") || keep.name || "";
+  return `= ${translate("order.romsMergeKeep", { name: keep.name || nameOf(r.path), what })}`;
 }
 
 async function applyRoms(ctx: OrderContext, run: StepRunner): Promise<StepOutcome> {
-  const { newRoms, missing } = await gatherRoms(ctx);
-  const out: StepOutcome = { lines: [], failed: [] };
+  const { repeated, newRoms, missing } = await gatherRoms(ctx);
+  const out: StepOutcome = { items: [], failed: [] };
+  if (repeated.length) {
+    const r = await mergeRepeatedEntries(ctx.systemPath, repeated.map((x) => x.path));
+    out.items.push(outcomeItem("order.romsMerged", r.merged));
+  }
   if (newRoms.length) {
     const added = await addNewRoms(ctx.systemPath, newRoms.map((r) => ({ path: r.path, name: r.proposed_name })), run.task());
-    out.lines.push(translate("order.romsAdded", { count: added }));
+    out.items.push(outcomeItem("order.romsAdded", added));
   }
   if (missing.length && !run.stopped()) {
     const paths = missing.map((g) => g.path);
     if (mediaAction(ctx.rules) === "set_aside") {
       const r = await setAsideGames(ctx.systemPath, paths, run.task());
-      out.lines.push(translate("order.romsRemoved", { count: r.moved }));
+      out.items.push(outcomeItem("order.romsRemoved", r.moved));
       out.failed.push(...r.skipped);
     } else {
       const r = await removeGamesWithFiles(ctx.systemPath, paths, false, run.task());
-      out.lines.push(translate("order.romsRemoved", { count: r.removed }));
+      out.items.push(outcomeItem("order.romsRemoved", r.removed));
       out.failed.push(...r.failed);
     }
   }
@@ -165,10 +187,10 @@ async function planVersions(ctx: OrderContext): Promise<StepPlan> {
 }
 
 async function applyVersions(ctx: OrderContext, run: StepRunner): Promise<StepOutcome> {
-  if (versionsBlocked(ctx)) return { lines: [], failed: [] };
+  if (versionsBlocked(ctx)) return { items: [], failed: [] };
   const { remove } = await gatherVersions(ctx);
   const r = await removeVersions(ctx.systemPath, remove, ctx.rules.versions_action, run.task());
-  return { lines: r.line ? [r.line] : [], failed: r.failed };
+  return { items: r.item ? [r.item] : [], failed: r.failed };
 }
 
 // ---------- 3. Medios ----------
@@ -178,7 +200,15 @@ async function gatherRelocate(ctx: OrderContext) {
   return {
     legacy: legacy.filter((i) => i.status !== "conflict" && inScope(ctx)(i.game_path)),
     swapped: swapped.proposals.filter((p) => inScope(ctx)(p.game_path)),
+    // Todo el sistema al revés: se intercambian carátula y captura de todos los juegos que tengan alguna
+    whole: swapped.looks_swapped ? wholeSwapGames(ctx) : [],
+    profiles: { cover: swapped.cover_profile, shot: swapped.screenshot_profile },
   };
+}
+
+/** Juegos del ámbito con carátula o captura (los que entran en el intercambio de todo el sistema) */
+function wholeSwapGames(ctx: OrderContext): Game[] {
+  return useAppStore.getState().games.filter((g) => inScope(ctx)(g.path) && (g.image || g.thumbnail));
 }
 
 /** Sobrantes que son de un juego (y ficheros de referencias rotas): se incorporan con la propuesta */
@@ -205,9 +235,10 @@ async function gatherLeftovers(ctx: OrderContext) {
 }
 
 async function planMedia(ctx: OrderContext): Promise<StepPlan> {
-  const [{ legacy, swapped }, { damaged, placeholderFiles, unused: allUnused }, reuse] = await Promise.all([gatherRelocate(ctx), gatherLeftovers(ctx), gatherReuse(ctx)]);
+  const [{ legacy, swapped, whole, profiles }, { damaged, placeholderFiles, unused: allUnused }, reuse] = await Promise.all([gatherRelocate(ctx), gatherLeftovers(ctx), gatherReuse(ctx)]);
   const action = mediaAction(ctx.rules);
   const lines: string[] = [];
+  if (whole.length) lines.push(translate("order.mediaSwapWhole", { count: whole.length }));
   if (legacy.length) lines.push(translate("order.mediaLegacy", { count: legacy.length }));
   if (swapped.length) lines.push(translate("order.mediaSwapped", { count: swapped.length }));
   // Lo que se aprovecha no cuenta como sobrante (aunque su copia peor también se vaya)
@@ -219,26 +250,34 @@ async function planMedia(ctx: OrderContext): Promise<StepPlan> {
   if (placeholderFiles.length) lines.push(translate("order.mediaPlaceholders", { count: placeholderFiles.length }));
   if (unused.length) lines.push(translate("order.mediaUnused", { count: unused.length }));
   if (gone) lines.push(translate(action === "set_aside" ? "order.mediaToSetAside" : "order.mediaToTrash"));
+  const size = (p: { width: number; height: number } | null) => (p ? `${p.width}×${p.height}` : "?");
   const examples = [
+    ...(whole.length ? [translate("order.mediaSwapWholeExample", { cover: size(profiles.cover), shot: size(profiles.shot) })] : []),
     ...legacy.slice(0, 2).map((i) => `${i.from_relative} → ${i.to_relative}`),
     ...swapped.slice(0, 1).map((p) => translate("order.mediaSwappedExample", { name: p.game_name })),
     ...reuse.filter((i) => i.keep_new).slice(0, 2).map((i) => `${i.relative} → ${i.game_name}`),
   ];
-  return { step: "media", count: legacy.length + swapped.length + reuse.length + gone, lines, examples };
+  return { step: "media", count: whole.length + legacy.length + swapped.length + reuse.length + gone, lines, examples };
 }
 
 async function applyMedia(ctx: OrderContext, run: StepRunner): Promise<StepOutcome> {
-  const out: StepOutcome = { lines: [], failed: [] };
+  const out: StepOutcome = { items: [], failed: [] };
   // Primero lo que se recoloca (así lo que se mueve a su sitio ya no cuenta como sobrante)
-  const { legacy, swapped } = await gatherRelocate(ctx);
-  if (legacy.length) {
+  const { legacy, swapped, whole } = await gatherRelocate(ctx);
+  // Lo primero, el sistema entero al revés (lo demás se compara con lo habitual, que estaba al revés)
+  if (whole.length) {
+    const r = await swapMedia(ctx.systemPath, whole.map((g) => g.path), "image", "thumbnail", run.task());
+    out.items.push(outcomeItem("order.resSwapped", r.swapped));
+    out.failed.push(...r.skipped);
+  }
+  if (legacy.length && !run.stopped()) {
     const r = await applyMediaNormalization(ctx.systemPath, legacy, run.task());
-    out.lines.push(translate("normalize.done", { moved: r.moved, linked: r.linked }));
+    out.items.push(outcomeItem("order.resMoved", r.moved), outcomeItem("order.resLinked", r.linked));
     out.failed.push(...r.skipped);
   }
   if (swapped.length && !run.stopped()) {
     const r = await swapMedia(ctx.systemPath, swapped.map((p) => p.game_path), "image", "thumbnail", run.task());
-    out.lines.push(translate("mediaKinds.done", { swapped: r.swapped }));
+    out.items.push(outcomeItem("order.resSwapped", r.swapped));
     out.failed.push(...r.skipped);
   }
   if (run.stopped()) return out;
@@ -246,7 +285,7 @@ async function applyMedia(ctx: OrderContext, run: StepRunner): Promise<StepOutco
   const reuse = await gatherReuse(ctx);
   if (reuse.length) {
     const r = await applyReuse(ctx.systemPath, reuse, (i) => i.keep_new, mediaAction(ctx.rules), run.task());
-    out.lines.push(...r.lines);
+    out.items.push(...r.items);
     out.failed.push(...r.failed);
   }
   if (run.stopped()) return out;
@@ -255,7 +294,7 @@ async function applyMedia(ctx: OrderContext, run: StepRunner): Promise<StepOutco
   const paths = [...new Set([...damaged, ...placeholderFiles, ...unused])];
   if (paths.length || fillers.length) {
     const r = await removeMedia(ctx.systemPath, paths, mediaAction(ctx.rules), fillers, run.task());
-    if (r.line) out.lines.push(r.line);
+    if (r.item) out.items.push(r.item);
     out.failed.push(...r.failed);
   }
   return out;
@@ -325,29 +364,29 @@ async function planScrape(ctx: OrderContext): Promise<StepPlan> {
 }
 
 async function applyScrape(ctx: OrderContext): Promise<StepOutcome> {
-  const lines: string[] = [];
+  const items: OutcomeItem[] = [];
   // Primero, fuera los datos no válidos del scraper (así «solo si está vacío» puede rellenarlos)
   const invalid = new Set(invalidGames(ctx).map((g) => g.path));
   if (invalid.size) {
     const { games, folders, provider, loadGames } = useAppStore.getState();
     await saveGamelist(ctx.systemPath, { games: games.map((g) => (invalid.has(g.path) ? withoutInvalidData(g) : g)), folders: folders || [], provider });
     await loadGames(ctx.systemPath, { skipStatus: true });
-    lines.push(translate("order.scrapeInvalidDone", { count: invalid.size }));
+    items.push(outcomeItem("order.scrapeInvalidDone", invalid.size));
   }
-  if (!ctx.canScrape) return { lines, failed: [] };
+  if (!ctx.canScrape) return { items, failed: [] };
   const { games } = gatherScrape(ctx);
-  if (games.length === 0) return { lines, failed: [] };
+  if (games.length === 0) return { items, failed: [] };
   // La lista ya viene sin los no encontrados (si no se pidió reintentarlos): va tal cual
   const r = await scrapeSystem(ctx.systemPath, games.map((g) => g.path), requiredScrapePolicy(ctx.rules, ctx.isEsde), false, true);
-  lines.push(translate(r.stopped ? "order.scrapeStopped" : "order.scrapeDone", { count: games.length }));
-  return { lines, failed: [] };
+  items.push(r.stopped ? outcomeItem("order.scrapeStopped") : outcomeItem("order.scrapeDone", games.length));
+  return { items, failed: [] };
 }
 
 // ---------- 5. Nombres y títulos ----------
 
 async function gatherNames(ctx: OrderContext) {
   const o = ctx.renameOptions;
-  const request = { sources: activeSources(o, ctx.scraperStatus), scraper: o.scraper, rules: o.rules, keep: o.keep };
+  const request = previewRequest(o, ctx.scraperStatus);
   const entries = await renamePreview(ctx.systemPath, request, ctx.scope ? [...ctx.scope] : undefined, false);
   return entries.map((e) => planRename(e, o)).filter((p) => p.changes);
 }
@@ -369,7 +408,7 @@ async function planNames(ctx: OrderContext): Promise<StepPlan> {
 }
 
 async function applyNames(ctx: OrderContext, run: StepRunner): Promise<StepOutcome> {
-  const lines: string[] = [];
+  const items: OutcomeItem[] = [];
   // Primero, fuera el nombre para ordenar de ARRM (una escritura de la gamelist)
   const stale = new Set(arrmSortGames(ctx).map((g) => g.path));
   if (stale.size) {
@@ -382,14 +421,14 @@ async function applyNames(ctx: OrderContext, run: StepRunner): Promise<StepOutco
     });
     await saveGamelist(ctx.systemPath, { games: updated, folders: folders || [], provider });
     await loadGames(ctx.systemPath, { skipStatus: true });
-    lines.push(translate("order.namesArrmSortDone", { count: stale.size }));
+    items.push(outcomeItem("order.namesArrmSortDone", stale.size));
   }
-  if (run.stopped()) return { lines, failed: [] };
+  if (run.stopped()) return { items, failed: [] };
   const plans = await gatherNames(ctx);
-  if (plans.length === 0) return { lines, failed: [] };
+  if (plans.length === 0) return { items, failed: [] };
   const r = await renameRoms(ctx.systemPath, plans.map(renameRequestOf), run.task());
-  lines.push(translate("rename.done", { count: r.renamed }), translate("rename.doneTitles", { count: r.titled }));
-  return { lines, failed: r.skipped };
+  items.push(outcomeItem("rename.done", r.renamed), outcomeItem("rename.doneTitles", r.titled));
+  return { items, failed: r.skipped };
 }
 
 // ---------- Todos ----------

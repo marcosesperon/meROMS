@@ -54,6 +54,7 @@ import { RaCheckModal } from "./components/common/RaCheckModal";
 import { shotsRunning, startShots } from "./dev/shots";
 import { GlobalSearch } from "./components/common/GlobalSearch";
 import { ResultDialog } from "./components/common/ResultDialog";
+import { OrderSummaryDialog } from "./components/common/OrderSummaryDialog";
 import { ChoiceDialog } from "./components/common/ChoiceDialog";
 import { TransferProfileModal } from "./components/common/TransferProfileModal";
 import { DonationModal } from "./components/common/DonationModal";
@@ -704,6 +705,7 @@ function App() {
       {/* Global search (Cmd+K / Ctrl+K) */}
       <GlobalSearch />
       <ResultDialog />
+      <OrderSummaryDialog />
       <ChoiceDialog />
       <TransferProfileModal open={isTool("transfer")} system={selectedSystem} onClose={closeTool} />
     </MainLayout>

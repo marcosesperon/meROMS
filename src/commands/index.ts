@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, ReusableMedia, PendingStructure, Profile, RenameResult, RenameRule, NameSource, NameScraper, TagKeep, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile } from "../types";
+import type { MediaProfile, AppSettings, BackupEntry, EsdeDetectedPaths, Folder, MigrationMode, MigrationReport, NewRom, NewRomEntry, DetectResult, TrashResult, ScrapePolicy, RepeatedMedia, BrokenMediaRef, SwapResult, NormalizeItem, NormalizeResult, ReusableMedia, PendingStructure, Profile, RenameResult, RenameRule, NameSource, NameScraper, TagKeep, RuleTestResult, Game, GameList, RenameEntry, RenameRequest, ScrapeResult, ScrapeResumeInfo, ScrapeRunResult, ScrapeSearch, SystemInfo, UnusedMediaFile , ArticleMode } from "../types";
 
 export async function getSettings(): Promise<AppSettings> {
   return invoke("get_settings");
@@ -230,12 +230,24 @@ export async function trashMedia(systemPath: string, paths: string[], task?: str
   return invoke("trash_media", { systemPath, paths, task });
 }
 
+/** Lo que la vista previa de Renombrar necesita saber (ver `previewRequest` en utils/renameSources) */
+export interface RenamePreviewOptions {
+  sources: NameSource[];
+  scraper: NameScraper;
+  rules: boolean;
+  keep: TagKeep;
+  /** Para el título propuesto, que el backend repite hasta que no cambia */
+  article: ArticleMode;
+  rename_files: boolean;
+  change_titles: boolean;
+}
+
 /** With gamePath, only that game is proposed (game detail panel). scraper: which one, for the "scraper" source. */
 /** Vista previa de Renombrar: el nombre de fichero propuesto para cada juego (todos o `gamePaths`).
  *  El scraper solo se pregunta con `askScraper` (botón Buscar); si no, vale su caché. */
 export async function renamePreview(
   systemPath: string,
-  options: { sources: NameSource[]; scraper: NameScraper; rules: boolean; keep: TagKeep },
+  options: RenamePreviewOptions,
   gamePaths: string[] | undefined,
   askScraper: boolean,
   task?: string
@@ -725,8 +737,10 @@ export interface DuplicateGroup {
   media: number[];
   /** Favourite or played (same order as games): never marked automatically */
   protected: boolean[];
-  /** Different discs of one game: the group is not marked automatically */
+  /** Some version has several discs: each version goes or stays with all its discs (label only) */
   discs: boolean;
+  /** Version of each game (same order as `games`): the discs of one version share it */
+  versions: number[];
 }
 
 export async function findDuplicates(systemPath: string, task?: string): Promise<DuplicateGroup[]> {
@@ -770,6 +784,33 @@ export async function planMediaNormalization(systemPath: string, gamePath?: stri
 
 export async function applyMediaNormalization(systemPath: string, items: NormalizeItem[], task?: string): Promise<NormalizeResult> {
   return invoke("apply_media_normalization", { systemPath, items, task });
+}
+
+// Entradas repetidas: la misma ROM más de una vez en la gamelist (repeated_entries.rs)
+export interface RepeatedEntrySummary {
+  name: string | null;
+  year: string | null;
+  developer: string | null;
+  publisher: string | null;
+  /** Su MD5 es el de la ROM */
+  matches_rom: boolean;
+  filled: number;
+}
+
+export interface RepeatedEntry {
+  path: string;
+  entries: RepeatedEntrySummary[];
+  /** La que se queda (posición en `entries`) */
+  keep: number;
+  reason: "md5" | "complete" | "first";
+}
+
+export async function findRepeatedEntries(systemPath: string, gamePaths?: string[]): Promise<RepeatedEntry[]> {
+  return invoke("find_repeated_entries", { systemPath, gamePaths });
+}
+
+export async function mergeRepeatedEntries(systemPath: string, gamePaths?: string[]): Promise<{ merged: number; removed: number }> {
+  return invoke("merge_repeated_entries", { systemPath, gamePaths });
 }
 
 // Reaprovechar medios: sobrantes que son de un juego con otro nombre (y referencias rotas)

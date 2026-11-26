@@ -1,7 +1,7 @@
 import { findDuplicates, renamePreview, renameRoms } from "../commands";
 import { translate } from "../i18n";
 import { useAppStore } from "../store/useAppStore";
-import { activeSources, planRename, renameOptionsFrom, renameRequestOf } from "./renameSources";
+import { planRename, renameOptionsFrom, renameRequestOf, previewRequest } from "./renameSources";
 import { showMessage } from "./dialogs";
 import { resolveRenameClash } from "./renameClash";
 import { askRename } from "./renameOffer";
@@ -18,7 +18,7 @@ export async function autoRename(systemPath: string, gamePaths: string[], askScr
   if (gamePaths.length === 0) return;
   const { settings, scraperStatus, trackBackground, loadGames } = useAppStore.getState();
   const options = renameOptionsFrom(settings.rename_options);
-  const request = { sources: activeSources(options, scraperStatus), scraper: options.scraper, rules: options.rules, keep: options.keep };
+  const request = previewRequest(options, scraperStatus);
   try {
     // Mientras pregunta (puede tardar con ScreenScraper) se ve el aviso «Analizando…»
     const entries = await trackBackground(renamePreview(systemPath, request, gamePaths, askScraper && request.sources.includes("scraper")));
@@ -53,7 +53,7 @@ export async function autoRename(systemPath: string, gamePaths: string[], askScr
 export async function offerRename(systemPath: string, gamePath: string): Promise<string> {
   const { settings, scraperStatus, loadGames } = useAppStore.getState();
   const options = renameOptionsFrom(settings.rename_options);
-  const request = { sources: activeSources(options, scraperStatus), scraper: options.scraper, rules: options.rules, keep: options.keep };
+  const request = previewRequest(options, scraperStatus);
   try {
     const [entry] = await renamePreview(systemPath, request, [gamePath], false);
     if (!entry) return gamePath;
@@ -66,8 +66,10 @@ export async function offerRename(systemPath: string, gamePath: string): Promise
     // Versiones y duplicados) Si el nombre correcto choca, eso se pregunta abajo
     if (!nameClash) {
       const groups = await findDuplicates(systemPath).catch(() => []);
-      const group = groups.find((g) => !g.discs && g.games.some((x) => x.path === gamePath));
-      const others = group?.games.filter((x) => x.path !== gamePath) ?? [];
+      const group = groups.find((g) => g.games.some((x) => x.path === gamePath));
+      // Los otros discos de su misma versión no son «otro juego»
+      const mine = group ? group.versions[group.games.findIndex((x) => x.path === gamePath)] : -1;
+      const others = group?.games.filter((x, i) => x.path !== gamePath && group.versions[i] !== mine) ?? [];
       // Con varios, el que se recomienda quedarse (si no es este) o el primero
       const other = others.find((x) => x.path === group?.keep) ?? others[0];
       if (group && other) {

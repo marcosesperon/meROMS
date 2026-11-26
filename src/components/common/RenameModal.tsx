@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "../../i18n";
 import { renamePreview, renameRoms } from "../../commands";
 import type { RenameEntry, RenameOptions, RenameRequest } from "../../types";
-import { activeSources, hasExtension, nameSourceText, planRename, renameOptionsFrom, renameRequestOf } from "../../utils/renameSources";
+import { activeSources, hasExtension, nameSourceText, planRename, previewRequest, renameOptionsFrom, renameRequestOf } from "../../utils/renameSources";
 import { RenameOptionsPanel } from "./RenameOptionsPanel";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
@@ -69,9 +69,10 @@ export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: Re
     }
   }, [open]);
 
-  // Solo lo que cambia el nombre propuesto rehace la vista previa (no los interruptores ni el artículo)
+  // Lo que cambia la propuesta rehace la vista previa: también el artículo y los interruptores,
+  // porque el backend repite fichero y título hasta que no cambian (y uno depende del otro)
   const request = useMemo(
-    () => ({ sources: activeSources(debouncedOptions, scraperStatus), scraper: debouncedOptions.scraper, rules: debouncedOptions.rules, keep: debouncedOptions.keep }),
+    () => previewRequest(debouncedOptions, scraperStatus),
     [debouncedOptions, scraperStatus]
   );
   const requestKey = JSON.stringify(request);

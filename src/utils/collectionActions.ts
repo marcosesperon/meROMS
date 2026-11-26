@@ -15,6 +15,7 @@ import { getActiveProfile } from "./profiles";
 import { collectionRulesFrom } from "./collectionRules";
 import { askConfirm, showMessage } from "./dialogs";
 import { reportWithUndo } from "./undo";
+import { outcomeItem, type OutcomeItem } from "./outcome";
 
 /**
  * Lo que hacen las reglas de «Mi colección» con lo que sobra: las versiones que no se quedan
@@ -28,13 +29,19 @@ export function hasSetAsideDir(): boolean {
 }
 
 /**
- * Las que sobran en cada grupo: todas menos la que se queda, sin las protegidas (favoritas o
- * jugadas) si la regla lo pide. Los grupos de discos de un mismo juego no se tocan.
+ * Las que sobran en cada grupo: todas menos la versión que se queda (con todos sus discos), sin
+ * las protegidas (favoritas o jugadas, o con algún disco que lo esté) si la regla lo pide.
  */
 export function versionsToRemove(groups: DuplicateGroup[], protectPlayed: boolean): string[] {
   return groups.flatMap((group) =>
-    group.discs ? [] : group.games.filter((game, i) => game.path !== group.keep && !(protectPlayed && group.protected[i])).map((g) => g.path)
+    group.games.filter((_, i) => !keptVersion(group, i) && !(protectPlayed && group.protected[i])).map((g) => g.path)
   );
+}
+
+/** El juego `i` es de la versión que se queda (con varios discos, todos sus discos se quedan) */
+export function keptVersion(group: DuplicateGroup, i: number): boolean {
+  const keep = group.games.findIndex((g) => g.path === group.keep);
+  return keep >= 0 && group.versions[i] === group.versions[keep];
 }
 
 /** Resultado de quitar versiones: cuántas y lo que falló, para el resumen */
@@ -43,6 +50,8 @@ export interface ActionOutcome {
   failed: string[];
   /** Línea del resumen («12 versiones apartadas en …») */
   line: string;
+  /** Lo mismo como pieza, para el resumen de Ponerlo todo en orden */
+  item: OutcomeItem | null;
 }
 
 /**
@@ -50,19 +59,24 @@ export interface ActionOutcome {
  * papelera). Ocultar solo marca `hidden` en la gamelist (sin tocar ficheros).
  */
 export async function removeVersions(systemPath: string, paths: string[], action: VersionsAction, task?: string): Promise<ActionOutcome> {
-  if (paths.length === 0) return { done: 0, failed: [], line: "" };
+  if (paths.length === 0) return { done: 0, failed: [], line: "", item: null };
   if (action === "hide") {
     const { games, folders, provider } = useAppStore.getState();
     const hide = new Set(paths);
     await saveGamelist(systemPath, { games: games.map((g) => (hide.has(g.path) ? { ...g, hidden: "true" } : g)), folders: folders || [], provider });
-    return { done: hide.size, failed: [], line: translate("versions.doneHide", { count: hide.size }) };
+    return { done: hide.size, failed: [], line: translate("versions.doneHide", { count: hide.size }), item: outcomeItem("versions.doneHide", hide.size) };
   }
   if (action === "set_aside") {
     const r = await setAsideGames(systemPath, paths, task);
-    return { done: r.moved, failed: r.skipped, line: translate("versions.doneSetAside", { count: r.moved, folder: r.folder }) };
+    return {
+      done: r.moved,
+      failed: r.skipped,
+      line: translate("versions.doneSetAside", { count: r.moved, folder: r.folder }),
+      item: outcomeItem("versions.doneSetAside", r.moved, { folder: r.folder }),
+    };
   }
   const r = await removeGamesWithFiles(systemPath, paths, false, task);
-  return { done: r.removed, failed: r.failed, line: translate("versions.doneTrash", { count: r.removed }) };
+  return { done: r.removed, failed: r.failed, line: translate("versions.doneTrash", { count: r.removed }), item: outcomeItem("versions.doneTrash", r.removed) };
 }
 
 /** Qué se hace con los medios sobrantes o dañados: apartar solo si se pidió y hay carpeta */
@@ -78,14 +92,19 @@ export async function removeMedia(
   fillers: PlaceholderGroup[] = [],
   task?: string
 ): Promise<ActionOutcome> {
-  let outcome: ActionOutcome = { done: 0, failed: [], line: "" };
+  let outcome: ActionOutcome = { done: 0, failed: [], line: "", item: null };
   if (paths.length > 0) {
     if (action === "set_aside") {
       const r = await setAsideMedia(systemPath, paths, task);
-      outcome = { done: r.moved, failed: r.skipped, line: translate("mediaTool.doneSetAside", { count: r.moved, folder: r.folder }) };
+      outcome = {
+        done: r.moved,
+        failed: r.skipped,
+        line: translate("mediaTool.doneSetAside", { count: r.moved, folder: r.folder }),
+        item: outcomeItem("mediaTool.doneSetAside", r.moved, { folder: r.folder }),
+      };
     } else {
       const r = await trashMedia(systemPath, paths, task);
-      outcome = { done: r.trashed, failed: r.failed, line: translate("cleanup.deleted", { count: r.trashed }) };
+      outcome = { done: r.trashed, failed: r.failed, line: translate("cleanup.deleted", { count: r.trashed }), item: outcomeItem("cleanup.deleted", r.trashed) };
     }
   }
   if (fillers.length > 0) {
@@ -101,12 +120,13 @@ export async function removeMedia(
  * Devuelve si se quitó algo.
  */
 export async function removeGames(paths: string[]): Promise<boolean> {
-  const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths, selectedGame, selectGame } = useAppStore.getState();
+  const { selectedSystem, settings, loadGames, loadSystems, setSelectedPaths, selectedGame, selectGame, trackBackground } = useAppStore.getState();
   if (!selectedSystem || paths.length === 0) return false;
   const rule = collectionRulesFrom(settings.collection_rules).versions_action;
   const action = rule === "set_aside" ? "set_aside" : "trash";
   try {
-    const plan = await removeGamesWithFiles(selectedSystem.path, paths, true);
+    // Con muchos juegos tarda: mientras, el aviso «Analizando…» sobre la lista
+    const plan = await trackBackground(removeGamesWithFiles(selectedSystem.path, paths, true));
     const question =
       action === "set_aside"
         ? translate("bulk.removeConfirmSetAside", { count: plan.removed })
