@@ -10,6 +10,9 @@ import { reportWithUndo } from "../../utils/undo";
 import { useTask } from "../../hooks/useTask";
 import { useDebounce } from "../../hooks/useDebounce";
 import { TaskProgress } from "./TaskProgress";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface RenameModalProps {
   open: boolean;
@@ -49,6 +52,8 @@ export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: Re
   const previewTask = useTask();
   const renameTask = useTask();
   const busy = previewTask.running || renameTask.running;
+  // Mientras se renombra no se puede cerrar la ventana (la vista previa sí se puede dejar)
+  useBlockClose(renameTask.running);
   // Cada cambio de opciones rehace la vista previa (sin preguntar al scraper: eso es «Buscar»)
   const debouncedOptions = useDebounce(options, 250);
   // Cada vista previa lleva un número: si llega una vieja después de otra más nueva, no cuenta
@@ -327,15 +332,13 @@ export function RenameModal({ open, systemPath, gamePaths, onClose, onDone }: Re
 
         {/* Pie */}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button onClick={onClose} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           <button
             onClick={apply}
             disabled={busy || applicable.length === 0}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {renameTask.running ? "..." : t("rename.apply", { count: applicable.length })}
+            {renameTask.running ? <ProcessingLabel /> : t("rename.apply", { count: applicable.length })}
           </button>
         </div>
       </div>

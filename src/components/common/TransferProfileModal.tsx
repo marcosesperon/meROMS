@@ -7,6 +7,9 @@ import { askConfirm, showMessage } from "../../utils/dialogs";
 import { getActiveProfile, isProfileComplete } from "../../utils/profiles";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface TransferProfileModalProps {
   open: boolean;
@@ -34,6 +37,8 @@ export function TransferProfileModal({ open, system, onClose }: TransferProfileM
   const [targetId, setTargetId] = useState("");
   const [mode, setMode] = useState<MigrationMode>("move");
   const task = useTask();
+  // Mientras se lleva el sistema no se puede salir de la ventana (Cancelar sigue en la barra)
+  useBlockClose(task.running);
 
   useEffect(() => {
     if (open) {
@@ -116,16 +121,14 @@ export function TransferProfileModal({ open, system, onClose }: TransferProfileM
         )}
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end gap-3">
-          <button onClick={onClose} disabled={task.running} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {targets.length > 0 && (
             <button
               onClick={start}
               disabled={task.running || !target || system.game_count === 0}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50"
             >
-              {t(mode === "move" ? "transfer.startMove" : "transfer.startCopy")}
+              {task.running ? <ProcessingLabel /> : t(mode === "move" ? "transfer.startMove" : "transfer.startCopy")}
             </button>
           )}
         </div>

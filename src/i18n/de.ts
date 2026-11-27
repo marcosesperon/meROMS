@@ -831,6 +831,7 @@ const de: Record<TranslationKeys, string> = {
 
   // Duplicates
   "duplicates.scanning": "Suche Duplikate…",
+  "common.processing": "Wird verarbeitet…",
   "duplicates.preparing": "Wird vorbereitet…",
   "duplicates.reason_screenscraper_id": "Gleiche ScreenScraper-ID: {id}",
   "duplicates.reason_hash": "Gleiche Datei (Hash)",
@@ -1447,6 +1448,10 @@ const de: Record<TranslationKeys, string> = {
   "versions.doneHide": "{count} Versionen ausgeblendet.",
   "versions.doneSetAside": "{count} Versionen beiseitegelegt in {folder}.",
   "versions.doneTrash": "{count} Versionen in den Papierkorb gelegt.",
+  "versions.permanent": "Endgültig löschen (kann nicht rückgängig gemacht werden)",
+  "versions.apply_delete": "Löschen ({count})",
+  "versions.doneDelete": "{count} Versionen endgültig gelöscht.",
+  "versions.deleteConfirm": "{games} Spiele aus der Gamelist entfernen und {files} Dateien (ROMs und Medien) ENDGÜLTIG löschen? Sie kommen nicht in den Papierkorb und das lässt sich nicht rückgängig machen.",
   "duplicates.reason_dat": "Gleiches Spiel im DAT",
   "mediaTool.button": "Medien…",
   "mediaTool.title": "Medien",

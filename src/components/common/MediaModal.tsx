@@ -5,6 +5,7 @@ import type { ScrapePolicy } from "../../types";
 import { MediaReviewModal } from "./MediaReviewModal";
 import { NormalizeMediaModal } from "./NormalizeMediaModal";
 import { UnusedMediaModal } from "./UnusedMediaModal";
+import { useActionBusy } from "../../hooks/useBlockClose";
 
 export type MediaTab = "damaged" | "unused" | "swapped" | "legacy";
 // En el orden en que conviene revisarlo: primero colocar lo que ya hay, después quitar lo que sobra
@@ -36,6 +37,8 @@ interface MediaModalProps {
 export function MediaModal({ open, systemPath, tab, onClose, onDone, onOpenSwap, onRescrape }: MediaModalProps) {
   const { t } = useTranslation();
   const [current, setCurrent] = useState<MediaTab>("legacy");
+  // Mientras una pestaña aplica algo no se cambia de pestaña (se desmontaría a medias)
+  const busy = useActionBusy();
 
   useEffect(() => {
     if (open) setCurrent(TABS.includes(tab as MediaTab) ? (tab as MediaTab) : "legacy");
@@ -53,8 +56,9 @@ export function MediaModal({ open, systemPath, tab, onClose, onDone, onOpenSwap,
               <button
                 key={id}
                 onClick={() => setCurrent(id)}
+                disabled={busy && current !== id}
                 data-shot={`media-tab-${id}`}
-                className={`px-3 py-1.5 text-sm rounded-t border-b-2 -mb-px ${
+                className={`px-3 py-1.5 text-sm rounded-t border-b-2 -mb-px disabled:opacity-40 disabled:cursor-not-allowed ${
                   current === id ? "border-indigo-500 text-zinc-100" : "border-transparent text-zinc-400 hover:text-zinc-200"
                 }`}
               >

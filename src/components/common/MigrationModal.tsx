@@ -8,6 +8,9 @@ import { useAppStore } from "../../store/useAppStore";
 import { createProfile, getActiveProfile, isDefaultEsdeMedia } from "../../utils/profiles";
 import { askConfirm } from "../../utils/dialogs";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface MigrationModalProps {
   open: boolean;
@@ -52,6 +55,8 @@ export function MigrationModal({ open, onClose, preset, sourceProfile }: Migrati
   const [progress, setProgress] = useState<MigrationProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Mientras migra no se puede salir de la ventana
+  useBlockClose(step === "running");
 
   // Al abrir: destino = el primer perfil compatible o uno nuevo con nombre sugerido
   useEffect(() => {
@@ -308,20 +313,20 @@ export function MigrationModal({ open, onClose, preset, sourceProfile }: Migrati
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between gap-2">
-          <button
+          <CloseButton
             onClick={step === "preview" ? () => setStep("config") : step === "done" && preset ? handleFinishPreset : onClose}
             disabled={step === "running"}
             className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors disabled:opacity-50"
           >
             {step === "preview" ? t("migration.back") : t("rename.close")}
-          </button>
+          </CloseButton>
           {step === "config" && (
             <button
               onClick={handlePreview}
               disabled={!targetReady || busy}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50"
             >
-              {busy ? "..." : t("migration.preview")}
+              {busy ? <ProcessingLabel /> : t("migration.preview")}
             </button>
           )}
           {step === "preview" && (

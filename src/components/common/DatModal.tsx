@@ -7,6 +7,9 @@ import { clearSystemDat, datComputeCrcs, datReport, saveGamelist, setSystemDat, 
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface DatModalProps {
   open: boolean;
@@ -28,7 +31,9 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   // El informe: con progreso y Cancelar
   const reportTask = useTask();
   const loading = reportTask.running;
-  const [busy, setBusy] = useState(false);
+  // Qué acción está en marcha (elegir DAT, papelera, nombres): su botón dice «Procesando…»
+  const [doing, setDoing] = useState<"pick" | "trash" | "names" | null>(null);
+  const busy = doing !== null;
   // Mandar a la papelera los ficheros que el DAT no conoce: con progreso y Cancelar
   const trashTask = useTask();
   const [tab, setTab] = useState<Tab>("missing");
@@ -37,6 +42,8 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   const [nameSel, setNameSel] = useState<Set<string>>(new Set());
   // «Comprobar por contenido» en marcha: fichero actual / total
   const [crcProgress, setCrcProgress] = useState<{ current: number; total: number; file: string } | null>(null);
+  // Mientras se aplica algo (o se calculan las huellas) la ventana no se puede cerrar
+  useBlockClose(busy || crcProgress !== null);
 
   async function load() {
     try {
@@ -71,7 +78,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   async function pickDat() {
     const file = await openDialog({ multiple: false, filters: [{ name: "DAT", extensions: ["dat", "xml"] }] });
     if (!file) return;
-    setBusy(true);
+    setDoing("pick");
     try {
       await setSystemDat(systemPath, String(file));
       onChanged();
@@ -79,7 +86,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
     } catch (e) {
       await showMessage(t("dat.loadFailed", { error: String(e) }), "error");
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
@@ -109,7 +116,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   async function trashUnknown() {
     const paths = [...unknownSel];
     if (!(await askConfirm(t("newRoms.trashConfirm", { count: paths.length })))) return;
-    setBusy(true);
+    setDoing("trash");
     try {
       const result = await trashTask.run((task) => trashFiles(systemPath, paths, task));
       if (!result) return;
@@ -120,14 +127,14 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
       onChanged();
       await load();
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
   async function applyNames() {
     if (!report) return;
     const names = new Map(report.names.filter((n) => nameSel.has(n.game_path)).map((n) => [n.game_path, n.proposed]));
-    setBusy(true);
+    setDoing("names");
     try {
       const { games, folders, provider, setGames } = useAppStore.getState();
       const updated = games.map((g) => (names.has(g.path) ? { ...g, name: names.get(g.path) } : g));
@@ -138,7 +145,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
     } catch (e) {
       await showMessage(t("detail.saveFailed", { error: String(e) }), "error");
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
@@ -175,7 +182,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
             </p>
             <div className="flex gap-2 shrink-0">
               <button onClick={pickDat} disabled={busy} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
-                {busy ? "..." : t("dat.pick")}
+                {doing === "pick" ? <ProcessingLabel /> : t("dat.pick")}
               </button>
               {report && (
                 <button onClick={removeDat} className="px-3 py-1.5 text-xs bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600">
@@ -285,17 +292,15 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button onClick={onClose} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {report && tab === "unknown" && report.unknown_files.length > 0 && (
             <button onClick={trashUnknown} disabled={unknownSel.size === 0 || busy} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 disabled:opacity-50">
-              {t("newRoms.trash", { count: unknownSel.size })}
+              {doing === "trash" ? <ProcessingLabel /> : t("newRoms.trash", { count: unknownSel.size })}
             </button>
           )}
           {report && tab === "names" && report.names.length > 0 && (
             <button onClick={applyNames} disabled={nameSel.size === 0 || busy} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
-              {t("dat.applyNames", { count: nameSel.size })}
+              {doing === "names" ? <ProcessingLabel /> : t("dat.applyNames", { count: nameSel.size })}
             </button>
           )}
         </div>

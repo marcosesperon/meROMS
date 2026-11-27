@@ -16,6 +16,8 @@ import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
+import { CloseButton } from "./CloseButton";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface CompareModalProps {
   open: boolean;
@@ -58,6 +60,10 @@ export function CompareModal({ open, onClose }: CompareModalProps) {
   // Juegos elegidos y hacia dónde van
   const [chosen, setChosen] = useState<Map<string, Direction>>(new Map());
   const [busy, setBusy] = useState(false);
+  // Aplicando los cambios (copiar/sustituir): la ventana no se puede cerrar hasta que acabe;
+  // mientras, el botón Parar sigue ahí
+  const [applying, setApplying] = useState(false);
+  useBlockClose(applying);
   const [progress, setProgress] = useState<Progress | null>(null);
 
   // Al abrir: la última carpeta comparada
@@ -137,7 +143,8 @@ export function CompareModal({ open, onClose }: CompareModalProps) {
       }),
     );
     if (!ok) return;
-    const r = await withProgress(() => applyCompare(dest, s.actions));
+    setApplying(true);
+    const r = await withProgress(() => applyCompare(dest, s.actions)).finally(() => setApplying(false));
     if (!r) return;
     const lines = [t(r.stopped ? "compare.stopped" : "compare.done", { there: r.to_there, here: r.to_here, replaced: r.replaced })];
     if (r.failed.length) lines.push("", t("compare.failed", { count: r.failed.length }), ...r.failed.slice(0, 20));
@@ -331,9 +338,9 @@ export function CompareModal({ open, onClose }: CompareModalProps) {
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center gap-2">
-          <button onClick={onClose} disabled={busy} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
+          <CloseButton onClick={onClose} disabled={busy}>
             {t("rename.close")}
-          </button>
+          </CloseButton>
           <div className="flex-1" />
           {progress ? (
             <button onClick={() => cancelCompare()} className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30">

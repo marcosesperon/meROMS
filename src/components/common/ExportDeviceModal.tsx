@@ -17,6 +17,9 @@ import { useAppStore } from "../../store/useAppStore";
 import { getActiveProfile } from "../../utils/profiles";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface ExportDeviceModalProps {
   open: boolean;
@@ -71,7 +74,11 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
     remove_extra: false,
   }));
   const [preview, setPreview] = useState<ExportPreview | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Qué está en marcha: su botón dice «Procesando…». Exportar y traer los cambios bloquean la
+  // ventana hasta que acaben; la vista previa y leer los cambios solo desactivan los botones
+  const [doing, setDoing] = useState<"preview" | "export" | "pull" | "applyPull" | null>(null);
+  const busy = doing !== null;
+  useBlockClose(doing === "export" || doing === "applyPull");
   const [progress, setProgress] = useState<Progress | null>(null);
   const [changes, setChanges] = useState<DeviceChange[] | null>(null);
   const [unchecked, setUnchecked] = useState<Set<number>>(new Set());
@@ -107,20 +114,20 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
   }
 
   async function doPreview() {
-    setBusy(true);
+    setDoing("preview");
     try {
       setPreview(await planExport(options));
     } catch (e) {
       await showMessage(String(e), "error");
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
   async function doExport() {
     if (!preview) return;
     if (options.remove_extra && preview.remove_files > 0 && !(await askConfirm(t("exportDevice.removeConfirm", { count: preview.remove_files })))) return;
-    setBusy(true);
+    setDoing("export");
     setProgress({ current: 0, total: preview.copy_files, bytes: 0, total_bytes: preview.copy_bytes, file: "" });
     const unlisten = await listen<Progress>("export-progress", (e) => setProgress(e.payload));
     try {
@@ -135,25 +142,25 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
     } finally {
       unlisten();
       setProgress(null);
-      setBusy(false);
+      setDoing(null);
     }
   }
 
   async function doPull() {
-    setBusy(true);
+    setDoing("pull");
     try {
       setChanges(await pullChanges(options.dest, options.systems));
       setUnchecked(new Set());
     } catch (e) {
       await showMessage(String(e), "error");
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
   async function doApplyPull() {
     if (!changes) return;
-    setBusy(true);
+    setDoing("applyPull");
     try {
       const n = await applyPull(changes.filter((_, i) => !unchecked.has(i)));
       const { selectedSystem, loadGames } = useAppStore.getState();
@@ -163,7 +170,7 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
     } catch (e) {
       await showMessage(String(e), "error");
     } finally {
-      setBusy(false);
+      setDoing(null);
     }
   }
 
@@ -325,9 +332,9 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center gap-2">
-          <button onClick={onClose} disabled={busy} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
+          <CloseButton onClick={onClose} disabled={busy}>
             {t("rename.close")}
-          </button>
+          </CloseButton>
           <div className="flex-1" />
           {progress ? (
             <button onClick={() => cancelExport()} className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30">
@@ -335,12 +342,12 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
             </button>
           ) : changes && changes.length > 0 ? (
             <button onClick={doApplyPull} disabled={busy || unchecked.size === changes.length} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
-              {t("exportDevice.applyPull", { count: changes.length - unchecked.size })}
+              {doing === "applyPull" ? <ProcessingLabel /> : t("exportDevice.applyPull", { count: changes.length - unchecked.size })}
             </button>
           ) : (
             <>
               <button onClick={doPull} disabled={!ready || busy} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600 disabled:opacity-50">
-                {t("exportDevice.pull")}
+                {doing === "pull" ? <ProcessingLabel /> : t("exportDevice.pull")}
               </button>
               {preview ? (
                 <button onClick={doExport} disabled={busy || (preview.copy_files === 0 && preview.remove_files === 0 && preview.games === 0)} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
@@ -348,7 +355,7 @@ export function ExportDeviceModal({ open, onClose }: ExportDeviceModalProps) {
                 </button>
               ) : (
                 <button onClick={doPreview} disabled={!ready || busy} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
-                  {busy ? "..." : t("exportDevice.preview")}
+                  {doing === "preview" ? <ProcessingLabel /> : t("exportDevice.preview")}
                 </button>
               )}
             </>

@@ -3,6 +3,9 @@ import { useTranslation } from "../../i18n";
 import { biosDownload, checkBios, type SystemBios } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import { showMessage } from "../../utils/dialogs";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface BiosModalProps {
   open: boolean;
@@ -25,6 +28,8 @@ export function BiosModal({ open, onClose }: BiosModalProps) {
   const [report, setReport] = useState<{ bios_dir: string | null; systems: SystemBios[] } | null | undefined>(undefined);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  // Descargando la lista de BIOS: no se puede cerrar hasta que acabe
+  useBlockClose(busy);
 
   async function load() {
     setReport(undefined);
@@ -82,7 +87,7 @@ export function BiosModal({ open, onClose }: BiosModalProps) {
             <div className="py-12 text-center space-y-3">
               <p className="text-sm text-zinc-400">{t("bios.listNone")}</p>
               <button onClick={download} disabled={busy} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50">
-                {busy ? "..." : t("bios.download")}
+                {busy ? <ProcessingLabel /> : t("bios.download")}
               </button>
             </div>
           ) : report.systems.length === 0 ? (
@@ -123,9 +128,7 @@ export function BiosModal({ open, onClose }: BiosModalProps) {
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button onClick={onClose} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {report && (
             <button onClick={load} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600">
               {t("bios.recheck")}

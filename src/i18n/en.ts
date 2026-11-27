@@ -829,6 +829,7 @@ const en = {
 
   // Duplicates
   "duplicates.scanning": "Scanning for duplicates...",
+  "common.processing": "Processing...",
   "duplicates.preparing": "Preparing...",
   "duplicates.reason_screenscraper_id": "Same ScreenScraper ID: {id}",
   "duplicates.reason_hash": "Same file (hash)",
@@ -1445,6 +1446,10 @@ const en = {
   "versions.doneHide": "{count} versions hidden.",
   "versions.doneSetAside": "{count} versions set aside in {folder}.",
   "versions.doneTrash": "{count} versions sent to the trash.",
+  "versions.permanent": "Delete permanently (cannot be undone)",
+  "versions.apply_delete": "Delete ({count})",
+  "versions.doneDelete": "{count} versions deleted permanently.",
+  "versions.deleteConfirm": "Remove {games} games from the gamelist and DELETE {files} files (ROMs and media) permanently? They do not go to the trash and this cannot be undone.",
   "duplicates.reason_dat": "Same game in the DAT",
   "mediaTool.button": "Media...",
   "mediaTool.title": "Media",

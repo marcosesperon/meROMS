@@ -10,6 +10,9 @@ import { collectionRulesFrom } from "../../utils/collectionRules";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface VersionsModalProps {
   open: boolean;
@@ -39,13 +42,19 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
   const [action, setAction] = useState<VersionsAction>(rules.versions_action);
   const scanTask = useTask();
   const applyTask = useTask();
+  // Mientras se apartan, ocultan o borran no se puede salir de la ventana
+  useBlockClose(applyTask.running);
   const [preparing, setPreparing] = useState(false);
+  // Borrar de verdad en lugar de mandar a la papelera; desmarcado cada vez que se abre
+  const [permanent, setPermanent] = useState(false);
+  const deleting = action === "trash" && permanent;
   const canSetAside = hasSetAsideDir();
 
   useEffect(() => {
     if (!open) {
       setGroups([]);
       setSelected(new Set());
+      setPermanent(false);
       return;
     }
     // La acción de «Mi colección»; apartar sin carpeta no se puede: entonces, ocultar
@@ -98,7 +107,8 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
       // A la papelera: antes se dice cuántos ficheros se van
       if (action === "trash") {
         const plan = await removeGamesWithFiles(systemPath, paths, true);
-        ok = await askConfirm(t("duplicates.removeConfirm", { games: plan.removed, files: plan.files.length }));
+        const key = permanent ? "versions.deleteConfirm" : "duplicates.removeConfirm";
+        ok = await askConfirm(t(key, { games: plan.removed, files: plan.files.length }));
       } else {
         ok = await askConfirm(t(`versions.confirm_${action}` as TranslationKeys, { count: paths.length }));
       }
@@ -107,7 +117,7 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
     }
     if (!ok) return;
     try {
-      const outcome = await applyTask.run((task) => removeVersions(systemPath, paths, action, task));
+      const outcome = await applyTask.run((task) => removeVersions(systemPath, paths, action, task, deleting));
       if (!outcome) return;
       const lines = [outcome.line];
       if (applyTask.wasCancelled()) lines.unshift(t("task.stopped", { done: outcome.done, total: paths.length }), "");
@@ -206,21 +216,31 @@ export function VersionsModal({ open, systemPath, onClose, onDone, onlyPaths }: 
                 </label>
               ))}
             </div>
+            {action === "trash" && (
+              <label className="flex items-center gap-2 text-sm text-zinc-300 cursor-pointer w-fit">
+                <input type="checkbox" checked={permanent} onChange={(e) => setPermanent(e.target.checked)} className="accent-red-600" />
+                <span className={permanent ? "text-red-400" : ""}>{t("versions.permanent")}</span>
+              </label>
+            )}
             {!canSetAside && <p className="text-[11px] text-amber-400">{t("versions.noFolder")}</p>}
           </div>
         )}
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button onClick={onClose} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600">
-            {t("cleanup.close")}
-          </button>
+          <CloseButton onClick={onClose} />
           {groups.length > 0 && (
             <button
               onClick={apply}
               disabled={selected.size === 0 || applyTask.running || preparing}
               className={`px-4 py-2 text-sm text-white rounded disabled:opacity-50 disabled:cursor-not-allowed ${action === "trash" ? "bg-red-600 hover:bg-red-500" : "bg-indigo-600 hover:bg-indigo-500"}`}
             >
-              {preparing ? t("duplicates.preparing") : t(`versions.apply_${action}` as TranslationKeys, { count: selected.size })}
+              {applyTask.running ? (
+                <ProcessingLabel />
+              ) : preparing
+                ? t("duplicates.preparing")
+                : deleting
+                  ? t("versions.apply_delete", { count: selected.size })
+                  : t(`versions.apply_${action}` as TranslationKeys, { count: selected.size })}
             </button>
           )}
         </div>

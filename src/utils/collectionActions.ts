@@ -58,7 +58,7 @@ export interface ActionOutcome {
  * Quita versiones con la acción elegida. `task`: para el progreso y Cancelar (apartar y
  * papelera). Ocultar solo marca `hidden` en la gamelist (sin tocar ficheros).
  */
-export async function removeVersions(systemPath: string, paths: string[], action: VersionsAction, task?: string): Promise<ActionOutcome> {
+export async function removeVersions(systemPath: string, paths: string[], action: VersionsAction, task?: string, permanent = false): Promise<ActionOutcome> {
   if (paths.length === 0) return { done: 0, failed: [], line: "", item: null };
   if (action === "hide") {
     const { games, folders, provider } = useAppStore.getState();
@@ -75,8 +75,10 @@ export async function removeVersions(systemPath: string, paths: string[], action
       item: outcomeItem("versions.doneSetAside", r.moved, { folder: r.folder }),
     };
   }
-  const r = await removeGamesWithFiles(systemPath, paths, false, task);
-  return { done: r.removed, failed: r.failed, line: translate("versions.doneTrash", { count: r.removed }), item: outcomeItem("versions.doneTrash", r.removed) };
+  // Con «permanent», borrados de verdad (sin papelera)
+  const r = await removeGamesWithFiles(systemPath, paths, false, task, permanent);
+  const key = permanent ? "versions.doneDelete" : "versions.doneTrash";
+  return { done: r.removed, failed: r.failed, line: translate(key, { count: r.removed }), item: outcomeItem(key, r.removed) };
 }
 
 /** Qué se hace con los medios sobrantes o dañados: apartar solo si se pidió y hay carpeta */

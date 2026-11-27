@@ -9,6 +9,9 @@ import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface NormalizeMediaModalProps {
   open: boolean;
@@ -44,6 +47,8 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
   // Aplicar: con progreso y Cancelar (se para entre ficheros; lo movido se guarda)
   const applyTask = useTask();
   const applying = applyTask.running;
+  // Mientras se aplica no se puede salir de la ventana
+  useBlockClose(applying);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -203,19 +208,14 @@ export function NormalizeMediaModal({ open, systemPath, onClose, gamePath, gameN
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {applicable.length > 0 && (
             <button
               onClick={handleApply}
               disabled={selected.size === 0 || applying}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {applying ? "..." : t("normalize.apply", { count: selected.size })}
+              {applying ? <ProcessingLabel /> : t("normalize.apply", { count: selected.size })}
             </button>
           )}
         </div>

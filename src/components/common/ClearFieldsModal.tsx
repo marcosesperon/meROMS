@@ -11,6 +11,9 @@ import { absoluteMediaPath, bumpMediaVersion } from "../../utils/images";
 import { hasMedia, MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
 import { getActiveProfile } from "../../utils/profiles";
 import { reportWithUndo } from "../../utils/undo";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface ClearFieldsModalProps {
   open: boolean;
@@ -76,6 +79,8 @@ export function ClearFieldsModal({ open, systemPath, visiblePaths, markedPaths, 
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [keepFiles, setKeepFiles] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Mientras se vacía no se puede salir de la ventana
+  useBlockClose(busy);
 
   useEffect(() => {
     if (!open) return;
@@ -274,9 +279,7 @@ export function ClearFieldsModal({ open, systemPath, visiblePaths, markedPaths, 
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center justify-between gap-3">
-          <button onClick={onClose} disabled={busy} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           <span className="text-[11px] text-zinc-500 flex-1 text-right">{t("clear.backupHint")}</span>
           <button
             onClick={apply}
@@ -284,7 +287,7 @@ export function ClearFieldsModal({ open, systemPath, visiblePaths, markedPaths, 
             data-shot="clear-apply"
             className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {busy ? "…" : t("clear.apply", { count: toClear.length })}
+            {busy ? <ProcessingLabel /> : t("clear.apply", { count: toClear.length })}
           </button>
         </div>
       </div>

@@ -4,6 +4,9 @@ import { listMissingRoms, removeGamesWithFiles, type MissingRoms } from "../../c
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface MissingRomsModalProps {
   open: boolean;
@@ -27,6 +30,8 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
   // Quitarlos: con progreso y Cancelar (se para entre tandas y guarda lo hecho)
   const removeTask = useTask();
   const removing = removeTask.running;
+  // Mientras se quitan no se puede salir de la ventana
+  useBlockClose(removing);
   // Calculando qué ficheros se irían (antes de preguntar): con miles de juegos tarda, y más si el
   // sistema aún se está analizando; mientras tanto el botón dice «Preparando…» y no se toca nada
   const [preparing, setPreparing] = useState(false);
@@ -150,12 +155,7 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {games.length > 0 && (
             <button
               onClick={handleRemove}
@@ -163,7 +163,7 @@ export function MissingRomsModal({ open, systemPath, onClose, onDone }: MissingR
               className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
               {preparing && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" aria-hidden />}
-              {removing ? "..." : preparing ? t("duplicates.preparing") : t("missingRoms.remove", { count: selected.size })}
+              {removing ? <ProcessingLabel /> : preparing ? t("duplicates.preparing") : t("missingRoms.remove", { count: selected.size })}
             </button>
           )}
         </div>

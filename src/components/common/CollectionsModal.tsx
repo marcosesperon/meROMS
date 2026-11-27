@@ -9,6 +9,9 @@ import type { DiscGroup } from "../../commands";
 import type { Game } from "../../types";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface CollectionsModalProps {
   open: boolean;
@@ -34,6 +37,9 @@ export function CollectionsModal({
   const detectTask = useTask();
   const detecting = detectTask.running;
   const [m3uResult, setM3uResult] = useState<string[] | null>(null);
+  // Generando las listas .m3u o la colección: la ventana no se puede cerrar hasta que acabe
+  const [generating, setGenerating] = useState(false);
+  useBlockClose(generating);
 
   // Collection state
   const [collectionName, setCollectionName] = useState("");
@@ -67,11 +73,14 @@ export function CollectionsModal({
   }
 
   async function handleGenerateM3u() {
+    setGenerating(true);
     try {
       const created = await generateM3uPlaylists(systemPath, discGroups);
       setM3uResult(created);
     } catch (e) {
       console.error("M3U generation failed:", e);
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -94,6 +103,7 @@ export function CollectionsModal({
 
   async function handleGenerateCollection() {
     if (!collectionName.trim() || selectedGames.size === 0) return;
+    setGenerating(true);
     try {
       const filename = await generateCollection(
         systemPath,
@@ -103,6 +113,8 @@ export function CollectionsModal({
       setCollectionResult(filename);
     } catch (e) {
       console.error("Collection generation failed:", e);
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -239,27 +251,23 @@ export function CollectionsModal({
 
         {/* Footer */}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("cleanup.close")}
-          </button>
+          <CloseButton onClick={onClose} />
           {activeTab === "m3u" && discGroups.length > 0 && !m3uResult && (
             <button
               onClick={handleGenerateM3u}
-              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors"
+              disabled={generating}
+              className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t("collections.generate")}
+              {generating ? <ProcessingLabel /> : t("collections.generate")}
             </button>
           )}
           {activeTab === "collection" && !collectionResult && (
             <button
               onClick={handleGenerateCollection}
-              disabled={!collectionName.trim() || selectedGames.size === 0}
+              disabled={!collectionName.trim() || selectedGames.size === 0 || generating}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {t("collections.generate")}
+              {generating ? <ProcessingLabel /> : t("collections.generate")}
             </button>
           )}
         </div>

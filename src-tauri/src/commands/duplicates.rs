@@ -1,5 +1,6 @@
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 use crate::layout::{Layout, SystemRef};
 use crate::media::{self, MEDIA_KINDS};
@@ -291,11 +292,27 @@ fn media_count(system: &SystemRef, game: &Game) -> usize {
 /// Juegos por tanda al mandarlos a la papelera (cada tanda va de una vez)
 const REMOVE_BATCH: usize = 25;
 
+/// Borra un fichero o carpeta para siempre (sin papelera)
+fn delete_for_good(path: &Path) -> Result<(), String> {
+    let r = if path.is_dir() { fs::remove_dir_all(path) } else { fs::remove_file(path) };
+    r.map_err(|e| e.to_string())
+}
+
+/// Manda a la papelera (o borra para siempre, con `permanent`) un fichero o carpeta
+fn remove_one(path: &Path, permanent: bool) -> Result<(), String> {
+    if permanent {
+        delete_for_good(path)
+    } else {
+        trash::delete(path).map_err(|e| e.to_string())
+    }
+}
+
 /// Manda a la papelera los ficheros de una tanda de juegos. Normalmente todos de una vez; si
 /// eso falla, uno a uno, para que un juego cuya ROM no se pueda mandar se quede en la gamelist.
-fn remove_batch(batch: &[(String, Option<PathBuf>, Vec<PathBuf>)], removed_paths: &mut HashSet<String>, failed: &mut Vec<String>) {
+/// Con `permanent` se borran de verdad, siempre uno a uno (no hay borrado «de golpe»).
+fn remove_batch(batch: &[(String, Option<PathBuf>, Vec<PathBuf>)], permanent: bool, removed_paths: &mut HashSet<String>, failed: &mut Vec<String>) {
     let all: Vec<PathBuf> = batch.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter()).cloned()).collect();
-    if all.is_empty() || trash::delete_all(&all).is_ok() {
+    if all.is_empty() || (!permanent && trash::delete_all(&all).is_ok()) {
         removed_paths.extend(batch.iter().map(|(game_path, _, _)| game_path.clone()));
         return;
     }
@@ -304,14 +321,14 @@ fn remove_batch(batch: &[(String, Option<PathBuf>, Vec<PathBuf>)], removed_paths
         if let Some(rom) = rom {
             if !rom.exists() {
                 // Already sent by the bulk attempt before it failed
-            } else if let Err(e) = trash::delete(rom) {
+            } else if let Err(e) = remove_one(rom, permanent) {
                 failed.push(format!("{} ({})", rom.display(), e));
                 continue;
             }
         }
         removed_paths.insert(game_path.clone());
         for file in media_files.iter().filter(|f| f.exists()) {
-            if let Err(e) = trash::delete(file) {
+            if let Err(e) = remove_one(file, permanent) {
                 failed.push(format!("{} ({})", file.display(), e));
             }
         }
@@ -320,7 +337,8 @@ fn remove_batch(batch: &[(String, Option<PathBuf>, Vec<PathBuf>)], removed_paths
 
 /// Remove duplicates for good: take the games out of the gamelist and send their ROM file and
 /// all their media to the trash. With `dry_run` nothing is touched: it only lists the files
-/// (the UI shows the count before asking for confirmation).
+/// (the UI shows the count before asking for confirmation). With `permanent` the files are
+/// deleted for good instead of going to the trash ("Versions and duplicates" offers it).
 /// A game whose ROM can't be trashed stays in the gamelist, so no ROM is left without entry.
 #[tauri::command(async)]
 pub fn remove_games_with_files(
@@ -328,12 +346,25 @@ pub fn remove_games_with_files(
     system_path: String,
     game_paths: Vec<String>,
     dry_run: bool,
+    permanent: Option<bool>,
     task: Option<String>,
 ) -> Result<RemoveResult, String> {
     let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
-    let mut gamelist = super::gamelist::read_gamelist_with(&layout, &system, &progress)?;
-    let plan = files_to_remove(&layout, &system, &gamelist.games, &game_paths);
+    remove_games_in(&layout, &system, &game_paths, dry_run, permanent.unwrap_or(false), &progress)
+}
+
+/// The work of `remove_games_with_files`, without the app (tests call it directly)
+fn remove_games_in(
+    layout: &Layout,
+    system: &SystemRef,
+    game_paths: &[String],
+    dry_run: bool,
+    permanent: bool,
+    progress: &Progress,
+) -> Result<RemoveResult, String> {
+    let mut gamelist = super::gamelist::read_gamelist_with(layout, system, progress)?;
+    let plan = files_to_remove(layout, system, &gamelist.games, game_paths);
 
     let mut result = RemoveResult::default();
     result.files = plan.iter().flat_map(|(_, rom, media)| rom.iter().chain(media.iter())).map(|p| p.to_string_lossy().to_string()).collect();
@@ -351,18 +382,18 @@ pub fn remove_games_with_files(
             break;
         }
         done_games += batch.len();
-        progress.step("trashing", done_games, plan.len(), &batch[0].0);
-        remove_batch(batch, &mut removed_paths, &mut result.failed);
+        progress.step(if permanent { "deleting" } else { "trashing" }, done_games, plan.len(), &batch[0].0);
+        remove_batch(batch, permanent, &mut removed_paths, &mut result.failed);
     }
 
     if !removed_paths.is_empty() {
         progress.phase("saving");
         gamelist.games.retain(|g| !removed_paths.contains(&g.path));
         // write_gamelist() backs up the gamelist first
-        super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
+        super::gamelist::write_gamelist(layout, system, &gamelist)?;
         // And out of the custom collections and .m3u playlists that listed them
         let removed: Vec<String> = removed_paths.iter().cloned().collect();
-        super::rename::remove_references(&layout, &system, &removed);
+        super::rename::remove_references(layout, system, &removed);
     }
     result.removed = removed_paths.len();
     Ok(result)
@@ -581,5 +612,26 @@ mod tests {
         games[1].favorite = Some("true".into());
         let g = suggest("similar_name", None, games, &system, &["eu".to_string()], &[]).unwrap();
         assert_eq!(g.protected, vec![true, true, false, false]);
+    }
+
+    #[test]
+    fn permanent_removal_deletes_the_files_without_the_trash() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("mastersystem"));
+        touch(&system.rom_dir.join("SDI.sms"));
+        touch(&system.rom_dir.join("covers/SDI.png"));
+        touch(&system.rom_dir.join("Global Defense.sms"));
+        let gamelist = crate::models::gamelist::GameList { games: vec![game("./SDI.sms"), game("./Global Defense.sms")], ..Default::default() };
+        crate::commands::gamelist::write_gamelist(&Layout::Classic, &system, &gamelist).unwrap();
+
+        let r = remove_games_in(&Layout::Classic, &system, &["./SDI.sms".into()], false, true, &Progress::none()).unwrap();
+        assert_eq!(r.removed, 1);
+        assert!(r.failed.is_empty());
+        // Borrados de verdad: ni la ROM ni su portada siguen ahí
+        assert!(!system.rom_dir.join("SDI.sms").exists());
+        assert!(!system.rom_dir.join("covers/SDI.png").exists());
+        assert!(system.rom_dir.join("Global Defense.sms").exists());
+        let left = crate::commands::gamelist::read_gamelist(&Layout::Classic, &system).unwrap();
+        assert_eq!(left.games.iter().map(|g| g.path.as_str()).collect::<Vec<_>>(), vec!["./Global Defense.sms"]);
     }
 }

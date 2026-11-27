@@ -763,8 +763,8 @@ export interface RemoveResult {
 }
 
 /** Remove games from the gamelist and send their ROM + media to the trash (dryRun: only list) */
-export async function removeGamesWithFiles(systemPath: string, gamePaths: string[], dryRun: boolean, task?: string): Promise<RemoveResult> {
-  return invoke("remove_games_with_files", { systemPath, gamePaths, dryRun, task });
+export async function removeGamesWithFiles(systemPath: string, gamePaths: string[], dryRun: boolean, task?: string, permanent = false): Promise<RemoveResult> {
+  return invoke("remove_games_with_files", { systemPath, gamePaths, dryRun, permanent, task });
 }
 
 // Collections

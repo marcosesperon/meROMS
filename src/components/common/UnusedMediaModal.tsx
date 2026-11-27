@@ -16,6 +16,9 @@ import { MEDIA_FILTER_FIELDS } from "../../utils/mediaFilter";
 import { mediaAction, removeMedia } from "../../utils/collectionActions";
 import { collectionRulesFrom } from "../../utils/collectionRules";
 import { useAppStore } from "../../store/useAppStore";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface UnusedMediaModalProps {
   open: boolean;
@@ -93,6 +96,8 @@ export function UnusedMediaModal({
   const [deleting, setDeleting] = useState(false);
   // Mandar a la papelera: con progreso y Cancelar (se para entre tandas; lo enviado, enviado queda)
   const trashTask = useTask();
+  // Mientras se limpia o se incorporan medios no se puede salir de la ventana
+  useBlockClose(deleting || reusing);
 
   useEffect(() => {
     if (!open) {
@@ -648,20 +653,15 @@ export function UnusedMediaModal({
 
         {/* Footer */}
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("cleanup.close")}
-          </button>
+          <CloseButton onClick={onClose} />
           {allItems.length > 0 && (
             <button
               onClick={handleDelete}
-              disabled={selected.size === 0 || deleting}
+              disabled={selected.size === 0 || deleting || reusing}
               className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {deleting
-                ? "..."
+                ? <ProcessingLabel />
                 : t(action === "set_aside" ? "cleanup.setAside" : "cleanup.clean", { count: selected.size })}
             </button>
           )}

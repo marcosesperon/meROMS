@@ -2,6 +2,9 @@ import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useTranslation } from "../../i18n";
 import { exportGamelist } from "../../commands";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface ExportModalProps {
   open: boolean;
@@ -22,6 +25,8 @@ export function ExportModal({
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  // Exportando: no se puede cerrar hasta que acabe
+  useBlockClose(exporting);
 
   if (!isOpen) return null;
 
@@ -113,18 +118,13 @@ export function ExportModal({
 
         {/* Actions */}
         <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("cleanup.close")}
-          </button>
+          <CloseButton onClick={onClose} />
           <button
             onClick={handleExport}
             disabled={exporting}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50"
           >
-            {exporting ? "..." : t("export.export")}
+            {exporting ? <ProcessingLabel /> : t("export.export")}
           </button>
         </div>
       </div>

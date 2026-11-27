@@ -5,6 +5,9 @@ import { raCheckSystem, type RaCheckSummary } from "../../commands";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
 import { TrophyIcon } from "./Icons";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 /**
  * Herramientas → «Comprobar logros»: calcula la huella de RetroAchievements de cada ROM del
@@ -17,6 +20,8 @@ export function RaCheckModal({ onClose }: { onClose: () => void }) {
   const hasAccount = useAppStore((s) => !!s.settings.ra_user && !!s.settings.ra_apikey);
   const refreshRaMarks = useAppStore((s) => s.refreshRaMarks);
   const task = useTask();
+  // Mientras comprueba no se puede salir de la ventana (Cancelar sigue en la barra)
+  useBlockClose(task.running);
   const [summary, setSummary] = useState<RaCheckSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   if (!system) return null;
@@ -62,16 +67,16 @@ export function RaCheckModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end gap-2">
-          <button onClick={onClose} disabled={task.running} className="px-4 py-2 text-sm text-zinc-300 rounded border border-zinc-600 hover:bg-zinc-700 disabled:opacity-40">
+          <CloseButton onClick={onClose} className="px-4 py-2 text-sm text-zinc-300 rounded border border-zinc-600 hover:bg-zinc-700 disabled:opacity-40">
             {t("play.close")}
-          </button>
+          </CloseButton>
           <button
             data-ra-start
             onClick={start}
             disabled={task.running || !hasAccount}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-40"
           >
-            {summary ? t("ra.checkAgain") : t("ra.checkStart")}
+            {task.running ? <ProcessingLabel /> : summary ? t("ra.checkAgain") : t("ra.checkStart")}
           </button>
         </div>
       </div>

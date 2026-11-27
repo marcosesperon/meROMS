@@ -831,6 +831,7 @@ const it: Record<TranslationKeys, string> = {
 
   // Duplicates
   "duplicates.scanning": "Ricerca dei duplicati...",
+  "common.processing": "Elaborazione…",
   "duplicates.preparing": "Preparazione…",
   "duplicates.reason_screenscraper_id": "Stesso ID ScreenScraper: {id}",
   "duplicates.reason_hash": "Stesso file (hash)",
@@ -1447,6 +1448,10 @@ const it: Record<TranslationKeys, string> = {
   "versions.doneHide": "{count} versioni nascoste.",
   "versions.doneSetAside": "{count} versioni messe da parte in {folder}.",
   "versions.doneTrash": "{count} versioni messe nel cestino.",
+  "versions.permanent": "Elimina definitivamente (non si può annullare)",
+  "versions.apply_delete": "Elimina ({count})",
+  "versions.doneDelete": "{count} versioni eliminate definitivamente.",
+  "versions.deleteConfirm": "Togliere {games} giochi dalla gamelist ed ELIMINARE {files} file (ROM e media) per sempre? Non vanno nel cestino e non si può annullare.",
   "duplicates.reason_dat": "Stesso gioco del DAT",
   "mediaTool.button": "Media…",
   "mediaTool.title": "Media",

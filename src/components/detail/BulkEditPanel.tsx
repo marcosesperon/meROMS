@@ -11,6 +11,7 @@ import { MoveGamesModal } from "../common/MoveGamesModal";
 import { removeGames } from "../../utils/collectionActions";
 import { isArcadeSystem } from "../../utils/arcade";
 import { RenameModal } from "../common/RenameModal";
+import { ProcessingLabel } from "../common/ProcessingLabel";
 
 // Campos que se pueden poner igual en varios juegos (nombre, descripción y ruta son de cada uno)
 const BULK_FIELDS: { field: keyof Game; label: TranslationKeys; placeholder?: TranslationKeys }[] = [
@@ -236,7 +237,7 @@ function FieldsSection({ selected }: { selected: Game[] }) {
         disabled={selected.length === 0 || changes === 0 || saving}
         className="mt-4 w-full px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saving ? "..." : t("bulk.apply", { count: selected.length })}
+        {saving ? <ProcessingLabel /> : t("bulk.apply", { count: selected.length })}
       </button>
     </section>
   );
@@ -346,7 +347,7 @@ function ReplaceSection({ selected }: { selected: Game[] }) {
         disabled={preview.fields === 0 || saving}
         className="mt-3 w-full px-4 py-2 text-sm bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saving ? "..." : t("bulk.replaceApply", { count: preview.fields })}
+        {saving ? <ProcessingLabel /> : t("bulk.replaceApply", { count: preview.fields })}
       </button>
     </section>
   );
@@ -422,7 +423,7 @@ function StatusSection({ selected }: { selected: Game[] }) {
         disabled={selected.length === 0 || !hasChange || saving}
         className="mt-4 w-full px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {saving ? "..." : t("status.apply", { count: selected.length })}
+        {saving ? <ProcessingLabel /> : t("status.apply", { count: selected.length })}
       </button>
     </section>
   );
@@ -466,7 +467,7 @@ function TranslateSection({ selected }: { selected: Game[] }) {
         disabled={!hasKey || withDesc.length === 0 || busy}
         className="w-full px-4 py-2 text-sm bg-zinc-800 text-zinc-200 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {busy ? "..." : t("translate.bulkButton", { count: withDesc.length })}
+        {busy ? <ProcessingLabel /> : t("translate.bulkButton", { count: withDesc.length })}
       </button>
     </section>
   );

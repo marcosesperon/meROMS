@@ -128,6 +128,10 @@ interface AppState {
   backgroundJobs: number;
   /** Counts a job in backgroundJobs until it ends (returns the same promise) */
   trackBackground: <T>(job: Promise<T>) => Promise<T>;
+  /** Actions being applied in a tool window (clear fields, trash, rename...): while > 0 the
+   *  window can't be closed (`common/CloseButton`); counted by `hooks/useBlockClose` */
+  busyActions: number;
+  setBusyAction: (on: boolean) => void;
   selectGame: (game: Game | null) => void;
   setGames: (games: Game[]) => void;
   setFolders: (folders: Folder[]) => void;
@@ -683,6 +687,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     job.then(done, done);
     return job;
   },
+  busyActions: 0,
+  setBusyAction: (on) => set({ busyActions: Math.max(0, get().busyActions + (on ? 1 : -1)) }),
   refreshMediaShape: (systemPath: string, force?: boolean) => {
     const { settings, selectedSystem, viewMode } = get();
     // Con una relación de aspecto elegida a mano para el sistema, esa manda: no hace falta medir

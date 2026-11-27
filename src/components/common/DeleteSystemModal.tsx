@@ -7,6 +7,8 @@ import { showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
 import { TaskProgress } from "./TaskProgress";
 import { TrashIcon, WarningIcon } from "./Icons";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
 
 interface DeleteSystemModalProps {
   systemPath: string;
@@ -28,6 +30,8 @@ export function DeleteSystemModal({ systemPath, onClose }: DeleteSystemModalProp
   const [external, setExternal] = useState(false);
   const [typed, setTyped] = useState("");
   const task = useTask();
+  // Mientras borra no se puede salir de la ventana (Cancelar sigue en la barra)
+  useBlockClose(task.running);
 
   useEffect(() => {
     planDeleteSystem(systemPath)
@@ -156,9 +160,7 @@ export function DeleteSystemModal({ systemPath, onClose }: DeleteSystemModalProp
         )}
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between items-center gap-3">
-          <button onClick={onClose} disabled={task.running} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {plan && !task.running && (
             <button
               onClick={run}

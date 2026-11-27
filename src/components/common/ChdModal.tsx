@@ -9,6 +9,8 @@ import { askConfirm, showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
 
 interface ChdModalProps {
   open: boolean;
@@ -91,6 +93,8 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
   const selected = (games ?? []).filter((g) => checked.has(g.path));
   const selectedSize = selected.reduce((sum, g) => sum + g.size, 0);
   const busy = !!progress;
+  // Mientras convierte no se puede salir de la ventana (Parar sigue disponible)
+  useBlockClose(busy);
 
   async function convert() {
     if (selected.length === 0) return;
@@ -236,9 +240,7 @@ export function ChdModal({ open, systemPath, systemName, onClose, onDone }: ChdM
         )}
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center gap-2">
-          <button onClick={onClose} disabled={busy} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           <div className="flex-1" />
           {progress ? (
             <button onClick={() => cancelChd()} className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30">

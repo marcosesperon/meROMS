@@ -11,6 +11,9 @@ import { showMessage } from "../../utils/dialogs";
 import { formatBytes } from "../../utils/format";
 import { reportWithUndo } from "../../utils/undo";
 import { TaskProgress } from "./TaskProgress";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface ImportModalProps {
   open: boolean;
@@ -71,6 +74,8 @@ export function ImportModal({ open, systemPath, onClose }: ImportModalProps) {
   const required = useMemo(() => collectionRulesFrom(settings.collection_rules).required_media, [settings.collection_rules]);
   const scan = useTask();
   const apply = useTask();
+  // Importando: la ventana no se puede cerrar hasta que acabe (Cancelar sigue en la barra)
+  useBlockClose(apply.running);
 
   // Al cerrar, todo como al principio
   useEffect(() => {
@@ -307,16 +312,16 @@ export function ImportModal({ open, systemPath, onClose }: ImportModalProps) {
         )}
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button onClick={onClose} disabled={apply.running} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {games.length > 0 && (
             <button
               onClick={run}
               disabled={chosen.length === 0 || busy}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {toImport.length === 0
+              {apply.running
+                ? <ProcessingLabel />
+                : toImport.length === 0
                 ? t("import.runComplete", { count: toComplete.length })
                 : toComplete.length === 0
                   ? t(mode === "copy" ? "import.runCopy" : "import.runMove", { count: toImport.length })

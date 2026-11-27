@@ -8,6 +8,9 @@ import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface MediaReviewModalProps {
   open: boolean;
@@ -37,6 +40,8 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
   // Intercambiar: con progreso y Cancelar (se para entre juegos; lo hecho se guarda)
   const applyTask = useTask();
   const applying = applyTask.running;
+  // Mientras se aplica no se puede salir de la ventana
+  useBlockClose(applying);
   // Otra vuelta de búsqueda (en una pestaña de «Medios», tras aplicar)
   const [round, setRound] = useState(0);
 
@@ -201,19 +206,14 @@ export function MediaReviewModal({ open, systemPath, onClose, onDone, onOpenSwap
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           {items.length > 0 && (
             <button
               onClick={handleApply}
               disabled={selected.size === 0 || applying}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {applying ? "..." : t("mediaKinds.apply", { count: selected.size })}
+              {applying ? <ProcessingLabel /> : t("mediaKinds.apply", { count: selected.size })}
             </button>
           )}
         </div>

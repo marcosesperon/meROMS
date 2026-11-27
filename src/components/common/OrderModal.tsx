@@ -14,6 +14,9 @@ import { renameOptionsFrom } from "../../utils/renameSources";
 import { runUndo } from "../../utils/undo";
 import { showOrderSummary, type StepSummary } from "./OrderSummaryDialog";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 
 interface OrderModalProps {
   open: boolean;
@@ -59,6 +62,8 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
   // Scrapear también los que el scraper ya no encontró (casilla del paso de scrapeo)
   const [retryMisses, setRetryMisses] = useState(false);
   const [running, setRunning] = useState<OrderStep | null>(null);
+  // Mientras se aplican los pasos no se puede salir de la ventana (Parar sigue disponible)
+  useBlockClose(!!running);
   const [progress, setProgress] = useState<TaskProgressInfo | null>(null);
   const stopRef = useRef(false);
   const taskRef = useRef<string | null>(null);
@@ -326,9 +331,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center justify-between gap-3">
-          <button onClick={onClose} disabled={!!running} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           <span className="text-[11px] text-zinc-500 flex-1 text-right">{t("order.backupHint")}</span>
           <button
             onClick={apply}
@@ -336,7 +339,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
             data-shot="order-apply"
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {running ? "…" : t("order.apply", { count: toRun.length })}
+            {running ? <ProcessingLabel /> : t("order.apply", { count: toRun.length })}
           </button>
         </div>
       </div>

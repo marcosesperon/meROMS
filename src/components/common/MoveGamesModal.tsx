@@ -6,6 +6,9 @@ import { showMessage } from "../../utils/dialogs";
 import { reportWithUndo } from "../../utils/undo";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface MoveGamesModalProps {
   /** ROM folder of the system the games are in */
@@ -34,6 +37,8 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
   // Mover: con progreso y Cancelar (se para entre juegos; lo movido se guarda)
   const moveTask = useTask();
   const moving = moveTask.running;
+  // Moviendo: no se puede salir (ni con Esc ni pulsando fuera) hasta que acabe
+  useBlockClose(moving);
 
   // Subcarpetas del sistema elegido
   useEffect(() => {
@@ -120,15 +125,13 @@ export function MoveGamesModal({ systemPath, gamePaths, onClose, onDone }: MoveG
           </p>
         </div>
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end gap-3">
-          <button onClick={onClose} disabled={moving} className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 disabled:opacity-50">
-            {t("move.cancel")}
-          </button>
+          <CloseButton onClick={onClose}>{t("move.cancel")}</CloseButton>
           <button
             onClick={move}
             disabled={moving || badName}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-50"
           >
-            {moving ? "..." : t("move.move")}
+            {moving ? <ProcessingLabel /> : t("move.move")}
           </button>
         </div>
       </div>

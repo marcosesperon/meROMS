@@ -5,6 +5,9 @@ import type { NewRom } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
+import { useBlockClose } from "../../hooks/useBlockClose";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
 import { useAppStore } from "../../store/useAppStore";
 
 interface NewRomsModalProps {
@@ -43,6 +46,8 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
   // Mandar a la papelera: con progreso y Cancelar (se para entre tandas)
   const trashTask = useTask();
   const trashing = trashTask.running;
+  // Mientras se añaden o se mandan a la papelera no se puede salir de la ventana
+  useBlockClose(adding || trashing);
 
   function scan() {
     scanTask
@@ -198,12 +203,7 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("rename.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("rename.close")}</CloseButton>
           <div className="flex-1" />
           {roms.length > 0 && canScrape && (
             <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
@@ -234,7 +234,7 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
               className="px-4 py-2 text-sm bg-red-600/20 text-red-400 rounded hover:bg-red-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t("newRoms.trashHelp")}
             >
-              {trashing ? "..." : t("newRoms.trash", { count: selected.size })}
+              {trashing ? <ProcessingLabel /> : t("newRoms.trash", { count: selected.size })}
             </button>
           )}
           {roms.length > 0 && (
@@ -243,7 +243,7 @@ export function NewRomsModal({ open, systemPath, canScrape, onClose, onAdded, on
               disabled={selected.size === 0 || adding || trashing}
               className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {adding ? "..." : t("newRoms.add", { count: selected.size })}
+              {adding ? <ProcessingLabel /> : t("newRoms.add", { count: selected.size })}
             </button>
           )}
         </div>

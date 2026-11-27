@@ -4,6 +4,9 @@ import { listBackups, restoreBackup, deleteBackup } from "../../commands";
 import { useAppStore } from "../../store/useAppStore";
 import type { BackupEntry } from "../../types";
 import { askConfirm, showMessage } from "../../utils/dialogs";
+import { CloseButton } from "./CloseButton";
+import { ProcessingLabel } from "./ProcessingLabel";
+import { useBlockClose } from "../../hooks/useBlockClose";
 
 interface BackupsModalProps {
   open: boolean;
@@ -22,6 +25,9 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
   const loadGames = useAppStore((s) => s.loadGames);
   const [backups, setBackups] = useState<BackupEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  // La copia que se está restaurando o borrando: su botón dice «Procesando…» y no se puede cerrar
+  const [working, setWorking] = useState<{ filename: string; action: "restore" | "delete" } | null>(null);
+  useBlockClose(working !== null);
 
   useEffect(() => {
     if (!open) {
@@ -45,6 +51,7 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
 
   async function handleRestore(filename: string) {
     if (!(await askConfirm(t("backup.confirmRestore")))) return;
+    setWorking({ filename, action: "restore" });
     try {
       await restoreBackup(systemPath, filename);
       loadGames(systemPath);
@@ -52,15 +59,20 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
       onClose();
     } catch (e) {
       await showMessage(t("backup.restoreFailed", { error: String(e) }), "error");
+    } finally {
+      setWorking(null);
     }
   }
 
   async function handleDelete(filename: string) {
+    setWorking({ filename, action: "delete" });
     try {
       await deleteBackup(systemPath, filename);
       setBackups((prev) => prev.filter((b) => b.filename !== filename));
     } catch (e) {
       console.error("Failed to delete backup:", e);
+    } finally {
+      setWorking(null);
     }
   }
 
@@ -107,15 +119,17 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
                   </div>
                   <button
                     onClick={() => handleRestore(backup.filename)}
-                    className="px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition-colors"
+                    disabled={working !== null}
+                    className="px-3 py-1.5 text-xs bg-indigo-600/20 text-indigo-400 rounded hover:bg-indigo-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t("backup.restore")}
+                    {working?.filename === backup.filename && working.action === "restore" ? <ProcessingLabel /> : t("backup.restore")}
                   </button>
                   <button
                     onClick={() => handleDelete(backup.filename)}
-                    className="px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded hover:bg-red-600/30 transition-colors"
+                    disabled={working !== null}
+                    className="px-3 py-1.5 text-xs bg-red-600/20 text-red-400 rounded hover:bg-red-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {t("backup.delete")}
+                    {working?.filename === backup.filename && working.action === "delete" ? <ProcessingLabel /> : t("backup.delete")}
                   </button>
                 </div>
               ))}
@@ -124,12 +138,7 @@ export function BackupsModal({ open, systemPath, onClose }: BackupsModalProps) {
         </div>
 
         <div className="border-t border-zinc-700 px-5 py-3 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm bg-zinc-700 text-zinc-300 rounded hover:bg-zinc-600 transition-colors"
-          >
-            {t("backup.close")}
-          </button>
+          <CloseButton onClick={onClose}>{t("backup.close")}</CloseButton>
         </div>
       </div>
     </div>
