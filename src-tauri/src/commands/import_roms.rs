@@ -47,7 +47,11 @@ pub struct ImportGame {
     pub status: String,
     /// El juego tuyo con el que coincide (misma ROM u otra versión)
     pub other: Option<String>,
-    /// Campos de los medios que trae
+    /// Misma ROM: la ruta de tu juego en la gamelist (el que se completa)
+    pub mine: Option<String>,
+    /// Misma ROM: cuántos datos vacíos de tu juego rellenaría
+    pub fills: usize,
+    /// Campos de los medios que trae (misma ROM: solo los que a tu juego le faltan)
     pub media: Vec<String>,
     /// Tamaño de la ROM (con acompañantes)
     pub bytes: u64,
@@ -71,10 +75,21 @@ pub struct ImportOptions {
     pub required: Vec<String>,
 }
 
+/// Un juego que ya tienes (misma ROM) y se completa con lo del origen en vez de importarse
+#[derive(Debug, Clone, Deserialize)]
+pub struct CompleteRequest {
+    /// Ruta en el origen
+    pub path: String,
+    /// Ruta de tu juego en la gamelist
+    pub mine: String,
+}
+
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ImportResult {
     /// Rutas de los juegos importados (para «Ponerlo todo en orden» con ellos)
     pub imported: Vec<String>,
+    /// Rutas de tus juegos que se completaron (datos o medios)
+    pub completed: Vec<String>,
     /// Juegos que no se pudieron importar, con el motivo
     pub skipped: Vec<String>,
     pub media: usize,
@@ -96,7 +111,7 @@ pub fn plan_import(app: tauri::AppHandle, system_path: String, folder: String, e
     let source = detect(Path::new(&folder), esde_home.as_deref().map(Path::new))?;
     check_not_inside(&source, &system)?;
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
-    let src_games = source_games(&source, &rules);
+    let src_games = source_games(&source, &rules, &system);
     progress.check()?;
     let dst_games = super::gamelist::read_gamelist(&layout, &system).map(|g| g.games).unwrap_or_default();
     let mut crc = crate::rom_hash::cache_file(&app).map(|f| crate::rom_hash::CrcCache::load(&f)).ok();
@@ -115,6 +130,7 @@ pub fn import_roms(
     folder: String,
     esde_home: Option<String>,
     paths: Vec<String>,
+    complete: Vec<CompleteRequest>,
     options: ImportOptions,
     task: Option<String>,
 ) -> Result<ImportResult, String> {
@@ -125,13 +141,27 @@ pub fn import_roms(
     check_not_inside(&source, &system)?;
     let rules = CompiledRules::new(&settings.rename_rules_or_default());
     let wanted: HashSet<&str> = paths.iter().map(String::as_str).collect();
-    let games: Vec<Game> = source_games(&source, &rules).into_iter().filter(|(g, _)| wanted.contains(g.path.as_str())).map(|(g, _)| g).collect();
+    let all = source_games(&source, &rules, &system);
+    let games: Vec<Game> = all.iter().filter(|(g, _)| wanted.contains(g.path.as_str())).map(|(g, _)| g.clone()).collect();
+    // Los que ya tienes: el juego del origen con la ruta de tu juego
+    let by_path: HashMap<&str, &Game> = all.iter().map(|(g, _)| (strip_dot_slash(&g.path), g)).collect();
+    let to_complete: Vec<(Game, String)> =
+        complete.iter().filter_map(|c| by_path.get(strip_dot_slash(&c.path)).map(|g| ((*g).clone(), c.mine.clone()))).collect();
 
     let mut gamelist = super::gamelist::read_gamelist(&layout, &system).unwrap_or_default();
     media::journal_begin();
-    let result = import(&source, &layout, &system, &mut gamelist.games, &games, &options, &progress);
+    let (completed, merged) = complete_games(&source, &layout, &system, &mut gamelist.games, &to_complete, &options, &progress);
+    let mut result = if progress.cancelled() {
+        ImportResult { stopped: true, ..Default::default() }
+    } else {
+        import(&source, &layout, &system, &mut gamelist.games, &games, &options, &progress)
+    };
+    result.media += completed.media;
+    result.completed = completed.completed;
+    result.skipped.extend(completed.skipped);
+    result.stopped |= completed.stopped;
     let files = media::journal_take();
-    if !result.imported.is_empty() {
+    if !result.imported.is_empty() || !result.completed.is_empty() {
         // write_gamelist() hace la copia de seguridad antes de escribir
         super::gamelist::write_gamelist(&layout, &system, &gamelist)?;
         let sys = system.rom_dir.to_string_lossy().to_string();
@@ -140,6 +170,8 @@ pub fn import_roms(
             system: sys.clone(),
             files,
             added: result.imported.iter().map(|p| (sys.clone(), p.clone())).collect(),
+            // Los completados: Deshacer pone la entrada como estaba
+            merged: merged.into_iter().map(|(after, before)| (sys.clone(), after, vec![before])).collect(),
             ..Default::default()
         });
     }
@@ -213,25 +245,33 @@ fn check_not_inside(source: &Source, system: &SystemRef) -> Result<(), String> {
 }
 
 /// Juegos del origen: los de su gamelist cuya ROM existe y, además, las ROMs que no están en
-/// ella (con el título del nombre de fichero). El bool: la extensión es de este sistema.
-fn source_games(source: &Source, rules: &CompiledRules) -> Vec<(Game, bool)> {
-    let mut games: Vec<(Game, bool)> = Vec::new();
+/// ella (con el título del nombre de fichero). El bool: la extensión es del sistema de destino
+/// (`dest`), no del nombre de la carpeta de origen, que puede ser otro.
+fn source_games(source: &Source, rules: &CompiledRules, dest: &SystemRef) -> Vec<(Game, bool)> {
+    let exts = crate::models::system::extensions_for_system(&dest.name);
+    let known = |path: &str| -> bool {
+        let rom = source.system.rom_dir.join(strip_dot_slash(path));
+        // Una ROM-carpeta vale siempre
+        rom.is_dir() || media::extension_lower(&rom).is_some_and(|e| exts.contains(&format!(".{e}").as_str()))
+    };
+    let mut games: Vec<Game> = Vec::new();
     if source.info.gamelist.is_some() {
         if let Ok(list) = super::gamelist::read_gamelist(&source.layout, &source.system) {
             let mut seen = HashSet::new();
             for g in list.games {
                 if seen.insert(g.path.clone()) && source.system.rom_dir.join(strip_dot_slash(&g.path)).exists() {
-                    games.push((g, true));
+                    games.push(g);
                 }
             }
         }
     }
-    let known: Vec<Game> = games.iter().map(|(g, _)| g.clone()).collect();
-    for rom in super::new_roms::find_new_roms(&source.system, &known, rules) {
-        let game = Game { path: rom.path, name: Some(rom.proposed_name), ..Default::default() };
-        games.push((game, rom.known_extension));
+    for rom in super::new_roms::find_new_roms(&source.system, &games, rules) {
+        games.push(Game { path: rom.path, name: Some(rom.proposed_name), ..Default::default() });
     }
-    games
+    games.into_iter().map(|g| {
+        let k = known(&g.path);
+        (g, k)
+    }).collect()
 }
 
 /// Tipos de medio que tiene el destino
@@ -252,13 +292,14 @@ fn classify(
 ) -> Result<Vec<ImportGame>, String> {
     let src_index = MediaIndex::build(&source.layout, &source.system);
     // ROMs del destino por tamaño (el CRC solo se mira si coincide el tamaño)
-    let mut by_size: HashMap<u64, Vec<(PathBuf, String)>> = HashMap::new();
-    for g in dst_games {
+    let mut by_size: HashMap<u64, Vec<(PathBuf, usize)>> = HashMap::new();
+    for (i, g) in dst_games.iter().enumerate() {
         let rom = system.rom_dir.join(strip_dot_slash(&g.path));
         if let Some(meta) = fs::metadata(&rom).ok().filter(|m| m.is_file()) {
-            by_size.entry(meta.len()).or_default().push((rom, g.name.clone().unwrap_or_else(|| g.path.clone())));
+            by_size.entry(meta.len()).or_default().push((rom, i));
         }
     }
+    let dst_index = MediaIndex::build(layout, system);
     // Otras versiones: el agrupado de Versiones y duplicados sobre los tuyos + los del origen.
     // Los del origen llevan otra ruta para no confundirse con los tuyos
     let mut combined: Vec<Game> = dst_games.to_vec();
@@ -296,29 +337,48 @@ fn classify(
                 None => false,
             }
         };
-        let (status, other) = if target.exists() {
+        // (estado, juego tuyo con el que coincide: índice en dst_games)
+        let (status, mine): (&str, Option<usize>) = if target.exists() {
             // Mismo nombre: la misma ROM si es igual (CRC), o si es tu entrada y mide lo mismo
-            let mine = dst_games.iter().any(|g| strip_dot_slash(&g.path) == strip_dot_slash(&game.path));
+            let mine = dst_games.iter().position(|g| strip_dot_slash(&g.path) == strip_dot_slash(&game.path));
             let same_size = fs::metadata(&rom).map(|m| m.len()).ok() == fs::metadata(&target).map(|m| m.len()).ok();
-            if same_content(&mut crc, &target) || (mine && same_size) {
-                ("same_rom", dst_name(dst_games, &game.path))
+            if same_content(&mut crc, &target) || (mine.is_some() && same_size) {
+                ("same_rom", mine)
             } else {
                 ("taken", None)
             }
         } else {
             let size = fs::metadata(&rom).map(|m| m.len()).unwrap_or(0);
-            let twin = by_size.get(&size).and_then(|list| list.iter().find(|(p, _)| same_content(&mut crc, p)).map(|(_, n)| n.clone()));
-            match (twin, version_of.get(&i)) {
-                (Some(name), _) => ("same_rom", Some(name)),
-                (None, Some(name)) => ("other_version", Some(name.clone())),
-                (None, None) => ("new", None),
+            let twin = by_size.get(&size).and_then(|list| list.iter().find(|(p, _)| same_content(&mut crc, p)).map(|(_, i)| *i));
+            match twin {
+                Some(t) => ("same_rom", Some(t)),
+                None if version_of.contains_key(&i) => ("other_version", None),
+                None => ("new", None),
             }
+        };
+        let other = match mine {
+            Some(m) => Some(dst_games[m].name.clone().unwrap_or_else(|| dst_games[m].path.clone())),
+            None => version_of.get(&i).cloned().filter(|_| status == "other_version"),
+        };
+        // Misma ROM: lo que aportaría a tu juego (datos vacíos y medios que le faltan)
+        let (fills, media) = match mine {
+            Some(m) => {
+                let my_game = &dst_games[m];
+                let lacking: Vec<String> = media
+                    .into_iter()
+                    .filter(|f| MEDIA_KINDS.iter().find(|k| k.field == f).is_some_and(|k| super::media_kinds::current_file(layout, system, &dst_index, my_game, k).is_none()))
+                    .collect();
+                (data_fills(system, my_game, game), lacking)
+            }
+            None => (0, media),
         };
         out.push(ImportGame {
             path: game.path.clone(),
             name: game.name.clone().unwrap_or_else(|| game.path.clone()),
             status: status.to_string(),
             other,
+            mine: mine.map(|m| dst_games[m].path.clone()),
+            fills,
             media,
             bytes,
             known_extension: *known,
@@ -327,21 +387,99 @@ fn classify(
     Ok(out)
 }
 
-fn dst_name(dst_games: &[Game], path: &str) -> Option<String> {
-    dst_games.iter().find(|g| strip_dot_slash(&g.path) == strip_dot_slash(path)).map(|g| g.name.clone().unwrap_or_else(|| g.path.clone()))
+/// Cuántos datos vacíos de `mine` rellenaría el juego del origen (sin los medios: van aparte)
+fn data_fills(system: &SystemRef, mine: &Game, theirs: &Game) -> usize {
+    let mut filled = mine.clone();
+    let mut source = theirs.clone();
+    media::clear_media_fields(&mut source);
+    super::repeated_entries::fill_empty(system, &mut filled, &source, true);
+    let (Ok(serde_json::Value::Object(a)), Ok(serde_json::Value::Object(b))) = (serde_json::to_value(mine), serde_json::to_value(&filled)) else { return 0 };
+    b.iter().filter(|(k, v)| a.get(*k) != Some(*v)).count()
+}
+
+/// Lo que importa cada juego (ROM aparte): los tipos de medio elegidos
+fn chosen_kinds<'a>(layout: &'a Layout, options: &'a ImportOptions) -> Vec<&'static MediaKind> {
+    dest_kinds(layout)
+        .filter(|k| match options.media.as_str() {
+            "all" => true,
+            "required" => options.required.iter().any(|f| f == k.field),
+            _ => false,
+        })
+        .collect()
+}
+
+/// Completa tus juegos que ya están (misma ROM): rellena sus datos vacíos y les trae los medios
+/// que les faltan, con el nombre de tu ROM. La ROM no se toca. Devuelve, para Deshacer, cada
+/// entrada completada con cómo era antes.
+fn complete_games(
+    source: &Source,
+    layout: &Layout,
+    system: &SystemRef,
+    dst_games: &mut [Game],
+    games: &[(Game, String)],
+    options: &ImportOptions,
+    progress: &Progress,
+) -> (ImportResult, Vec<(Game, Game)>) {
+    let mut result = ImportResult::default();
+    let mut merged = Vec::new();
+    let src_index = MediaIndex::build(&source.layout, &source.system);
+    let dst_index = MediaIndex::build(layout, system);
+    let kinds = chosen_kinds(layout, options);
+    for (i, (game, mine_path)) in games.iter().enumerate() {
+        if progress.cancelled() {
+            result.stopped = true;
+            break;
+        }
+        progress.step("completing", i + 1, games.len(), &game.path);
+        let Some(pos) = dst_games.iter().position(|g| strip_dot_slash(&g.path) == strip_dot_slash(mine_path)) else {
+            result.skipped.push(format!("{} (not in the gamelist)", strip_dot_slash(mine_path)));
+            continue;
+        };
+        let before = dst_games[pos].clone();
+        let mut after = before.clone();
+        // Datos: solo los vacíos (ids y hashes también: es la misma ROM)
+        let mut theirs = game.clone();
+        media::clear_media_fields(&mut theirs);
+        super::repeated_entries::fill_empty(system, &mut after, &theirs, true);
+        // Medios que tu juego no tiene, con el nombre de tu ROM (nunca se pisa nada)
+        let my_rom = system.rom_dir.join(strip_dot_slash(&before.path));
+        let stem = media_stem_for(&before.path, my_rom.is_dir());
+        let mut moves: Vec<(PathBuf, PathBuf)> = Vec::new();
+        for kind in &kinds {
+            if super::media_kinds::current_file(layout, system, &dst_index, &before, kind).is_some() {
+                continue;
+            }
+            let Some(file) = super::media_kinds::current_file(&source.layout, &source.system, &src_index, game, kind) else { continue };
+            let ext = media::extension_lower(&file).unwrap_or_else(|| "png".into());
+            let target = layout.media_file_for_stem(system, kind.folder, &stem, &ext);
+            if target.exists() {
+                continue;
+            }
+            if layout.writes_media_tags() {
+                media::set_field(&mut after, kind.field, Some(media::media_ref(layout, system, &target)));
+            }
+            moves.push((file, target));
+        }
+        if let Err(e) = transfer(&moves, options.mode) {
+            result.skipped.push(format!("{} ({})", strip_dot_slash(&game.path), e));
+            continue;
+        }
+        let changed = !moves.is_empty() || serde_json::to_value(&after).ok() != serde_json::to_value(&before).ok();
+        if changed {
+            result.media += moves.len();
+            result.completed.push(after.path.clone());
+            dst_games[pos] = after.clone();
+            merged.push((after, before));
+        }
+    }
+    (result, merged)
 }
 
 /// Importa los juegos: ficheros, medios y entrada. Va añadiendo a `dst_games`.
 fn import(source: &Source, layout: &Layout, system: &SystemRef, dst_games: &mut Vec<Game>, games: &[Game], options: &ImportOptions, progress: &Progress) -> ImportResult {
     let mut result = ImportResult::default();
     let src_index = MediaIndex::build(&source.layout, &source.system);
-    let kinds: Vec<&MediaKind> = dest_kinds(layout)
-        .filter(|k| match options.media.as_str() {
-            "all" => true,
-            "required" => options.required.iter().any(|f| f == k.field),
-            _ => false,
-        })
-        .collect();
+    let kinds = chosen_kinds(layout, options);
 
     for (i, game) in games.iter().enumerate() {
         if progress.cancelled() {
@@ -481,7 +619,7 @@ mod tests {
             Game { path: "./Kirby.sfc".into(), name: Some("Kirby Other".into()), ..Default::default() },
         ];
         let source = detect(&src, None).unwrap();
-        let games = source_games(&source, &rules());
+        let games = source_games(&source, &rules(), &dst);
         let mut cache = crate::rom_hash::CrcCache::load(&tmp.path().join("crc.json"));
         let list = classify(&source, &Layout::Classic, &dst, &games, &dst_games, Some(&mut cache), &|_| HashMap::new(), &Progress::none()).unwrap();
         let status: HashMap<&str, &str> = list.iter().map(|g| (strip_dot_slash(&g.path), g.status.as_str())).collect();
@@ -502,7 +640,7 @@ mod tests {
         let dst = SystemRef::from_rom_dir(tmp.path().join("lib/snes"));
         fs::create_dir_all(&dst.rom_dir).unwrap();
         let source = detect(&src, None).unwrap();
-        let games: Vec<Game> = source_games(&source, &rules()).into_iter().map(|(g, _)| g).collect();
+        let games: Vec<Game> = source_games(&source, &rules(), &dst).into_iter().map(|(g, _)| g).collect();
         let mut dst_games = Vec::new();
         let r = import(&source, &layout, &dst, &mut dst_games, &games, &opts(MigrationMode::Copy, "required"), &Progress::none());
         assert_eq!(r.imported.len(), 2);
@@ -529,7 +667,7 @@ mod tests {
         touch(&dst.rom_dir.join("Taken.sfc"), b"t2");
 
         let source = detect(&roms, None).unwrap();
-        let games: Vec<Game> = source_games(&source, &rules()).into_iter().map(|(g, _)| g).collect();
+        let games: Vec<Game> = source_games(&source, &rules(), &dst).into_iter().map(|(g, _)| g).collect();
         let mut dst_games = Vec::new();
         let r = import(&source, &Layout::Classic, &dst, &mut dst_games, &games, &opts(MigrationMode::Move, "all"), &Progress::none());
         assert_eq!(r.imported, vec!["./Mario.sfc"]);
@@ -548,7 +686,79 @@ mod tests {
         let src = tmp.path().join("loose/snes");
         touch(&src.join("Contra III (USA).sfc"), b"c");
         let source = detect(&src, None).unwrap();
-        let games = source_games(&source, &rules());
+        let dst = SystemRef::from_rom_dir(tmp.path().join("lib/snes"));
+        let games = source_games(&source, &rules(), &dst);
         assert_eq!(games[0].0.name.as_deref(), Some("Contra III (USA)"));
+    }
+
+    #[test]
+    fn extensions_are_checked_against_the_destination_also_for_gamelist_entries() {
+        let tmp = tempfile::tempdir().unwrap();
+        // Carpeta de origen con otro nombre: manda el sistema de destino
+        let src = tmp.path().join("from/whatever");
+        touch(&src.join("Mario.sfc"), b"m");
+        touch(&src.join("Notes.txt"), b"t");
+        touch(&src.join("Zelda.nes"), b"z");
+        touch(&src.join("gamelist.xml"), br#"<gameList><game><path>./Zelda.nes</path><name>Zelda</name></game></gameList>"#);
+        let dst = SystemRef::from_rom_dir(tmp.path().join("lib/snes"));
+        let source = detect(&src, None).unwrap();
+        let known: HashMap<String, bool> = source_games(&source, &rules(), &dst).into_iter().map(|(g, k)| (strip_dot_slash(&g.path).to_string(), k)).collect();
+        assert!(known["Mario.sfc"]);
+        assert!(!known["Zelda.nes"], "in the source gamelist, but not a snes extension");
+        assert!(!known.get("Notes.txt").copied().unwrap_or(false));
+    }
+
+    #[test]
+    fn same_rom_with_another_name_completes_your_game_and_is_not_duplicated() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = classic_source(tmp.path());
+        let dst = SystemRef::from_rom_dir(tmp.path().join("lib/snes"));
+        touch(&dst.rom_dir.join("Mario copy.sfc"), b"mario"); // the same ROM, another name
+        touch(&dst.rom_dir.join("screenshots/Mario copy.png"), b"mine"); // it has a screenshot already
+        let mut dst_games = vec![Game {
+            path: "./Mario copy.sfc".into(),
+            name: Some("Mario mine".into()),
+            thumbnail: Some("./screenshots/Mario copy.png".into()),
+            ..Default::default()
+        }];
+        let source = detect(&src, None).unwrap();
+        let games = source_games(&source, &rules(), &dst);
+        let mut cache = crate::rom_hash::CrcCache::load(&tmp.path().join("crc.json"));
+        let list = classify(&source, &Layout::Classic, &dst, &games, &dst_games, Some(&mut cache), &|_| HashMap::new(), &Progress::none()).unwrap();
+        let mario = list.iter().find(|g| g.path == "./Mario (USA).sfc").unwrap();
+        assert_eq!(mario.status, "same_rom");
+        assert_eq!(mario.mine.as_deref(), Some("./Mario copy.sfc"));
+        assert_eq!(mario.fills, 1, "favorite (the name is not empty)");
+        assert_eq!(mario.media, vec!["image", "video"], "not the screenshot it already has");
+
+        let mario_src = games.iter().find(|(g, _)| g.path == "./Mario (USA).sfc").unwrap().0.clone();
+        let (r, merged) = complete_games(&source, &Layout::Classic, &dst, &mut dst_games, &[(mario_src, "./Mario copy.sfc".into())], &opts(MigrationMode::Copy, "all"), &Progress::none());
+        assert_eq!(r.completed, vec!["./Mario copy.sfc"]);
+        assert_eq!(r.media, 2);
+        assert!(!dst.rom_dir.join("Mario (USA).sfc").exists(), "the ROM is not copied");
+        assert_eq!(dst_games.len(), 1);
+        let g = &dst_games[0];
+        assert_eq!((g.name.as_deref(), g.favorite.as_deref()), (Some("Mario mine"), Some("true")));
+        assert_eq!(g.image.as_deref(), Some("./covers/Mario copy.png"));
+        assert_eq!(fs::read(dst.rom_dir.join("screenshots/Mario copy.png")).unwrap(), b"mine", "never overwritten");
+        assert!(dst.rom_dir.join("videos/Mario copy.mp4").is_file());
+        assert_eq!(merged.len(), 1);
+        assert!(merged[0].1.favorite.is_none(), "the entry as it was, for Undo");
+    }
+
+    #[test]
+    fn same_rom_with_nothing_to_add_is_left_alone() {
+        let tmp = tempfile::tempdir().unwrap();
+        let src = tmp.path().join("loose/snes");
+        touch(&src.join("Contra.sfc"), b"c");
+        let dst = SystemRef::from_rom_dir(tmp.path().join("lib/snes"));
+        touch(&dst.rom_dir.join("Contra.sfc"), b"c");
+        let mut dst_games = vec![Game { path: "./Contra.sfc".into(), name: Some("Contra".into()), ..Default::default() }];
+        let source = detect(&src, None).unwrap();
+        let games = source_games(&source, &rules(), &dst);
+        let list = classify(&source, &Layout::Classic, &dst, &games, &dst_games, None, &|_| HashMap::new(), &Progress::none()).unwrap();
+        assert_eq!((list[0].status.as_str(), list[0].fills, list[0].media.len()), ("same_rom", 0, 0));
+        let (r, merged) = complete_games(&source, &Layout::Classic, &dst, &mut dst_games, &[(games[0].0.clone(), "./Contra.sfc".into())], &opts(MigrationMode::Copy, "all"), &Progress::none());
+        assert!(r.completed.is_empty() && merged.is_empty());
     }
 }

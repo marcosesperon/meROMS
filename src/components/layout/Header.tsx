@@ -39,10 +39,12 @@ export function Header() {
   return (
     // «@container»: la cabecera mira su propio ancho (con o sin el panel derecho), no el de la ventana
     <div className="@container">
-      {/* Una sola fila: el nombre se corta con «…» y el buscador encoge; solo si ni así cabe
-          (por debajo de ~800 px) los controles bajan a una segunda fila */}
-      <header className="flex flex-nowrap @max-[800px]:flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
-        {/* Ocupa lo que necesita; si no hay sitio, después de encoger el buscador, corta el nombre */}
+      {/* Una fila mientras quepan el nombre entero y los controles (con el buscador ya encogido a
+          140 px); si no, los controles bajan a una segunda fila. Lo decide el propio flex-wrap con
+          lo que ocupa cada parte, no un ancho fijo: los controles miden distinto según el idioma
+          y la vista, y con un umbral fijo el nombre llegaba a desaparecer */}
+      <header className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
+        {/* Ocupa lo que necesita; solo se corta con «…» cuando ya está solo en su fila (ventana muy estrecha) */}
         <div className="flex items-center gap-4 min-w-0 max-w-full">
           <button
             onClick={revealSystemInSidebar}

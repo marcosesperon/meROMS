@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Game } from "../../types";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
@@ -13,6 +13,7 @@ import { statusBadge, statusText } from "../../utils/gameStatus";
 import { scrapeMissText } from "../../utils/scrapeMiss";
 import { effectiveGridField } from "../../utils/systemView";
 import { GameBox3D } from "./GameBox3D";
+import { CardVideo } from "./CardVideo";
 import { useOpenAfter } from "../../hooks/useOpenAfter";
 
 interface GameCardProps {
@@ -58,11 +59,16 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
   const year = game.releasedate?.slice(0, 4);
   const subtitle = [game.developer, year].filter(Boolean).join(" · ");
 
-  // Caja 3D: con el ratón quieto encima 2 s, se abre y enseña el vídeo del juego
+  // Con el ratón quieto encima 2 s, el vídeo del juego: la caja 3D se abre y lo enseña dentro;
+  // sin cajas 3D, sale una pantalla flotante encima de la tarjeta (CardVideo)
   const boxVideo = useAppStore((s) => s.settings.box_video !== false);
-  const videoSrc = box3d && boxVideo && !multiSelect ? resolveImageSrc(game.video, selectedSystem?.path || "") : null;
+  const videoSrc = boxVideo && !multiSelect ? resolveImageSrc(game.video, selectedSystem?.path || "") : null;
   const [hovering, setHovering] = useState(false);
-  const open = useOpenAfter(hovering && !!videoSrc);
+  // Plana: si el vídeo no carga, no se vuelve a intentar hasta que cambie
+  const [flatVideoFailed, setFlatVideoFailed] = useState(false);
+  useEffect(() => setFlatVideoFailed(false), [videoSrc]);
+  const open = useOpenAfter(hovering && !!videoSrc && (box3d || !flatVideoFailed));
+  const flatOpen = open && !box3d && !!videoSrc;
   const { slotRef, room } = useOpenRoom(open);
   const marqueeSrc = videoSrc ? resolveImageSrc(game.marquee, selectedSystem?.path || "") : null;
 
@@ -82,7 +88,8 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
     >
       <div
         ref={slotRef}
-        className={`relative rounded-md flex items-center justify-center ${box3d ? "" : "bg-zinc-800 overflow-hidden shadow-lg shadow-black/40"}`}
+        // Con la pantalla del vídeo abierta, sin fondo ni «overflow-hidden»: sale por los lados de la tarjeta
+        className={`relative rounded-md flex items-center justify-center ${box3d || flatOpen ? "" : "bg-zinc-800 overflow-hidden shadow-lg shadow-black/40"}`}
         style={{ aspectRatio }}
       >
         {multiSelect && (
@@ -149,18 +156,29 @@ export function GameCard({ game, aspectRatio, box3d = false }: GameCardProps) {
             src={imageSrc}
             alt={game.name || game.path}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className={`w-full h-full object-cover rounded-md transition-[transform,opacity] duration-300 group-hover:scale-[1.03] ${flatOpen ? "opacity-0" : ""}`}
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-        ) : (
+        ) : null}
+        {!box3d && !imageSrc && (
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1} className="text-zinc-600">
             <rect x="2" y="6" width="20" height="12" rx="2" />
             <path d="M6 12h2M9 10v4" />
             <circle cx="16" cy="10" r="1" />
             <circle cx="18" cy="12" r="1" />
           </svg>
+        )}
+        {flatOpen && (
+          <CardVideo
+            src={videoSrc!}
+            system={selectedSystem?.name || ""}
+            marqueeSrc={marqueeSrc}
+            aspectRatio={aspectRatio}
+            room={room}
+            onFailed={() => setFlatVideoFailed(true)}
+          />
         )}
       </div>
       <div className="pt-2 px-0.5">

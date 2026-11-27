@@ -187,51 +187,62 @@ export function CollectionStatus() {
   const anything = visible.some((g) => g.items.some((l) => l.fix && total(l) > 0));
   const checking = status?.checking ?? true;
   const errors = status?.errors ?? [];
+  // Todo cumple: en vez del botón (que no haría nada), un icono verde arriba
+  const allGood = !anything && !pending;
+  const hasBody = visible.length > 0 || errors.length > 0;
 
   return (
     <section className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/60 overflow-hidden" data-shot="collection-status">
-      <div className="px-4 py-2.5 flex items-center justify-between gap-2 border-b border-zinc-800">
+      {/* Sin cuerpo, la raya de abajo la pone ya el pie */}
+      <div className={`px-4 py-2.5 flex items-center justify-between gap-2 ${hasBody ? "border-b border-zinc-800" : ""}`}>
         <h3 className="text-[11px] uppercase tracking-wider text-zinc-500 font-semibold">{t("colstatus.title")}</h3>
-        <button
-          onClick={() => openTool({ id: "order" })}
-          disabled={!anything}
-          data-shot="order-open"
-          className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {t("order.button")}
-        </button>
+        {allGood ? (
+          <span
+            title={t("colstatus.allGood")}
+            aria-label={t("colstatus.allGood")}
+            className="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30 flex items-center justify-center"
+          >
+            <CheckIcon size={14} />
+          </span>
+        ) : (
+          <button
+            onClick={() => openTool({ id: "order" })}
+            disabled={!anything}
+            data-shot="order-open"
+            className="px-2.5 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {t("order.button")}
+          </button>
+        )}
       </div>
 
-      <div className="px-4 py-3 space-y-3">
-        {visible.map((g) => (
-          <div key={g.group} className="grid grid-cols-[72px_1fr] gap-x-2">
-            <p className="text-[11px] text-zinc-500 pt-0.5">{t(g.group)}</p>
-            <div className="space-y-1.5">
-              {g.items.map((line) => (
-                <Line
-                  key={line.kind}
-                  line={line}
-                  active={issue === line.kind}
-                  onFilter={() => setFilters({ issue: issue === line.kind ? undefined : line.kind })}
-                  onView={line.view ? () => openTool(line.view!) : line.filter ? () => setFilters({ issue: line.kind }) : undefined}
-                  onFix={line.fix ? () => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix!] }) : undefined}
-                />
-              ))}
+      {/* El cuerpo solo si tiene algo: líneas (también las que solo informan) o avisos */}
+      {hasBody && (
+        <div className="px-4 py-3 space-y-3">
+          {visible.map((g) => (
+            <div key={g.group} className="grid grid-cols-[72px_1fr] gap-x-2">
+              <p className="text-[11px] text-zinc-500 pt-0.5">{t(g.group)}</p>
+              <div className="space-y-1.5">
+                {g.items.map((line) => (
+                  <Line
+                    key={line.kind}
+                    line={line}
+                    active={issue === line.kind}
+                    onFilter={() => setFilters({ issue: issue === line.kind ? undefined : line.kind })}
+                    onView={line.view ? () => openTool(line.view!) : line.filter ? () => setFilters({ issue: line.kind }) : undefined}
+                    onFix={line.fix ? () => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix!] }) : undefined}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-        {!anything && !pending && (
-          <p className="flex items-center gap-1.5 text-sm text-emerald-400">
-            <CheckIcon size={14} />
-            {t("colstatus.allGood")}
-          </p>
-        )}
-        {errors.length > 0 && (
-          <p className="text-[11px] text-amber-400" title={errors.join("\n")}>
-            {t("colstatus.someFailed", { count: errors.length })}
-          </p>
-        )}
-      </div>
+          ))}
+          {errors.length > 0 && (
+            <p className="text-[11px] text-amber-400" title={errors.join("\n")}>
+              {t("colstatus.someFailed", { count: errors.length })}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="px-4 py-2 border-t border-zinc-800 flex items-center justify-between text-[11px] text-zinc-500">
         <span>

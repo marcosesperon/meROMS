@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { checkBios, systemLocations, type SystemLocations } from "../../commands";
+import { checkBios, openLocation, systemLocations, type SystemLocations } from "../../commands";
+import { showMessage } from "../../utils/dialogs";
+import { SearchIcon } from "../common/Icons";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import type { TranslationKeys as TranslationKey } from "../../i18n/en";
@@ -475,6 +477,14 @@ function BiosLine({ system }: { system: string }) {
 }
 
 /** Dónde lee y escribe la app los datos de este sistema con el perfil activo (solo informativo) */
+/** «Abrir en Finder» / «en el Explorador» / «en la carpeta», según el sistema operativo */
+function fileManagerLabel(): TranslationKey {
+  const ua = navigator.userAgent;
+  if (/Mac/i.test(ua)) return "systemInfo.openMac";
+  if (/Win/i.test(ua)) return "systemInfo.openWin";
+  return "systemInfo.openOther";
+}
+
 function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
   const { t } = useTranslation();
   const games = useAppStore((s) => s.games);
@@ -493,14 +503,31 @@ function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
 
   if (!loc) return null;
 
-  // Una ruta: etiqueta y la ruta seleccionable (para copiarla)
-  const row = (label: string, path: string, note?: string) => (
+  // Abre la ruta en el Finder/Explorador (si falla, se dice por qué)
+  const open = (path: string) => openLocation(path).catch((e) => showMessage(String(e), "error"));
+  const openLabel = t(fileManagerLabel());
+
+  // Una ruta: etiqueta y la ruta seleccionable (para copiarla); si existe, una lupa delante que
+  // la abre en el Finder/Explorador
+  const row = (label: string, path: string, exists: boolean, note?: string) => (
     <div className="min-w-0">
       <dt className="text-[11px] text-zinc-500">
         {label}
         {note && <span className="ml-1 text-amber-400">· {note}</span>}
       </dt>
-      <dd className="text-[11px] leading-snug text-zinc-300 font-mono break-all select-text">{path}</dd>
+      <dd className="flex items-start gap-1.5 text-[11px] leading-snug text-zinc-300 font-mono">
+        {exists && (
+          <button
+            onClick={() => open(path)}
+            title={openLabel}
+            aria-label={openLabel}
+            className="shrink-0 mt-px p-0.5 -m-0.5 rounded text-zinc-500 hover:text-indigo-300 hover:bg-zinc-800 transition-colors"
+          >
+            <SearchIcon size={11} />
+          </button>
+        )}
+        <span className="min-w-0 break-all select-text">{path}</span>
+      </dd>
     </div>
   );
 
@@ -514,23 +541,29 @@ function SystemLocationsBlock({ systemPath }: { systemPath: string }) {
         </span>
       </h3>
       <dl className="px-4 py-3 space-y-3">
-        {row(t("systemInfo.romFolder"), loc.rom_dir)}
-        {row(t("systemInfo.gamelist"), loc.gamelist_path, loc.gamelist_exists ? undefined : t("systemInfo.notCreated"))}
-        {row(t("systemInfo.mediaFolder"), loc.media_dir)}
+        {row(t("systemInfo.romFolder"), loc.rom_dir, loc.rom_dir_exists)}
+        {row(t("systemInfo.gamelist"), loc.gamelist_path, loc.gamelist_exists, loc.gamelist_exists ? undefined : t("systemInfo.notCreated"))}
+        {row(t("systemInfo.mediaFolder"), loc.media_dir, loc.media_dir_exists)}
         {loc.media_folders.length > 0 && (
           <div>
             <dt className="text-[11px] text-zinc-500">{t("systemInfo.mediaFolders")}</dt>
             <dd className="mt-1 flex flex-wrap gap-1.5">
               {loc.media_folders.map((f) => (
-                <span key={f.folder} title={f.path} className="px-2 py-0.5 rounded bg-zinc-800 text-xs text-zinc-300">
+                // Cada píldora abre su carpeta en el Finder/Explorador
+                <button
+                  key={f.folder}
+                  onClick={() => open(f.path)}
+                  title={`${openLabel}: ${f.path}`}
+                  className="px-2 py-0.5 rounded bg-zinc-800 text-xs text-zinc-300 hover:bg-zinc-700 hover:text-zinc-100 transition-colors"
+                >
                   {f.folder} <span className="text-zinc-500">{f.files}</span>
-                </span>
+                </button>
               ))}
             </dd>
           </div>
         )}
-        {row(t("systemInfo.backups"), loc.backups_dir)}
-        {row(t("systemInfo.collections"), loc.collections_dir)}
+        {row(t("systemInfo.backups"), loc.backups_dir, loc.backups_exists)}
+        {row(t("systemInfo.collections"), loc.collections_dir, loc.collections_exists)}
       </dl>
     </section>
   );

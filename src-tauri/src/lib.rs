@@ -89,6 +89,7 @@ pub fn run() {
             profiles::profiles_available,
             systems::scan_systems,
             systems::system_locations,
+            systems::open_location,
             gamelist::load_gamelist,
             gamelist::save_gamelist,
             gamelist::add_game,

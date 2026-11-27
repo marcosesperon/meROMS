@@ -345,10 +345,19 @@ export interface SystemLocations {
   rom_dir: string;
   gamelist_path: string;
   gamelist_exists: boolean;
+  rom_dir_exists: boolean;
   backups_dir: string;
+  backups_exists: boolean;
   media_dir: string;
+  media_dir_exists: boolean;
   media_folders: { folder: string; path: string; files: number }[];
   collections_dir: string;
+  collections_exists: boolean;
+}
+
+/** Abre una carpeta en el Finder/Explorador (lo de dentro) o, si es un fichero, su carpeta con él seleccionado */
+export async function openLocation(path: string): Promise<void> {
+  return invoke("open_location", { path });
 }
 
 export async function systemLocations(systemPath: string): Promise<SystemLocations> {
@@ -1331,9 +1340,20 @@ export interface ImportGame {
   name: string;
   status: "new" | "same_rom" | "other_version" | "taken";
   other: string | null;
+  /** Misma ROM: la ruta de tu juego (el que se completa) */
+  mine: string | null;
+  /** Misma ROM: datos vacíos de tu juego que rellenaría */
+  fills: number;
+  /** Medios que trae (misma ROM: solo los que a tu juego le faltan) */
   media: string[];
   bytes: number;
   known_extension: boolean;
+}
+
+/** Un juego que ya tienes y se completa con lo del origen */
+export interface ImportComplete {
+  path: string;
+  mine: string;
 }
 
 export interface ImportOptions {
@@ -1351,8 +1371,9 @@ export async function importRoms(
   folder: string,
   esdeHome: string | null,
   paths: string[],
+  complete: ImportComplete[],
   options: ImportOptions,
   task?: string
-): Promise<{ imported: string[]; skipped: string[]; media: number; stopped: boolean }> {
-  return invoke("import_roms", { systemPath, folder, esdeHome, paths, options, task });
+): Promise<{ imported: string[]; completed: string[]; skipped: string[]; media: number; stopped: boolean }> {
+  return invoke("import_roms", { systemPath, folder, esdeHome, paths, complete, options, task });
 }

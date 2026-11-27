@@ -63,10 +63,10 @@ export function openOffset(boxWidth: number, room?: { left: number; right: numbe
 const GLINT = "linear-gradient(90deg, transparent, rgba(255,255,255,0.25) 30%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.25) 70%, transparent)";
 
 /** Volumen del vídeo de la caja abierta (bajito: sale solo al pararse en un juego) */
-const BOX_VIDEO_VOLUME = 0.3;
+export const BOX_VIDEO_VOLUME = 0.3;
 
 /** Forma (ancho / alto) de cada vídeo ya visto: la caja se abre la siguiente vez ya con ella */
-const videoAspects = new Map<string, number>();
+export const videoAspects = new Map<string, number>();
 
 /**
  * Una caja de juego en 3D hecha con CSS: el frente con la carátula, el lomo a la izquierda (del

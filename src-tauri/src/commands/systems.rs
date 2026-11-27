@@ -178,12 +178,16 @@ pub struct SystemLocations {
     pub rom_dir: String,
     pub gamelist_path: String,
     pub gamelist_exists: bool,
+    pub rom_dir_exists: bool,
     pub backups_dir: String,
+    pub backups_exists: bool,
     /// Carpeta base de los medios (en clásica, la propia carpeta de ROMs)
     pub media_dir: String,
     /// Carpetas de medios que existen, con su número de ficheros
     pub media_folders: Vec<MediaFolderInfo>,
+    pub media_dir_exists: bool,
     pub collections_dir: String,
+    pub collections_exists: bool,
 }
 
 #[tauri::command(async)]
@@ -219,16 +223,39 @@ fn locations(layout: &crate::layout::Layout, system: &SystemRef) -> SystemLocati
         })
         .collect();
 
+    // La carpeta que contiene las de cada tipo (sin la barra final que dejaría un nombre vacío)
+    let media_dir = layout.media_type_dir(system, "covers").parent().map(Path::to_path_buf).unwrap_or_default();
+    let backups = layout.backups_dir(system);
+    let collections = layout.collections_dir(system);
     SystemLocations {
         structure: if layout.writes_media_tags() { "classic" } else { "esde" }.to_string(),
         rom_dir: text(&system.rom_dir),
+        rom_dir_exists: system.rom_dir.is_dir(),
         gamelist_exists: gamelist.is_file(),
         gamelist_path: text(&gamelist),
-        backups_dir: text(&layout.backups_dir(system)),
-        // La carpeta que contiene las de cada tipo (sin la barra final que dejaría un nombre vacío)
-        media_dir: layout.media_type_dir(system, "covers").parent().map(text).unwrap_or_default(),
+        backups_exists: backups.is_dir(),
+        backups_dir: text(&backups),
+        media_dir_exists: media_dir.is_dir(),
+        media_dir: text(&media_dir),
         media_folders,
-        collections_dir: text(&layout.collections_dir(system)),
+        collections_exists: collections.is_dir(),
+        collections_dir: text(&collections),
+    }
+}
+
+/// Lupa de «Dónde están los datos»: una carpeta se abre en el Finder/Explorador enseñando lo de
+/// dentro; un fichero (la gamelist), su carpeta con él seleccionado. Se hace aquí y no desde la
+/// ventana para que la app no necesite permiso para abrir cualquier ruta.
+#[tauri::command(async)]
+pub fn open_location(app: AppHandle, path: String) -> Result<(), String> {
+    use tauri_plugin_opener::OpenerExt;
+    let target = Path::new(&path);
+    if target.is_dir() {
+        app.opener().open_path(path, None::<String>).map_err(|e| e.to_string())
+    } else if target.is_file() {
+        app.opener().reveal_item_in_dir(target).map_err(|e| e.to_string())
+    } else {
+        Err(format!("Not found: {}", path))
     }
 }
 
