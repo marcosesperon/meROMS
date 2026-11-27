@@ -197,6 +197,7 @@
       <a class="brand" href="#"><img src="images/icon.png" alt="">meROMS</a>
       <nav>
         <a href="#tour"><span lang="en">Tour</span><span lang="es">Recorrido</span></a>
+        <a href="#collection"><span lang="en">Collection</span><span lang="es">Colección</span></a>
         <a href="#play"><span lang="en">Play</span><span lang="es">Juega</span></a>
         <a href="#features"><span lang="en">Features</span><span lang="es">Funciones</span></a>
         <a href="#tools"><span lang="en">Tools</span><span lang="es">Herramientas</span></a>
@@ -219,8 +220,8 @@
           <span lang="es">Tu biblioteca retro,<br><em>ordenada y completa</em></span>
         </h1>
         <p class="lead">
-          <span lang="en">meROMS is a desktop manager for EmulationStation <code>gamelist.xml</code> files. Browse your systems, edit game data and media, scrape what's missing and clean up the rest &mdash; for classic EmulationStation and ES-DE. Then play: launch your games with ES-DE's emulators, from the couch with a gamepad.</span>
-          <span lang="es">meROMS es un gestor de escritorio para los <code>gamelist.xml</code> de EmulationStation. Recorre tus sistemas, edita datos y medios de cada juego, descarga lo que falta y limpia lo que sobra &mdash; para EmulationStation clásico y ES-DE. Y luego juega: lanza tus juegos con los emuladores de ES-DE, también desde el sofá con mando.</span>
+          <span lang="en">meROMS is a desktop manager for EmulationStation <code>gamelist.xml</code> files. Browse your systems, edit game data and media, scrape what's missing and keep every system in order &mdash; for classic EmulationStation and ES-DE. Then play: launch your games with ES-DE's emulators, from the couch with a gamepad.</span>
+          <span lang="es">meROMS es un gestor de escritorio para los <code>gamelist.xml</code> de EmulationStation. Recorre tus sistemas, edita datos y medios de cada juego, descarga lo que falta y mantén cada sistema en orden &mdash; para EmulationStation clásico y ES-DE. Y luego juega: lanza tus juegos con los emuladores de ES-DE, también desde el sofá con mando.</span>
         </p>
         <div class="cta">
           <a class="btn main" href="#download">
@@ -234,8 +235,8 @@
           <a class="btn coffee" href="https://buymeacoffee.com/marcosesperon" target="_blank" rel="noopener"><svg class="cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M4 21h14M8 3.5v2M12 3.5v2"/></svg> <span lang="en">Buy me a coffee</span><span lang="es">Invítame a un café</span></a>
         </div>
         <p class="platforms-line">
-          <span lang="en">Free and open source &middot; macOS, Windows and Linux &middot; English and Spanish</span>
-          <span lang="es">Gratis y de código abierto &middot; macOS, Windows y Linux &middot; inglés y español</span>
+          <span lang="en">Free and open source &middot; macOS, Windows and Linux &middot; English, Spanish, French, Portuguese, Italian and German</span>
+          <span lang="es">Gratis y de código abierto &middot; macOS, Windows y Linux &middot; inglés, español, francés, portugués, italiano y alemán</span>
         </p>
         <a class="shot-main" href="images/grid.jpg" data-viewer>
           <img src="images/grid.jpg" width="1600" height="1000" alt="meROMS: game grid with the details of the selected game">
@@ -367,6 +368,80 @@
       </div>
     </section>
 
+    <!-- Tu colección en orden: Mi colección, estado del sistema, Ponerlo todo en orden y sus herramientas -->
+    <section id="collection">
+      <div class="wrap">
+        <p class="kicker"><span lang="en">Your collection</span><span lang="es">Tu colección</span></p>
+        <h2><span lang="en">Your collection in order</span><span lang="es">Tu colección en orden</span></h2>
+        <p class="intro">
+          <span lang="en">Say once what your collection must meet. Each system tells you what isn't met yet, and one window puts it all in order &mdash; with a preview of every step, a backup first and a single Undo.</span>
+          <span lang="es">Di una vez qué tiene que cumplir tu colección. Cada sistema te dice lo que aún no cumple, y una sola ventana lo pone todo en orden &mdash; con vista previa de cada paso, copia antes y un único Deshacer.</span>
+        </p>
+        <div class="tour">
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">My collection</span><span lang="es">Mi colección</span></h3>
+              <p>
+                <span lang="en">In Settings &gt; My collection: which data and media every game needs, what to do with the versions left over (set them aside in a folder, hide them or send them to the trash), never touch favourites or games you've played, and what to do with leftover media. The rename options live here too.</span>
+                <span lang="es">En Ajustes &gt; Mi colección: qué datos y medios necesita cada juego, qué hacer con las versiones que sobran (apartarlas a una carpeta, ocultarlas o mandarlas a la papelera), no tocar nunca favoritos ni juegos ya jugados, y qué hacer con los medios sobrantes. Aquí están también las opciones de renombrado.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/settings-collection.jpg" data-viewer><img src="images/settings-collection.jpg" width="1600" height="1000" loading="lazy" alt="Settings, My collection"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">What each system lacks</span><span lang="es">Lo que le falta a cada sistema</span></h3>
+              <p>
+                <span lang="en">With no game selected, the system summary shows its status: one line per thing not met, with its number &mdash; new ROMs, games without ROM, games with several versions, names out of format, games missing data or media, damaged or leftover media, swapped covers... The number filters the list, <b>View</b> opens the tool and <b>Fix</b> does it. When everything is fine, a green check.</span>
+                <span lang="es">Sin ningún juego elegido, el resumen del sistema enseña su estado: una línea por cada cosa que no cumple, con su número &mdash; ROMs nuevas, juegos sin ROM, juegos con varias versiones, nombres fuera de formato, juegos sin datos o medios, medios dañados o sobrantes, carátulas cambiadas... El número filtra la lista, <b>Ver</b> abre la herramienta y <b>Arreglar</b> lo hace. Cuando todo está bien, un check verde.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/collection-status.jpg" data-viewer><img src="images/collection-status.jpg" width="1600" height="1000" loading="lazy" alt="System summary with the collection status"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Put it all in order</span><span lang="es">Ponerlo todo en orden</span></h3>
+              <p>
+                <span lang="en">One window runs the steps in order &mdash; ROMs, versions, media, scrape what's missing, names &mdash; each with a preview, numbers and examples, for the whole system, the games shown or the marked ones. A labelled backup first, one summary at the end and one Undo for all of it.</span>
+                <span lang="es">Una ventana ejecuta los pasos en orden &mdash; ROMs, versiones, medios, scrapear lo que falta, nombres &mdash; cada uno con vista previa, cifras y ejemplos, para el sistema entero, los juegos mostrados o los marcados. Antes, una copia con nombre; al final, un resumen y un solo Deshacer para todo.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/order.jpg" data-viewer><img src="images/order.jpg" width="1600" height="1000" loading="lazy" alt="Put it all in order"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Media, all in one window</span><span lang="es">Los medios, en una ventana</span></h3>
+              <p>
+                <span lang="en">Damaged files and placeholders, leftovers &mdash; and the ones that can be reused for the game they belong to, found by their old name &mdash;, covers and screenshots saved the wrong way round (also a whole system at once) and old-named files moved to their place.</span>
+                <span lang="es">Ficheros dañados y de relleno, sobrantes &mdash; y los que se pueden reutilizar para el juego al que pertenecen, encontrados por su nombre antiguo &mdash;, carátulas y capturas guardadas al revés (también un sistema entero de golpe) y ficheros con nombres antiguos llevados a su sitio.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/media.jpg" data-viewer><img src="images/media.jpg" width="1600" height="1000" loading="lazy" alt="The Media window"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Rename from the best source</span><span lang="es">Renombrar desde la mejor fuente</span></h3>
+              <p>
+                <span lang="en">The file name comes from a chain of sources you order: the DAT, ScreenScraper (recognised by checksum), GoodTools &gt; No-Intro and the gamelist's own data. Cleanup rules, which tags stay, and the title follows. Media, gamelist, collections, <code>.m3u</code> playlists and disc tracks go along, and it can be undone. Import ROMs from another folder (Classic, ES-DE or loose files) works the same way: games you already have are completed instead of duplicated, and files that aren't of that system wait behind a checkbox.</span>
+                <span lang="es">El nombre del fichero sale de una cadena de fuentes que tú ordenas: el DAT, ScreenScraper (reconocida por su huella), GoodTools &gt; No-Intro y los propios datos de la gamelist. Reglas de limpieza, qué etiquetas se quedan, y el título lo sigue. Medios, gamelist, colecciones, listas <code>.m3u</code> y pistas de disco van detrás, y se puede deshacer. Importar ROMs desde otra carpeta (clásica, ES-DE o ficheros sueltos) va igual de fino: los juegos que ya tienes se completan en vez de duplicarse, y los ficheros que no son de ese sistema esperan tras una casilla.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/rename.jpg" data-viewer><img src="images/rename.jpg" width="1600" height="1000" loading="lazy" alt="The Rename window"></a>
+          </div>
+          <div class="tour-item">
+            <div class="tour-text">
+              <h3><span lang="en">Right-click, or many at once</span><span lang="es">Botón derecho, o muchos a la vez</span></h3>
+              <p>
+                <span lang="en">Right-click a game for everything you can do with it: play, edit, status, scrape, rename, review, versions, move, show in Finder or Explorer, remove. Cmd/Ctrl+click and Shift+click mark many games, and the same menu and the side panel work on all of them.</span>
+                <span lang="es">Botón derecho sobre un juego y tienes todo lo que puedes hacer con él: jugar, editar, estado, scrapear, renombrar, revisar, versiones, mover, mostrar en Finder o el Explorador, quitar. Cmd/Ctrl+clic y Mayús+clic marcan muchos juegos, y el mismo menú y el panel lateral trabajan con todos.</span>
+              </p>
+            </div>
+            <a class="shot" href="images/context-menu.jpg" data-viewer><img src="images/context-menu.jpg" width="1600" height="1000" loading="lazy" alt="Right-click menu on a game"></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Juega: carrusel, modo sofá, lanzar juegos, ¿A qué juego? y logros -->
     <section id="play" class="play">
       <div class="wrap">
@@ -447,8 +522,8 @@
         <p class="kicker"><span lang="en">Features</span><span lang="es">Funciones</span></p>
         <h2><span lang="en">Built for big, messy libraries</span><span lang="es">Pensado para bibliotecas grandes y desordenadas</span></h2>
         <p class="intro">
-          <span lang="en">Every change to a gamelist is backed up first, and files are sent to the trash instead of being deleted.</span>
-          <span lang="es">Antes de cada cambio en un gamelist se guarda una copia, y los ficheros van a la papelera en lugar de borrarse.</span>
+          <span lang="en">Every change to a gamelist is backed up first, and files go to the trash unless you choose to delete them for good.</span>
+          <span lang="es">Antes de cada cambio en un gamelist se guarda una copia, y los ficheros van a la papelera salvo que elijas borrarlos para siempre.</span>
         </p>
         <div class="grid">
           <div class="card">
@@ -464,12 +539,12 @@
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></div>
             <h3><span lang="en">New ROMs</span><span lang="es">ROMs nuevas</span></h3>
-            <p><span lang="en">Find ROM files the gamelist doesn't know yet, add them with clean names and scrape just those. Remove junk files while you're at it.</span><span lang="es">Encuentra ficheros que el gamelist aún no tiene, añádelos con nombres limpios y scrapea solo esos. De paso, quita los que no son ROMs.</span></p>
+            <p><span lang="en">Find ROM files the gamelist doesn't know yet, add them with clean names, scrape just those and rename them automatically. Remove junk files while you're at it.</span><span lang="es">Encuentra ficheros que el gamelist aún no tiene, añádelos con nombres limpios, scrapea solo esos y renómbralos solos. De paso, quita los que no son ROMs.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg></div>
-            <h3><span lang="en">Cleanup</span><span lang="es">Limpieza</span></h3>
-            <p><span lang="en">Duplicates, games without ROM, unused media, the same image saved as several types, broken links, damaged files (empty or half-downloaded, downloaded again on request) and the blank placeholders a source gives for many games, which the scraper then learns to skip. In ES-DE it also finds the classic-structure media left in the ROM folder: old copies go to the trash, the ones ES-DE still lacks are left for Normalize.</span><span lang="es">Duplicados, juegos sin ROM, medios que no usa nadie, la misma imagen guardada como varios tipos, enlaces rotos, ficheros dañados (vacíos o a medio descargar, que se vuelven a bajar si quieres) y los rellenos vacíos que da una fuente para muchos juegos, que el scraper aprende a ignorar. En ES-DE encuentra además los medios de la estructura clásica que quedan en la carpeta de ROMs: las copias viejas, a la papelera; los que ES-DE aún no tiene, para Normalizar.</span></p>
+            <h3><span lang="en">Media</span><span lang="es">Medios</span></h3>
+            <p><span lang="en">Damaged files (empty, an error page, a download cut halfway &mdash; downloaded again on request), placeholders the scraper then learns to skip, leftovers and the ones that can be reused for their game, broken links and the same image saved as several types. In ES-DE it also recovers the classic-style media left in the ROM folder.</span><span lang="es">Ficheros dañados (vacíos, una página de error, una descarga cortada &mdash; se vuelven a bajar si quieres), rellenos que el scraper aprende a saltarse, sobrantes y los que se pueden reutilizar para su juego, enlaces rotos y la misma imagen guardada como varios tipos. En ES-DE también recupera los medios de estructura clásica que quedaron en la carpeta de ROMs.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M15 7h4v4M9 17H5v-4"/></svg></div>
@@ -478,8 +553,8 @@
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 17 2 2 4-4"/></svg></div>
-            <h3><span lang="en">Rename with rules</span><span lang="es">Renombrar con reglas</span></h3>
-            <p><span lang="en">Rename ROMs from their title or with regex cleanup rules. Media, gamelist, collections and <code>.m3u</code> playlists follow along, and so do the tracks of a <code>.cue</code> or <code>.gdi</code>. Changed your mind? Undo it.</span><span lang="es">Renombra ROMs a partir del título o con reglas de limpieza (regex). Medios, gamelist, colecciones y listas <code>.m3u</code> se actualizan solos, y también las pistas de un <code>.cue</code> o <code>.gdi</code>. ¿Te arrepientes? Se deshace.</span></p>
+            <h3><span lang="en">Rename from sources</span><span lang="es">Renombrar desde fuentes</span></h3>
+            <p><span lang="en">File names from the DAT, ScreenScraper, GoodTools &gt; No-Intro or the gamelist's data, in your order, plus regex cleanup rules and which tags stay. The title follows. Media, gamelist, collections, <code>.m3u</code> playlists and <code>.cue</code>/<code>.gdi</code> tracks follow along. New ROMs can be renamed automatically. Changed your mind? Undo it.</span><span lang="es">Nombres de fichero desde el DAT, ScreenScraper, GoodTools &gt; No-Intro o los datos de la gamelist, en tu orden, más reglas de limpieza (regex) y qué etiquetas se quedan. El título lo sigue. Medios, gamelist, colecciones, listas <code>.m3u</code> y pistas de <code>.cue</code>/<code>.gdi</code> van detrás. Las ROMs nuevas se pueden renombrar solas. ¿Te arrepientes? Se deshace.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></div>
@@ -488,8 +563,8 @@
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h4M7 13h10M7 17h6"/></svg></div>
-            <h3><span lang="en">Bulk edit</span><span lang="es">Edición múltiple</span></h3>
-            <p><span lang="en">Select many games and change common fields and flags at once, with find &amp; replace and a preview before saving. Turn "The X" into "X, The", and translate descriptions with DeepL (your own free key).</span><span lang="es">Selecciona varios juegos y cambia campos y marcas a la vez, con buscar y reemplazar y vista previa antes de guardar. Pasa «The X» a «X, The» y traduce descripciones con DeepL (con tu clave gratuita).</span></p>
+            <h3><span lang="en">Many games at once</span><span lang="es">Muchos juegos a la vez</span></h3>
+            <p><span lang="en">Cmd/Ctrl+click and Shift+click mark games, and a right-click works on all of them: scrape, rename, put in order, versions, status, move, remove. Or change common fields and flags, find &amp; replace with a preview, and translate descriptions with DeepL (your own free key).</span><span lang="es">Cmd/Ctrl+clic y Mayús+clic marcan juegos, y el botón derecho trabaja con todos: scrapear, renombrar, poner en orden, versiones, estado, mover, quitar. O cambia campos y marcas comunes, busca y reemplaza con vista previa y traduce descripciones con DeepL (con tu clave gratuita).</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg></div>
@@ -514,17 +589,52 @@
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
             <h3><span lang="en">Long runs, safe</span><span lang="es">Lotes largos, sin miedo</span></h3>
-            <p><span lang="en">Scrape All saves every 10 games, can be stopped at any time and continued later with the games that were left, even after closing the app.</span><span lang="es">Scrapear Todo guarda cada 10 juegos, se puede detener cuando quieras y continuar después con los que faltaban, aunque hayas cerrado la app.</span></p>
+            <p><span lang="en">Scrape All saves every 10 games, can be stopped at any time and continued later with the games that were left, even after closing the app. Games the scraper didn't find are marked and skipped next time, unless you ask to retry them.</span><span lang="es">Scrapear Todo guarda cada 10 juegos, se puede detener cuando quieras y continuar después con los que faltaban, aunque hayas cerrado la app. Los juegos que el scraper no encontró quedan marcados y se saltan la próxima vez, salvo que pidas reintentarlos.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
             <h3><span lang="en">See where it's at</span><span lang="es">Ves por dónde va</span></h3>
-            <p><span lang="en">Long tools never freeze the window: each one shows what it's doing, "N of M" and the file in progress. Any of them can be cancelled; a change stops after the current game and keeps what was done. And the "Done" message never undoes anything when you close it.</span><span lang="es">Las herramientas largas no congelan la ventana: cada una enseña qué está haciendo, «N de M» y el fichero en curso. Todas se pueden cancelar; un cambio se para tras el juego en curso y guarda lo hecho. Y el aviso de «Hecho» nunca deshace nada al cerrarlo.</span></p>
+            <p><span lang="en">Long tools never freeze the window: each one shows what it's doing, "N of M" and the file in progress, and the button says "Processing...". The window can't be closed halfway, but Cancel stops it after the current game, keeping what was done. And the "Done" message never undoes anything when you close it.</span><span lang="es">Las herramientas largas no congelan la ventana: cada una enseña qué está haciendo, «N de M» y el fichero en curso, y el botón dice «Procesando…». La ventana no se puede cerrar a medias, pero Cancelar la para tras el juego en curso y guarda lo hecho. Y el aviso de «Hecho» nunca deshace nada al cerrarlo.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg></div>
-            <h3><span lang="en">Best version</span><span lang="es">Mejor versión</span></h3>
-            <p><span lang="en">One version of each game (1G1R): the one that best fits your region and language order, the newest revision and a good dump. The others can be hidden, moved to a subfolder or sent to the trash.</span><span lang="es">Una versión de cada juego (1G1R): la que mejor encaja con tu orden de regiones e idiomas, la revisión más nueva y un buen volcado. Las demás se pueden ocultar, mover a una subcarpeta o mandar a la papelera.</span></p>
+            <h3><span lang="en">Versions and duplicates</span><span lang="es">Versiones y duplicados</span></h3>
+            <p><span lang="en">One window for both: games linked by ScreenScraper ID, file, DAT or name; the best version stays (your region and language order, newest revision, good dump, complete discs, more media). The rest are set aside, hidden, trashed or deleted permanently; favourites and played games are left alone if you want.</span><span lang="es">Una ventana para las dos cosas: juegos unidos por ID de ScreenScraper, fichero, DAT o nombre; se queda la mejor versión (tu orden de regiones e idiomas, la revisión más nueva, buen volcado, discos completos, más medios). El resto se aparta, se oculta, va a la papelera o se elimina para siempre; favoritos y jugados no se tocan si así lo quieres.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v3h16v-3"/></svg></div>
+            <h3><span lang="en">Import ROMs</span><span lang="es">Importar ROMs</span></h3>
+            <p><span lang="en">Bring the ROMs of another folder &mdash; classic, ES-DE or loose files &mdash; into the open system. A preview says which games are new, another version or already yours; the ones you have are completed (missing data and media) instead of duplicated, and files that aren't of that system wait behind a checkbox. Copy or move; nothing is overwritten and it can be undone.</span><span lang="es">Trae al sistema abierto las ROMs de otra carpeta &mdash; clásica, ES-DE o ficheros sueltos. Una vista previa dice qué juegos son nuevos, otra versión o ya tuyos; los que ya tienes se completan (datos y medios que faltan) en vez de duplicarse, y los ficheros que no son de ese sistema esperan tras una casilla. Copiar o mover; no se sobrescribe nada y se puede deshacer.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/><path d="M10 11v6M14 11v6"/></svg></div>
+            <h3><span lang="en">Delete a system</span><span lang="es">Eliminar un sistema</span></h3>
+            <p><span lang="en">A red button at the bottom of the system summary: it shows what goes (games, media, size), empties the system's folders (they stay, empty), to the trash or for good, and optionally the emulator folders, the saves and what's outside its folder. You type the folder name to confirm.</span><span lang="es">Un botón rojo al final del resumen del sistema: enseña lo que se va (juegos, medios, tamaño), vacía las carpetas del sistema (se quedan, vacías), a la papelera o para siempre, y si quieres también las carpetas de emuladores, las partidas guardadas y lo que hay fuera de su carpeta. Para confirmar, escribes el nombre de la carpeta.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h9"/><path d="m16 15 4 4M20 15l-4 4"/></svg></div>
+            <h3><span lang="en">Clear fields</span><span lang="es">Vaciar campos</span></h3>
+            <p><span lang="en">Empty a data field, a flag, the play stats, the game status or a media type in the whole system, the games shown or the marked ones &mdash; with a backup first.</span><span lang="es">Vacía un campo de datos, una marca, las estadísticas de juego, el estado o un tipo de medio en todo el sistema, en los juegos mostrados o en los marcados &mdash; con copia antes.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+            <h3><span lang="en">Watched ROM folders</span><span lang="es">Carpetas de ROMs vigiladas</span></h3>
+            <p><span lang="en">Copy ROMs into a system folder and the sidebar marks it by itself: a green +N for new ROMs and a red dot for games whose ROM is gone.</span><span lang="es">Copia ROMs en la carpeta de un sistema y la barra lateral lo marca sola: un +N verde para las ROMs nuevas y un punto rojo para los juegos cuya ROM ya no está.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M10 7h4M10 11h4"/></svg></div>
+            <h3><span lang="en">Profiles on an SD card</span><span lang="es">Perfiles en una SD</span></h3>
+            <p><span lang="en">A profile on an SD card or USB disk that isn't plugged in simply shows as not available, and its systems appear by themselves when you connect it.</span><span lang="es">Un perfil en una tarjeta SD o un disco USB que no está conectado sale como no disponible, y sus sistemas aparecen solos al conectarlo.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/><circle cx="12" cy="12" r="9"/></svg></div>
+            <h3><span lang="en">Six languages</span><span lang="es">Seis idiomas</span></h3>
+            <p><span lang="en">English, Spanish, French, Portuguese, Italian and German; the first time, the one of your system.</span><span lang="es">Inglés, español, francés, portugués, italiano y alemán; la primera vez, el de tu sistema.</span></p>
+          </div>
+          <div class="card">
+            <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg></div>
+            <h3><span lang="en">Repeated entries merged</span><span lang="es">Entradas repetidas, juntas</span></h3>
+            <p><span lang="en">The same ROM listed twice in a gamelist is found and merged into one entry, keeping the best data of each.</span><span lang="es">La misma ROM apuntada dos veces en una gamelist se encuentra y se junta en una sola entrada, con lo mejor de cada una.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M10 3v3M13 3v3"/><path d="M12 10v7M9 14l3 3 3-3"/></svg></div>
@@ -559,7 +669,7 @@
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></div>
             <h3><span lang="en">3D boxes &amp; carousel</span><span lang="es">Cajas 3D y carrusel</span></h3>
-            <p><span lang="en">Your games as 3D boxes in the grid or in a row, with the right case for each system (cardboard, DVD, jewel case...). Stay on one and it opens to play its video.</span><span lang="es">Tus juegos como cajas 3D en la cuadrícula o en fila, con el estuche de cada sistema (cartón, DVD, CD…). Quédate en una y se abre para poner su vídeo.</span></p>
+            <p><span lang="en">Your games as 3D boxes in the grid or in a row, with the right case for each system (cardboard, DVD, jewel case...). Stay on one and it opens to play its video &mdash; in the flat grid, the video pops up over the cover in a TV or arcade frame.</span><span lang="es">Tus juegos como cajas 3D en la cuadrícula o en fila, con el estuche de cada sistema (cartón, DVD, CD…). Quédate en una y se abre para poner su vídeo &mdash; en la cuadrícula plana, el vídeo sale sobre la carátula en una tele o una recreativa.</span></p>
           </div>
           <div class="card">
             <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="10" rx="5"/><path d="M7 10v4M5 12h4M15.5 11h.01M18 13h.01"/></svg></div>
@@ -602,76 +712,92 @@
         <a class="tools-shot" href="images/tools.jpg" data-viewer><img src="images/tools.jpg" width="1600" height="1000" loading="lazy" alt="The Tools menu"></a>
         <div class="tools">
           <div class="tool">
+            <div><b><span lang="en">Undo: ...</span><span lang="es">Deshacer: ...</span></b></div>
+            <p><span lang="en">On top while there is something to undo: the last rename, move, media change, set-aside or Put it all in order goes back &mdash; files, gamelists, collections and playlists &mdash;, keeping what you edited afterwards.</span><span lang="es">Arriba mientras haya algo que deshacer: vuelve atrás el último renombrado, movimiento, cambio de medios, apartado o Ponerlo todo en orden &mdash; ficheros, gamelists, colecciones y listas &mdash;, respetando lo que editaste después.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Add game</span><span lang="es">Agregar juego</span></b></div>
+            <p><span lang="en">Add an entry by hand.</span><span lang="es">Añade una entrada a mano.</span></p>
+          </div>
+        </div>
+
+        <h3 class="tools-sub"><span lang="en">Collection</span><span lang="es">Colección</span></h3>
+        <div class="tools">
+          <div class="tool">
+            <div><b><span lang="en">Put it all in order</span><span lang="es">Ponerlo todo en orden</span></b></div>
+            <p><span lang="en">The steps that make the system meet My collection &mdash; ROMs, versions, media, scrape what's missing, names &mdash; with a preview of each, a backup first and one Undo.</span><span lang="es">Los pasos que hacen que el sistema cumpla Mi colección &mdash; ROMs, versiones, medios, scrapear lo que falta, nombres &mdash; con vista previa de cada uno, copia antes y un solo Deshacer.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Versions and duplicates</span><span lang="es">Versiones y duplicados</span></b></div>
+            <p><span lang="en">Groups the games that are the same (ScreenScraper ID, file hash, DAT, name without tags) and keeps the best version; the others are set aside, hidden, sent to the trash or deleted permanently.</span><span lang="es">Agrupa los juegos que son el mismo (ID de ScreenScraper, hash del fichero, DAT, nombre sin etiquetas) y se queda con la mejor versión; los demás se apartan, se ocultan, van a la papelera o se eliminan para siempre.</span></p>
+          </div>
+          <div class="tool">
             <div><b><span lang="en">Rename</span><span lang="es">Renombrar</span></b></div>
-            <p><span lang="en">Rename the system's ROM files from their title, with the cleanup rules or with the DAT's official name, with a preview and conflict check. Media, gamelist, collections and <code>.m3u</code> playlists are updated too, and the tracks of a <code>.cue</code> or <code>.gdi</code> named after the game are renamed with it.</span><span lang="es">Renombra los ficheros de ROM del sistema a partir del título, con las reglas de limpieza o con el nombre oficial del DAT, con vista previa y aviso de choques. Se actualizan también medios, gamelist, colecciones y listas <code>.m3u</code>, y las pistas de un <code>.cue</code> o <code>.gdi</code> que se llaman como el juego se renombran con él.</span></p>
+            <p><span lang="en">File names from the DAT, ScreenScraper, GoodTools &gt; No-Intro or the gamelist's data, with cleanup rules and the tags you keep, and titles to match; preview and conflict check. Media, gamelist, collections, <code>.m3u</code> playlists and <code>.cue</code>/<code>.gdi</code> tracks are updated too.</span><span lang="es">Nombres de fichero desde el DAT, ScreenScraper, GoodTools &gt; No-Intro o los datos de la gamelist, con reglas de limpieza y las etiquetas que quieras, y títulos a juego; vista previa y aviso de choques. Se actualizan también medios, gamelist, colecciones, listas <code>.m3u</code> y pistas de <code>.cue</code>/<code>.gdi</code>.</span></p>
           </div>
           <div class="tool">
-            <div><b><span lang="en">Normalize Media</span><span lang="es">Normalizar medios</span></b></div>
-            <p><span lang="en">Classic: moves media with old-style names (suffixes, <code>images/</code>...) to <code>&lt;folder&gt;/&lt;ROM name&gt;.&lt;ext&gt;</code>. ES-DE: recovers classic-style media left in the ROM folder into ES-DE's media folder.</span><span lang="es">Clásica: pasa los medios con nombres antiguos (sufijos, <code>images/</code>...) a <code>&lt;carpeta&gt;/&lt;nombre de la ROM&gt;.&lt;ext&gt;</code>. ES-DE: recupera los medios con estructura clásica que quedaron en la carpeta de ROMs y los lleva a la de medios de ES-DE.</span></p>
+            <div><b><span lang="en">Media...</span><span lang="es">Medios…</span></b></div>
+            <p><span lang="en">Four tabs: damaged and placeholders (downloaded again on request; placeholders are learned so the scraper skips them), leftovers (and the ones to reuse for their game), swapped types (covers and screenshots the wrong way round, one by one or two types for the whole system) and old names (classic-style media moved to the unified naming).</span><span lang="es">Cuatro pestañas: dañados y rellenos (se vuelven a bajar si quieres; los rellenos se aprenden y el scraper se los salta), sobrantes (y los que se pueden reutilizar para su juego), tipos cambiados (carátulas y capturas al revés, una a una o dos tipos en todo el sistema) y nombres antiguos (medios de estructura clásica llevados al nombre unificado).</span></p>
           </div>
           <div class="tool">
-            <div><b><span lang="en">Clean Media</span><span lang="es">Limpiar Media</span></b></div>
-            <p><span lang="en">Five checks in one: media no game uses, the same image saved as several types of one game, links to files that don't exist, damaged files (empty, an error page saved as an image, a download cut halfway &mdash; with an offer to download them again) and placeholders (the same file in 5 or more games), which are remembered so the scraper skips them.</span><span lang="es">Cinco revisiones en una: medios que no usa ningún juego, la misma imagen guardada como varios tipos de un juego, enlaces a ficheros que no existen, ficheros dañados (vacíos, una página de error guardada como imagen, una descarga cortada &mdash; con opción de volver a bajarlos) y rellenos (el mismo fichero en 5 juegos o más), que se recuerdan para que el scraper los ignore.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Review covers &amp; screenshots</span><span lang="es">Revisar carátulas y capturas</span></b></div>
-            <p><span lang="en">Compares each image with the usual shape of the system's covers and screenshots and lists the ones saved the other way round, with thumbnails, to swap them.</span><span lang="es">Compara cada imagen con la forma habitual de las carátulas y capturas del sistema y lista las guardadas al revés, con miniaturas, para intercambiarlas.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Swap media types...</span><span lang="es">Intercambiar tipos de medio...</span></b></div>
-            <p><span lang="en">Swaps two media types for the whole system (for example covers and screenshots), when a scraper saved them all the wrong way.</span><span lang="es">Intercambia dos tipos de medio en todo el sistema (por ejemplo carátulas y capturas), cuando un scraper los guardó todos al revés.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Duplicates</span><span lang="es">Duplicados</span></b></div>
-            <p><span lang="en">Groups games that look the same (same ScreenScraper ID, same file hash or a similar name). The ones you mark are removed, with their ROM and media sent to the trash.</span><span lang="es">Agrupa los juegos que parecen el mismo (mismo ID de ScreenScraper, mismo hash del fichero o nombre parecido). Los que marques se quitan, y su ROM y sus medios van a la papelera.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Undo</span><span lang="es">Deshacer</span></b></div>
-            <p><span lang="en">Undoes the last rename, move, media normalization or swap: files, gamelists, collections and playlists go back, keeping what you edited afterwards.</span><span lang="es">Deshace el último renombrado, movimiento, normalización o intercambio de media: ficheros, gamelists, colecciones y listas vuelven atrás, respetando lo que editaste después.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Export to device...</span><span lang="es">Exportar a dispositivo...</span></b></div>
-            <p><span lang="en">Copies the chosen systems, games (all, favourites or all but hidden) and media types to an SD card, USB or network folder with your profile's structure, only what's new or changed. Brings favourites and play stats back from it.</span><span lang="es">Copia los sistemas, juegos (todos, favoritos o sin ocultos) y tipos de media que elijas a una SD, USB o carpeta de red con la estructura de tu perfil, solo lo nuevo o cambiado. Trae de vuelta favoritos y estadísticas de juego.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Compare with another folder...</span><span lang="es">Comparar con otra carpeta...</span></b></div>
-            <p><span lang="en">Your library against a copy or a device's SD card with the same structure, system by system: only here, only there and different (by size, or also by content). Copy games either way with their files, media and gamelist entry; what gets replaced in the library goes to the trash.</span><span lang="es">Tu biblioteca frente a una copia o la SD de un dispositivo con la misma estructura, sistema a sistema: solo aquí, solo allí y distintos (por tamaño, o también por contenido). Copia juegos en cualquier sentido con sus ficheros, medios y entrada del gamelist; lo que se reemplaza en la biblioteca va a la papelera.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Take to another profile...</span><span lang="es">Llevar a otro perfil...</span></b></div>
-            <p><span lang="en">Moves or copies the whole system to another saved profile with its own ROM folder, classic or ES-DE: ROMs, media in the other structure, gamelist and collections. Games the other profile already has are skipped.</span><span lang="es">Mueve o copia el sistema entero a otro perfil guardado con su propia carpeta de ROMs, clásico o ES-DE: ROMs, medios con la otra estructura, gamelist y colecciones. Los juegos que el otro perfil ya tiene se saltan.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Best version...</span><span lang="es">Mejor versión...</span></b></div>
-            <p><span lang="en">Groups the versions of each game (by the DAT, or by the name without tags) and keeps the best one: no betas or bad dumps, your region and language, the newest revision. The others can be hidden, moved to a subfolder or sent to the trash.</span><span lang="es">Agrupa las versiones de cada juego (por el DAT, o por el nombre sin etiquetas) y se queda con la mejor: sin betas ni malos volcados, tu región y tu idioma, la revisión más nueva. Las demás se pueden ocultar, mover a una subcarpeta o mandar a la papelera.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Convert to CHD...</span><span lang="es">Convertir a CHD...</span></b></div>
-            <p><span lang="en">Lists the system's disc games that can become CHD (<code>.cue</code>, <code>.gdi</code>, <code>.iso</code>, or an <code>.m3u</code> of them) and converts them with <code>chdman</code>, which you install yourself (it comes with MAME). Each CHD is verified before use; gamelist, playlists and collections are updated, and the originals go to the trash, stay or move to a subfolder.</span><span lang="es">Lista los juegos de disco del sistema que pueden pasar a CHD (<code>.cue</code>, <code>.gdi</code>, <code>.iso</code>, o un <code>.m3u</code> de ellos) y los convierte con <code>chdman</code>, que instalas tú (viene con MAME). Cada CHD se comprueba antes de usarlo; se actualizan gamelist, listas y colecciones, y los originales van a la papelera, se quedan o pasan a una subcarpeta.</span></p>
+            <div><b><span lang="en">Clear fields...</span><span lang="es">Vaciar campos…</span></b></div>
+            <p><span lang="en">Empties a data field, a flag, the play stats, the game status or a media type in the whole system, the games shown or the marked ones.</span><span lang="es">Vacía un campo de datos, una marca, las estadísticas, el estado o un tipo de medio en todo el sistema, los juegos mostrados o los marcados.</span></p>
           </div>
           <div class="tool">
             <div><b><span lang="en">DAT...</span><span lang="es">DAT...</span></b></div>
             <p><span lang="en">Load a MAME, Logiqx or No-Intro DAT for the system: games you're missing, files the DAT doesn't know, clone and BIOS tags, and names taken from the DAT. <b>Check by content</b> recognises ROMs by their CRC whatever their name (zip and 7z instantly; loose files once, then cached).</span><span lang="es">Carga un DAT de MAME, Logiqx o No-Intro para el sistema: juegos que te faltan, ficheros que el DAT no conoce, marcas de clon y BIOS, y nombres sacados del DAT. <b>Comprobar por contenido</b> reconoce las ROMs por su CRC se llamen como se llamen (zip y 7z al instante; los sueltos una vez y luego en caché).</span></p>
           </div>
+        </div>
+
+        <h3 class="tools-sub"><span lang="en">Library</span><span lang="es">Biblioteca</span></h3>
+        <div class="tools">
           <div class="tool">
-            <div><b><span lang="en">BIOS...</span><span lang="es">BIOS...</span></b></div>
-            <p><span lang="en">For each system, the BIOS and system files its emulators ask for (RetroArch's list) and whether your BIOS folder has them: OK, missing or a different file. The system summary shows "BIOS: N of M".</span><span lang="es">Para cada sistema, las BIOS y ficheros de sistema que piden sus emuladores (lista de RetroArch) y si están en tu carpeta de BIOS: OK, falta o no coincide. El resumen del sistema enseña «BIOS: N de M».</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">Check achievements...</span><span lang="es">Comprobar logros...</span></b></div>
-            <p><span lang="en">With your RetroAchievements account: computes the RetroAchievements hash of every ROM in the system and looks it up, with your progress. It gives the trophy in the list and the achievements filter; running it again only rechecks the ROMs that changed.</span><span lang="es">Con tu cuenta de RetroAchievements: calcula la huella de RetroAchievements de cada ROM del sistema y la busca, con tu progreso. Da el trofeo de la lista y el filtro de logros; volver a pasarlo solo recalcula las ROMs que han cambiado.</span></p>
+            <div><b><span lang="en">Backups</span><span lang="es">Backups</span></b></div>
+            <p><span lang="en">Every save keeps a copy of the gamelist first (the last 20, plus labelled ones before big changes). See them by date, restore one or delete it.</span><span lang="es">Cada vez que se guarda se hace antes una copia del gamelist (las 20 últimas, más las que llevan nombre antes de los cambios grandes). Míralas por fecha, restaura una o bórrala.</span></p>
           </div>
           <div class="tool">
             <div><b><span lang="en">Collections</span><span lang="es">Colecciones</span></b></div>
             <p><span lang="en">Detects multi-disc games and generates their <code>.m3u</code> playlists, and builds custom collections from the games you choose.</span><span lang="es">Detecta los juegos de varios discos y genera sus listas <code>.m3u</code>, y crea colecciones personalizadas con los juegos que elijas.</span></p>
           </div>
           <div class="tool">
-            <div><b><span lang="en">Backups</span><span lang="es">Backups</span></b></div>
-            <p><span lang="en">Every save keeps a copy of the gamelist first (the last 20). See them by date, restore one or delete it.</span><span lang="es">Cada vez que se guarda se hace antes una copia del gamelist (se guardan las 20 últimas). Míralas por fecha, restaura una o bórrala.</span></p>
+            <div><b><span lang="en">Convert to CHD...</span><span lang="es">Convertir a CHD…</span></b></div>
+            <p><span lang="en">Converts <code>.cue</code>, <code>.gdi</code>, <code>.iso</code> and the discs of an <code>.m3u</code> with <code>chdman</code>, which you install yourself (it comes with MAME). Each CHD is verified before use; the originals go to the trash, stay or move to a subfolder.</span><span lang="es">Convierte <code>.cue</code>, <code>.gdi</code>, <code>.iso</code> y los discos de un <code>.m3u</code> con <code>chdman</code>, que instalas tú (viene con MAME). Cada CHD se comprueba antes de usarlo; los originales van a la papelera, se quedan o pasan a una subcarpeta.</span></p>
           </div>
+          <div class="tool">
+            <div><b><span lang="en">BIOS...</span><span lang="es">BIOS…</span></b></div>
+            <p><span lang="en">For each system, the BIOS and system files its emulators ask for (RetroArch's list) and whether your BIOS folder has them: OK, missing or a different file.</span><span lang="es">Para cada sistema, las BIOS y ficheros de sistema que piden sus emuladores (lista de RetroArch) y si están en tu carpeta de BIOS: OK, falta o no coincide.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Check achievements...</span><span lang="es">Comprobar logros…</span></b></div>
+            <p><span lang="en">With your RetroAchievements account: looks up every ROM of the system by its RetroAchievements hash, with your progress. It gives the trophy in the list and the achievements filter.</span><span lang="es">Con tu cuenta de RetroAchievements: busca cada ROM del sistema por su huella de RetroAchievements, con tu progreso. Da el trofeo de la lista y el filtro de logros.</span></p>
+          </div>
+        </div>
+
+        <h3 class="tools-sub"><span lang="en">Move and copy</span><span lang="es">Mover y copiar</span></h3>
+        <div class="tools">
           <div class="tool">
             <div><b><span lang="en">Export</span><span lang="es">Exportar</span></b></div>
             <p><span lang="en">Exports the system as a RetroArch playlist (<code>.lpl</code>).</span><span lang="es">Exporta el sistema como lista de reproducción de RetroArch (<code>.lpl</code>).</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Export to device...</span><span lang="es">Exportar a dispositivo…</span></b></div>
+            <p><span lang="en">Copies the chosen systems, games (all, favourites or all but hidden) and media types to an SD card, USB or network folder with your profile's structure, only what's new or changed. Brings favourites and play stats back from it.</span><span lang="es">Copia los sistemas, juegos (todos, favoritos o sin ocultos) y tipos de medio que elijas a una SD, USB o carpeta de red con la estructura de tu perfil, solo lo nuevo o cambiado. Trae de vuelta favoritos y estadísticas de juego.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Compare with another folder...</span><span lang="es">Comparar con otra carpeta…</span></b></div>
+            <p><span lang="en">Your library against a copy or a device's SD card, system by system: only here, only there and different (by size, or also by content). Copy games either way with their files, media and gamelist entry.</span><span lang="es">Tu biblioteca frente a una copia o la SD de un dispositivo, sistema a sistema: solo aquí, solo allí y distintos (por tamaño, o también por contenido). Copia juegos en cualquier sentido con sus ficheros, medios y entrada del gamelist.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Import ROMs...</span><span lang="es">Importar ROMs...</span></b></div>
+            <p><span lang="en">Brings the ROMs of another folder (classic, ES-DE or loose) into this system with a preview: new, another version or already yours &mdash; those are completed, not duplicated. Copy or move, with all the media, only the required ones or none; it can be undone.</span><span lang="es">Trae a este sistema las ROMs de otra carpeta (clásica, ES-DE o sueltas) con vista previa: nuevo, otra versión o ya lo tienes &mdash; esos se completan, no se duplican. Copiar o mover, con todos los medios, solo los obligatorios o ninguno; se puede deshacer.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Take to another profile...</span><span lang="es">Llevar a otro perfil…</span></b></div>
+            <p><span lang="en">Moves or copies the whole system to another saved profile with its own ROM folder, classic or ES-DE: ROMs, media in the other structure, gamelist and collections.</span><span lang="es">Mueve o copia el sistema entero a otro perfil guardado con su propia carpeta de ROMs, clásico o ES-DE: ROMs, medios con la otra estructura, gamelist y colecciones.</span></p>
+          </div>
+          <div class="tool">
+            <div><b><span lang="en">Migrate structure...</span><span lang="es">Migrar estructura…</span></b></div>
+            <p><span lang="en">Copies or moves gamelists, media and collections from classic EmulationStation to ES-DE or back, for the whole library or some systems. Your ROMs are never touched.</span><span lang="es">Copia o mueve gamelists, medios y colecciones de EmulationStation clásico a ES-DE o al revés, para toda la biblioteca o algunos sistemas. Tus ROMs no se tocan nunca.</span></p>
           </div>
         </div>
 
@@ -679,7 +805,7 @@
         <div class="tools">
           <div class="tool">
             <div><b><span lang="en">New ROMs (N)</span><span lang="es">ROMs nuevas (N)</span></b></div>
-            <p><span lang="en">Only shown when the system folder has ROM files the gamelist doesn't have. Add them with clean names (and scrape just those), or send junk files to the trash.</span><span lang="es">Solo aparece si en la carpeta del sistema hay ROMs que el gamelist no tiene. Añádelas con nombres limpios (y scrapea solo esas), o manda a la papelera lo que no son ROMs.</span></p>
+            <p><span lang="en">A small notice when the system folder has ROM files the gamelist doesn't have. Add them with clean names (and scrape and rename just those), or send junk files to the trash.</span><span lang="es">Un aviso pequeño cuando en la carpeta del sistema hay ROMs que el gamelist no tiene. Añádelas con nombres limpios (y scrapea y renombra solo esas), o manda a la papelera lo que no son ROMs.</span></p>
           </div>
           <div class="tool">
             <div><b><span lang="en">No ROM (N)</span><span lang="es">Sin ROM (N)</span></b></div>
@@ -688,10 +814,6 @@
           <div class="tool">
             <div><b><span lang="en">Scrape All</span><span lang="es">Scrapear Todo</span></b></div>
             <p><span lang="en">Scrape the whole system or only the games the list shows (search and filters), choosing for this run what may be overwritten. It saves every 10 games, can be stopped and continued later, and at the end lists the games it couldn't find with a <b>Search...</b> button each.</span><span lang="es">Scrapea el sistema entero o solo los juegos que muestra la lista (búsqueda y filtros), decidiendo para esta vez qué se puede sobrescribir. Guarda cada 10 juegos, se puede detener y continuar más tarde, y al final lista los que no encontró con un botón <b>Buscar...</b> en cada uno.</span></p>
-          </div>
-          <div class="tool">
-            <div><b><span lang="en">+ Add Game</span><span lang="es">+ Agregar Juego</span></b></div>
-            <p><span lang="en">Add an entry by hand.</span><span lang="es">Añade una entrada a mano.</span></p>
           </div>
         </div>
 
@@ -711,11 +833,11 @@
           </div>
           <div class="tool">
             <div><b><span lang="en">Rename...</span><span lang="es">Renombrar...</span></b></div>
-            <p><span lang="en">Rename this ROM (and its media) to a name you type or the one the rules propose.</span><span lang="es">Renombra esta ROM (y sus medios) con el nombre que escribas o el que proponen las reglas.</span></p>
+            <p><span lang="en">The Rename window for this ROM only: the name from your sources, or one you type; its media and title follow.</span><span lang="es">La ventana de Renombrar solo para esta ROM: el nombre de tus fuentes, o el que escribas; sus medios y su título lo siguen.</span></p>
           </div>
           <div class="tool">
-            <div><b><span lang="en">Normalize / Clean up</span><span lang="es">Normalizar / Limpiar</span></b></div>
-            <p><span lang="en">The same media tools, for this game only.</span><span lang="es">Las mismas herramientas de medios, solo para este juego.</span></p>
+            <div><b><span lang="en">Review this game</span><span lang="es">Revisar este juego</span></b></div>
+            <p><span lang="en">What this game doesn't meet (missing data or media, name out of format, other versions, damaged, leftover or old-named media), each with a Fix that opens the right tool for this game only: search, Rename, Normalize, Clean up or Versions.</span><span lang="es">Lo que este juego no cumple (datos o medios que faltan, nombre fuera de formato, otras versiones, medios dañados, sobrantes o con nombre antiguo), cada cosa con un Arreglar que abre la herramienta justa solo para este juego: buscar, Renombrar, Normalizar, Limpiar o Versiones.</span></p>
           </div>
           <div class="tool">
             <div><b><span lang="en">This is...</span><span lang="es">Esto es...</span></b></div>

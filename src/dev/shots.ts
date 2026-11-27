@@ -105,16 +105,69 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
     name: "tools",
     run: async () => {
       await openSystem("cps1", "grid");
-      pickGame(byPath("./sf2.zip"));
+      pickGame(byPath("./Street Fighter II - The World Warrior (USA) (En).zip"));
       await click("tools-menu");
+    },
+  },
+  {
+    // Menú del botón derecho sobre una carátula
+    name: "context-menu",
+    run: async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); // cerrar el menú Herramientas
+      await openSystem("mastersystem", "grid");
+      pickGame(byPath("./Alex Kidd in Miracle World.sms"));
+      await sleep(600);
+      const card = document.querySelector<HTMLElement>('[data-game-path="./Alex Kidd in Miracle World.sms"]');
+      const box = card?.getBoundingClientRect();
+      useAppStore.getState().openGameMenu(box ? box.left + box.width * 0.6 : 400, box ? box.top + box.height * 0.4 : 300, "./Alex Kidd in Miracle World.sms");
+    },
+  },
+  {
+    // Resumen del sistema con el estado de la colección (sin juego elegido)
+    name: "collection-status",
+    run: async () => {
+      document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); // cerrar el menú
+      await openSystem("mastersystem", "grid");
+      await waitFor(() => !!document.querySelector('[data-shot="collection-status"]'), 8000);
+      await sleep(6000); // las comprobaciones llegan poco a poco
+      document.querySelector<HTMLElement>('[data-shot="collection-status"]')?.scrollIntoView({ block: "center" });
+    },
+  },
+  {
+    // «Ponerlo todo en orden»: los pasos con su vista previa
+    name: "order",
+    run: async () => {
+      await openSystem("mastersystem", "grid");
+      useAppStore.getState().openTool("order");
+      await sleep(8000);
+    },
+  },
+  {
+    // Medios: la pestaña de sobrantes, con los que se pueden reutilizar arriba
+    name: "media",
+    run: async () => {
+      useAppStore.getState().closeTool();
+      await openSystem("mastersystem", "grid");
+      useAppStore.getState().openTool({ id: "media", tab: "unused" });
+      await sleep(5000);
+    },
+  },
+  {
+    name: "rename",
+    run: async () => {
+      useAppStore.getState().closeTool();
+      await openSystem("mastersystem", "grid");
+      useAppStore.getState().openTool("rename");
+      await sleep(5000);
     },
   },
   {
     name: "editor",
     run: async () => {
+      useAppStore.getState().closeTool();
       document.body.dispatchEvent(new MouseEvent("mousedown", { bubbles: true })); // cerrar el menú
       await openSystem("cps1", "grid");
-      pickGame(byPath("./sf2.zip"));
+      pickGame(byPath("./Street Fighter II - The World Warrior (USA) (En).zip"));
       useAppStore.getState().openEditor();
     },
   },
@@ -122,7 +175,7 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
     name: "fullview",
     run: async () => {
       await openSystem("cps1", "grid");
-      pickGame(byPath("./sf2.zip"));
+      pickGame(byPath("./Street Fighter II - The World Warrior (USA) (En).zip"));
       useAppStore.getState().openFullView();
       await click("tab-media");
     },
@@ -249,6 +302,17 @@ const SCENES: { name: string; run: () => Promise<void> }[] = [
       useAppStore.getState().closeFullView();
       useAppStore.getState().setCurrentView("settings");
       await click("settings-tab-profiles");
+    },
+  },
+  {
+    // Ajustes > Mi colección: lo que tiene que cumplir la colección
+    name: "settings-collection",
+    run: async () => {
+      if (!document.querySelector('[data-shot="settings-tab-collection"]')) {
+        useAppStore.getState().closeFullView();
+        useAppStore.getState().setCurrentView("settings");
+      }
+      await click("settings-tab-collection");
     },
   },
   {

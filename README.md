@@ -4,8 +4,8 @@
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/marcosesperon)
 
 **A desktop app to tidy up your EmulationStation and ES-DE game library.**
-Browse your systems, fix game names and descriptions, add the missing box art and videos, and
-clean up what's left over - without editing a single `gamelist.xml` by hand.
+Browse your systems, fix game names and descriptions, add the missing box art and videos, keep
+every system in order and play - without editing a single `gamelist.xml` by hand.
 
 **Website:** <https://marcosesperon.github.io/meROMS/> (English and Spanish)
 
@@ -16,70 +16,90 @@ clean up what's left over - without editing a single `gamelist.xml` by hand.
 If you have a retro collection for **EmulationStation** (RetroPie, Batocera, Recalbox...) or
 **ES-DE** (EmulationStation Desktop Edition, RetroBat...), every system keeps a `gamelist.xml`
 with the names, descriptions, ratings and media of its games. meROMS lets you see and edit all of
-that from your computer, comfortably and in bulk.
+that from your computer, comfortably and in bulk, and keep the whole collection in order.
 
-It **manages your library; it doesn't play games**. Your emulator frontend stays the same.
+It manages your library and can also **launch your games** with ES-DE's emulator setup; your
+frontend stays the same.
 
-Free and open source, for macOS, Windows and Linux, in English, Spanish, French, Portuguese, Italian and German.
+Free and open source, for macOS, Windows and Linux, in English, Spanish, French, Portuguese,
+Italian and German.
 
 ## What it does
 
+**Your collection in order**
+- **My collection** (Settings): say once what your collection must meet - which data and media
+  every game needs, what to do with extra versions (set aside, hide or trash), never touch
+  favourites or played games, what to do with leftover media.
+- **System status**: the system summary lists what isn't met, with a number for each line (new
+  ROMs, games without ROM, games with several versions, names out of format, games missing data
+  or media, damaged or leftover media, swapped covers...). The number filters the list, **View**
+  opens the tool and **Fix** does it. A green check when everything is fine.
+- **Put it all in order**: one window runs the steps (ROMs, versions, media, scrape what's
+  missing, names) with a preview of each, for the whole system, the games shown or the marked
+  ones. A backup first and a single **Undo** for all of it.
+- **Versions and duplicates**: the games that are the same (same ScreenScraper ID, same file,
+  same DAT game or the same name without tags), which one stays and why (your region and
+  language, complete discs, more media, more data), and the rest set aside, hidden, sent to the
+  trash or deleted permanently.
+- **Media**: damaged files and placeholders, leftovers (and the ones that can be **reused** for
+  the game they belong to), covers and screenshots saved the wrong way round, old-named files.
+- **Rename**: file name from a chain of sources (DAT, ScreenScraper, GoodTools > No-Intro, the
+  gamelist's title and region), cleanup rules, which tags stay; the title follows. Media,
+  gamelist, collections and `.m3u` playlists follow along, and it can be undone.
+- **Clear fields**: empty a data field, a flag, the play stats or a media type in the whole
+  system, the games shown or the marked ones.
+- Repeated gamelist entries (the same ROM twice) are found and merged.
+
 **Browse and edit**
-- Cover grid or table view (choose and reorder the columns), search and filters (genre, region,
-  favourites, hidden, clones, missing media...), keyboard navigation.
-- Filter the games missing a cover, a video... and **Scrape All** only those.
-- A side panel with the game's artwork, screenshots, video and details; a full editor for every
-  field and every media type.
-- Edit many games at once: common fields, favourite/hidden flags, find & replace, "The X" <->
-  "X, The", and translate descriptions with DeepL (your own free key).
-- **BIOS check**: which system files each system needs (RetroArch's list) and whether your BIOS
-  folder has the right ones.
-- **Undo** the last rename, move, media normalization or media swap: files, gamelists,
-  collections and playlists go back, keeping later edits.
-- **Export to device**: copy chosen systems (all games, favourites or all but hidden) and media
-  types to an SD card, USB or network folder, only what's new or changed; bring favourites and
-  play stats back from it.
-- **Best version**: keep one version of each game (your region and language, no betas or bad
-  dumps, newest revision) and hide, move or trash the others.
-- **Move to...** another system or a subfolder: ROM, disc files, media, gamelist entry and
-  collections go together (Classic and ES-DE).
+- Cover grid (flat or **3D boxes**), table (choose and reorder the columns) or carousel; search,
+  filters, jump to a letter, keyboard and gamepad.
+- A side panel with the game's artwork, video (in a TV or arcade-cabinet frame) and details; a
+  full-screen game page with the media, the **PDF manual**, the saved games and the file's own
+  data (hashes, DAT check, raw gamelist fields); a full editor for every field and media type.
+- Resting on a game opens its box and plays the video (also in the flat grid).
+- **Right-click** a game for everything you can do with it; **multi-select** (Cmd/Ctrl+click,
+  Shift+click) to scrape, rename, put in order, move or remove many at once, or to edit common
+  fields, find & replace and translate descriptions with DeepL.
+- Game statuses (playing, finished, completed, abandoned...), favourites, hidden.
+- Global search in every system (Cmd/Ctrl+K).
 
 **Get what's missing**
 - Scrape names, descriptions, dates, ratings and media from **ScreenScraper**, with
   **LaunchBox** (a free database you download once: no account, no daily limit),
-  **ArcadeItalia** (arcade, with videos, no account) and **TheGamesDB** as fallbacks, for one game,
-  some games or a whole system.
+  **ArcadeItalia** (arcade, no account) and **TheGamesDB** as fallbacks, for one game, the
+  marked ones or a whole system.
 - **Scrape** on one game searches every source and lets you pick the right result (the one that
-  matches your ROM file comes first); after **Scrape All**, the games it couldn't find can be
-  searched the same way.
+  matches your ROM file comes first). Games the scraper didn't find are marked and skipped next
+  time unless you ask to retry them.
 - You decide what may be overwritten (per field and media type) and your preferred regions and
   languages.
-- **New ROMs**: find ROM files the gamelist doesn't know yet and add them with clean names.
+- **New ROMs**: the ROM files the gamelist doesn't know yet, added with clean names and, if you
+  want, scraped and renamed at once. The ROM folders are watched: new and missing ROMs show in
+  the sidebar by themselves.
+- **Import ROMs** from another folder (Classic, ES-DE or loose files): a preview says which games
+  are new, another version or already yours. Games you already have are completed (missing data
+  and media) instead of duplicated; files that aren't of that system wait behind a checkbox.
 
-**Clean up**
-- Duplicate games, games whose ROM is gone, media nobody uses, the same image saved as several
-  types, and broken media links in the XML.
-- Placeholders: the same empty image or video a source gives for many games (like ScreenScraper's
-  blank green back covers). They're learned, so the scraper skips them from then on.
-- Damaged media: empty files, error pages saved as images and downloads cut halfway, with an
-  offer to download them again.
-- Covers and screenshots saved the wrong way round: detected by their shape and swapped.
-- Files are sent to the **trash**, never deleted outright.
+**Play**
+- Launch games with ES-DE's emulator setup (or your own command per system); play time and
+  count are saved.
+- **Couch mode**: full screen, for a gamepad.
+- **Which game?**: a roulette picks one for you. **Continue playing** on the start screen.
+- **RetroAchievements**: which games are compatible and your progress.
+- Library statistics on the start screen.
 
-**Rename**
-- Rename ROM files from their title or with cleanup rules (regular expressions, compatible with
-  ES-DE-Roms-Renamer). Media, gamelist, collections and `.m3u` playlists follow along.
-
-**Organise**
+**Organise and move**
+- Several **profiles** (libraries), also on an SD card or USB disk that isn't always plugged in.
 - **DAT files** (MAME, Logiqx, No-Intro): missing games, unknown files, clones and BIOS; ROMs
-  are recognised by their content (CRC32, also inside zip/7z), and Rename can use the DAT's
-  official names.
-- Multi-disc games: generate their `.m3u` playlists. Custom collections.
-- Automatic **backup** of every gamelist before saving, with restore.
-
-**Move between structures**
-- Migrate a whole library, or some systems, from classic EmulationStation to ES-DE or back
-  (copy or move). Your ROMs are never touched.
+  recognised by their content (CRC32, also inside zip/7z).
+- Multi-disc `.m3u` playlists, custom collections, **BIOS check**, discs to **CHD**.
+- **Move** games to another system or subfolder, take a whole system to another profile,
+  **import** ROMs, **delete** a system, compare with another folder, **export to a device**
+  (SD card, USB) and bring the play stats back.
+- **Migrate** a library, or some systems, from classic EmulationStation to ES-DE or back.
+- Automatic **backup** of every gamelist before saving, and **Undo** for renames, moves, media
+  changes and set-aside games. Removed files go to the **trash** unless you choose otherwise.
+- Long tasks show their progress, can be stopped, and their window stays open until they finish.
 
 ## Classic EmulationStation or ES-DE
 
@@ -117,18 +137,22 @@ The installers are **not signed** yet, so the system warns the first time:
 
 1. **Create a profile.** On first launch meROMS opens Settings > Profiles: pick your ROM folder
    and its structure (Classic or ES-DE). For ES-DE, choosing the ES-DE folder fills in the rest.
-2. **Pick a system** in the left bar (only systems with games are shown; the switch at the bottom
-   shows them all). Click a game to see its details; double-click (or **Edit**) to change it.
-3. **Scrape.** Enter your ScreenScraper account in Settings > General (free at
-   [screenscraper.fr](https://www.screenscraper.fr/)) and use **Scrape** on a game (search and
-   pick the right result) or **Scrape All** for the system. Check "What the scraper updates" first if you don't want
-   existing data overwritten.
-4. **Tidy up** with the **Tools** menu at the bottom: duplicates, unused media, rename, DAT,
-   backups, collections...
+2. **Say what your collection must meet** in Settings > My collection (the defaults are a good
+   start).
+3. **Pick a system** in the left bar. Click a game to see its details; double-click (or **Edit**)
+   to change it. With no game selected, the right panel shows the system's status.
+4. **Scrape.** Enter your ScreenScraper account in Settings > Scraper (free at
+   [screenscraper.fr](https://www.screenscraper.fr/)), or download the LaunchBox database, and
+   use **Scrape All**. Check "What the scraper updates" first if you don't want existing data
+   overwritten.
+5. **Put it all in order** from the system status, or use the **Tools** menu at the bottom for
+   each tool on its own.
 
 Every save makes a backup of the gamelist first (Tools > Backups to restore one).
 
-![Table view](site/images/table.jpg)
+| System status | Put it all in order |
+|---|---|
+| ![System status](site/images/collection-status.jpg) | ![Put it all in order](site/images/order.jpg) |
 
 ## Updates
 
@@ -139,29 +163,31 @@ app. You can turn the check off, or check by hand, in Settings > About.
 ## FAQ
 
 **Does it change my ROM files?**
-Only if you ask it to: renaming, or removing duplicates / unwanted files (which go to the trash).
-Editing, scraping and migrating never touch the ROMs themselves.
+Only if you ask it to: renaming, moving, importing, converting to CHD, or removing versions and
+unwanted files. Editing, scraping and migrating never touch the ROMs themselves.
 
 **Can I undo a change?**
 Every gamelist is backed up before each save (the last 20 are kept, next to the gamelist in
-`.backups/`). Deleted files go to the system trash.
+`.backups/`). Renames, moves, media changes, set-aside games and Put it all in order can be
+undone from Tools. Removed files go to the system trash, unless you tick "Delete permanently".
 
 **Do I need an account to scrape?**
-No: download the LaunchBox database in Settings > General, and arcade systems also use
+No: download the LaunchBox database in Settings > Scraper, and arcade systems also use
 ArcadeItalia. A free ScreenScraper account is still recommended (the most complete source, with
-videos). TheGamesDB can be used with its own API key, also in Settings > General.
+videos). TheGamesDB can be used with its own API key.
 
 **What if Scrape All is cut halfway?**
 Nothing done is lost: the gamelist is saved every 10 games, and **Stop** saves at once. The next
 **Scrape All** on that system offers to **Continue** with the games left (and the same rules) or
-to start over. Scrape All makes a single backup, of the gamelist as it was before the run.
+to start over.
 
 **Does it work with RetroPie / Batocera / RetroBat...?**
 Yes, as long as they use EmulationStation (classic) or ES-DE gamelists. Point the profile at the
-ROM folder, local or on a network drive.
+ROM folder, local, on a network drive or on an SD card.
 
 **Can it run my games?**
-No: meROMS only manages the library. Launch your games from your usual frontend.
+Yes, with ES-DE's emulator setup (the one ES-DE would use on your computer, plus your
+`custom_systems`), or a command you set per system.
 
 | System details | Game editor |
 |---|---|
