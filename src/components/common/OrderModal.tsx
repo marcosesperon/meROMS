@@ -28,10 +28,12 @@ interface OrderModalProps {
   totalGames: number;
   /** Ámbito con el que se abre (desde el panel de selección múltiple: los marcados) */
   initialScope?: Scope;
+  /** Juegos recién importados (Importar ROMs): se abre con solo esos */
+  importedPaths?: string[];
   onClose: () => void;
 }
 
-type Scope = "all" | "visible" | "marked";
+type Scope = "all" | "visible" | "marked" | "imported";
 
 /** Herramienta que enseña el detalle de cada paso («Ver todo») */
 const STEP_TOOL: Record<OrderStep, ToolRequest> = {
@@ -48,7 +50,7 @@ const STEP_TOOL: Record<OrderStep, ToolRequest> = {
  * Antes de empezar se guarda una copia de la gamelist marcada («antes de Ponerlo todo en orden»)
  * y todo lo que mueve ficheros queda en un solo Deshacer. Al terminar, un único resumen.
  */
-export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, markedPaths, totalGames, initialScope, onClose }: OrderModalProps) {
+export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, markedPaths, totalGames, initialScope, importedPaths, onClose }: OrderModalProps) {
   const { t } = useTranslation();
   const openTool = useAppStore((s) => s.openTool);
   const [checked, setChecked] = useState<Set<OrderStep>>(new Set(ORDER_STEPS));
@@ -65,6 +67,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
   // Con la lista filtrada o con juegos marcados se ofrece hacerlo solo con esos
   const canVisible = visiblePaths.length > 0 && visiblePaths.length < totalGames;
   const canMarked = markedPaths.length > 0;
+  const canImported = !!importedPaths?.length;
 
   function context(): OrderContext {
     const { settings, scraperStatus } = useAppStore.getState();
@@ -75,7 +78,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
       scraperStatus,
       canScrape,
       isEsde: getActiveProfile(settings)?.kind === "esde",
-      scope: scope === "visible" ? new Set(visiblePaths) : scope === "marked" ? new Set(markedPaths) : null,
+      scope: scope === "visible" ? new Set(visiblePaths) : scope === "marked" ? new Set(markedPaths) : scope === "imported" ? new Set(importedPaths) : null,
       retryMisses,
     };
   }
@@ -84,7 +87,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
   useEffect(() => {
     if (!open) return;
     setChecked(new Set(steps?.length ? (steps.filter((s) => ORDER_STEPS.includes(s as OrderStep)) as OrderStep[]) : ORDER_STEPS));
-    setScope(initialScope === "marked" && markedPaths.length > 0 ? "marked" : "all");
+    setScope(importedPaths?.length ? "imported" : initialScope === "marked" && markedPaths.length > 0 ? "marked" : "all");
     setRetryMisses(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -211,7 +214,7 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
         <div className="px-5 py-4 border-b border-zinc-700">
           <h3 className="text-base font-semibold text-zinc-100">{t("order.title")}</h3>
           <p className="text-xs text-zinc-500 mt-1">{t("order.help")}</p>
-          {(canVisible || canMarked) && !running && (
+          {(canVisible || canMarked || canImported) && !running && (
             <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-zinc-300">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="radio" checked={scope === "all"} onChange={() => setScope("all")} className="text-indigo-600" />
@@ -227,6 +230,12 @@ export function OrderModal({ open, systemPath, steps, canScrape, visiblePaths, m
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" checked={scope === "marked"} onChange={() => setScope("marked")} className="text-indigo-600" />
                   {t("order.scopeMarked", { count: markedPaths.length })}
+                </label>
+              )}
+              {canImported && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" checked={scope === "imported"} onChange={() => setScope("imported")} className="text-indigo-600" />
+                  {t("order.scopeImported", { count: importedPaths!.length })}
                 </label>
               )}
             </div>

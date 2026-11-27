@@ -1286,3 +1286,73 @@ export async function raCheckSystem(systemPath: string, task?: string): Promise<
 export async function raSystemMarks(systemPath: string): Promise<Record<string, RaMark>> {
   return invoke("ra_system_marks", { systemPath });
 }
+
+// Eliminar un sistema entero (delete_system.rs)
+export interface DeleteSystemPlan {
+  name: string;
+  rom_dir: string;
+  media_dir: string | null;
+  gamelist_dir: string | null;
+  games: number;
+  media_files: number;
+  bytes: number;
+  emulator_dirs: { name: string; bytes: number }[];
+  saves_dir: string | null;
+  saves_files: number;
+  saves_bytes: number;
+  collection_lines: number;
+}
+
+export interface DeleteSystemOptions {
+  permanent: boolean;
+  emulators: boolean;
+  saves: boolean;
+  external: boolean;
+}
+
+export async function planDeleteSystem(systemPath: string): Promise<DeleteSystemPlan> {
+  return invoke("plan_delete_system", { systemPath });
+}
+
+export async function deleteSystem(systemPath: string, options: DeleteSystemOptions, task?: string): Promise<{ removed: number; failed: string[]; stopped: boolean }> {
+  return invoke("delete_system", { systemPath, options, task });
+}
+
+// Importar ROMs de otra carpeta (import_roms.rs)
+export interface ImportSource {
+  kind: "classic" | "esde" | "loose";
+  folder: string;
+  esde_home: string | null;
+  gamelist: string | null;
+}
+
+export interface ImportGame {
+  path: string;
+  name: string;
+  status: "new" | "same_rom" | "other_version" | "taken";
+  other: string | null;
+  media: string[];
+  bytes: number;
+  known_extension: boolean;
+}
+
+export interface ImportOptions {
+  mode: MigrationMode;
+  media: "all" | "required" | "none";
+  required: string[];
+}
+
+export async function planImport(systemPath: string, folder: string, esdeHome: string | null, task?: string): Promise<{ source: ImportSource; games: ImportGame[] }> {
+  return invoke("plan_import", { systemPath, folder, esdeHome, task });
+}
+
+export async function importRoms(
+  systemPath: string,
+  folder: string,
+  esdeHome: string | null,
+  paths: string[],
+  options: ImportOptions,
+  task?: string
+): Promise<{ imported: string[]; skipped: string[]; media: number; stopped: boolean }> {
+  return invoke("import_roms", { systemPath, folder, esdeHome, paths, options, task });
+}

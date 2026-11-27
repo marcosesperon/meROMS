@@ -37,8 +37,12 @@ pub enum MigrationMode {
 pub struct SystemReport {
     pub name: String,
     pub has_gamelist: bool,
-    /// En el destino ya había gamelist (se hace copia antes de reemplazarla)
+    /// En el destino ya había gamelist: se juntan (copia antes de escribir)
     pub dest_gamelist_exists: bool,
+    /// Al juntar: juegos que solo estaban en el origen (añadidos) y juegos del destino a los
+    /// que el origen les rellenó algún campo vacío
+    pub games_added: usize,
+    pub games_filled: usize,
     pub games: usize,
     pub media_transferred: usize,
     pub media_skipped_count: usize,
@@ -395,6 +399,18 @@ fn write_destination_gamelist(
     sr: &mut SystemReport,
 ) -> Result<(), String> {
     sr.dest_gamelist_exists = dst.gamelist_path(system).exists();
+    // Ya hay gamelist en el destino: se juntan en vez de sustituirla (manda la del destino)
+    let existing = if sr.dest_gamelist_exists { Some(read_existing(dst, system)?) } else { None };
+    let original_xml = match existing {
+        Some((existing, existing_xml)) => {
+            let (merged, added, filled) = merge_gamelists(system, existing, gamelist);
+            sr.games_added = added;
+            sr.games_filled = filled;
+            gamelist = merged;
+            existing_xml
+        }
+        None => source_xml.to_string(),
+    };
     if dry_run {
         return Ok(());
     }
@@ -411,8 +427,9 @@ fn write_destination_gamelist(
         }
     }
 
-    // Los campos desconocidos salen del XML de origen (el destino puede ni existir)
-    super::gamelist::write_gamelist_with_original(dst, system, &gamelist, Some(source_xml))?;
+    // Los campos desconocidos salen del XML que había (al juntar, el del destino: los de los
+    // juegos que solo estaban en el origen no se conservan)
+    super::gamelist::write_gamelist_with_original(dst, system, &gamelist, Some(&original_xml))?;
 
     if mode == MigrationMode::Move {
         let src_path = src.gamelist_path(system);
@@ -421,6 +438,42 @@ fn write_destination_gamelist(
         fs::remove_file(&src_path).map_err(|e| format!("Failed to remove {}: {}", src_path.display(), e))?;
     }
     Ok(())
+}
+
+/// La gamelist que ya hay en el destino, con su XML (para conservar sus campos desconocidos)
+fn read_existing(dst: &Layout, system: &SystemRef) -> Result<(GameList, String), String> {
+    let path = dst.gamelist_path(system);
+    let xml = fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    Ok((super::gamelist::read_gamelist(dst, system)?, xml))
+}
+
+/// Junta la gamelist de origen con la que ya había en el destino: manda la del destino; los
+/// juegos que también están en el origen rellenan con él sus campos vacíos y los que solo están
+/// en el origen se añaden al final. Devuelve la gamelist, los añadidos y los completados.
+fn merge_gamelists(system: &SystemRef, mut existing: GameList, source: GameList) -> (GameList, usize, usize) {
+    let (mut added, mut filled) = (0, 0);
+    // Las rutas de medios no cuentan: al escribir se quitan (ES-DE) o se rehacen con lo que hay
+    existing.games.iter_mut().for_each(media::clear_media_fields);
+    for mut game in source.games {
+        media::clear_media_fields(&mut game);
+        match existing.games.iter_mut().find(|g| g.path == game.path) {
+            Some(mine) => {
+                if super::repeated_entries::fill_empty(system, mine, &game, true) {
+                    filled += 1;
+                }
+            }
+            None => {
+                existing.games.push(game);
+                added += 1;
+            }
+        }
+    }
+    for folder in source.folders {
+        if !existing.folders.iter().any(|f| f.path == folder.path) {
+            existing.folders.push(folder);
+        }
+    }
+    (existing, added, filled)
 }
 
 /// Clásica → ES-DE: las colecciones custom-*.cfg de la carpeta del sistema pasan a
@@ -579,6 +632,30 @@ fn esde_rom_dir_warning(dst: &Layout, rom_root: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_existing_destination_gamelist_is_merged_not_replaced() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path());
+        let g = |path: &str, name: &str| Game { path: path.into(), name: Some(name.into()), ..Default::default() };
+        let mut kept = g("./A.zip", "A (destino)");
+        kept.genre = Some("Lucha".into());
+        let existing = GameList { games: vec![kept, g("./Solo destino.zip", "D")], ..Default::default() };
+        let mut from_source = g("./A.zip", "A (origen)");
+        from_source.genre = Some("Plataformas".into());
+        from_source.desc = Some("Descripción".into());
+        from_source.md5 = Some("0123456789abcdef0123456789abcdef".into());
+        let source = GameList { games: vec![from_source, g("./Solo origen.zip", "O")], ..Default::default() };
+
+        let (merged, added, filled) = merge_gamelists(&system, existing, source);
+        assert_eq!((added, filled), (1, 1));
+        let names: Vec<_> = merged.games.iter().map(|x| x.name.clone().unwrap()).collect();
+        assert_eq!(names, ["A (destino)", "D", "O"]);
+        // Lo del destino se queda; lo vacío se rellena (también el md5: es la misma ROM)
+        assert_eq!(merged.games[0].genre.as_deref(), Some("Lucha"));
+        assert_eq!(merged.games[0].desc.as_deref(), Some("Descripción"));
+        assert!(merged.games[0].md5.is_some());
+    }
     use crate::layout::EsdePaths;
 
     fn touch(path: &Path, content: &[u8]) {

@@ -296,7 +296,7 @@ export function MigrationModal({ open, onClose, preset, sourceProfile }: Migrati
                           {s.media_skipped_count || ""}
                         </td>
                         <td className="px-3 py-1.5 text-xs text-zinc-500">
-                          {s.dest_gamelist_exists && t("migration.destGamelistExists")}
+                          {s.dest_gamelist_exists && t("migration.destGamelistExists", { added: s.games_added, filled: s.games_filled })}
                         </td>
                       </tr>
                     ))}

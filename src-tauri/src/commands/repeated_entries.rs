@@ -164,8 +164,15 @@ pub(super) fn merge(system: &SystemRef, games: &mut Vec<Game>, repeated: &[Repea
 }
 
 /// Rellena lo vacío de `game` con lo de `other`; los medios, también si el de `game` no existe
-/// y el de `other` sí
+/// y el de `other` sí. Lo que dice qué juego es (ids, hashes) no se copia: puede ser otro juego
 fn fill_from(system: &SystemRef, game: &mut Game, other: &Game) {
+    fill_empty(system, game, other, false);
+}
+
+/// Como `fill_from`; con `copy_identity`, también los ids y hashes vacíos (al migrar: es la
+/// misma ROM en las dos gamelists). Devuelve si cambió algo.
+pub(super) fn fill_empty(system: &SystemRef, game: &mut Game, other: &Game, copy_identity: bool) -> bool {
+    let before = serde_json::to_value(&*game).ok();
     let media_fields: Vec<&str> = media::media_fields().collect();
     for field in &media_fields {
         let exists = |g: &Game| media::get_field(g, field).is_some_and(|v| !v.trim().is_empty() && media::resolve_media_path(system, v).is_file());
@@ -174,9 +181,10 @@ fn fill_from(system: &SystemRef, game: &mut Game, other: &Game) {
         }
     }
     // El resto de campos, vía JSON: así no hay que repetir aquí la lista de campos de Game
-    let (Ok(Value::Object(mut mine)), Ok(Value::Object(theirs))) = (serde_json::to_value(&*game), serde_json::to_value(other)) else { return };
+    let (Ok(Value::Object(mut mine)), Ok(Value::Object(theirs))) = (serde_json::to_value(&*game), serde_json::to_value(other)) else { return false };
     for (key, value) in theirs {
-        if IDENTITY_FIELDS.contains(&key.as_str()) || media_fields.contains(&key.as_str()) || is_empty(&value) {
+        let identity = IDENTITY_FIELDS.contains(&key.as_str()) && (key == "path" || !copy_identity);
+        if identity || media_fields.contains(&key.as_str()) || is_empty(&value) {
             continue;
         }
         if mine.get(&key).is_none_or(is_empty) {
@@ -186,6 +194,7 @@ fn fill_from(system: &SystemRef, game: &mut Game, other: &Game) {
     if let Ok(filled) = serde_json::from_value::<Game>(Value::Object(mine)) {
         *game = filled;
     }
+    serde_json::to_value(&*game).ok() != before
 }
 
 fn is_empty(value: &Value) -> bool {

@@ -49,6 +49,8 @@ pub struct UndoOp {
     pub refs: RefUndo,
     /// Entradas que la operación sacó de la gamelist (apartar), con su sistema: vuelven al deshacer
     pub removed: Vec<(String, Game)>,
+    /// Entradas que la operación añadió (sistema, ruta): al deshacer se quitan (importar)
+    pub added: Vec<(String, String)>,
     /// Entradas repetidas fusionadas (sistema, la que quedó, las de antes): vuelven al deshacer
     pub merged: Vec<(String, Game, Vec<Game>)>,
     /// Operación compuesta (Ponerlo todo en orden): sus partes, en el orden en que se hicieron
@@ -57,7 +59,7 @@ pub struct UndoOp {
 
 impl UndoOp {
     fn is_empty(&self) -> bool {
-        self.files.is_empty() && self.games.is_empty() && self.removed.is_empty() && self.merged.is_empty() && self.parts.is_empty()
+        self.files.is_empty() && self.games.is_empty() && self.removed.is_empty() && self.added.is_empty() && self.merged.is_empty() && self.parts.is_empty()
     }
 
     /// Ficheros que mueve, contando los de sus partes
@@ -275,6 +277,7 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     let mut systems: Vec<String> = op.games.iter().flat_map(|c| [c.before_sys.clone(), c.after_sys.clone()]).collect();
     systems.extend(op.removed.iter().map(|(sys, _)| sys.clone()));
     systems.extend(op.merged.iter().map(|(sys, _, _)| sys.clone()));
+    systems.extend(op.added.iter().map(|(sys, _)| sys.clone()));
     systems.sort();
     systems.dedup();
     let mut lists: HashMap<String, GameList> = HashMap::new();
@@ -284,7 +287,12 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
     undo_gamelists(&mut lists, &op.games);
     restore_removed(&mut lists, &op.removed);
     unmerge(&mut lists, &op.merged);
-    if layout.writes_media_tags() || !op.removed.is_empty() || !op.merged.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
+    for (sys, path) in &op.added {
+        if let Some(list) = lists.get_mut(sys) {
+            list.games.retain(|g| &g.path != path);
+        }
+    }
+    if layout.writes_media_tags() || !op.removed.is_empty() || !op.merged.is_empty() || !op.added.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
         for (s, list) in &lists {
             super::gamelist::write_gamelist(layout, &SystemRef::from_rom_dir(s), list)?;
         }

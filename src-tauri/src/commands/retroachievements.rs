@@ -251,6 +251,15 @@ pub async fn ra_check_system(app: tauri::AppHandle, system_path: String, task: O
     Ok(summary)
 }
 
+/// Olvida lo que dejó «Comprobar logros» en un sistema (al eliminarlo)
+pub fn forget_system(app: &tauri::AppHandle, system_path: &str) {
+    let Ok(file) = data_file(app, "ra_marks.json") else { return };
+    let mut all = read_json::<HashMap<String, HashMap<String, RaMark>>>(&file).unwrap_or_default();
+    if all.remove(system_path).is_some() {
+        let _ = write_json(&file, &all);
+    }
+}
+
 /// Lo que dejó «Comprobar logros» en un sistema (vacío si no se ha comprobado)
 #[tauri::command(async)]
 pub fn ra_system_marks(app: tauri::AppHandle, system_path: String) -> Result<HashMap<String, RaMark>, String> {

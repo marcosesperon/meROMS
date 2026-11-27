@@ -554,6 +554,9 @@ export interface MigrationSystemReport {
   name: string;
   has_gamelist: boolean;
   dest_gamelist_exists: boolean;
+  /** Al juntar con la gamelist que ya había: juegos añadidos y juegos completados */
+  games_added: number;
+  games_filled: number;
   games: number;
   media_transferred: number;
   media_skipped_count: number;

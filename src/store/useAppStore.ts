@@ -40,6 +40,7 @@ export type ToolId =
   | "export"
   | "exportDevice"
   | "compare"
+  | "import"
   | "transfer"
   | "chd"
   | "migrate";

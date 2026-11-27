@@ -8,7 +8,7 @@ mod rename_rules;
 mod retroachievements;
 mod rom_hash;
 
-use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, media_reuse, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, repeated_entries, rules, scrape_misses, scrape_resume, scraper, scraper_launchbox, set_aside, settings, system_status, systems, transfer_profile, translate, undo};
+use commands::{backup, best_version, bios, chd, cleanup, collections, compare, dat, delete_system, import_roms, duplicates, export, export_device, game_meta, game_status, gamelist, images, media_check, media_kinds, media_reuse, migrate, move_games, new_roms, normalize, placeholders, profiles, progress, saves, search, shots, rename, repeated_entries, rules, scrape_misses, scrape_resume, scraper, scraper_launchbox, set_aside, settings, system_status, systems, transfer_profile, translate, undo};
 
 /// Workers of the async runtime that runs the commands (idle ones cost almost nothing)
 const RUNTIME_WORKERS: usize = 64;
@@ -205,6 +205,10 @@ pub fn run() {
             normalize::plan_media_normalization,
             normalize::apply_media_normalization,
             repeated_entries::find_repeated_entries,
+            delete_system::plan_delete_system,
+            delete_system::delete_system,
+            import_roms::plan_import,
+            import_roms::import_roms,
             repeated_entries::merge_repeated_entries,
             media_reuse::find_reusable_media,
             media_reuse::apply_media_reuse,

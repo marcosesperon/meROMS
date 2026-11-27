@@ -15,6 +15,7 @@ import { StatusMenu } from "../common/StatusMenu";
 import { ScrapeMissNote } from "../common/ScrapeMissNote";
 import { GameTabs } from "./GameTabs";
 import { CollectionStatus } from "./CollectionStatus";
+import { DeleteSystemModal } from "../common/DeleteSystemModal";
 import {
   ArcadeBoardIcon,
   CardIcon,
@@ -287,6 +288,8 @@ function SystemSummary() {
   const { t, locale } = useTranslation();
   const selectedSystem = useAppStore((s) => s.selectedSystem);
   const games = useAppStore((s) => s.games);
+  // Ventana «Eliminar sistema…»
+  const [deleting, setDeleting] = useState(false);
   if (!selectedSystem) return null;
 
   const info = getSystemInfo(selectedSystem.name);
@@ -372,6 +375,16 @@ function SystemSummary() {
         <CollectionStatus />
 
         <SystemLocationsBlock systemPath={selectedSystem.path} />
+
+        {/* Abajo del todo y en rojo: quitar el sistema entero (ventana con confirmación) */}
+        <button
+          onClick={() => setDeleting(true)}
+          className="mt-6 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-red-900/60 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300"
+        >
+          <TrashIcon size={14} />
+          {t("deleteSystem.button")}
+        </button>
+        {deleting && <DeleteSystemModal systemPath={selectedSystem.path} onClose={() => setDeleting(false)} />}
       </div>
     </div>
   );

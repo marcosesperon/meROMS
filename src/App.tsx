@@ -25,6 +25,7 @@ import { MediaSwapModal } from "./components/common/MediaSwapModal";
 import { MediaModal } from "./components/common/MediaModal";
 import { VersionsModal } from "./components/common/VersionsModal";
 import { OrderModal } from "./components/common/OrderModal";
+import { ImportModal } from "./components/common/ImportModal";
 import { MissingModal } from "./components/common/MissingModal";
 import { ClearFieldsModal } from "./components/common/ClearFieldsModal";
 import { MigrationModal } from "./components/common/MigrationModal";
@@ -458,6 +459,7 @@ function App() {
                   { label: t("export.button"), onClick: () => openTool("export"), groupLabel: t("toolbar.groupMove") },
                   { label: t("exportDevice.button"), onClick: () => openTool("exportDevice") },
                   { label: t("compare.button"), onClick: () => openTool("compare") },
+                  { label: t("import.button"), onClick: () => openTool("import") },
                   // Take the system to another profile (only if there is one to take it to)
                   ...(hasTransferTarget ? [{ label: t("transfer.button"), onClick: () => openTool("transfer") }] : []),
                   { label: t("toolbar.migrate"), onClick: () => openTool("migrate") },
@@ -663,12 +665,16 @@ function App() {
         onClose={closeTool}
       />
 
+      {/* Import ROMs from another folder (any structure) into this system */}
+      <ImportModal open={isTool("import")} systemPath={selectedSystem?.path || ""} onClose={closeTool} />
+
       {/* Put it all in order: the steps of My collection in one go */}
       <OrderModal
         open={isTool("order")}
         systemPath={selectedSystem?.path || ""}
         steps={tool?.id === "order" ? tool.steps : undefined}
         initialScope={tool?.id === "order" && tool.tab === "marked" ? "marked" : "all"}
+        importedPaths={tool?.id === "order" ? tool.gamePaths : undefined}
         canScrape={hasCredentials}
         visiblePaths={visibleGames.map((g) => g.path)}
         markedPaths={multiSelect ? [...selectedPaths] : []}

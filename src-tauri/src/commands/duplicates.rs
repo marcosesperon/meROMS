@@ -68,10 +68,10 @@ fn normalize_name(name: &str) -> String {
 
 /// A group found by `group_games`: why its games look the same and which ones (indices)
 #[derive(Debug, PartialEq)]
-struct FoundGroup {
-    reason: &'static str,
-    detail: Option<String>,
-    members: Vec<usize>,
+pub(super) struct FoundGroup {
+    pub(super) reason: &'static str,
+    pub(super) detail: Option<String>,
+    pub(super) members: Vec<usize>,
 }
 
 /// Union-find: each game points to another one of its group until the root
@@ -95,7 +95,7 @@ fn root(parent: &mut [usize], i: usize) -> usize {
 /// "Best version" used) or the normalized name (of the title or of the file), and a group is
 /// everything linked, even through different reasons (A and B share the ID, B and C the name:
 /// A, B and C). The reason shown is the strongest link inside the group: ID > hash > DAT > name.
-fn group_games(games: &[Game], dat_groups: &std::collections::HashMap<String, String>) -> Vec<FoundGroup> {
+pub(super) fn group_games(games: &[Game], dat_groups: &std::collections::HashMap<String, String>) -> Vec<FoundGroup> {
     let mut parent: Vec<usize> = (0..games.len()).collect();
     // Strength of each kind of link (the lower, the stronger) and the links found per kind
     const KINDS: [&str; 4] = ["screenscraper_id", "hash", "dat", "similar_name"];

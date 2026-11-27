@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use crate::layout::esde_settings::{detect_esde_paths as detect, EsdeDetectedPaths};
 use crate::layout::{Layout, SystemRef};
+use crate::media::{MediaIndex, MEDIA_KINDS};
 use crate::models::{Profile, StructureKind};
 
 /// Lee las rutas de ROMs y medios de una carpeta de ES-DE (su es_settings.xml)
@@ -59,10 +60,26 @@ fn find_pending(active: &Profile, profiles: &[Profile], default_esde_home: Optio
         let pending: Vec<String> = systems
             .iter()
             .filter(|s| !src.is_own_folder(&s.rom_dir))
-            .filter(|s| src.gamelist_path(s).is_file() && !target.gamelist_path(s).is_file())
+            .filter(|s| src.gamelist_path(s).is_file() && (!target.gamelist_path(s).is_file() || media_missing(&src, &target, s)))
             .map(|s| s.name.clone())
             .collect();
         (!pending.is_empty()).then_some(PendingStructure { source, systems: pending })
+    })
+}
+
+/// Con gamelist en las dos estructuras: ¿algún juego de la gamelist de origen tiene en el origen
+/// un medio que en el destino no tiene? (medios de ES-DE borrados, una migración a medias…).
+/// Solo los tipos que el destino admite; el de origen se busca como al migrar (nombre antiguo
+/// incluido), el de destino por el nombre de la ROM.
+fn media_missing(src: &Layout, target: &Layout, system: &SystemRef) -> bool {
+    let Ok(gamelist) = super::gamelist::read_gamelist(src, system) else { return false };
+    let src_index = MediaIndex::build(src, system);
+    let dst_index = MediaIndex::build(target, system);
+    let kinds: Vec<_> = MEDIA_KINDS.iter().filter(|k| k.in_esde || target.writes_media_tags()).collect();
+    gamelist.games.iter().any(|game| {
+        kinds.iter().any(|kind| {
+            super::media_kinds::current_file(src, system, &src_index, game, kind).is_some() && dst_index.find(system, kind, &game.path).is_none()
+        })
     })
 }
 
@@ -171,6 +188,31 @@ mod tests {
         let pending = find_pending(&active, &[active.clone()], None).unwrap();
         assert_eq!(pending.systems, vec!["snes"]);
         assert_eq!(pending.source.kind, StructureKind::Classic);
+    }
+
+    #[test]
+    fn esde_profile_with_media_only_in_the_classic_structure_is_pending() {
+        let tmp = tempfile::tempdir().unwrap();
+        let roms = tmp.path().join("ROMs");
+        let home = tmp.path().join("ES-DE");
+        let gamelist = r#"<gameList><game><path>./Sonic.md</path><name>Sonic</name><image>./covers/Sonic.png</image></game></gameList>"#;
+        for sys in ["megadrive", "snes", "n64"] {
+            fs::create_dir_all(roms.join(sys)).unwrap();
+            fs::write(roms.join(format!("{sys}/gamelist.xml")), gamelist).unwrap();
+            fs::create_dir_all(home.join(format!("gamelists/{sys}"))).unwrap();
+            fs::write(home.join(format!("gamelists/{sys}/gamelist.xml")), gamelist).unwrap();
+        }
+        // megadrive: the cover only in the classic structure → pending
+        touch(&roms.join("megadrive/covers/Sonic.png"));
+        // snes: the cover in both → left alone
+        touch(&roms.join("snes/covers/Sonic.png"));
+        touch(&home.join("downloaded_media/snes/covers/Sonic.png"));
+        // n64: only a wheel, which ES-DE doesn't have → left alone
+        touch(&roms.join("n64/wheels/Sonic.png"));
+
+        let active = profile("esde", StructureKind::Esde, &roms, Some(&home));
+        let pending = find_pending(&active, &[active.clone()], None).unwrap();
+        assert_eq!(pending.systems, vec!["megadrive"]);
     }
 
     #[test]
