@@ -89,11 +89,8 @@ pub fn delete_system(app: tauri::AppHandle, system_path: String, options: Delete
         forget_external(&app, &layout, &system, &games, profile.as_ref());
     }
     let targets = targets(&layout, &system, &games, profile.as_ref(), options);
+    // Las carpetas del sistema se quedan, vacías: solo se va lo de dentro
     let mut result = remove(&targets, options.permanent, &progress);
-    // Carpeta del sistema vacía (todo lo de dentro se ha ido): fuera también
-    if !result.stopped && system.rom_dir.is_dir() && fs::read_dir(&system.rom_dir).is_ok_and(|mut d| d.next().is_none()) {
-        let _ = fs::remove_dir(&system.rom_dir);
-    }
     if progress.cancelled() {
         result.stopped = true;
     }
@@ -189,28 +186,35 @@ fn saves_of(profile: &Profile, system: &SystemRef) -> Option<PathBuf> {
     super::saves::saves_dir(profile).map(|d| d.join(&system.name)).filter(|d| d.is_dir())
 }
 
-/// Lo que se borra, ya comprobado: nada fuera de las carpetas de este sistema
+/// Lo que se borra, ya comprobado: nada fuera de las carpetas de este sistema. Las carpetas en
+/// sí se quedan (vacías): se borra lo que tienen dentro, no ellas
 fn targets(layout: &Layout, system: &SystemRef, games: &[Game], profile: Option<&Profile>, options: DeleteOptions) -> Vec<PathBuf> {
     let mut out = Vec::new();
-    // ES-DE: su carpeta de medios y la de su gamelist
+    // ES-DE: lo de dentro de su carpeta de medios y de la de su gamelist
     if let Layout::Esde(_) = layout {
-        out.push(layout.media_type_dir(system, ""));
-        out.extend(layout.gamelist_path(system).parent().map(Path::to_path_buf));
+        out.extend(contents_of(&layout.media_type_dir(system, ""), &[]));
+        if let Some(dir) = layout.gamelist_path(system).parent() {
+            out.extend(contents_of(dir, &[]));
+        }
     }
-    // La carpeta del sistema: entera, o todo menos las carpetas de emuladores
+    // La carpeta del sistema: todo lo de dentro, o todo menos las carpetas de emuladores
     let keep: Vec<PathBuf> = if options.emulators { Vec::new() } else { emulator_dirs(layout, system, games) };
-    if keep.is_empty() {
-        out.push(system.rom_dir.clone());
-    } else if let Ok(entries) = fs::read_dir(&system.rom_dir) {
-        let mut inside: Vec<PathBuf> = entries.flatten().map(|e| e.path()).filter(|p| !keep.contains(p)).collect();
-        inside.sort();
-        out.extend(inside);
-    }
+    out.extend(contents_of(&system.rom_dir, &keep));
     if options.saves {
-        out.extend(profile.and_then(|p| saves_of(p, system)));
+        if let Some(dir) = profile.and_then(|p| saves_of(p, system)) {
+            out.extend(contents_of(&dir, &[]));
+        }
     }
     let roots = allowed_roots(layout, system, profile);
     out.into_iter().filter(|p| p.exists() && is_allowed(p, &roots, layout, profile)).collect()
+}
+
+/// Lo que hay dentro de una carpeta (sin entrar más), menos lo que se pide conservar
+fn contents_of(dir: &Path, keep: &[PathBuf]) -> Vec<PathBuf> {
+    let Ok(entries) = fs::read_dir(dir) else { return Vec::new() };
+    let mut inside: Vec<PathBuf> = entries.flatten().map(|e| e.path()).filter(|p| !keep.contains(p)).collect();
+    inside.sort();
+    inside
 }
 
 /// Dentro de qué carpetas se puede borrar: la del sistema, su carpeta de medios y la de su
@@ -407,14 +411,14 @@ mod tests {
     }
 
     #[test]
-    fn with_emulators_the_whole_folder_goes() {
+    fn with_emulators_the_folder_is_emptied_but_stays() {
         let tmp = tempfile::tempdir().unwrap();
         let (layout, system, games) = classic(tmp.path());
         let opts = DeleteOptions { permanent: true, emulators: true, ..Default::default() };
         let list = targets(&layout, &system, &games, None, opts);
-        assert_eq!(list, vec![system.rom_dir.clone()]);
+        assert!(!list.contains(&system.rom_dir), "the system folder itself is never a target");
         remove(&list, true, &Progress::none());
-        assert!(!system.rom_dir.exists());
+        assert!(system.rom_dir.is_dir() && fs::read_dir(&system.rom_dir).unwrap().next().is_none(), "the system folder stays, empty");
         assert!(tmp.path().join("ROMs").is_dir(), "the ROM folder itself stays");
     }
 
@@ -438,7 +442,8 @@ mod tests {
         let list = targets(&layout, &system, &games, None, DeleteOptions { permanent: true, ..Default::default() });
         remove(&list, true, &Progress::none());
         clean_collections(&layout, &system);
-        assert!(!home.join("downloaded_media/snes").exists() && !home.join("gamelists/snes").exists() && !system.rom_dir.exists());
+        let empty = |d: &Path| d.is_dir() && fs::read_dir(d).unwrap().next().is_none();
+        assert!(empty(&home.join("downloaded_media/snes")) && empty(&home.join("gamelists/snes")) && empty(&system.rom_dir));
         assert!(home.join("downloaded_media/nes/covers/Zelda.png").exists() && home.join("gamelists/nes/gamelist.xml").exists());
         assert_eq!(fs::read_to_string(home.join("collections/custom-Fav.cfg")).unwrap(), "%ROMPATH%/nes/Zelda.nes\r\n");
     }

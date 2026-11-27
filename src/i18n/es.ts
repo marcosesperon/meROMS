@@ -15,6 +15,7 @@ const es: Record<TranslationKeys, string> = {
 
   // Header
   "header.games": "juegos",
+  "header.revealSystem": "Ver este sistema en la barra lateral",
 
   // GameListView
   "welcome.pickSystem": "Elige un sistema de la barra lateral para ver sus juegos.",
@@ -1565,7 +1566,7 @@ const es: Record<TranslationKeys, string> = {
   "missing.fixInvalid": "Arreglarlos…",
   "deleteSystem.button": "Eliminar sistema...",
   "deleteSystem.title": "Eliminar el sistema {name}",
-  "deleteSystem.description": "Todo lo de este sistema sale de la biblioteca: ROMs, gamelist y sus copias, medios y el resto de su carpeta. No se puede deshacer.",
+  "deleteSystem.description": "Todo lo de este sistema sale de la biblioteca: ROMs, gamelist y sus copias, medios y el resto de su carpeta (las carpetas se quedan, vacías). No se puede deshacer.",
   "deleteSystem.measuring": "Midiendo...",
   "deleteSystem.always": "Se va siempre: {games} juegos, {media} medios ({size})",
   "deleteSystem.trash": "A la papelera (se recupera desde ahí)",

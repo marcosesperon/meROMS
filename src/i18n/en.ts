@@ -13,6 +13,7 @@ const en = {
 
   // Header
   "header.games": "games",
+  "header.revealSystem": "Show this system in the sidebar",
 
   // GameListView
   "welcome.pickSystem": "Pick a system in the sidebar to browse its games.",
@@ -1563,7 +1564,7 @@ const en = {
   "missing.fixInvalid": "Fix them...",
   "deleteSystem.button": "Delete system...",
   "deleteSystem.title": "Delete the system {name}",
-  "deleteSystem.description": "Everything of this system is removed from the library: ROMs, gamelist and its backups, media and the rest of its folder. There is no Undo.",
+  "deleteSystem.description": "Everything of this system is removed from the library: ROMs, gamelist and its backups, media and the rest of its folder (the folders stay, empty). There is no Undo.",
   "deleteSystem.measuring": "Measuring...",
   "deleteSystem.always": "Always removed: {games} games, {media} media files ({size})",
   "deleteSystem.trash": "To the trash (can be recovered from there)",

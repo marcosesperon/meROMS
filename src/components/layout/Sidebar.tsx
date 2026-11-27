@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../../store/useAppStore";
 import { useTranslation } from "../../i18n";
 import { SystemLogo, hasSystemLogo } from "../common/SystemLogo";
@@ -25,6 +26,21 @@ export function Sidebar() {
   const visibleSystems = sidebarSystems(systems, onlyWithGames, selectedSystem?.path);
 
   const isScanning = loading && (scanProgress !== null || systems.length === 0);
+
+  const navRef = useRef<HTMLElement>(null);
+  const revealTick = useAppStore((s) => s.sidebarRevealTick);
+  const lastTick = useRef(revealTick);
+  const selectedPath = selectedSystem?.path;
+  // El sistema abierto, siempre a la vista: al arrancar (último sistema) o al entrar desde otro
+  // sitio (búsqueda, modo sofá…) se trae lo justo, sin animación; si ya se ve, no se mueve. Con el
+  // logo de la cabecera (sube el contador) se centra con suavidad.
+  useEffect(() => {
+    if (!selectedPath || isScanning) return;
+    const fromHeader = revealTick !== lastTick.current;
+    lastTick.current = revealTick;
+    const item = [...(navRef.current?.querySelectorAll<HTMLElement>("[data-system-path]") ?? [])].find((el) => el.dataset.systemPath === selectedPath);
+    item?.scrollIntoView(fromHeader ? { block: "center", behavior: "smooth" } : { block: "nearest" });
+  }, [selectedPath, isScanning, revealTick, visibleSystems.length]);
 
   return (
     <aside className="w-28 shrink-0 overflow-hidden bg-zinc-950 border-r border-zinc-800 flex flex-col h-full">
@@ -56,7 +72,7 @@ export function Sidebar() {
           </Tooltip>
         </div>
       )}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3">
+      <nav ref={navRef} className="flex-1 overflow-y-auto overflow-x-hidden py-3">
         {isScanning ? (
           // Escaneando: aquí solo una línea en movimiento; el detalle (cuántos van, cuál lee) sale
           // grande en el centro de la ventana, que en esta columna estrecha no cabía
@@ -77,6 +93,7 @@ export function Sidebar() {
             return (
               <button
                 key={system.path}
+                data-system-path={system.path}
                 onClick={() => {
                   selectSystem(system);
                   setCurrentView("browser");

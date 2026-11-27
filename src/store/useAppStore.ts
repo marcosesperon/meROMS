@@ -174,6 +174,9 @@ interface AppState {
   setSystemViewOpen: (open: boolean) => void;
   /** Global search palette (⌘K / Ctrl+K or the magnifier in the sidebar) */
   searchOpen: boolean;
+  /** Sube cada vez que se pide centrar el sistema abierto en la barra lateral (logo de la cabecera) */
+  sidebarRevealTick: number;
+  revealSystemInSidebar: () => void;
   setSearchOpen: (open: boolean) => void;
   /** Paths of the games in the order the grid/table shows them (previous/next in the full view) */
   visibleOrder: string[];
@@ -655,6 +658,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   systemViewOpen: false,
   setSystemViewOpen: (open) => set({ systemViewOpen: open }),
   searchOpen: false,
+  sidebarRevealTick: 0,
+  revealSystemInSidebar: () => set((s) => ({ sidebarRevealTick: s.sidebarRevealTick + 1 })),
   setSearchOpen: (open) => set({ searchOpen: open }),
   visibleOrder: [],
   setVisibleOrder: (paths) => set({ visibleOrder: paths }),

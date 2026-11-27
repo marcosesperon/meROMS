@@ -15,6 +15,7 @@ const de: Record<TranslationKeys, string> = {
 
   // Header
   "header.games": "Spiele",
+  "header.revealSystem": "Dieses System in der Seitenleiste zeigen",
 
   // GameListView
   "welcome.pickSystem": "Wähl links ein System, um seine Spiele zu sehen.",
@@ -1565,7 +1566,7 @@ const de: Record<TranslationKeys, string> = {
   "missing.fixInvalid": "Beheben…",
   "deleteSystem.button": "System löschen...",
   "deleteSystem.title": "System {name} löschen",
-  "deleteSystem.description": "Alles von diesem System verlässt die Bibliothek: ROMs, Gamelist und ihre Sicherungen, Medien und der Rest seines Ordners. Kann nicht rückgängig gemacht werden.",
+  "deleteSystem.description": "Alles von diesem System verlässt die Bibliothek: ROMs, Gamelist und ihre Sicherungen, Medien und der Rest seines Ordners (die Ordner bleiben, leer). Kann nicht rückgängig gemacht werden.",
   "deleteSystem.measuring": "Wird gemessen...",
   "deleteSystem.always": "Wird immer entfernt: {games} Spiele, {media} Medien ({size})",
   "deleteSystem.trash": "In den Papierkorb (dort wiederherstellbar)",

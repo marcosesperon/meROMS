@@ -20,6 +20,8 @@ export function Header() {
   const [showFilters, setShowFilters] = useState(false);
   // Ajustes de vista de este sistema (la ventana la pinta App: también la abre «Configurar emulador»)
   const setSystemViewOpen = useAppStore((s) => s.setSystemViewOpen);
+  // El logo lleva la barra lateral hasta este sistema
+  const revealSystemInSidebar = useAppStore((s) => s.revealSystemInSidebar);
 
   if (!selectedSystem) return null;
 
@@ -42,9 +44,14 @@ export function Header() {
       <header className="flex flex-nowrap @max-[800px]:flex-wrap items-center justify-between gap-x-4 gap-y-3 px-6 py-3 border-b border-zinc-800 bg-zinc-900">
         {/* Ocupa lo que necesita; si no hay sitio, después de encoger el buscador, corta el nombre */}
         <div className="flex items-center gap-4 min-w-0 max-w-full">
-          <div className="shrink-0">
+          <button
+            onClick={revealSystemInSidebar}
+            title={t("header.revealSystem")}
+            aria-label={t("header.revealSystem")}
+            className="shrink-0 rounded-md p-0.5 -m-0.5 hover:bg-zinc-800/70 transition-colors"
+          >
             <SystemLogo name={selectedSystem.name} width={110} maxHeight={34} />
-          </div>
+          </button>
           <div className="min-w-0">
             <h2 className="text-lg font-bold tracking-tight text-zinc-100 whitespace-nowrap truncate">
               {selectedSystem.full_name}
