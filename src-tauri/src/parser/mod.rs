@@ -84,7 +84,7 @@ const KNOWN_GAME_FIELDS: &[&str] = &[
     "manual", "video", "rating", "releasedate", "developer", "publisher",
     "genre", "genreid", "players", "family", "arcadesystemname", "region",
     "lang", "favorite", "hidden", "kidgame", "completed", "playcount", "lastplayed",
-    "gametime", "emulator", "core", "hash", "md5", "crc32",
+    "gametime", "emulator", "core", "altemulator", "hash", "md5", "crc32",
     "cheevosHash", "cheevosId",
 ];
 
@@ -549,6 +549,7 @@ fn write_game(
     write_opt_element(writer, "gametime", &game.gametime)?;
     write_opt_element(writer, "emulator", &game.emulator)?;
     write_opt_element(writer, "core", &game.core)?;
+    write_opt_element(writer, "altemulator", &game.altemulator)?;
     write_opt_element(writer, "hash", &game.hash)?;
     write_opt_element(writer, "md5", &game.md5)?;
     write_opt_element(writer, "crc32", &game.crc32)?;

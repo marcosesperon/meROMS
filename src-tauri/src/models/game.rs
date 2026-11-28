@@ -93,6 +93,9 @@ pub struct Game {
     pub emulator: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub core: Option<String>,
+    /// ES-DE's emulator for this game (a label of its es_systems.xml); meROMS' Play uses it too
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub altemulator: Option<String>,
 
     // === Hashes ===
     #[serde(skip_serializing_if = "Option::is_none")]

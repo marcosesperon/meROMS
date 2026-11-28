@@ -64,13 +64,36 @@ pub struct DatSummary {
     pub has_crcs: bool,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatMissing {
     pub name: String,
     pub description: String,
     pub cloneof: Option<String>,
     pub year: String,
     pub manufacturer: String,
+    /// Beta, prototipo, demo, muestra, pirata, hack, Unl… (no cuenta para completar la colección)
+    pub unwanted: bool,
+}
+
+/// Un juego del DAT que falta, con todas sus versiones (regiones, revisiones, discos…).
+/// La primera es la preferida según el orden de regiones e idiomas de Ajustes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatGroup {
+    pub versions: Vec<DatMissing>,
+    /// Todas sus versiones son no deseadas (betas, demos…)
+    pub unwanted: bool,
+}
+
+/// Cuánto de la colección del DAT se tiene, contando juegos (no versiones) y sin los no deseados
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatProgress {
+    pub dat: String,
+    pub have: usize,
+    pub total: usize,
+    /// Ficheros reconocidos por contenido: 0 = el cruce ha sido solo por nombre de fichero
+    pub content_matched: usize,
+    /// El DAT trae CRC (se puede «Comprobar por contenido»)
+    pub has_crcs: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -92,7 +115,11 @@ pub struct DatNameProposal {
 #[derive(Debug, Clone, Serialize)]
 pub struct DatReport {
     pub summary: DatSummary,
+    /// Cada versión que falta por separado (la lista de siempre)
     pub missing: Vec<DatMissing>,
+    /// Los juegos que faltan, con sus versiones agrupadas
+    pub missing_groups: Vec<DatGroup>,
+    pub progress: DatProgress,
     /// Ficheros de ROM de la carpeta que el DAT no conoce (ruta «./sub/x.zip»)
     pub unknown_files: Vec<String>,
     pub marks: Vec<DatCloneMark>,
@@ -273,18 +300,44 @@ pub fn clear_system_dat(app: tauri::AppHandle, system_path: String) -> Result<()
 /// Informe del DAT del sistema (None si no tiene).
 #[tauri::command(async)]
 pub fn dat_report(app: tauri::AppHandle, system_path: String, task: Option<String>) -> Result<Option<DatReport>, String> {
-    let (layout, system) = super::system_context(&app, &system_path)?;
     let progress = Progress::new(&app, task);
-    let Some(dat) = load_dat(&app, &system.name)? else { return Ok(None) };
-    let games = super::gamelist::read_gamelist_with(&layout, &system, &progress)?.games;
+    report_now(&app, &system_path, &progress)
+}
+
+/// Cuánto de la colección del DAT se tiene (None si el sistema no tiene DAT). Para la barra del
+/// resumen del sistema: se guarda con las demás comprobaciones del estado del sistema, así que
+/// solo se recalcula si cambian las ROMs, el gamelist, el DAT, los ajustes o la caché de CRC.
+#[tauri::command(async)]
+pub fn dat_progress(app: tauri::AppHandle, system_path: String) -> Result<Option<DatProgress>, String> {
+    if !dat_file(&app, &SystemRef::from_rom_dir(&system_path).name)?.is_file() {
+        return Ok(None);
+    }
+    let (a, sp) = (app.clone(), system_path.clone());
+    super::system_status::remember(&app, &system_path, "dat_progress", "", move || {
+        Ok(report_now(&a, &sp, &Progress::none())?.map(|r| r.progress))
+    })
+}
+
+fn report_now(app: &tauri::AppHandle, system_path: &str, progress: &Progress) -> Result<Option<DatReport>, String> {
+    let settings = super::settings::get_settings(app.clone())?;
+    let (layout, system) = super::system_context(app, system_path)?;
+    let Some(dat) = load_dat(app, &system.name)? else { return Ok(None) };
+    let games = super::gamelist::read_gamelist_with(&layout, &system, progress)?.games;
     progress.check()?;
     progress.phase("scanning");
     let files = super::new_roms::rom_files(&system);
     progress.check()?;
     progress.phase("games");
     // Solo lo que ya está en caché: el informe nunca calcula (eso es «Comprobar por contenido»)
-    let crcs = cached_crcs(&app, &files)?;
-    Ok(Some(report(&system, &dat, &games, &files, &crcs)))
+    let crcs = cached_crcs(app, &files)?;
+    let order = Preference { regions: settings.scrape_regions(), languages: settings.scrape_languages() };
+    Ok(Some(report(&system, &dat, &games, &files, &crcs, &order)))
+}
+
+/// Orden de regiones e idiomas de Ajustes: decide qué versión de un juego se enseña primero
+pub(crate) struct Preference {
+    pub regions: Vec<String>,
+    pub languages: Vec<String>,
 }
 
 /// Huellas en caché de estos ficheros (sin calcular nada)
@@ -461,7 +514,7 @@ fn match_in(dat: &Dat, rom: &Path, crc: Option<&str>) -> DatMatch {
     }
 }
 
-fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs: &HashMap<PathBuf, String>) -> DatReport {
+fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs: &HashMap<PathBuf, String>, order: &Preference) -> DatReport {
     let by_name: HashMap<String, &DatGame> = dat.games.iter().map(|g| (g.name.to_lowercase(), g)).collect();
     let by_crc = crc_index(dat);
     // El juego del DAT de un fichero: primero por contenido (si su huella está en caché), luego por nombre
@@ -486,14 +539,10 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs
         .games
         .iter()
         .filter(|g| !g.bios && !g.device && !present.contains(&g.name.to_lowercase()))
-        .map(|g| DatMissing {
-            name: g.name.clone(),
-            description: g.description.clone(),
-            cloneof: g.cloneof.clone(),
-            year: g.year.clone(),
-            manufacturer: g.manufacturer.clone(),
-        })
+        .map(missing_of)
         .collect();
+    let (missing_groups, have, total) = group_collection(dat, &present, order);
+    let progress = DatProgress { dat: dat.name.clone(), have, total, content_matched, has_crcs: summary(dat).has_crcs };
 
     let mut unknown_files: Vec<String> = files
         .iter()
@@ -538,7 +587,72 @@ fn report(system: &SystemRef, dat: &Dat, games: &[Game], files: &[PathBuf], crcs
         }
     }
 
-    DatReport { summary: summary(dat), missing, unknown_files, marks, names, content_matched }
+    DatReport { summary: summary(dat), missing, missing_groups, progress, unknown_files, marks, names, content_matched }
+}
+
+fn missing_of(g: &DatGame) -> DatMissing {
+    DatMissing {
+        name: g.name.clone(),
+        description: g.description.clone(),
+        cloneof: g.cloneof.clone(),
+        year: g.year.clone(),
+        manufacturer: g.manufacturer.clone(),
+        unwanted: tags_of(g).unwanted,
+    }
+}
+
+/// Etiquetas No-Intro/Redump de un juego del DAT (de su descripción, que en MAME es la que las lleva)
+fn tags_of(g: &DatGame) -> super::best_version::VersionTags {
+    super::best_version::parse_tags(if g.description.is_empty() { &g.name } else { &g.description })
+}
+
+/// Agrupa las versiones del DAT en juegos y cuenta cuántos se tienen. Mismo juego = mismo
+/// original si el DAT trae padre-clon (No-Intro Parent-Clone, MAME); si no (No-Intro normal,
+/// Redump), el mismo nombre sin etiquetas, así regiones, revisiones y discos cuentan como uno.
+/// Un juego se tiene si se tiene cualquiera de sus versiones. Los que solo tienen versiones no
+/// deseadas (betas, demos…) no cuentan para el total. Devuelve (los que faltan, tenidos, total).
+fn group_collection(dat: &Dat, present: &HashSet<String>, order: &Preference) -> (Vec<DatGroup>, usize, usize) {
+    let parent_clone = dat.games.iter().any(|g| g.cloneof.is_some());
+    let mut groups: HashMap<String, Vec<&DatGame>> = HashMap::new();
+    for game in dat.games.iter().filter(|g| !g.bios && !g.device) {
+        let key = if parent_clone {
+            game.cloneof.as_deref().unwrap_or(&game.name).to_lowercase()
+        } else {
+            let base = tags_of(game).base;
+            if base.is_empty() { game.name.to_lowercase() } else { base }
+        };
+        groups.entry(key).or_default().push(game);
+    }
+
+    let (mut have, mut total) = (0, 0);
+    let mut missing = Vec::new();
+    for versions in groups.into_values() {
+        let unwanted = versions.iter().all(|g| tags_of(g).unwanted);
+        let owned = versions.iter().any(|g| present.contains(&g.name.to_lowercase()));
+        if !unwanted {
+            total += 1;
+            if owned {
+                have += 1;
+            }
+        }
+        if owned {
+            continue;
+        }
+        let mut versions: Vec<DatMissing> = versions.into_iter().map(missing_of).collect();
+        versions.sort_by(|a, b| {
+            let score = |m: &DatMissing| {
+                let text = if m.description.is_empty() { &m.name } else { &m.description };
+                super::best_version::score(&super::best_version::parse_tags(text), &order.regions, &order.languages)
+            };
+            score(a).cmp(&score(b)).then(a.name.len().cmp(&b.name.len()))
+        });
+        missing.push(DatGroup { versions, unwanted });
+    }
+    missing.sort_by_key(|g| {
+        let first = &g.versions[0];
+        if first.description.is_empty() { first.name.to_lowercase() } else { first.description.to_lowercase() }
+    });
+    (missing, have, total)
 }
 
 #[cfg(test)]
@@ -607,6 +721,10 @@ mod tests {
         assert!(parse_dat("<datafile></datafile>", "x").is_err());
     }
 
+    fn no_order() -> Preference {
+        Preference { regions: Vec::new(), languages: Vec::new() }
+    }
+
     fn game(path: &str, name: Option<&str>) -> Game {
         Game { path: path.into(), name: name.map(String::from), ..Default::default() }
     }
@@ -622,7 +740,7 @@ mod tests {
             game("./neogeo.zip", Some("Neo Geo BIOS")), // BIOS, ya con nombre
         ];
 
-        let r = report(&system, &dat, &games, &files, &HashMap::new());
+        let r = report(&system, &dat, &games, &files, &HashMap::new(), &no_order());
         // Faltan: sf2 y ffight (ni la BIOS ni el dispositivo)
         let missing: Vec<_> = r.missing.iter().map(|m| m.name.as_str()).collect();
         assert_eq!(missing, vec!["sf2", "ffight"]);
@@ -637,6 +755,65 @@ mod tests {
         assert_eq!(r.names[0].proposed, "Street Fighter II: The World Warrior (USA 910206)");
         assert_eq!(r.summary.games, 3);
         assert_eq!(r.summary.bios, 1);
+        // Padre-clon: tener el clon sf2ua cuenta como tener Street Fighter II
+        assert_eq!((r.progress.have, r.progress.total), (1, 2));
+        assert_eq!(r.missing_groups.len(), 1);
+        assert_eq!(r.missing_groups[0].versions[0].name, "ffight");
+    }
+
+    /// DAT sin padre-clon (No-Intro normal, Redump): una entrada por versión
+    fn plain_dat(names: &[&str]) -> Dat {
+        let xml: String = names.iter().map(|n| format!("<game name=\"{n}\"><description>{n}</description></game>")).collect();
+        parse_dat(&format!("<datafile><header><name>Plain</name></header>{xml}</datafile>"), "x").unwrap()
+    }
+
+    fn files_in(system: &SystemRef, names: &[&str]) -> Vec<PathBuf> {
+        names.iter().map(|n| system.rom_dir.join(n)).collect()
+    }
+
+    #[test]
+    fn versions_without_parent_clone_are_grouped_by_their_base_name() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("megadrive"));
+        let dat = plain_dat(&[
+            "Sonic (Europe)",
+            "Sonic (USA)",
+            "Sonic (USA) (Rev 1)",
+            "Tetris (USA) (Beta)",
+            "Tetris (Japan)",
+            "Columns (USA)",
+            "Proto Game (USA) (Proto)",
+            "Streets (Europe)",
+            "Streets (USA)",
+        ]);
+        let files = files_in(&system, &["Sonic (USA).md"]);
+        let order = Preference { regions: vec!["eu".into(), "us".into(), "jp".into()], languages: Vec::new() };
+
+        let r = report(&system, &dat, &[], &files, &HashMap::new(), &order);
+        // Sonic, Tetris, Columns y Streets; el juego que solo es un prototipo no cuenta
+        assert_eq!((r.progress.have, r.progress.total), (1, 4));
+        let titles: Vec<_> = r.missing_groups.iter().map(|g| g.versions[0].name.as_str()).collect();
+        assert_eq!(titles, vec!["Columns (USA)", "Proto Game (USA) (Proto)", "Streets (Europe)", "Tetris (Japan)"]);
+        // La beta va detrás aunque su región sea la preferida
+        let tetris = r.missing_groups.iter().find(|g| g.versions[0].name == "Tetris (Japan)").unwrap();
+        assert!(tetris.versions[1].unwanted && !tetris.unwanted);
+        assert!(r.missing_groups.iter().find(|g| g.versions[0].name.starts_with("Proto")).unwrap().unwanted);
+        // La lista de siempre sigue con cada versión
+        assert_eq!(r.missing.len(), 8);
+    }
+
+    #[test]
+    fn the_discs_of_a_game_are_one_game() {
+        let tmp = tempfile::tempdir().unwrap();
+        let system = SystemRef::from_rom_dir(tmp.path().join("psx"));
+        let dat = plain_dat(&["Final Fantasy VII (USA) (Disc 1)", "Final Fantasy VII (USA) (Disc 2)", "Final Fantasy VII (USA) (Disc 3)", "Vagrant Story (USA)"]);
+        let files = files_in(&system, &["Final Fantasy VII (USA) (Disc 1).chd", "Final Fantasy VII (USA) (Disc 2).chd"]);
+
+        let r = report(&system, &dat, &[], &files, &HashMap::new(), &no_order());
+        assert_eq!((r.progress.have, r.progress.total), (1, 2));
+        assert_eq!(r.missing_groups.len(), 1);
+        assert_eq!(r.missing_groups[0].versions[0].name, "Vagrant Story (USA)");
+        assert_eq!(r.progress.content_matched, 0);
     }
 
     const NOINTRO_CRC: &str = r#"<?xml version="1.0"?>
@@ -666,7 +843,7 @@ mod tests {
         let crcs: HashMap<PathBuf, String> = [(smw.clone(), "b19ed489".to_string())].into_iter().collect();
         let games = vec![game("./smw.sfc", Some("smw"))];
 
-        let r = report(&system, &dat, &games, &files, &crcs);
+        let r = report(&system, &dat, &games, &files, &crcs, &no_order());
         assert_eq!(r.content_matched, 1);
         // smw.sfc es Super Mario World: no falta ni está «fuera del DAT»; otro.sfc sí lo está
         let missing: Vec<_> = r.missing.iter().map(|m| m.name.as_str()).collect();
@@ -676,7 +853,7 @@ mod tests {
         assert_eq!(r.names[0].proposed, "Super Mario World (USA)");
 
         // Sin huella en caché: por nombre, smw.sfc no está en el DAT
-        let r = report(&system, &dat, &games, &files, &HashMap::new());
+        let r = report(&system, &dat, &games, &files, &HashMap::new(), &no_order());
         assert_eq!(r.content_matched, 0);
         assert_eq!(r.unknown_files.len(), 2);
     }

@@ -22,6 +22,8 @@ interface StatusLine {
   /** Pasos que lo arreglan (los medios que faltan: antes colocar lo que ya hay, después scrapear).
    *  Sin pasos, la línea solo informa (no hay «Arreglar») */
   fix?: OrderStep | OrderStep[];
+  /** Lo arregla otra herramienta, no «Ponerlo todo en orden» (arcade: Emulador por juego) */
+  fixTool?: ToolRequest;
 }
 
 /** Duración de la animación de los números al cambiar */
@@ -143,6 +145,24 @@ export function CollectionStatus() {
         { kind: "scrapeMiss", values: [scrapeMisses], text: ([n]) => t("colstatus.scrapeMiss", { count: n }), filter: true },
       ],
     },
+    // Arcade: sets que no van con su emulador (solo si se ha comprobado: sistema arcade con DAT)
+    ...(parts.arcade
+      ? [
+          {
+            group: "colstatus.groupPlay" as TranslationKeys,
+            items: [
+              {
+                kind: "arcade" as IssueKind,
+                values: [parts.arcade.games.length],
+                text: ([n]: number[]) => t("colstatus.arcade", { count: n, proposals: parts.arcade!.proposals }),
+                filter: true,
+                view: { id: "arcade" as const },
+                fixTool: { id: "arcade" as const },
+              },
+            ],
+          },
+        ]
+      : []),
     {
       group: "colstatus.groupMedia",
       // En el orden en que conviene arreglarlo: primero colocar lo que ya hay (nombres antiguos,
@@ -185,10 +205,12 @@ export function CollectionStatus() {
   const pending = visible.some((g) => g.items.some((l) => l.values === null));
   // Algo que arreglar (las líneas que solo informan no cuentan)
   const anything = visible.some((g) => g.items.some((l) => l.fix && total(l) > 0));
+  // Algo que arregla otra herramienta: tampoco está todo en orden, aunque el botón no lo haga
+  const otherFixes = visible.some((g) => g.items.some((l) => l.fixTool && total(l) > 0));
   const checking = status?.checking ?? true;
   const errors = status?.errors ?? [];
   // Todo cumple: en vez del botón (que no haría nada), un icono verde arriba
-  const allGood = !anything && !pending;
+  const allGood = !anything && !otherFixes && !pending;
   const hasBody = visible.length > 0 || errors.length > 0;
 
   return (
@@ -230,7 +252,13 @@ export function CollectionStatus() {
                     active={issue === line.kind}
                     onFilter={() => setFilters({ issue: issue === line.kind ? undefined : line.kind })}
                     onView={line.view ? () => openTool(line.view!) : line.filter ? () => setFilters({ issue: line.kind }) : undefined}
-                    onFix={line.fix ? () => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix!] }) : undefined}
+                    onFix={
+                      line.fixTool
+                        ? () => openTool(line.fixTool!)
+                        : line.fix
+                          ? () => openTool({ id: "order", steps: Array.isArray(line.fix) ? line.fix : [line.fix!] })
+                          : undefined
+                    }
                   />
                 ))}
               </div>

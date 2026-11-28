@@ -54,6 +54,8 @@ export interface Game {
   // Emulation overrides
   emulator?: string;
   core?: string;
+  /** ES-DE emulator label for this game (<altemulator>); Play uses it too */
+  altemulator?: string;
 
   // Hashes
   hash?: string;
@@ -191,6 +193,12 @@ export interface AppSettings {
   compare_dest?: string;
   /** "Convert to CHD": chdman chosen by hand (missing = found in the PATH or the usual places) */
   chdman_path?: string;
+  /** Arcade: preferred cores when several run a set (fbneo, mame, mame2010, mame2003plus) */
+  arcade_core_order?: string[];
+  /** MAME version of the "MAME - Current" DAT (missing = the latest / the installed MAME) */
+  arcade_mame_version?: string;
+  /** Standalone MAME chosen by hand (missing = look for it) */
+  mame_path?: string;
   /** DeepL API key, to translate descriptions */
   deepl_apikey?: string;
   /** RetroAchievements user name and web API key (retroachievements.org -> Settings) */

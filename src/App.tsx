@@ -33,9 +33,10 @@ import { StructurePromptModal } from "./components/common/StructurePromptModal";
 import { datReport, listMissingRoms, listNewRoms, profilesAvailable, scrapeSystem, watchRoms } from "./commands";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DatModal } from "./components/common/DatModal";
+import { ArcadeModal } from "./components/common/ArcadeModal";
 import { MissingRomsModal } from "./components/common/MissingRomsModal";
 import { useFilteredGames } from "./hooks/useFilteredGames";
-import { isArcadeSystem } from "./utils/arcade";
+import { isArcadeSystem, isCheckedArcadeSystem } from "./utils/arcade";
 import { ScrapeAllModal } from "./components/common/ScrapeAllModal";
 import type { ScrapePolicy } from "./types";
 import { bumpMediaVersion } from "./utils/images";
@@ -49,6 +50,7 @@ import { listen } from "@tauri-apps/api/event";
 import type { GameExited } from "./commands";
 import { PlayingBanner } from "./components/play/PlayingBanner";
 import { LaunchProblemModal } from "./components/play/LaunchProblemModal";
+import { ArcadePlayWarning } from "./components/play/ArcadePlayWarning";
 import { SystemViewModal } from "./components/common/SystemViewModal";
 import { RandomGameModal } from "./components/random/RandomGameModal";
 import { RaCheckModal } from "./components/common/RaCheckModal";
@@ -455,6 +457,8 @@ function App() {
                   { label: t("collections.button"), onClick: () => openTool("collections") },
                   { label: t("chd.button"), onClick: () => openTool("chd") },
                   { label: t("bios.button"), onClick: () => openTool("bios") },
+                  // Arcade: which emulator runs each set
+                  ...(selectedSystem && isCheckedArcadeSystem(selectedSystem.name) ? [{ label: t("arcade.button"), onClick: () => openTool("arcade") }] : []),
                   { label: t("ra.toolsButton"), onClick: () => openTool("ra") },
                   { label: t("export.button"), onClick: () => openTool("export"), groupLabel: t("toolbar.groupMove") },
                   { label: t("exportDevice.button"), onClick: () => openTool("exportDevice") },
@@ -493,6 +497,7 @@ function App() {
       {/* Play: "Playing X..." while an emulator is open, and what's missing when it can't start */}
       <PlayingBanner />
       <LaunchProblemModal />
+      <ArcadePlayWarning />
       <RandomGameModal />
       {isTool("ra") && <RaCheckModal onClose={closeTool} />}
       <SystemViewModal open={systemViewOpen} system={selectedSystem} onClose={() => setSystemViewOpen(false)} />
@@ -629,6 +634,16 @@ function App() {
       <CompareModal open={isTool("compare")} onClose={closeTool} />
 
       <BiosModal open={isTool("bios")} onClose={closeTool} />
+
+      <ArcadeModal
+        open={isTool("arcade")}
+        systemPath={selectedSystem?.path || ""}
+        onlyPaths={tool?.id === "arcade" ? tool.gamePaths : undefined}
+        onClose={closeTool}
+        onDone={() => {
+          if (selectedSystem) loadGames(selectedSystem.path);
+        }}
+      />
 
       <ChdModal
         open={isTool("chd")}

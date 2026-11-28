@@ -17,6 +17,8 @@ import { getActiveProfile, isProfileComplete, profileLocationKey } from "../util
 import { newTaskId, subscribeTask, type TaskProgressInfo } from "../hooks/useTask";
 import { getSystemView, shapeField } from "../utils/systemView";
 import { hideWhilePlaying, showAfterPlaying } from "../utils/playWindow";
+import { isCheckedArcadeSystem } from "../utils/arcade";
+import { arcadeProblem } from "../utils/arcadeSets";
 import { checkNames, statusChecks, type CollectionStatusState, type IssueKind } from "../utils/collectionStatus";
 
 /** Herramientas del sistema (ventanas que abre App): menú Herramientas, estado del sistema… */
@@ -43,6 +45,7 @@ export type ToolId =
   | "import"
   | "transfer"
   | "chd"
+  | "arcade"
   | "migrate";
 
 /** Qué herramienta abrir y cómo: pestaña (Medios), pasos marcados (Ponerlo todo en orden) o juegos */
@@ -167,7 +170,12 @@ interface AppState {
   launchProblem: { game: Game; plan: commands.LaunchPlan } | null;
   setLaunchProblem: (problem: { game: Game; plan: commands.LaunchPlan } | null) => void;
   /** Play a game of the selected system (or say what's missing) */
-  playGame: (game: Game) => Promise<void>;
+  /** Play a game. `emulator`: an ES-DE label for this time only; `skipArcadeCheck`: don't look at
+   * the arcade set first (the arcade warning already asked) */
+  playGame: (game: Game, options?: { emulator?: string; skipArcadeCheck?: boolean }) => Promise<void>;
+  /** Arcade: the set is not complete for the emulator Play would use (ArcadePlayWarning) */
+  arcadeWarning: { game: Game; check: commands.ArcadeGame } | null;
+  setArcadeWarning: (warning: { game: Game; check: commands.ArcadeGame } | null) => void;
   /** The emulator closed: forget the running game and take the new play stats */
   gameExited: (exited: commands.GameExited) => void;
   /** "Which game?" window (random pick with a roulette; RandomGameModal) */
@@ -600,17 +608,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   runningGame: null,
   launchProblem: null,
   setLaunchProblem: (problem) => set({ launchProblem: problem }),
-  playGame: async (game) => {
+  arcadeWarning: null,
+  setArcadeWarning: (warning) => set({ arcadeWarning: warning }),
+  playGame: async (game, options) => {
     const { selectedSystem, runningGame } = get();
     if (!selectedSystem || runningGame) return;
+    // Arcade: si el set no está completo para el emulador que se va a usar, se avisa antes
+    if (!options?.skipArcadeCheck && !options?.emulator && isCheckedArcadeSystem(selectedSystem.name)) {
+      const check = await arcadeProblem(selectedSystem.path, game.path);
+      if (check) {
+        set({ arcadeWarning: { game, check } });
+        return;
+      }
+    }
     // Primero, cómo se lanzaría: si falta algo, se dice qué (y no se intenta)
-    const plan = await commands.resolveLaunch(selectedSystem.path, game.path);
+    const plan = await commands.resolveLaunch(selectedSystem.path, game.path, options?.emulator);
     if (!plan.command) {
       set({ launchProblem: { game, plan } });
       return;
     }
     try {
-      await commands.launchGame(selectedSystem.path, game.path);
+      await commands.launchGame(selectedSystem.path, game.path, options?.emulator);
       set({ runningGame: { systemPath: selectedSystem.path, gamePath: game.path, name: game.name || game.path } });
     } catch (e) {
       showMessage(`${translate("play.failed")}\n\n${String(e)}`, "error");

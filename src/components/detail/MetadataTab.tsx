@@ -5,6 +5,8 @@ import { datGameInfo, gameFiles, gameHashes, rawGameFields, type DatMatch, type 
 import { formatBytes } from "../../utils/format";
 import { openExternal } from "../../utils/links";
 import { CheckIcon, CopyIcon } from "../common/Icons";
+import { isCheckedArcadeSystem } from "../../utils/arcade";
+import { ArcadeEmulatorsSection } from "./ArcadeEmulatorsSection";
 
 // Fuentes de metadatos de meROMS y la ficha de cada una por su id. La gamelist solo guarda
 // un id (atributos `id` y `source` del <game>): el de ScreenScraper casi siempre.
@@ -140,6 +142,13 @@ export function MetadataTab({ game, systemPath }: { game: Game; systemPath: stri
           </div>
         )}
       </Section>
+
+      {/* Arcade: con qué emulador funciona el set */}
+      {isCheckedArcadeSystem(systemPath.split(/[\\/]/).filter(Boolean).pop() ?? "") && (
+        <Section title={t("arcade.metaTitle")}>
+          <ArcadeEmulatorsSection game={game} systemPath={systemPath} />
+        </Section>
+      )}
 
       <Section title={t("meta.sources")}>
         <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">

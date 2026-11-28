@@ -8,3 +8,7 @@ const ARCADE_SYSTEMS = new Set([
 ]);
 
 export const isArcadeSystem = (folderName: string) => ARCADE_SYSTEMS.has(folderName.toLowerCase());
+
+/** Arcade systems whose sets are checked against the MAME/FBNeo cores ("Emulator per game"): all but
+ * Model 2/3, which use other emulators. Same as `is_checked_system` in commands/arcade.rs. */
+export const isCheckedArcadeSystem = (folderName: string) => isArcadeSystem(folderName) && !["model2", "model3"].includes(folderName.toLowerCase());

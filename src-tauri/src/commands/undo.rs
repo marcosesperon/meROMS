@@ -222,6 +222,10 @@ fn undo_gamelists(lists: &mut HashMap<String, GameList>, games: &[GameChange]) {
         if game.name == change.after.name {
             game.name = change.before.name.clone();
         }
+        // El emulador del juego (Emulador por juego), igual: si nadie lo cambió después
+        if game.altemulator == change.after.altemulator {
+            game.altemulator = change.before.altemulator.clone();
+        }
         for field in media::media_fields() {
             if media::get_field(&game, field) == media::get_field(&change.after, field) {
                 media::set_field(&mut game, field, media::get_field(&change.before, field).cloned());
@@ -292,7 +296,12 @@ fn undo_op(layout: &Layout, op: &UndoOp) -> Result<UndoResult, String> {
             list.games.retain(|g| &g.path != path);
         }
     }
-    if layout.writes_media_tags() || !op.removed.is_empty() || !op.merged.is_empty() || !op.added.is_empty() || op.games.iter().any(|c| c.before.path != c.after.path || c.before_sys != c.after_sys) {
+    // Hay que escribir la gamelist si cambia algo de ella: rutas, entradas, títulos, emuladores
+    // (con la estructura clásica, también las rutas de los medios)
+    let entries_changed = op.games.iter().any(|c| {
+        c.before.path != c.after.path || c.before_sys != c.after_sys || c.before.name != c.after.name || c.before.altemulator != c.after.altemulator
+    });
+    if layout.writes_media_tags() || !op.removed.is_empty() || !op.merged.is_empty() || !op.added.is_empty() || entries_changed {
         for (s, list) in &lists {
             super::gamelist::write_gamelist(layout, &SystemRef::from_rom_dir(s), list)?;
         }

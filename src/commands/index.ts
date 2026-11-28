@@ -381,9 +381,40 @@ export interface DatMark {
   parent: string | null;
 }
 
+export interface DatMissing {
+  name: string;
+  description: string;
+  cloneof: string | null;
+  year: string;
+  manufacturer: string;
+  /** Beta, proto, demo, sample, pirate, hack, Unl... (doesn't count to complete the collection) */
+  unwanted: boolean;
+}
+
+/** A missing game with all its versions; the first is the preferred one (Settings region/language order) */
+export interface DatGroup {
+  versions: DatMissing[];
+  /** Every version is unwanted */
+  unwanted: boolean;
+}
+
+/** How much of the DAT's collection is there: games (not versions), unwanted ones left out */
+export interface DatProgress {
+  dat: string;
+  have: number;
+  total: number;
+  /** 0 = matched only by file name */
+  content_matched: number;
+  has_crcs: boolean;
+}
+
 export interface DatReport {
   summary: DatSummary;
-  missing: { name: string; description: string; cloneof: string | null; year: string; manufacturer: string }[];
+  /** Every missing version on its own */
+  missing: DatMissing[];
+  /** The missing games, versions grouped */
+  missing_groups: DatGroup[];
+  progress: DatProgress;
   unknown_files: string[];
   marks: DatMark[];
   names: { game_path: string; current: string | null; proposed: string }[];
@@ -724,6 +755,11 @@ export async function moveGames(
 
 export async function datReport(systemPath: string, task?: string): Promise<DatReport | null> {
   return invoke("dat_report", { systemPath, task });
+}
+
+/** Progress of the system's collection against its DAT (null without a DAT); cached like the system status */
+export async function datProgress(systemPath: string): Promise<DatProgress | null> {
+  return invoke("dat_progress", { systemPath });
 }
 
 /** "Check by content": computes the missing ROM CRCs (emits dat-crc-progress); returns the files the DAT recognises */
@@ -1077,8 +1113,9 @@ export interface GameExited {
   error: string | null;
 }
 
-export async function resolveLaunch(systemPath: string, gamePath: string): Promise<LaunchPlan> {
-  return invoke("resolve_launch", { systemPath, gamePath });
+/** `emulator`: an ES-DE label for this time only (instead of the game's <altemulator>) */
+export async function resolveLaunch(systemPath: string, gamePath: string, emulator?: string): Promise<LaunchPlan> {
+  return invoke("resolve_launch", { systemPath, gamePath, emulator: emulator ?? null });
 }
 
 export async function launchOptions(systemPath: string): Promise<LaunchOptions> {
@@ -1091,8 +1128,8 @@ export async function setSystemEmulator(systemPath: string, label: string | null
 }
 
 /** Starts the game; `game-exited` comes when the emulator closes */
-export async function launchGame(systemPath: string, gamePath: string): Promise<void> {
-  return invoke("launch_game", { systemPath, gamePath });
+export async function launchGame(systemPath: string, gamePath: string, emulator?: string): Promise<void> {
+  return invoke("launch_game", { systemPath, gamePath, emulator: emulator ?? null });
 }
 
 /** Closes the running emulator */
@@ -1376,4 +1413,89 @@ export async function importRoms(
   task?: string
 ): Promise<{ imported: string[]; completed: string[]; skipped: string[]; media: number; stopped: boolean }> {
   return invoke("import_roms", { systemPath, folder, esdeHome, paths, complete, options, task });
+}
+
+// Arcade: which emulator runs each set ("Emulator per game")
+/** Core ids: fbneo | mame | mame2010 | mame2003plus */
+export type ArcadeCoreId = "fbneo" | "mame" | "mame2010" | "mame2003plus";
+
+export interface ArcadeDatMeta {
+  version: string;
+  /** libretro | mamedev | standalone */
+  source: string;
+  updated: string;
+  games: number;
+}
+
+export interface ArcadeStatus {
+  cores: { id: ArcadeCoreId; dat: ArcadeDatMeta | null }[];
+  /** Preference order (ids) */
+  order: ArcadeCoreId[];
+  mame_path: string | null;
+  mame_version: string | null;
+  /** Chosen MAME version for the "MAME - Current" DAT (null = the latest / the installed one) */
+  mame_version_setting: string | null;
+}
+
+/** How a set is for one core */
+export interface SetCheck {
+  /** ok | needs (BIOS/parent/device/CHD missing) | wrong (another version) | absent | not_a_game */
+  state: "ok" | "needs" | "wrong" | "absent" | "not_a_game";
+  /** good | imperfect | preliminary | "" */
+  driver: string;
+  bios?: string;
+  parent?: string;
+  devices?: string[];
+  chd?: string[];
+  bad_chips: number;
+  chips: number;
+  missing_chips?: string[];
+}
+
+export interface ArcadeGame {
+  path: string;
+  name: string | null;
+  /** Label Play would use now (null: own command or a system ES-DE doesn't know) */
+  current: string | null;
+  current_core: ArcadeCoreId | null;
+  own_emulator: boolean;
+  checks: Partial<Record<ArcadeCoreId, SetCheck>>;
+  proposal: string | null;
+  proposal_core: ArcadeCoreId | null;
+}
+
+export interface ArcadeReport {
+  /** Cores with a DAT, in preference order */
+  cores: ArcadeCoreId[];
+  /** ES-DE emulators of the system: [label, available on this computer] */
+  labels: [string, boolean][];
+  custom: boolean;
+  games: ArcadeGame[];
+}
+
+export async function arcadeStatus(): Promise<ArcadeStatus> {
+  return invoke("arcade_status");
+}
+
+/** Published MAME versions ("0.289", ...) for the version picker */
+export async function mameVersions(): Promise<string[]> {
+  return invoke("mame_versions");
+}
+
+export async function arcadeDownload(coreId: ArcadeCoreId, task?: string): Promise<ArcadeDatMeta> {
+  return invoke("arcade_download", { coreId, task });
+}
+
+export async function arcadeDelete(coreId: ArcadeCoreId): Promise<void> {
+  return invoke("arcade_delete", { coreId });
+}
+
+/** The system's games (or only some) against each core's DAT; the whole system is cached */
+export async function arcadeCheck(systemPath: string, gamePaths?: string[], task?: string): Promise<ArcadeReport> {
+  return invoke("arcade_check", { systemPath, gamePaths: gamePaths ?? null, task });
+}
+
+/** Writes <altemulator> for those games (label null = back to the system's); backup + Undo */
+export async function applyEmulators(systemPath: string, changes: { path: string; label: string | null }[]): Promise<number> {
+  return invoke("apply_emulators", { systemPath, changes });
 }

@@ -10,6 +10,7 @@ import { formatRating, formatReleaseDate } from "../../utils/format";
 import { useGameDetails } from "../../hooks/useGameDetails";
 import { formatPlayTime, isPlayed } from "../../utils/playStats";
 import { useGameActions } from "../../hooks/useGameActions";
+import { DatProgressBlock } from "./DatProgressBlock";
 import { getSystemInfo, localize, systemGradient, type SystemInfoEntry } from "../../utils/systemInfo";
 import { SystemLogo } from "../common/SystemLogo";
 import { ScrapeSearchModal } from "../common/ScrapeSearchModal";
@@ -356,6 +357,8 @@ function SystemSummary() {
             </dl>
           </>
         )}
+
+        <DatProgressBlock systemPath={selectedSystem.path} />
 
         <BiosLine system={selectedSystem.name} />
 

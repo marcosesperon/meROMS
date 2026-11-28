@@ -118,15 +118,12 @@ fn rom_path(system: &SystemRef, game_path: &str) -> PathBuf {
     }
 }
 
-fn plan(ctx: &Context, game_path: &str) -> LaunchPlan {
+/// `emulator`: una etiqueta de ES-DE solo para esta vez (el aviso de arcade «Jugar con X»),
+/// en lugar del `<altemulator>` del juego
+fn plan(ctx: &Context, game_path: &str, emulator: Option<&str>) -> LaunchPlan {
     let xml = ctx.gamelist_xml.as_deref().unwrap_or("");
-    let chosen = choose_command(
-        &ctx.config,
-        &ctx.system.name,
-        ctx.custom.as_deref(),
-        game_alt_emulator(xml, game_path).as_deref(),
-        system_alt_emulator(xml).as_deref(),
-    );
+    let game_alt = emulator.map(String::from).or_else(|| game_alt_emulator(xml, game_path));
+    let chosen = choose_command(&ctx.config, &ctx.system.name, ctx.custom.as_deref(), game_alt.as_deref(), system_alt_emulator(xml).as_deref());
     let Some(chosen) = chosen else {
         return LaunchPlan { label: None, custom: false, command: None, start_dir: None, missing: None, no_config: true };
     };
@@ -151,8 +148,8 @@ fn plan(ctx: &Context, game_path: &str) -> LaunchPlan {
 
 /// Cómo se lanzaría un juego (el botón «Probar» y el aviso de lo que falta)
 #[tauri::command(async)]
-pub fn resolve_launch(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<LaunchPlan, String> {
-    Ok(plan(&context(&app, &system_path)?, &game_path))
+pub fn resolve_launch(app: tauri::AppHandle, system_path: String, game_path: String, emulator: Option<String>) -> Result<LaunchPlan, String> {
+    Ok(plan(&context(&app, &system_path)?, &game_path, emulator.as_deref()))
 }
 
 /// Los emuladores de ES-DE para un sistema, cuáles hay en este equipo y el elegido
@@ -175,6 +172,43 @@ pub fn launch_options(app: tauri::AppHandle, system_path: String) -> Result<Laun
         .collect();
     let current = ctx.gamelist_xml.as_deref().and_then(system_alt_emulator);
     Ok(LaunchOptions { known: true, options, current })
+}
+
+/// Qué emulador usaría Jugar en un sistema: los de ES-DE (con si están en este equipo), el
+/// elegido para el sistema y si hay comando propio. Para «Emulador por juego» (`arcade.rs`).
+pub struct EmulatorChoices {
+    /// Comando propio del sistema: manda sobre todo, no hay emulador de ES-DE que proponer
+    pub custom: bool,
+    pub options: Vec<EmulatorOption>,
+    pub system_alt: Option<String>,
+    config: LaunchConfig,
+    system: String,
+}
+
+impl EmulatorChoices {
+    /// La etiqueta que usaría Jugar con este `<altemulator>` del juego (None: comando propio o
+    /// sistema que ES-DE no conoce)
+    pub fn chosen(&self, game_alt: Option<&str>) -> Option<String> {
+        if self.custom {
+            return None;
+        }
+        match choose_command(&self.config, &self.system, None, game_alt, self.system_alt.as_deref())? {
+            Chosen::Esde { label, .. } => Some(label),
+            Chosen::Custom(_) => None,
+        }
+    }
+}
+
+pub fn emulator_choices(app: &tauri::AppHandle, system_path: &str) -> Result<EmulatorChoices, String> {
+    let options = launch_options(app.clone(), system_path.to_string())?;
+    let ctx = context(app, system_path)?;
+    Ok(EmulatorChoices {
+        custom: ctx.custom.is_some(),
+        options: options.options,
+        system_alt: options.current,
+        config: ctx.config,
+        system: ctx.system.name,
+    })
 }
 
 /// Elige el emulador de ES-DE del sistema (`None` = el predeterminado). Se guarda en el gamelist
@@ -238,13 +272,13 @@ pub fn stop_game() {
 /// Lanza un juego y vuelve en cuanto el emulador ha arrancado. Al cerrarse se emite
 /// `game-exited` (con el juego actualizado si la partida contó).
 #[tauri::command(async)]
-pub fn launch_game(app: tauri::AppHandle, system_path: String, game_path: String) -> Result<(), String> {
+pub fn launch_game(app: tauri::AppHandle, system_path: String, game_path: String, emulator: Option<String>) -> Result<(), String> {
     let mut running = RUNNING.lock().unwrap();
     if running.is_some() {
         return Err("A game is already running".into());
     }
     let ctx = context(&app, &system_path)?;
-    let plan = plan(&ctx, &game_path);
+    let plan = plan(&ctx, &game_path, emulator.as_deref());
     let Some(command) = plan.command else {
         return Err(match plan.missing {
             Some(m) => format!("Not found: {}", m.name),

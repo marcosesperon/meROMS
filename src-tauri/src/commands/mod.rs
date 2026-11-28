@@ -1,3 +1,4 @@
+pub mod arcade;
 pub mod backup;
 pub mod best_version;
 pub mod bios;

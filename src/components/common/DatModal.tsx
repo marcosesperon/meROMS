@@ -3,7 +3,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { useTranslation } from "../../i18n";
 import { useAppStore } from "../../store/useAppStore";
-import { clearSystemDat, datComputeCrcs, datReport, saveGamelist, setSystemDat, trashFiles, type DatReport } from "../../commands";
+import { clearSystemDat, datComputeCrcs, datReport, saveGamelist, setSystemDat, trashFiles, type DatMissing, type DatReport } from "../../commands";
 import { askConfirm, showMessage } from "../../utils/dialogs";
 import { useTask } from "../../hooks/useTask";
 import { TaskProgress } from "./TaskProgress";
@@ -37,7 +37,12 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   // Mandar a la papelera los ficheros que el DAT no conoce: con progreso y Cancelar
   const trashTask = useTask();
   const [tab, setTab] = useState<Tab>("missing");
-  const [withClones, setWithClones] = useState(false);
+  // Faltan: cada versión por separado (la lista de antes) o un juego por fila con sus versiones
+  const [eachVersion, setEachVersion] = useState(false);
+  // Betas, prototipos, demos, hacks…: fuera salvo que se pidan
+  const [withUnwanted, setWithUnwanted] = useState(false);
+  // Juegos desplegados (por el nombre de su versión preferida)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [unknownSel, setUnknownSel] = useState<Set<string>>(new Set());
   const [nameSel, setNameSel] = useState<Set<string>>(new Set());
   // «Comprobar por contenido» en marcha: fichero actual / total
@@ -61,16 +66,26 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   }
 
   useEffect(() => {
-    if (open) load();
-    else setReport(null);
+    // Siempre empieza en «Faltan» (también al abrirla desde la barra de Colección del resumen)
+    if (open) {
+      setTab("missing");
+      setExpanded(new Set());
+      load();
+    } else setReport(null);
     // Al cerrar la ventana a medias, el informe se para
     return () => reportTask.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, systemPath]);
 
-  const missing = useMemo(
-    () => (report?.missing ?? []).filter((m) => withClones || !m.cloneof),
-    [report, withClones]
+  const wanted = (m: DatMissing) => withUnwanted || !m.unwanted;
+  const missing = useMemo(() => (report?.missing ?? []).filter(wanted), [report, withUnwanted]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Un juego por fila; sin los no deseados, tampoco se enseñan sus versiones no deseadas
+  const groups = useMemo(
+    () =>
+      (report?.missing_groups ?? [])
+        .filter((g) => withUnwanted || !g.unwanted)
+        .map((g) => ({ ...g, versions: g.versions.filter(wanted) })),
+    [report, withUnwanted] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   if (!open) return null;
@@ -150,7 +165,9 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
   }
 
   function copyMissing() {
-    const text = missing.map((m) => `${m.name}\t${m.description}${m.year ? `\t${m.year}` : ""}`).join("\n");
+    // Lo que se ve: cada versión, o la preferida de cada juego
+    const rows = eachVersion ? missing : groups.map((g) => g.versions[0]);
+    const text = rows.map((m) => `${m.name}\t${m.description}${m.year ? `\t${m.year}` : ""}`).join("\n");
     navigator.clipboard.writeText(text).catch(() => {});
   }
 
@@ -163,7 +180,7 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
 
   const tabs: { id: Tab; label: string; count: number }[] = report
     ? [
-        { id: "missing", label: t("dat.tabMissing"), count: missing.length },
+        { id: "missing", label: t("dat.tabMissing"), count: eachVersion ? missing.length : groups.length },
         { id: "unknown", label: t("dat.tabUnknown"), count: report.unknown_files.length },
         { id: "names", label: t("dat.tabNames"), count: report.names.length },
       ]
@@ -243,23 +260,34 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
             <>
               <div className="px-5 py-2 flex items-center gap-4 border-b border-zinc-700/50 text-xs">
                 <label className="flex items-center gap-1.5 text-zinc-400 cursor-pointer">
-                  <input type="checkbox" checked={withClones} onChange={(e) => setWithClones(e.target.checked)} className="rounded border-zinc-600 bg-zinc-700 text-indigo-600" />
-                  {t("dat.includeClones")}
+                  <input type="checkbox" checked={eachVersion} onChange={(e) => setEachVersion(e.target.checked)} className="rounded border-zinc-600 bg-zinc-700 text-indigo-600" />
+                  {t("dat.eachVersion")}
                 </label>
-                <button onClick={copyMissing} className="text-indigo-400 hover:text-indigo-300">{t("dat.copyList")}</button>
+                <label className="flex items-center gap-1.5 text-zinc-400 cursor-pointer">
+                  <input type="checkbox" checked={withUnwanted} onChange={(e) => setWithUnwanted(e.target.checked)} className="rounded border-zinc-600 bg-zinc-700 text-indigo-600" />
+                  {t("dat.includeUnwanted")}
+                </label>
+                <button onClick={copyMissing} className="ml-auto text-indigo-400 hover:text-indigo-300">{t("dat.copyList")}</button>
               </div>
+              {(eachVersion ? missing.length : groups.length) === 0 && (
+                <p className="py-12 text-center text-sm text-emerald-400">{t("dat.noMissing")}</p>
+              )}
               <div className="divide-y divide-zinc-700/30">
-                {missing.map((m) => (
-                  <div key={m.name} className="px-5 py-1.5">
-                    <p className="text-sm text-zinc-200 truncate">{m.description || m.name}</p>
-                    <p className="text-xs text-zinc-500 truncate">
-                      <span className="font-mono">{m.name}</span>
-                      {m.cloneof && ` · ${t("dat.cloneOf", { parent: m.cloneof })}`}
-                      {m.year && ` · ${m.year}`}
-                      {m.manufacturer && ` · ${m.manufacturer}`}
-                    </p>
-                  </div>
-                ))}
+                {eachVersion
+                  ? missing.map((m) => <MissingRow key={m.name} game={m} />)
+                  : groups.map((g) => {
+                      const [first, ...others] = g.versions;
+                      const isOpen = expanded.has(first.name);
+                      return (
+                        <div key={first.name}>
+                          <MissingRow
+                            game={first}
+                            more={others.length > 0 ? { count: others.length, open: isOpen, toggle: () => toggle(expanded, setExpanded, first.name) } : undefined}
+                          />
+                          {isOpen && others.map((m) => <MissingRow key={m.name} game={m} nested />)}
+                        </div>
+                      );
+                    })}
               </div>
             </>
           ) : tab === "unknown" ? (
@@ -305,6 +333,29 @@ export function DatModal({ open, systemPath, onClose, onChanged }: DatModalProps
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Una fila de «Faltan»: nombre, y debajo el del fichero, año y fabricante; «+N» despliega las otras versiones */
+function MissingRow({ game, more, nested }: { game: DatMissing; more?: { count: number; open: boolean; toggle: () => void }; nested?: boolean }) {
+  const { t } = useTranslation();
+  return (
+    <div className={`flex items-center gap-3 py-1.5 ${nested ? "pl-10 pr-5 bg-zinc-900/30" : "px-5"}`}>
+      <div className="min-w-0 flex-1">
+        <p className={`truncate ${nested ? "text-xs text-zinc-300" : "text-sm text-zinc-200"}`}>{game.description || game.name}</p>
+        <p className="text-xs text-zinc-500 truncate">
+          <span className="font-mono">{game.name}</span>
+          {game.cloneof && ` · ${t("dat.cloneOf", { parent: game.cloneof })}`}
+          {game.year && ` · ${game.year}`}
+          {game.manufacturer && ` · ${game.manufacturer}`}
+        </p>
+      </div>
+      {more && (
+        <button onClick={more.toggle} className="shrink-0 text-xs text-indigo-400 hover:text-indigo-300">
+          {t("dat.moreVersions", { count: more.count })} {more.open ? "▴" : "▾"}
+        </button>
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+mod arcade;
 mod commands;
 mod launch;
 mod layout;
@@ -151,6 +152,12 @@ pub fn run() {
             commands::launch::resolve_launch,
             commands::launch::launch_options,
             commands::launch::set_system_emulator,
+            commands::arcade::arcade_status,
+            commands::arcade::mame_versions,
+            commands::arcade::arcade_download,
+            commands::arcade::arcade_delete,
+            commands::arcade::arcade_check,
+            commands::arcade::apply_emulators,
             commands::launch::launch_game,
             commands::launch::stop_game,
             commands::launch::running_game,
@@ -227,6 +234,7 @@ pub fn run() {
             dat::set_system_dat,
             dat::clear_system_dat,
             dat::dat_report,
+            dat::dat_progress,
             dat::dat_compute_crcs,
             duplicates::remove_games_with_files,
             collections::detect_multidisc_games,

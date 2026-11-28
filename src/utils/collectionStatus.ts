@@ -9,8 +9,11 @@ import {
   findUnusedMedia,
   planMediaNormalization,
   renamePreview,
+  arcadeCheck,
+  type ArcadeReport,
   type ScraperStatus,
 } from "../commands";
+import { isCheckedArcadeSystem } from "./arcade";
 import { collectionRulesFrom } from "./collectionRules";
 import { hasMedia, MEDIA_FILTER_FIELDS } from "./mediaFilter";
 import { isBadReleaseDate } from "./format";
@@ -48,7 +51,9 @@ export type IssueKind =
   | "swappedWhole"
   | "legacy"
   /** No encontrados por el scraper (solo informa: no hay nada que arreglar solo) */
-  | "scrapeMiss";
+  | "scrapeMiss"
+  /** Arcade: el set no está completo para el emulador que usaría Jugar */
+  | "arcade";
 
 /** Nombres fuera de formato: juegos cuyo fichero o cuyo título cambiarían al renombrar */
 export interface NamesStatus {
@@ -90,6 +95,8 @@ export interface StatusParts {
   /** Todo el sistema parece al revés (mejor «Intercambiar tipos») */
   swappedWhole?: boolean;
   legacy?: StatusItems;
+  /** Arcade: juegos cuyo set no va con su emulador, y cuántos tienen otro propuesto */
+  arcade?: { games: string[]; proposals: number };
 }
 
 /** Lo que el store guarda del estado del sistema abierto */
@@ -130,7 +137,25 @@ export function statusChecks(systemPath: string): { name: string; run: () => Pro
     // Sobrantes con dueño (sin las referencias rotas, que no son ficheros de más)
     { name: "reuse", run: () => findReusableMedia(systemPath).then((list) => ({ reuse: items(list.filter((i) => i.reason !== "broken_ref").map((i) => i.game_path)) })) },
     { name: "repeated", run: () => findRepeatedMedia(systemPath).then(() => ({})) },
+    // Arcade (solo si hay DAT de algún núcleo): qué sets no van con su emulador
+    ...(isCheckedArcadeSystem(folderOf(systemPath))
+      ? [{ name: "arcade", run: () => arcadeCheck(systemPath).then((r) => ({ arcade: arcadeStatusOf(r) })) }]
+      : []),
   ];
+}
+
+/** Nombre de la carpeta del sistema (el último trozo de la ruta) */
+function folderOf(path: string): string {
+  return path.split(/[\\/]/).filter(Boolean).pop() ?? "";
+}
+
+/** Lo que el estado cuenta del diagnóstico de arcade */
+function arcadeStatusOf(report: ArcadeReport): { games: string[]; proposals: number } {
+  const bad = report.games.filter((g) => {
+    const current = g.current_core ? g.checks[g.current_core] : undefined;
+    return !!current && current.state !== "ok" && current.state !== "not_a_game";
+  });
+  return { games: bad.map((g) => g.path), proposals: bad.filter((g) => g.proposal).length };
 }
 
 /** Lo que hace falta para saber qué juegos tienen cada problema */
@@ -244,6 +269,8 @@ export function issueGames(kind: IssueKind, ctx: IssueContext): Set<string> | nu
       return ctx.status?.names ? new Set([...ctx.status.names.files, ...ctx.status.names.titles]) : null;
     case "versions":
       return parts?.versions ? new Set(parts.versions.flat()) : null;
+    case "arcade":
+      return parts?.arcade ? new Set(parts.arcade.games) : null;
     case "damaged":
     case "placeholders":
     case "swapped":

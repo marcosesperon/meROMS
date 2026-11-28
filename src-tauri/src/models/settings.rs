@@ -91,6 +91,15 @@ pub struct AppSettings {
     // «Convert to CHD»: chdman chosen by hand (None = look in the PATH and the usual places)
     #[serde(default)]
     pub chdman_path: Option<String>,
+    // Arcade sets: which cores are preferred when several run a set (ids: fbneo, mame,
+    // mame2010, mame2003plus; None = the default order), the MAME version of the "MAME - Current"
+    // DAT (None = the latest) and a standalone MAME chosen by hand (None = look for it)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arcade_core_order: Option<Vec<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub arcade_mame_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mame_path: Option<String>,
     // TheGamesDB
     pub tgdb_apikey: Option<String>,
     // RetroAchievements: user name and web API key (retroachievements.org → Settings)

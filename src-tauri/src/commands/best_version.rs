@@ -132,7 +132,7 @@ pub(crate) fn is_language(p: &str) -> bool {
 }
 
 /// Puntuación para ordenar (menor = mejor): (no deseada, región, idioma, -revisión, no verificada)
-fn score(tags: &VersionTags, regions: &[String], languages: &[String]) -> (bool, usize, usize, i64, bool) {
+pub(crate) fn score(tags: &VersionTags, regions: &[String], languages: &[String]) -> (bool, usize, usize, i64, bool) {
     let region = tags.regions.iter().filter_map(|r| regions.iter().position(|p| p == r)).min().unwrap_or(usize::MAX);
     // Sin etiqueta de idioma: se supone el de su región (USA → en, Spain → es…)
     let langs: Vec<String> = if tags.languages.is_empty() {
